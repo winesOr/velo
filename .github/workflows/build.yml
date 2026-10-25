@@ -145,7 +145,7 @@ jobs:
             plezy-android-x86_64.tar.gz
 
       - name: Upload APKs
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: android-apk
           path: |
@@ -216,7 +216,7 @@ jobs:
           subject-path: plezy-ios.ipa
 
       - name: Upload IPA
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: ios-ipa
           path: plezy-ios.ipa
@@ -390,7 +390,7 @@ jobs:
           echo "${{ env.MACOS_DMG_SIZE }}" > macos-dmg-size.txt
 
       - name: Upload macOS DMG
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: macos-dmg
           path: |
@@ -535,7 +535,7 @@ jobs:
         run: .\scripts\upload-symbols.ps1 windows-${{ matrix.arch }}
 
       - name: Upload ${{ matrix.arch }} build
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: windows-${{ matrix.arch }}-build
           path: build/windows/${{ matrix.arch }}/runner/Release/
@@ -626,19 +626,19 @@ jobs:
             plezy-windows.msixbundle
 
       - name: Upload x64 portable
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: windows-x64-portable
           path: plezy-windows-x64-portable.7z
 
       - name: Upload arm64 portable
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: windows-arm64-portable
           path: plezy-windows-arm64-portable.7z
 
       - name: Upload installer
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: windows-installer
           path: |
@@ -650,7 +650,7 @@ jobs:
       # Store-identity package cannot be installed without the Store's
       # certificate, so it is only useful as a Partner Center upload.
       - name: Upload Store package
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: windows-msix
           path: plezy-windows.msixbundle
@@ -877,7 +877,7 @@ jobs:
             plezy-linux-${{ matrix.arch }}.flatpak
 
       - name: Upload Linux ${{ matrix.arch }} artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: linux-${{ matrix.arch }}
           path: |
