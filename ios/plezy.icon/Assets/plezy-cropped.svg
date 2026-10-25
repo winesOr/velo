@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>Velo — folded play arrow</title>
+  <defs>
+    <linearGradient id="tile" x1="260" y1="100" x2="760" y2="924" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" />
+      <stop offset="0.55" stop-color="#F9FAFE" />
+      <stop offset="1" stop-color="#E9EDF6" />
+    </linearGradient>
+    <linearGradient id="front" x1="310" y1="320" x2="720" y2="550" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8778FF" />
+      <stop offset="0.42" stop-color="#6060F5" />
+      <stop offset="0.78" stop-color="#379DF9" />
+      <stop offset="1" stop-color="#3FD8F1" />
+    </linearGradient>
+    <linearGradient id="fold" x1="370" y1="718" x2="642" y2="518" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7065F7" />
+      <stop offset="0.48" stop-color="#5354E3" />
+      <stop offset="0.82" stop-color="#2949C7" />
+      <stop offset="1" stop-color="#1773CD" />
+    </linearGradient>
+    <linearGradient id="edge" x1="310" y1="380" x2="710" y2="640" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5D43C2" />
+      <stop offset="0.6" stop-color="#3434AD" />
+      <stop offset="1" stop-color="#238EBE" />
+    </linearGradient>
+    <linearGradient id="rim" x1="340" y1="282" x2="695" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E3DFFF" stop-opacity="0.50" />
+      <stop offset="0.55" stop-color="#D4E6FF" stop-opacity="0.12" />
+      <stop offset="1" stop-color="#D4FBFF" stop-opacity="0.0" />
+    </linearGradient>
+  </defs>
+  <g id="mark">
+    <path d="M363 275 C339 261 310 278 310 306 L310 370 C310 394 323 416 344 428 L450 512 L344 596 C323 608 310 630 310 654 L310 718 C310 746 339 763 363 749 L710 548 C738 532 738 492 710 476 Z" fill="#343B86" opacity="0.018" transform="translate(0 34) scale(1.012 1)" />
+    <path d="M363 275 C339 261 310 278 310 306 L310 370 C310 394 323 416 344 428 L450 512 L344 596 C323 608 310 630 310 654 L310 718 C310 746 339 763 363 749 L710 548 C738 532 738 492 710 476 Z" fill="#343B86" opacity="0.035" transform="translate(0 27)" />
+    <path d="M363 275 C339 261 310 278 310 306 L310 370 C310 394 323 416 344 428 L450 512 L344 596 C323 608 310 630 310 654 L310 718 C310 746 339 763 363 749 L710 548 C738 532 738 492 710 476 Z" fill="url(#edge)" transform="translate(0 14)" />
+    <path id="silhouette" d="M363 275 C339 261 310 278 310 306 L310 370 C310 394 323 416 344 428 L450 512 L344 596 C323 608 310 630 310 654 L310 718 C310 746 339 763 363 749 L710 548 C738 532 738 492 710 476 Z" fill="url(#front)" />
+    <path d="M450 512 L344 596 C323 608 310 630 310 654 L310 718 C310 746 339 763 363 749 L710 548 C650 580 586 550 544 524 C505 500 477 499 450 512 Z" fill="url(#fold)" />
+    <path d="M450 512 C477 499 505 500 544 524 C586 550 650 580 710 548 C654 573 588 540 548 516 C508 492 476 494 450 512 Z" fill="#172D9B" opacity="0.15" />
+    <path d="M326 340 L326 306 C326 289 340 281 355 289 L655 463" fill="none" stroke="url(#rim)" stroke-width="4" stroke-linecap="round" />
+    <path d="M327 699 L327 716 C327 732 340 739 355 731 L580 601" fill="none" stroke="#B1A9FF" stroke-opacity="0.18" stroke-width="3" stroke-linecap="round" />
+  </g>
+</svg>

@@ -1,0 +1,1309 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:plezy/widgets/app_icon.dart';
+import 'package:material_symbols_icons/symbols.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../focus/focus_memory_tracker.dart';
+import '../../focus/focusable_text_field.dart';
+import '../../focus/input_mode_tracker.dart';
+import '../../i18n/strings.g.dart';
+import '../main_screen.dart';
+import '../../mixins/mounted_set_state_mixin.dart';
+import '../../mixins/refreshable.dart';
+import '../../providers/account_preferences_controller.dart';
+import '../../providers/hidden_libraries_provider.dart';
+import '../../providers/download_provider.dart';
+import '../../providers/libraries_provider.dart';
+import '../../services/donation_service.dart';
+import '../../services/download_storage_service.dart';
+import '../../services/file_picker_service.dart';
+import '../../services/saf_storage_service.dart';
+import '../../services/settings_export_service.dart';
+import '../../providers/theme_provider.dart';
+import '../../providers/multi_server_provider.dart';
+import '../../media/ids.dart';
+import '../../media/media_backend.dart';
+import '../../widgets/backend_badge.dart';
+import '../../theme/mono_presentation.dart';
+import '../../theme/settings_presentation.dart';
+import '../../providers/seerr_account_provider.dart';
+import '../../services/account_preferences_accounts.dart';
+import '../../services/keyboard_shortcuts_service.dart';
+import '../../services/background_work_diagnostics_service.dart';
+import '../../services/settings_service.dart' as settings;
+import '../../services/settings_mutation_service.dart';
+import '../../widgets/background_download_warning_banner.dart';
+import '../../services/update_service.dart';
+import '../../utils/dialogs.dart';
+import '../../utils/snackbar_helper.dart';
+import '../../utils/platform_detector.dart';
+import '../../utils/update_dialog.dart';
+import '../../widgets/desktop_app_bar.dart';
+import '../../widgets/dialog_action_button.dart';
+import '../../widgets/focusable_list_tile.dart';
+import '../../widgets/library_management_sheet.dart';
+import '../../widgets/overlay_sheet.dart';
+import '../../widgets/setting_tile.dart';
+import '../../widgets/settings_builder.dart';
+import '../../widgets/settings_section.dart';
+import '../../widgets/settings_page.dart';
+import '../../widgets/system_bottom_inset.dart';
+import '../../profiles/active_profile_provider.dart';
+import '../../profiles/profile.dart';
+import '../../watch_together/services/watch_together_relay_endpoint.dart';
+import 'about_screen.dart';
+import 'add_connection_screen.dart';
+import 'account_preferences_screen.dart';
+import 'appearance_settings_screen.dart';
+import 'general_settings_screen.dart';
+import 'keyboard_shortcuts_screen.dart';
+import 'logs_screen.dart';
+import 'playback_settings_screen.dart';
+import '../sync/sync_receive_screen.dart';
+import '../sync/sync_scan_screen.dart';
+import '../profile/profile_switch_screen.dart';
+import 'services_settings_screen.dart';
+import 'settings_utils.dart';
+import 'subtitle_styling_screen.dart';
+import 'tracker_service_info.dart';
+import '../../widgets/loading_indicator_box.dart';
+import '../../widgets/video_controls/sheets/danmaku_settings_sheet.dart';
+import 'danmaku_settings_entry.dart';
+import 'settings_category_pane.dart';
+
+enum _SettingsDestination { connections, downloads, integrations, application, together }
+
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({
+    super.key,
+    this.downloadDirectoryWritableChecker,
+    this.settingsExporter,
+    this.settingsImporter,
+    this.backgroundWorkDiagnosticsService,
+  }) : _destination = null;
+
+  const SettingsScreen._category({
+    required this._destination,
+    this.downloadDirectoryWritableChecker,
+    this.settingsExporter,
+    this.settingsImporter,
+    this.backgroundWorkDiagnosticsService,
+  });
+
+  final _SettingsDestination? _destination;
+
+  @visibleForTesting
+  final Future<bool> Function(Directory directory)? downloadDirectoryWritableChecker;
+
+  @visibleForTesting
+  final Future<String?> Function()? settingsExporter;
+
+  @visibleForTesting
+  final Future<ImportResult?> Function()? settingsImporter;
+  @visibleForTesting
+  final BackgroundWorkDiagnosticsService? backgroundWorkDiagnosticsService;
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, MountedSetStateMixin {
+  BackgroundWorkDiagnosticsService get _backgroundWorkDiagnostics =>
+      widget.backgroundWorkDiagnosticsService ?? BackgroundWorkDiagnosticsService.instance;
+  late final FocusMemoryTracker _focusTracker;
+  final _categoryPaneKey = GlobalKey<SettingsCategoryPaneState>();
+
+  // Focus tracking keys
+  static const _kDonate = 'donate';
+  static const _kGeneral = 'general';
+  static const _kAppearance = 'appearance';
+  static const _kPlayback = 'playback';
+  static const _kManageLibraries = 'manage_libraries';
+  static const _kServices = 'services';
+  static const _kDownloadLocation = 'download_location';
+  static const _kDownloadOnWifiOnly = 'download_on_wifi_only';
+  static const _kAutoRemoveWatchedDownloads = 'auto_remove_watched_downloads';
+  static const _kBackgroundDownloads = 'background_downloads';
+  static const _kVideoPlayerControls = 'video_player_controls';
+  static const _kVideoPlayerNavigation = 'video_player_navigation';
+  static const _kCompanionRemoteServer = 'companion_remote_server';
+  static const _kCrashReporting = 'crash_reporting';
+  static const _kDebugLogging = 'debug_logging';
+  static const _kAutoHidePerformanceOverlay = 'auto_hide_performance_overlay';
+  static const _kViewLogs = 'view_logs';
+  static const _kClearImageCache = 'clear_image_cache';
+  static const _kResetSettings = 'reset_settings';
+  static const _kCheckForUpdates = 'check_for_updates';
+  static const _kAutoCheckUpdatesOnStartup = 'auto_check_updates_on_startup';
+  static const _kAbout = 'about';
+  static const _kWatchTogetherRelay = 'watch_together_relay';
+  static const _kExportSettings = 'export_settings';
+  static const _kImportSettings = 'import_settings';
+  static const _kAccountPreferences = 'account_preferences';
+  static const _kSyncFromPhone = 'sync_from_phone';
+  static const _kScanTvSyncCode = 'scan_tv_sync_code';
+
+  KeyboardShortcutsService? _keyboardService;
+  late final bool _keyboardShortcutsSupported = KeyboardShortcutsService.isPlatformSupported();
+
+  // Update checking state
+  bool _isCheckingForUpdate = false;
+  Map<String, dynamic>? _updateInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusTracker = FocusMemoryTracker(debugLabelPrefix: 'settings');
+    if (_keyboardShortcutsSupported) {
+      KeyboardShortcutsService.getInstance().then((s) {
+        setStateIfMounted(() => _keyboardService = s);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusTracker.dispose();
+    super.dispose();
+  }
+
+  @override
+  void focusActiveTabIfReady() {
+    if (InputModeTracker.isKeyboardMode(context, listen: false)) {
+      if (PlatformDetector.isTV() || MonoPresentation.useSettingsColumns(context)) {
+        _categoryPaneKey.currentState?.focusCategory();
+        return;
+      }
+      _focusTracker.restoreFocus(fallbackKey: _kPlayback);
+    }
+  }
+
+  void _navigateToSidebar() {
+    MainScreenFocusScope.focusSidebarOf(context);
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode _, KeyEvent event) {
+    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+      _navigateToSidebar();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  settings.SettingsService get _settingsService => settings.SettingsService.instance;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasLibraries = context.select<LibrariesProvider, bool>((p) => p.libraries.isNotEmpty);
+
+    if (OverlaySheetController.maybeOf(context) != null) {
+      return SettingsAppearance(
+        child: Builder(builder: (context) => _buildContent(context, hasLibraries: hasLibraries)),
+      );
+    }
+
+    // Settings is hosted by MainScreen on side-navigation layouts, but it is a
+    // separate pushed route on phones. Add a route-local host only for the
+    // latter, and build its content from below the host so adaptive sheets do
+    // not fall back to modal routes with a competing Android back path.
+    return OverlaySheetHost(
+      canPop: true,
+      child: SettingsAppearance(
+        child: Builder(builder: (hostContext) => _buildContent(hostContext, hasLibraries: hasLibraries)),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext sheetContext, {required bool hasLibraries}) {
+    if (widget._destination case final destination?) {
+      return _buildDestination(sheetContext, destination, hasLibraries: hasLibraries);
+    }
+    if (PlatformDetector.isTV() || MonoPresentation.useSettingsColumns(sheetContext)) {
+      return _buildCategoryContent(sheetContext, hasLibraries: hasLibraries);
+    }
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: ExcludeFocus(
+          child: DesktopPageAppBar(title: Text(t.settings.title, style: MonoPresentation.pageTitle(sheetContext))),
+        ),
+      ),
+      body: Focus(
+        onKeyEvent: _handleKeyEvent,
+        child: CustomScrollView(
+          primary: false,
+          slivers: [
+            SliverList(
+              delegate: SliverChildListDelegate([
+                const SizedBox(height: 16),
+                _buildIdentitySummary(sheetContext),
+                SettingsGroup(
+                  title: t.settings.viewingExperience,
+                  children: [
+                    _buildPlaybackTile(),
+                    _buildSubtitlesTile(),
+                    const DanmakuSettingsEntry(grouped: false, compact: true),
+                  ],
+                ),
+                SettingsGroup(
+                  title: t.settings.personalization,
+                  children: [_buildTogetherTile(), _buildAppearanceTile()],
+                ),
+                SettingsGroup(
+                  title: t.settings.resourcesServices,
+                  children: [
+                    SettingNavigationTile(
+                      icon: Symbols.dns_rounded,
+                      title: t.settings.serverAccounts,
+                      onTap: () => _openDestination(_SettingsDestination.connections),
+                    ),
+                    if (!PlatformDetector.isAppleTV())
+                      SettingNavigationTile(
+                        icon: Symbols.download_rounded,
+                        title: t.settings.downloadsOffline,
+                        onTap: () => _openDestination(_SettingsDestination.downloads),
+                      ),
+                    SettingNavigationTile(
+                      icon: Symbols.language_rounded,
+                      title: t.settings.connectionsIntegrations,
+                      onTap: () => _openDestination(_SettingsDestination.integrations),
+                    ),
+                  ],
+                ),
+                SettingsGroup(
+                  title: t.settings.application,
+                  children: [
+                    if (DonationService.isEnabled) _buildDonateTile(),
+                    SettingNavigationTile(
+                      focusNode: _focusTracker.get(_kAbout),
+                      icon: Symbols.info_rounded,
+                      title: t.settings.about,
+                      onTap: () => _openDestination(_SettingsDestination.application),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ]),
+            ),
+            const SliverSystemBottomInset(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openDestination(_SettingsDestination destination) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SettingsScreen._category(
+          destination: destination,
+          downloadDirectoryWritableChecker: widget.downloadDirectoryWritableChecker,
+          settingsExporter: widget.settingsExporter,
+          settingsImporter: widget.settingsImporter,
+          backgroundWorkDiagnosticsService: widget.backgroundWorkDiagnosticsService,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDestination(BuildContext context, _SettingsDestination destination, {required bool hasLibraries}) {
+    final title = switch (destination) {
+      _SettingsDestination.connections => t.settings.serverAccounts,
+      _SettingsDestination.downloads => t.settings.downloadsOffline,
+      _SettingsDestination.integrations => t.settings.connectionsIntegrations,
+      _SettingsDestination.application => t.settings.about,
+      _SettingsDestination.together => t.watchTogether.title,
+    };
+    return SettingsPage(
+      title: Text(title),
+      children: [
+        if (destination == _SettingsDestination.connections) ...[
+          _buildConnectionsSection(context, extra: [if (hasLibraries) _buildManageLibrariesTile(context)]),
+        ],
+        if (destination == _SettingsDestination.downloads) _buildDownloadsSection(),
+        if (destination == _SettingsDestination.integrations) ...[
+          SettingsGroup(title: t.settings.services, children: [_buildServicesTile()]),
+          if (_keyboardShortcutsSupported || PlatformDetector.shouldActAsRemoteHost(context))
+            _buildControlsSection(context),
+        ],
+        if (destination == _SettingsDestination.together) SettingsGroup(children: [_buildRelayTile()]),
+        if (destination == _SettingsDestination.application) ...[
+          SettingsGroup(
+            children: [
+              _buildGeneralTile(),
+              SettingNavigationTile(
+                icon: Symbols.info_rounded,
+                title: t.settings.about,
+                destinationBuilder: (_) => const AboutScreen(),
+              ),
+            ],
+          ),
+          _buildAdvancedSection(),
+          if (UpdateService.isUpdateCheckAvailable) _buildUpdateSection(),
+          if (!PlatformDetector.isTV() || PlatformDetector.isDesktopOS()) _buildBackupSection(),
+        ],
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildCategoryContent(BuildContext context, {required bool hasLibraries}) => Scaffold(
+    body: SettingsCategoryPane(
+      key: _categoryPaneKey,
+      onLeave: _navigateToSidebar,
+      categories: [
+        SettingsCategory(
+          id: 'connections',
+          title: t.settings.serverAccounts,
+          icon: Symbols.dns_rounded,
+          builder: (context) => _categoryList([
+            _buildIdentitySummary(context),
+            _buildConnectionsSection(context),
+            if (hasLibraries) SettingsGroup(children: [_buildManageLibrariesTile(context)]),
+          ]),
+        ),
+        SettingsCategory(
+          id: 'playback',
+          title: t.settings.videoPlayback,
+          icon: Symbols.play_circle_rounded,
+          builder: (_) => const PlaybackSettingsScreen(),
+        ),
+        SettingsCategory(
+          id: 'danmaku',
+          title: t.danmaku.title,
+          icon: Symbols.chat_rounded,
+          builder: (_) =>
+              DanmakuSettingsSheet(settingsPage: true, onBack: () => _categoryPaneKey.currentState?.focusCategory()),
+        ),
+        SettingsCategory(
+          id: 'subtitles',
+          title: t.settings.subtitles,
+          icon: Symbols.subtitles_rounded,
+          builder: (_) => const SubtitleStylingScreen(),
+        ),
+        SettingsCategory(
+          id: 'together',
+          title: t.watchTogether.title,
+          icon: Symbols.groups_rounded,
+          builder: (_) => _categoryList([
+            SettingsGroup(children: [_buildRelayTile()]),
+          ]),
+        ),
+        SettingsCategory(
+          id: 'appearance',
+          title: t.settings.appearance,
+          icon: Symbols.palette_rounded,
+          builder: (_) => const AppearanceSettingsScreen(),
+        ),
+        SettingsCategory(
+          id: 'general',
+          title: t.settings.general,
+          icon: Symbols.settings_rounded,
+          builder: (_) => const GeneralSettingsScreen(),
+        ),
+        SettingsCategory(
+          id: 'services',
+          title: t.settings.services,
+          icon: Symbols.sync_rounded,
+          builder: (_) => const ServicesSettingsScreen(),
+        ),
+        if (!PlatformDetector.isAppleTV())
+          SettingsCategory(
+            id: 'downloads',
+            title: t.settings.downloads,
+            icon: Symbols.download_rounded,
+            builder: (_) => _categoryList([_buildDownloadsSection()]),
+          ),
+        if (_keyboardShortcutsSupported || PlatformDetector.shouldActAsRemoteHost(context))
+          SettingsCategory(
+            id: 'controls',
+            title: t.settings.controls,
+            icon: Symbols.gamepad_rounded,
+            builder: (context) => _categoryList([_buildControlsSection(context)]),
+          ),
+        SettingsCategory(
+          id: 'advanced',
+          title: t.settings.advanced,
+          icon: Symbols.tune_rounded,
+          builder: (_) => _categoryList([
+            _buildAdvancedSection(),
+            if (UpdateService.isUpdateCheckAvailable) _buildUpdateSection(),
+            if (!PlatformDetector.isTV() || PlatformDetector.isDesktopOS()) _buildBackupSection(),
+          ]),
+        ),
+        SettingsCategory(
+          id: 'about',
+          title: t.settings.about,
+          icon: Symbols.info_rounded,
+          builder: (_) => const AboutScreen(),
+        ),
+      ],
+    ),
+  );
+
+  Widget _categoryList(List<Widget> children) =>
+      ListView(primary: false, padding: const EdgeInsets.symmetric(vertical: 16), children: children);
+
+  Widget _buildIdentitySummary(BuildContext context) {
+    final profiles = context.watch<ActiveProfileProvider>();
+    final profile = profiles.active;
+    final libraries = context.watch<LibrariesProvider>().libraries;
+    final servers = context.watch<MultiServerProvider?>();
+    final ids = servers?.expectedServerIds ?? libraries.map((library) => library.serverId).nonNulls.toSet().toList();
+    final connectionIds = <String>{
+      ?profile?.parentConnectionId,
+      if (profile != null) ...?profiles.connectionsByProfile[profile.id]?.map((connection) => connection.connectionId),
+    };
+    final backends = <MediaBackend>{
+      for (final id in connectionIds)
+        if (profiles.connectionsById[id] case final connection?) connection.backend,
+      for (final id in ids)
+        if (servers?.getClientForServer(ServerId(id)) case final client?) client.backend,
+      if (servers == null) ...libraries.map((library) => library.backend),
+    };
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 17),
+      child: Material(
+        color: SettingsPresentation.surface(context),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: SettingsPresentation.outline(context)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: FocusableListTile(
+          key: const ValueKey('settings-identity-summary'),
+          dense: false,
+          visualDensity: VisualDensity.standard,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          leading: backends.isEmpty
+              ? const AppIcon(Symbols.dns_rounded, size: 39)
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final backend in backends)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: BackendBadge(backend: backend, size: backends.length == 1 ? 39 : 24),
+                      ),
+                  ],
+                ),
+          title: Text(
+            profile?.displayName ?? t.connections.sectionTitle,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 15, fontWeight: FontWeight.w500),
+          ),
+          subtitle: Text(t.settings.serverSummary(count: ids.length), style: SettingsPresentation.value(context)),
+          trailing: AppIcon(Symbols.chevron_right_rounded, size: 13, color: SettingsPresentation.muted(context)),
+          onTap: () => _openDestination(_SettingsDestination.connections),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubtitlesTile() => SettingNavigationTile(
+    icon: Symbols.subtitles_rounded,
+    title: t.settings.subtitles,
+    destinationBuilder: (_) => const SubtitleStylingScreen(),
+  );
+
+  Widget _buildTogetherTile() => SettingNavigationTile(
+    focusNode: _focusTracker.get(_kWatchTogetherRelay),
+    icon: Symbols.groups_rounded,
+    title: t.watchTogether.title,
+    onTap: () => _openDestination(_SettingsDestination.together),
+  );
+
+  Widget _buildGeneralTile() {
+    return SettingNavigationTile(
+      focusNode: _focusTracker.get(_kGeneral),
+      icon: Symbols.settings_rounded,
+      title: t.settings.general,
+      subtitle: t.settings.generalDescription,
+      destinationBuilder: (context) => const GeneralSettingsScreen(),
+    );
+  }
+
+  Widget _buildDonateTile() {
+    return SettingNavigationTile(
+      focusNode: _focusTracker.get(_kDonate),
+      icon: Symbols.favorite_rounded,
+      title: t.settings.supportDeveloper,
+      subtitle: t.settings.supportDeveloperDescription,
+      trailingIcon: Symbols.open_in_new_rounded,
+      onTap: () async {
+        final url = Uri.parse(DonationService.donationUrl);
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        }
+      },
+    );
+  }
+
+  Widget _buildAppearanceTile() {
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, _) {
+        final summary = themeModeLabel(themeProvider.themeMode);
+        return SettingNavigationTile(
+          focusNode: _focusTracker.get(_kAppearance),
+          icon: Symbols.palette_rounded,
+          title: t.settings.appearanceAndHome,
+          value: summary,
+          destinationBuilder: (context) => const AppearanceSettingsScreen(),
+        );
+      },
+    );
+  }
+
+  Widget _buildPlaybackTile() {
+    return SettingValueBuilder<bool>(
+      pref: settings.SettingsService.useExoPlayer,
+      builder: (context, useExoPlayer, _) => SettingNavigationTile(
+        focusNode: _focusTracker.get(_kPlayback),
+        icon: Symbols.play_circle_rounded,
+        title: t.common.play,
+        value: Platform.isAndroid && useExoPlayer ? t.settings.exoPlayer : t.settings.mpv,
+        destinationBuilder: (context) => const PlaybackSettingsScreen(),
+      ),
+    );
+  }
+
+  Widget _buildManageLibrariesTile(BuildContext context) {
+    return SettingNavigationTile(
+      focusNode: _focusTracker.get(_kManageLibraries),
+      icon: Symbols.video_library_rounded,
+      title: t.libraries.manageLibraries,
+      subtitle: t.settings.manageLibrariesDescription,
+      onTap: () => showLibraryManagementSheet(context),
+    );
+  }
+
+  Widget _buildServicesTile() {
+    // The tracker account providers are watched through [TrackerServiceInfo].
+    return Consumer<SeerrAccountProvider>(
+      builder: (context, seerr, _) {
+        final connectedNames = <String>[
+          for (final info in TrackerServiceInfo.all)
+            if (info.isConnected(context)) info.displayName,
+          if (seerr.isConnected) t.services.names.seerr,
+        ];
+        final subtitle = connectedNames.isEmpty ? t.settings.servicesDescription : connectedNames.join(' · ');
+        return SettingNavigationTile(
+          focusNode: _focusTracker.get(_kServices),
+          icon: Symbols.sync_rounded,
+          title: t.settings.services,
+          subtitle: subtitle,
+          destinationBuilder: (_) => const ServicesSettingsScreen(),
+        );
+      },
+    );
+  }
+
+  Widget _buildConnectionsSection(BuildContext context, {String? title, List<Widget> extra = const []}) {
+    final active = context.select<ActiveProfileProvider, Profile?>((p) => p.active);
+    final subtitle = active == null
+        ? t.connections.addConnectionSubtitleNoProfile
+        : t.connections.addConnectionSubtitleScoped(displayName: active.displayName);
+
+    return SettingsGroup(
+      title: title ?? t.connections.sectionTitle,
+      children: [
+        // Connections are managed per-profile (via the Profiles section
+        // and each profile's detail screen). The shortcut here just opens
+        // the picker scoped to the active profile so users can add a Plex
+        // account, Jellyfin server, or borrow from another profile.
+        SettingNavigationTile(
+          icon: Symbols.add_link_rounded,
+          title: t.connections.addConnection,
+          subtitle: subtitle,
+          onTap: () {
+            final active = context.read<ActiveProfileProvider>().active;
+            Navigator.push(context, MaterialPageRoute(builder: (_) => AddConnectionScreen(targetProfile: active)));
+          },
+        ),
+        if (PlatformDetector.isTV())
+          SettingNavigationTile(
+            focusNode: _focusTracker.get(_kSyncFromPhone),
+            icon: Symbols.sync_rounded,
+            title: t.auth.syncFromPhone,
+            subtitle: t.auth.syncFromPhoneDescription,
+            destinationBuilder: (_) => const SyncReceiveScreen(),
+          )
+        else
+          SettingNavigationTile(
+            focusNode: _focusTracker.get(_kScanTvSyncCode),
+            icon: Symbols.qr_code_scanner_rounded,
+            title: t.auth.scanSyncCode,
+            subtitle: t.auth.scanSyncCodeDescription,
+            destinationBuilder: (_) => const SyncScanScreen(),
+          ),
+        _buildProfilesTile(context),
+        if (context.select<AccountPreferencesController, bool>((c) => c.accounts.isNotEmpty))
+          _buildAccountPreferencesTile(context),
+        ...extra,
+      ],
+    );
+  }
+
+  /// Server-stored preferences for the accounts the active profile signed in
+  /// with. Hidden when no account is reachable — an empty picker is noise.
+  Widget _buildAccountPreferencesTile(BuildContext context) {
+    final accounts = context.select<AccountPreferencesController, List<AccountPreferenceAccount>>((c) => c.accounts);
+    final subtitle = accounts.length == 1
+        ? t.accountPreferences.hubSubtitleSingle(account: accounts.single.target.label)
+        : t.accountPreferences.hubSubtitleMultiple(count: accounts.length);
+    return SettingNavigationTile(
+      focusNode: _focusTracker.get(_kAccountPreferences),
+      icon: Symbols.manage_accounts_rounded,
+      title: t.accountPreferences.sectionTitle,
+      subtitle: subtitle,
+      destinationBuilder: (context) =>
+          AccountPreferencesScreen(targets: [for (final account in accounts) account.target]),
+    );
+  }
+
+  Widget _buildProfilesTile(BuildContext context) {
+    // ActiveProfileProvider already merges local rows with virtual Plex
+    // Home profiles — counting only the local DB rows made every Plex Home
+    // household read as a single profile here. `context.select` keeps
+    // rebuilds scoped to actual count/name changes (a StreamBuilder here
+    // was also re-created on every settings rebuild).
+    final count = context.select<ActiveProfileProvider, int>((p) => p.profiles.length);
+    final activeName = context.select<ActiveProfileProvider, String?>((p) => p.active?.displayName);
+    final subtitle = count <= 1
+        ? t.profiles.summarySingle
+        : (activeName != null
+              ? t.profiles.summaryMultipleWithActive(count: count, activeName: activeName)
+              : t.profiles.summaryMultiple(count: count));
+    return SettingNavigationTile(
+      icon: Symbols.group_rounded,
+      title: t.profiles.sectionTitle,
+      subtitle: subtitle,
+      onTap: () => Navigator.of(
+        context,
+        rootNavigator: true,
+      ).push(MaterialPageRoute(builder: (_) => const ProfileSwitchScreen())),
+    );
+  }
+
+  Widget _buildDownloadsSection() {
+    final storageService = DownloadStorageService.instance;
+    final isCustom = storageService.isUsingCustomPath();
+
+    return SettingsGroup(
+      title: t.settings.downloads,
+      children: [
+        if (!Platform.isIOS)
+          FutureBuilder<String>(
+            future: storageService.getCurrentDownloadPathDisplay(),
+            builder: (context, snapshot) {
+              final currentPath = snapshot.data ?? '...';
+              return FocusableListTile(
+                focusNode: _focusTracker.get(_kDownloadLocation),
+                leading: const AppIcon(Symbols.folder_rounded),
+                title: Text(isCustom ? t.settings.downloadLocationCustom : t.settings.downloadLocationDefault),
+                subtitle: Text(currentPath, maxLines: 2, overflow: .ellipsis),
+                trailing: const AppIcon(Symbols.chevron_right_rounded),
+                onTap: () => _showDownloadLocationDialog(),
+              );
+            },
+          ),
+        SettingSwitchTile(
+          focusNode: _focusTracker.get(_kDownloadOnWifiOnly),
+          pref: settings.SettingsService.downloadOnWifiOnly,
+          icon: Symbols.wifi_rounded,
+          title: t.settings.downloadOnWifiOnly,
+          subtitle: t.settings.downloadOnWifiOnlyDescription,
+        ),
+        SettingSwitchTile(
+          focusNode: _focusTracker.get(_kAutoRemoveWatchedDownloads),
+          pref: settings.SettingsService.autoRemoveWatchedDownloads,
+          icon: Symbols.delete_sweep_rounded,
+          title: t.settings.autoRemoveWatchedDownloads,
+          subtitle: t.settings.autoRemoveWatchedDownloadsDescription,
+        ),
+        if (_backgroundWorkDiagnostics.isSupported) _buildBackgroundDownloadsTile(),
+        // TODO: "Remove orphaned downloads" toggle (#1413) goes here, next to
+        // autoRemoveWatchedDownloads.
+      ],
+    );
+  }
+
+  /// Standing answer to "why do my downloads stop when I leave the app" — also
+  /// what support can ask a user to read out without needing a log upload.
+  Widget _buildBackgroundDownloadsTile() {
+    final diagnostics = _backgroundWorkDiagnostics;
+    return ListenableBuilder(
+      listenable: diagnostics,
+      builder: (context, _) {
+        final status = diagnostics.status;
+        final scheme = Theme.of(context).colorScheme;
+        final (icon, color, summary) = switch (status) {
+          _ when !status.probed => (Symbols.help_rounded, null, t.downloads.backgroundWarning.statusUnknown),
+          _ when status.isBlocked => (
+            Symbols.battery_alert_rounded,
+            scheme.error,
+            t.downloads.backgroundWarning.statusBlocked,
+          ),
+          _ when !status.isHealthy => (
+            Symbols.info_rounded,
+            scheme.tertiary,
+            t.downloads.backgroundWarning.statusDegraded,
+          ),
+          _ => (Symbols.check_circle_rounded, null, t.downloads.backgroundWarning.statusOk),
+        };
+        return FocusableListTile(
+          focusNode: _focusTracker.get(_kBackgroundDownloads),
+          leading: AppIcon(icon, color: color),
+          title: Text(t.downloads.backgroundWarning.statusTile),
+          subtitle: Text(summary),
+          trailing: const AppIcon(Symbols.chevron_right_rounded),
+          onTap: () async {
+            await diagnostics.refresh();
+            if (!context.mounted) return;
+            if (diagnostics.status.isHealthy) {
+              showAppSnackBar(context, t.downloads.backgroundWarning.statusOk);
+              return;
+            }
+            await showBackgroundDownloadWarningDialog(context, service: diagnostics);
+          },
+        );
+      },
+    );
+  }
+
+  /// Input devices: keyboard shortcuts on platforms with a physical keyboard,
+  /// and the companion-remote host on surfaces that can be controlled from a
+  /// phone. Either half may be absent; the caller skips the section when both
+  /// are.
+  Widget _buildControlsSection(BuildContext context) {
+    final children = <Widget>[
+      if (_keyboardService != null) ...[
+        SettingNavigationTile(
+          focusNode: _focusTracker.get(_kVideoPlayerControls),
+          icon: Symbols.keyboard_rounded,
+          title: t.settings.videoPlayerControls,
+          subtitle: t.settings.keyboardShortcutsDescription,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => KeyboardShortcutsScreen(keyboardService: _keyboardService!)),
+            );
+          },
+        ),
+        SettingSwitchTile(
+          focusNode: _focusTracker.get(_kVideoPlayerNavigation),
+          pref: settings.SettingsService.videoPlayerNavigationEnabled,
+          icon: Symbols.gamepad_rounded,
+          title: t.settings.videoPlayerNavigation,
+          subtitle: t.settings.videoPlayerNavigationDescription,
+        ),
+      ],
+      if (PlatformDetector.shouldActAsRemoteHost(context))
+        SettingSwitchTile(
+          focusNode: _focusTracker.get(_kCompanionRemoteServer),
+          pref: settings.SettingsService.enableCompanionRemoteServer,
+          icon: Symbols.phone_android_rounded,
+          title: t.settings.companionRemoteServer,
+          subtitle: t.settings.companionRemoteServerDescription,
+        ),
+    ];
+    // Keyboard platforms render nothing until the shortcuts service loads; an
+    // empty SettingsGroup would paint a bare section title.
+    if (children.isEmpty) return const SizedBox.shrink();
+    return SettingsGroup(title: t.settings.controls, children: children);
+  }
+
+  Widget _buildAdvancedSection() {
+    return SettingsGroup(
+      title: t.settings.advanced,
+      children: [
+        SettingSwitchTile(
+          focusNode: _focusTracker.get(_kCrashReporting),
+          pref: settings.SettingsService.crashReporting,
+          icon: Symbols.monitoring_rounded,
+          title: t.settings.crashReporting,
+          subtitle: t.settings.crashReportingDescription,
+        ),
+        SettingSwitchTile(
+          focusNode: _focusTracker.get(_kDebugLogging),
+          pref: settings.SettingsService.enableDebugLogging,
+          icon: Symbols.bug_report_rounded,
+          title: t.settings.debugLogging,
+          subtitle: t.settings.debugLoggingDescription,
+        ),
+        SettingSwitchTile(
+          focusNode: _focusTracker.get(_kAutoHidePerformanceOverlay),
+          pref: settings.SettingsService.autoHidePerformanceOverlay,
+          icon: Symbols.speed_rounded,
+          title: t.settings.autoHidePerformanceOverlay,
+          subtitle: t.settings.autoHidePerformanceOverlayDescription,
+        ),
+        SettingNavigationTile(
+          focusNode: _focusTracker.get(_kViewLogs),
+          icon: Symbols.article_rounded,
+          title: t.settings.viewLogs,
+          subtitle: t.settings.viewLogsDescription,
+          destinationBuilder: (context) => const LogsScreen(),
+        ),
+        SettingNavigationTile(
+          focusNode: _focusTracker.get(_kClearImageCache),
+          icon: Symbols.cleaning_services_rounded,
+          title: t.settings.clearImageCache,
+          subtitle: t.settings.clearImageCacheDescription,
+          onTap: () => _showClearImageCacheDialog(),
+        ),
+        SettingNavigationTile(
+          focusNode: _focusTracker.get(_kResetSettings),
+          icon: Symbols.restore_rounded,
+          title: t.settings.resetSettings,
+          subtitle: t.settings.resetSettingsDescription,
+          onTap: () => _showResetSettingsDialog(),
+        ),
+        if (kDebugMode)
+          SettingNavigationTile(
+            icon: Symbols.error_rounded,
+            title: 'Test Sentry',
+            subtitle: 'Send a test error',
+            onTap: () {
+              throw Exception("Example exception");
+            },
+          ),
+        if (kDebugMode)
+          SettingNavigationTile(
+            icon: Symbols.timer_rounded,
+            title: 'Test ANR',
+            subtitle: 'Block the main thread for 10 seconds',
+            onTap: () {
+              showSnackBar(context, 'Blocking main thread...');
+              final end = DateTime.now().add(const Duration(seconds: 10));
+              while (DateTime.now().isBefore(end)) {}
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildBackupSection() {
+    return SettingsGroup(
+      title: t.settings.backup,
+      children: [
+        SettingNavigationTile(
+          focusNode: _focusTracker.get(_kExportSettings),
+          icon: Symbols.upload_rounded,
+          title: t.settings.exportSettings,
+          subtitle: t.settings.exportSettingsDescription,
+          onTap: _handleExportSettings,
+        ),
+        SettingNavigationTile(
+          focusNode: _focusTracker.get(_kImportSettings),
+          icon: Symbols.download_rounded,
+          title: t.settings.importSettings,
+          subtitle: t.settings.importSettingsDescription,
+          onTap: _showImportSettingsDialog,
+        ),
+        // TODO: Cloud settings sync/backup (#1795, #1979) goes here once a
+        // sync backend exists (iCloud on Apple platforms, or the relay).
+      ],
+    );
+  }
+
+  Widget _buildRelayTile() => SettingNavigationTile(
+    focusNode: _focusTracker.get(_kWatchTogetherRelay),
+    icon: Symbols.dns_rounded,
+    title: t.settings.watchTogetherRelay,
+    subtitle: t.settings.watchTogetherRelayDescription,
+    onTap: () => _showRelayUrlDialog(),
+  );
+
+  Widget _buildAutoCheckUpdatesOnStartupTile() => SettingSwitchTile(
+    focusNode: _focusTracker.get(_kAutoCheckUpdatesOnStartup),
+    pref: settings.SettingsService.autoCheckUpdatesOnStartup,
+    icon: Symbols.notifications_active_rounded,
+    title: t.settings.autoCheckUpdatesOnStartup,
+    subtitle: t.settings.autoCheckUpdatesOnStartupDescription,
+  );
+
+  Widget _buildUpdateSection() {
+    if (UpdateService.useNativeUpdater) {
+      return SettingsGroup(
+        title: t.settings.updates,
+        children: [
+          SettingNavigationTile(
+            focusNode: _focusTracker.get(_kCheckForUpdates),
+            icon: Symbols.system_update_rounded,
+            title: t.settings.checkForUpdates,
+            onTap: () => UpdateService.checkForUpdatesNative(inBackground: false),
+          ),
+          _buildAutoCheckUpdatesOnStartupTile(),
+        ],
+      );
+    }
+
+    final hasUpdate = _updateInfo != null && _updateInfo!['hasUpdate'] == true;
+
+    return SettingsGroup(
+      title: t.settings.updates,
+      children: [
+        FocusableListTile(
+          focusNode: _focusTracker.get(_kCheckForUpdates),
+          leading: AppIcon(
+            hasUpdate ? Symbols.system_update_rounded : Symbols.check_circle_rounded,
+            fill: 1,
+            color: hasUpdate ? Colors.orange : null,
+          ),
+          title: Text(hasUpdate ? t.settings.updateAvailable : t.settings.checkForUpdates),
+          subtitle: hasUpdate ? Text(t.update.versionAvailable(version: _updateInfo!['latestVersion'])) : null,
+          trailing: _isCheckingForUpdate
+              ? const LoadingIndicatorBox(size: 24)
+              : const AppIcon(Symbols.chevron_right_rounded),
+          onTap: _isCheckingForUpdate
+              ? null
+              : () {
+                  if (hasUpdate) {
+                    _showUpdateDialog();
+                  } else {
+                    _checkForUpdates();
+                  }
+                },
+        ),
+        _buildAutoCheckUpdatesOnStartupTile(),
+      ],
+    );
+  }
+
+  Future<void> _showDownloadLocationDialog() async {
+    final storageService = DownloadStorageService.instance;
+    final isCustom = storageService.isUsingCustomPath();
+
+    await showScopedDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(t.settings.downloads),
+        content: Column(
+          mainAxisSize: .min,
+          crossAxisAlignment: .start,
+          children: [
+            Text(t.settings.downloadLocationDescription),
+            const SizedBox(height: 16),
+            FutureBuilder<String>(
+              future: storageService.getCurrentDownloadPathDisplay(),
+              builder: (context, snapshot) {
+                return Text(
+                  t.settings.currentPath(path: snapshot.data ?? '...'),
+                  style: Theme.of(context).textTheme.bodySmall,
+                );
+              },
+            ),
+          ],
+        ),
+        actions: [
+          if (isCustom)
+            DialogActionButton(
+              onPressed: () async {
+                // Run the async work first, then pop — popping first leaves
+                // setState inside _resetDownloadLocation racing against the
+                // already-dismissed dialog (and any re-opened instance).
+                await _resetDownloadLocation();
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+              },
+              label: t.settings.resetToDefault,
+            ),
+          DialogActionButton(onPressed: () => Navigator.pop(dialogContext), label: t.common.cancel),
+          DialogActionButton(
+            onPressed: () async {
+              final changed = await _selectDownloadLocation();
+              if (changed && dialogContext.mounted) Navigator.pop(dialogContext);
+            },
+            label: t.settings.selectFolder,
+            isPrimary: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool> _selectDownloadLocation() async {
+    final changed = await guardSettingsOperation<bool, DownloadStorageException>(
+      context,
+      operation: 'Download directory selection',
+      body: () async {
+        String? selectedPath;
+        String pathType = 'file';
+
+        if (Platform.isAndroid) {
+          final safStorage = SafStorageService.instance;
+          if (!safStorage.supportsDirectoryPicker) {
+            showErrorSnackBar(context, t.settings.downloadLocationPickerUnavailable);
+            return false;
+          }
+          selectedPath = await safStorage.pickDirectory();
+          if (!mounted) return false;
+          if (selectedPath != null) pathType = 'saf';
+        } else {
+          selectedPath = await FilePickerService.instance.getDirectoryPath(dialogTitle: t.settings.selectFolder);
+          if (!mounted) return false;
+        }
+        if (selectedPath == null) return false;
+
+        final writableChecker = widget.downloadDirectoryWritableChecker;
+        if (pathType == 'file' && writableChecker != null) {
+          final isWritable = await writableChecker(Directory(selectedPath));
+          if (!mounted) return false;
+          if (!isWritable) {
+            showErrorSnackBar(context, t.settings.downloadLocationInvalid);
+            return false;
+          }
+        }
+
+        await context.read<DownloadProvider>().setDownloadLocation(path: selectedPath, pathType: pathType);
+        if (!mounted) return false;
+
+        // ignore: no-empty-block - setState triggers rebuild to reflect new download path
+        setState(() {});
+        showSuccessSnackBar(context, t.settings.downloadLocationChanged);
+        return true;
+      },
+    );
+    return changed ?? false;
+  }
+
+  Future<void> _resetDownloadLocation() async {
+    await context.read<DownloadProvider>().resetDownloadLocation();
+
+    if (mounted) {
+      // ignore: no-empty-block - setState triggers rebuild to reflect reset path
+      setState(() {});
+      showAppSnackBar(context, t.settings.downloadLocationReset);
+    }
+  }
+
+  Future<void> _showRelayUrlDialog() async {
+    await showScopedDialog<void>(
+      context: context,
+      builder: (_) => _RelayUrlDialog(settingsService: _settingsService),
+    );
+  }
+
+  Future<void> _showClearImageCacheDialog() async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: t.settings.clearImageCache,
+      message: t.settings.clearImageCacheDescription,
+      confirmText: t.common.clear,
+    );
+    if (!confirmed) return;
+    await _settingsService.clearImageCache();
+    if (mounted) showSuccessSnackBar(context, t.settings.clearImageCacheSuccess);
+  }
+
+  Future<void> _showResetSettingsDialog() async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: t.settings.resetSettings,
+      message: t.settings.resetSettingsDescription,
+      confirmText: t.common.reset,
+      isDestructive: true,
+    );
+    if (!mounted || !confirmed) return;
+    final previousRootConfiguration = SettingsMutationService.captureRootConfiguration();
+    await context.read<DownloadProvider>().resetDownloadLocation();
+    await _settingsService.resetAllSettings();
+    if (!mounted) return;
+    final failures = await const SettingsMutationService().applyStoredEffects(
+      context,
+      previousRootConfiguration: previousRootConfiguration,
+    );
+    if (!mounted) return;
+    // Every pref is reset either way; only some runtime effect declined, so the
+    // reset itself is not a failure — name what did not take.
+    if (failures.isEmpty) {
+      showSuccessSnackBar(context, t.settings.resetSettingsSuccess);
+    } else {
+      showErrorSnackBar(context, failures.first.display);
+    }
+  }
+
+  Future<void> _handleExportSettings() async {
+    await guardSettingsOperation<void, SettingsExportException>(
+      context,
+      operation: 'Settings export',
+      body: () async {
+        final path = await (widget.settingsExporter ?? SettingsExportService.exportToFile)();
+        if (!mounted || path == null) return;
+        showSuccessSnackBar(context, t.settings.exportSettingsSuccess);
+      },
+    );
+  }
+
+  Future<void> _showImportSettingsDialog() async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: t.settings.importSettings,
+      message: t.settings.importSettingsConfirm,
+      confirmText: t.settings.importSettings,
+    );
+    if (!mounted || !confirmed) return;
+    await _handleImportSettings();
+  }
+
+  Future<void> _handleImportSettings() async {
+    await guardSettingsOperation<void, SettingsExportException>(
+      context,
+      operation: 'Settings import',
+      body: () async {
+        // The two typed import failures carry their own message, so they are
+        // handled here instead of falling through to the generic guard.
+        try {
+          final previousRootConfiguration = SettingsMutationService.captureRootConfiguration();
+          final result = await (widget.settingsImporter ?? SettingsExportService.importFromFile)();
+          if (!mounted) return;
+          if (result == null) return; // user cancelled file picker
+
+          final hiddenLibrariesProvider = context.read<HiddenLibrariesProvider>();
+          final librariesProvider = context.read<LibrariesProvider>();
+
+          // Import wrote directly to SharedPreferences, bypassing `write`. Push
+          // fresh values into active listenables before providers re-read settings.
+          _settingsService.refreshListenables();
+          await hiddenLibrariesProvider.refresh();
+          unawaited(librariesProvider.refresh());
+          if (!mounted) return;
+          final failures = await const SettingsMutationService().applyStoredEffects(
+            context,
+            previousRootConfiguration: previousRootConfiguration,
+          );
+
+          if (!mounted) return;
+          if (failures.isEmpty) {
+            showSuccessSnackBar(context, t.settings.importSettingsSuccess);
+          } else {
+            showErrorSnackBar(context, failures.first.display);
+          }
+        } on NoUserSignedInException {
+          if (mounted) showErrorSnackBar(context, t.settings.importSettingsNoUser);
+        } on InvalidExportFileException {
+          if (mounted) showErrorSnackBar(context, t.settings.importSettingsInvalidFile);
+        }
+      },
+    );
+  }
+
+  Future<void> _checkForUpdates() async {
+    setState(() => _isCheckingForUpdate = true);
+
+    try {
+      final updateInfo = await UpdateService.checkForUpdates();
+
+      if (mounted) {
+        setState(() {
+          _updateInfo = updateInfo;
+          _isCheckingForUpdate = false;
+        });
+
+        if (updateInfo == null || updateInfo['hasUpdate'] != true) {
+          showAppSnackBar(context, t.update.latestVersion);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isCheckingForUpdate = false);
+        showErrorSnackBar(context, t.update.checkFailed);
+      }
+    }
+  }
+
+  void _showUpdateDialog() {
+    final updateInfo = _updateInfo;
+    if (updateInfo == null) return;
+    unawaited(
+      showUpdateAvailableDialog(context, updateInfo, title: t.settings.updateAvailable, dismissLabel: t.common.close),
+    );
+  }
+}
+
+class _RelayUrlDialog extends StatefulWidget {
+  final settings.SettingsService settingsService;
+
+  const _RelayUrlDialog({required this.settingsService});
+
+  @override
+  State<_RelayUrlDialog> createState() => _RelayUrlDialogState();
+}
+
+class _RelayUrlDialogState extends State<_RelayUrlDialog> {
+  late final TextEditingController _controller;
+  final _saveFocusNode = FocusNode(debugLabel: 'WatchTogetherRelaySave');
+  bool _relayUrlInvalid = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.settingsService.read(settings.SettingsService.customRelayUrl) ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _saveFocusNode.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _reset() async {
+    _controller.clear();
+    await widget.settingsService.write(settings.SettingsService.customRelayUrl, null);
+    if (mounted) Navigator.pop(context);
+  }
+
+  Future<void> _save() async {
+    final value = _controller.text;
+    if (value.trim().isEmpty) {
+      await widget.settingsService.write(settings.SettingsService.customRelayUrl, null);
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+
+    final endpoint = WatchTogetherRelayEndpoint.tryParseCustom(value);
+    if (endpoint == null) {
+      setState(() => _relayUrlInvalid = true);
+      return;
+    }
+    await widget.settingsService.write(settings.SettingsService.customRelayUrl, endpoint.canonicalBaseUrl);
+    if (mounted) Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(t.settings.watchTogetherRelay),
+      content: FocusableTextField(
+        controller: _controller,
+        decoration: InputDecoration(
+          labelText: t.common.url,
+          hintText: t.settings.watchTogetherRelayHint,
+          errorText: _relayUrlInvalid ? t.settings.watchTogetherRelayInvalid : null,
+        ),
+        autofocus: true,
+        textInputAction: TextInputAction.done,
+        onChanged: (_) {
+          if (_relayUrlInvalid) {
+            setState(() => _relayUrlInvalid = false);
+          }
+        },
+        onEditingComplete: () => _saveFocusNode.requestFocus(),
+        onNavigateDown: _saveFocusNode.requestFocus,
+      ),
+      actions: [
+        DialogActionButton(onPressed: _reset, label: t.settings.resetToDefault),
+        DialogActionButton(onPressed: () => Navigator.pop(context), label: t.common.cancel),
+        DialogActionButton(focusNode: _saveFocusNode, onPressed: _save, label: t.common.save),
+      ],
+    );
+  }
+}

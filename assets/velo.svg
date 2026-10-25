@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1c1d24"/>
+      <stop offset="100%" stop-color="#0c0d10"/>
+    </linearGradient>
+
+    <!-- Neon Glow Filters -->
+    <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Gradients for V and Play Wing -->
+    <linearGradient id="v-arm-left" x1="0%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="60%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+
+    <linearGradient id="v-arm-right" x1="20%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="70%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+
+    <linearGradient id="play-wing" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.85"/>
+    </linearGradient>
+  </defs>
+
+  <!-- App Icon Squircle Container -->
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#bg-grad)" stroke="#2b2d38" stroke-width="2"/>
+  
+  <!-- Subtle Ambient Glow Behind Glyphs -->
+  <circle cx="256" cy="256" r="140" fill="#38bdf8" opacity="0.08" filter="blur(40px)"/>
+
+  <!-- Geometric V & Play Fusion -->
+  <g filter="url(#neon-glow)">
+    <!-- Play arrow wing connecting to the right leg of V -->
+    <path d="M 285 240 L 375 292 C 386 298 386 312 375 318 L 290 368 C 278 375 264 366 264 352 L 264 256 C 264 242 276 235 285 240 Z" 
+          fill="url(#play-wing)" 
+          stroke="url(#v-arm-right)" 
+          stroke-width="5" 
+          stroke-linejoin="round"/>
+
+    <!-- Left Wing of V (Velocity / Dynamic Leap) -->
+    <path d="M 152 165 C 152 153 166 146 176 153 L 256 310 L 222 376 C 217 386 203 388 195 380 L 140 180 C 137 172 142 165 152 165 Z" 
+          fill="url(#v-arm-left)" 
+          opacity="0.95"/>
+
+    <!-- Right Wing of V (Intertwined & Glassmorphic) -->
+    <path d="M 336 165 C 346 165 352 175 348 184 L 256 368 C 250 380 234 380 228 368 L 196 304 L 244 208 C 248 200 257 195 266 195 L 336 165 Z" 
+          fill="url(#v-arm-right)" 
+          opacity="0.9"/>
+
+    <!-- Kinetic Specular Light Accent -->
+    <path d="M 172 162 L 248 312" 
+          stroke="#ffffff" 
+          stroke-width="3.5" 
+          stroke-linecap="round" 
+          opacity="0.6"/>
+  </g>
+</svg>

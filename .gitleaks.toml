@@ -1,0 +1,14 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Preference migration marker, not a credential"
+targetRules = ["generic-api-key"]
+paths = ['''(^|/)lib/services/base_shared_preferences_service\.dart$''']
+regexTarget = "line"
+regexes = ['''migrationCompletedKey:''']
+
+[[allowlists]]
+description = "Public localhost-only TLS fixture used by certificate trust tests"
+targetRules = ["private-key"]
+paths = ['''(^|/)test/utils/certificate_trust_test\.dart$''']
