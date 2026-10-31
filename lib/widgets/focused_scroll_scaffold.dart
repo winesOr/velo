@@ -78,7 +78,8 @@ class _FocusedScrollScaffoldState extends State<FocusedScrollScaffold> {
     _focusRequested = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (_scopeNode.focusedChild != null) return;
+      // An embedding pane may keep this page out of traversal until entered.
+      if (_scopeNode.focusedChild != null || !_scopeNode.canRequestFocus) return;
       _scopeNode.requestFocus();
       _scopeNode.nextFocus();
       if (widget.focusableAppBarActions && !_appBarFocusEnabled) {

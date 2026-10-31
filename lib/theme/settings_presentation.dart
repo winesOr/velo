@@ -62,6 +62,10 @@ abstract final class SettingsPresentation {
 }
 
 /// Local to settings: changing a list row must not resize media menus or HUDs.
+///
+/// Only the outermost instance paints the page background. Pages shown inside
+/// another settings surface, such as the tablet and TV category pane, keep the
+/// row theme without stacking a second opaque panel over the first.
 class SettingsAppearance extends StatelessWidget {
   const SettingsAppearance({super.key, required this.child});
 
@@ -69,6 +73,7 @@ class SettingsAppearance extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nested = context.getInheritedWidgetOfExactType<_SettingsAppearanceScope>() != null;
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
     // Respect an explicitly requested OLED black page.
@@ -84,16 +89,7 @@ class SettingsAppearance extends StatelessWidget {
         ? const Color(0xff2b283c)
         : const Color(0xfff4efff);
     final tv = PlatformDetector.isTV();
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: background,
-        gradient: RadialGradient(
-          center: const Alignment(-.6, -1.4),
-          radius: 1.3,
-          colors: [glow, background],
-          stops: const [0, .9],
-        ),
-      ),
+    final themed = _SettingsAppearanceScope(
       child: Theme(
         data: theme.copyWith(
           scaffoldBackgroundColor: Colors.transparent,
@@ -156,5 +152,25 @@ class SettingsAppearance extends StatelessWidget {
         child: child,
       ),
     );
+    if (nested) return themed;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: background,
+        gradient: RadialGradient(
+          center: const Alignment(-.6, -1.4),
+          radius: 1.3,
+          colors: [glow, background],
+          stops: const [0, .9],
+        ),
+      ),
+      child: themed,
+    );
   }
+}
+
+class _SettingsAppearanceScope extends InheritedWidget {
+  const _SettingsAppearanceScope({required super.child});
+
+  @override
+  bool updateShouldNotify(_SettingsAppearanceScope oldWidget) => false;
 }

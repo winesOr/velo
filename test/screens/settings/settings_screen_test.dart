@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plezy/connection/connection_registry.dart';
 import 'package:plezy/database/app_database.dart';
+import 'package:plezy/focus/input_mode_tracker.dart';
 import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/media/media_backend.dart';
 import 'package:plezy/media/media_kind.dart';
@@ -24,6 +25,7 @@ import 'package:plezy/providers/download_provider.dart';
 import 'package:plezy/providers/seerr_account_provider.dart';
 import 'package:plezy/providers/theme_provider.dart';
 import 'package:plezy/providers/trackers_provider.dart';
+import 'package:plezy/screens/settings/general_settings_screen.dart';
 import 'package:plezy/screens/settings/settings_screen.dart';
 import 'package:plezy/services/background_work_diagnostics_service.dart';
 import 'package:plezy/services/download_storage_service.dart';
@@ -117,6 +119,80 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('TV category list previews on focus but only enters details on select', (tester) async {
+    TvDetectionService.debugSetAppleTVOverride(true);
+    final harness = await _pumpSettingsScreen(tester, size: const Size(960, 540));
+    addTearDown(() => harness.dispose(tester));
+    final pane = tester.state<SettingsCategoryPaneState>(find.byType(SettingsCategoryPane));
+    pane.focusCategory();
+    await _pumpUi(tester);
+
+    bool focusInDetails() =>
+        FocusManager.instance.primaryFocus?.ancestors.any((n) => n.debugLabel == 'settings_category_details') ?? false;
+    final visited = <String>[];
+    for (var i = 0; i < 6; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await _pumpUi(tester);
+      final focused = FocusManager.instance.primaryFocus?.debugLabel ?? '';
+      expect(focusInDetails(), isFalse, reason: 'arrow down must stay in the category list');
+      expect(focused, startsWith('settings_category_'));
+      visited.add(focused);
+    }
+    expect(visited, contains('settings_category_general'));
+    expect(find.byType(GeneralSettingsScreen), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.select);
+    await _pumpUi(tester);
+    expect(focusInDetails(), isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await _pumpUi(tester);
+    expect(focusInDetails(), isFalse);
+    expect(FocusManager.instance.primaryFocus?.debugLabel, visited.last);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('TV settings renders every category without layout errors', (tester) async {
+    TvDetectionService.debugSetAppleTVOverride(true);
+    await loadTabletFonts();
+    await (FontLoader('SettingsFixture')..addFont(rootBundle.load('assets/go-noto-current-regular.ttf'))).load();
+    final harness = await _pumpSettingsScreen(tester, size: const Size(960, 540), fixtureFont: true);
+    addTearDown(() => harness.dispose(tester));
+    final pane = tester.state<SettingsCategoryPaneState>(find.byType(SettingsCategoryPane));
+    pane.focusCategory();
+    await _pumpUi(tester);
+    final seen = <String>{};
+    while (true) {
+      final focused = FocusManager.instance.primaryFocus?.debugLabel ?? '';
+      if (!focused.startsWith('settings_category_') || !seen.add(focused)) break;
+      expect(tester.takeException(), isNull, reason: focused);
+      await captureTv(
+        tester,
+        find.ancestor(of: find.byType(SettingsScreen), matching: find.byType(RepaintBoundary)).first,
+        'settings-${focused.substring('settings_category_'.length)}',
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await _pumpUi(tester);
+    }
+    expect(seen.length, greaterThan(8));
+  });
+
+  testWidgets('TV category list enters details with arrow right', (tester) async {
+    TvDetectionService.debugSetAppleTVOverride(true);
+    final harness = await _pumpSettingsScreen(tester, size: const Size(960, 540));
+    addTearDown(() => harness.dispose(tester));
+    tester.state<SettingsCategoryPaneState>(find.byType(SettingsCategoryPane)).focusCategory();
+    await _pumpUi(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await _pumpUi(tester);
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'settings_category_playback');
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await _pumpUi(tester);
+    expect(
+      FocusManager.instance.primaryFocus?.ancestors.any((n) => n.debugLabel == 'settings_category_details'),
+      isTrue,
+    );
+  });
 
   testWidgets('tablet settings returns to one column for enlarged text', (tester) async {
     final harness = await _pumpSettingsScreen(tester, size: const Size(820, 1180), textScale: 2);
@@ -886,56 +962,58 @@ Future<_SettingsHarness> _pumpSettingsScreen(
   );
 
   await tester.pumpWidget(
-    TranslationProvider(
-      child: MultiProvider(
-        providers: [
-          ChangeNotifierProvider<ActiveProfileProvider>.value(value: activeProfile),
-          ChangeNotifierProvider<LibrariesProvider>.value(value: libraries),
-          ChangeNotifierProvider<HiddenLibrariesProvider>.value(value: hiddenLibraries),
-          ChangeNotifierProvider<ThemeProvider>.value(value: theme),
-          ChangeNotifierProvider<TrackersProvider>.value(value: trackers),
-          ChangeNotifierProvider<SeerrAccountProvider>.value(value: seerr),
-          ChangeNotifierProvider<DownloadProvider>.value(value: downloadProvider),
-          ChangeNotifierProvider<AccountPreferencesController>.value(value: accountPreferences),
-        ],
-        child: MaterialApp(
-          theme: monoTheme(dark: dark).copyWith(
-            platform: TargetPlatform.android,
-            textTheme: fixtureFont ? monoTheme(dark: dark).textTheme.apply(fontFamily: 'SettingsFixture') : null,
-            primaryTextTheme: fixtureFont
-                ? monoTheme(dark: dark).primaryTextTheme.apply(fontFamily: 'SettingsFixture')
-                : null,
-          ),
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
-            child: child!,
-          ),
-          home: pushSettingsRoute
-              ? Builder(
-                  builder: (context) => Scaffold(
-                    body: Center(
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => SettingsScreen(
-                              downloadDirectoryWritableChecker: writableChecker ?? (_) async => true,
-                              settingsExporter: settingsExporter,
-                              settingsImporter: settingsImporter,
-                              backgroundWorkDiagnosticsService: backgroundWorkDiagnosticsService,
+    InputModeTracker(
+      child: TranslationProvider(
+        child: MultiProvider(
+          providers: [
+            ChangeNotifierProvider<ActiveProfileProvider>.value(value: activeProfile),
+            ChangeNotifierProvider<LibrariesProvider>.value(value: libraries),
+            ChangeNotifierProvider<HiddenLibrariesProvider>.value(value: hiddenLibraries),
+            ChangeNotifierProvider<ThemeProvider>.value(value: theme),
+            ChangeNotifierProvider<TrackersProvider>.value(value: trackers),
+            ChangeNotifierProvider<SeerrAccountProvider>.value(value: seerr),
+            ChangeNotifierProvider<DownloadProvider>.value(value: downloadProvider),
+            ChangeNotifierProvider<AccountPreferencesController>.value(value: accountPreferences),
+          ],
+          child: MaterialApp(
+            theme: monoTheme(dark: dark).copyWith(
+              platform: TargetPlatform.android,
+              textTheme: fixtureFont ? monoTheme(dark: dark).textTheme.apply(fontFamily: 'SettingsFixture') : null,
+              primaryTextTheme: fixtureFont
+                  ? monoTheme(dark: dark).primaryTextTheme.apply(fontFamily: 'SettingsFixture')
+                  : null,
+            ),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+              child: child!,
+            ),
+            home: pushSettingsRoute
+                ? Builder(
+                    builder: (context) => Scaffold(
+                      body: Center(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => SettingsScreen(
+                                downloadDirectoryWritableChecker: writableChecker ?? (_) async => true,
+                                settingsExporter: settingsExporter,
+                                settingsImporter: settingsImporter,
+                                backgroundWorkDiagnosticsService: backgroundWorkDiagnosticsService,
+                              ),
                             ),
                           ),
+                          child: const Text('Settings launcher'),
                         ),
-                        child: const Text('Settings launcher'),
                       ),
                     ),
+                  )
+                : SettingsScreen(
+                    downloadDirectoryWritableChecker: writableChecker ?? (_) async => true,
+                    settingsExporter: settingsExporter,
+                    settingsImporter: settingsImporter,
+                    backgroundWorkDiagnosticsService: backgroundWorkDiagnosticsService,
                   ),
-                )
-              : SettingsScreen(
-                  downloadDirectoryWritableChecker: writableChecker ?? (_) async => true,
-                  settingsExporter: settingsExporter,
-                  settingsImporter: settingsImporter,
-                  backgroundWorkDiagnosticsService: backgroundWorkDiagnosticsService,
-                ),
+          ),
         ),
       ),
     ),

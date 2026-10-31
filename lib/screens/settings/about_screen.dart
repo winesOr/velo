@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../widgets/settings_page.dart';
-import '../../widgets/focusable_list_tile.dart';
+import '../../widgets/setting_tile.dart';
 import '../../widgets/settings_section.dart';
 import '../../i18n/strings.g.dart';
 import '../../theme/mono_tokens.dart';
@@ -26,7 +25,7 @@ class AboutScreen extends StatelessWidget {
           title: Text(t.about.title),
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(vertical: 16),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   Center(
@@ -42,10 +41,13 @@ class AboutScreen extends StatelessWidget {
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens(context).textMuted),
                         ),
                         const SizedBox(height: 24),
-                        Text(
-                          t.about.appDescription,
-                          style: Theme.of(context).textTheme.bodyLarge,
-                          textAlign: TextAlign.center,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            t.about.appDescription,
+                            style: Theme.of(context).textTheme.bodyLarge,
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ],
                     ),
@@ -54,16 +56,12 @@ class AboutScreen extends StatelessWidget {
                   const SizedBox(height: 40),
 
                   SettingsGroup(
-                    margin: EdgeInsets.zero,
                     children: [
-                      FocusableListTile(
-                        leading: const AppIcon(Symbols.description_rounded, fill: 1),
-                        title: Text(t.about.openSourceLicenses),
-                        subtitle: Text(t.about.viewLicensesDescription),
-                        trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => const LicensesScreen()));
-                        },
+                      SettingNavigationTile(
+                        icon: Symbols.description_rounded,
+                        title: t.about.openSourceLicenses,
+                        subtitle: t.about.viewLicensesDescription,
+                        destinationBuilder: (context) => const LicensesScreen(),
                       ),
                     ],
                   ),

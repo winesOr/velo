@@ -3,6 +3,19 @@ import 'package:flutter/material.dart';
 import '../theme/mono_presentation.dart';
 import '../theme/settings_presentation.dart';
 import 'focused_scroll_scaffold.dart';
+import 'system_bottom_inset.dart';
+
+/// Marks settings content shown beside a category list instead of as a route.
+/// The list already names the page and owns back handling, so pages inside it
+/// drop their own app bar.
+class SettingsPaneScope extends InheritedWidget {
+  const SettingsPaneScope({super.key, required super.child});
+
+  static bool isEmbedded(BuildContext context) => context.getInheritedWidgetOfExactType<SettingsPaneScope>() != null;
+
+  @override
+  bool updateShouldNotify(SettingsPaneScope oldWidget) => false;
+}
 
 /// Standard scaffold for settings pages made of ordinary list rows.
 class SettingsPage extends StatelessWidget {
@@ -40,6 +53,19 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pageSlivers = slivers ?? [_buildListSliver()];
+    if (actions == null && SettingsPaneScope.isEmbedded(context)) {
+      return SettingsAppearance(
+        child: CustomScrollView(
+          primary: false,
+          slivers: [
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            ...pageSlivers,
+            const SliverToBoxAdapter(child: SizedBox(height: 8)),
+            const SliverSystemBottomInset(),
+          ],
+        ),
+      );
+    }
     final content = SettingsAppearance(
       child: FocusedScrollScaffold(
         title: DefaultTextStyle.merge(style: MonoPresentation.pageTitle(context, secondary: true), child: title),

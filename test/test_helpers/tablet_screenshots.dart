@@ -30,12 +30,22 @@ ThemeData tabletFixtureTheme(ThemeData theme) => theme.copyWith(
 /// Opt-in captures of production widgets with fixture data, not device photos.
 Future<void> captureTablet(WidgetTester tester, Finder finder, String name) async {
   if (!const bool.fromEnvironment('CAPTURE_TABLET')) return;
+  await _capture(tester, finder, 'docs/fixtures/tablet/$name.png');
+}
+
+/// TV counterpart of [captureTablet], enabled with `CAPTURE_TV`.
+Future<void> captureTv(WidgetTester tester, Finder finder, String name) async {
+  if (!const bool.fromEnvironment('CAPTURE_TV')) return;
+  await _capture(tester, finder, 'docs/fixtures/tv/$name.png');
+}
+
+Future<void> _capture(WidgetTester tester, Finder finder, String path) async {
   await tester.pump();
   final boundary = tester.renderObject<RenderRepaintBoundary>(finder);
   await tester.runAsync(() async {
     final picture = await boundary.toImage(pixelRatio: 1);
     final bytes = await picture.toByteData(format: ui.ImageByteFormat.png);
-    final file = File('docs/fixtures/tablet/$name.png');
+    final file = File(path);
     await file.parent.create(recursive: true);
     await file.writeAsBytes(bytes!.buffer.asUint8List());
     picture.dispose();

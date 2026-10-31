@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 
 import '../../widgets/app_icon.dart';
 import '../../widgets/focusable_list_tile.dart';
+import '../../widgets/settings_page.dart';
 import '../../focus/key_event_utils.dart';
 import '../../focus/dpad_navigator.dart';
+import '../../focus/input_mode_tracker.dart';
 import '../../theme/mono_presentation.dart';
 import '../../theme/settings_presentation.dart';
 import '../../i18n/strings.g.dart';
@@ -21,6 +23,11 @@ class SettingsCategory {
 
 /// Tablet and TV categories share the same settings controls as phones.
 /// Explicit left/right handoff avoids traversal jumping to the app's top bar.
+///
+/// With a remote, focusing a category only previews it. The details stay out
+/// of traversal until the category is selected or arrow right is pressed, so
+/// pages that focus their first row on build cannot pull focus out of the
+/// list while the user moves through it.
 class SettingsCategoryPane extends StatefulWidget {
   final List<SettingsCategory> categories;
   final VoidCallback? onLeave;
@@ -33,6 +40,7 @@ class SettingsCategoryPane extends StatefulWidget {
 
 class SettingsCategoryPaneState extends State<SettingsCategoryPane> {
   String? _selectedId;
+  bool _detailsActive = false;
   final _nodes = <String, FocusNode>{};
   final _details = FocusScopeNode(debugLabel: 'settings_category_details');
 
@@ -40,8 +48,12 @@ class SettingsCategoryPaneState extends State<SettingsCategoryPane> {
 
   void focusCategory() {
     final category = widget.categories.where((c) => c.id == _selectedId).firstOrNull ?? widget.categories.first;
+    if (_detailsActive) setState(() => _detailsActive = false);
     _node(category.id).requestFocus();
   }
+
+  /// Whether the details can take focus. Pointer input reaches them directly.
+  bool _detailsFocusable(BuildContext context) => _detailsActive || !InputModeTracker.isKeyboardMode(context);
 
   @override
   void dispose() {
@@ -53,8 +65,13 @@ class SettingsCategoryPaneState extends State<SettingsCategoryPane> {
   }
 
   void _enterDetails() {
-    _details.requestFocus();
-    _details.nextFocus();
+    if (!_detailsActive) setState(() => _detailsActive = true);
+    // Wait for the details to rejoin traversal before moving into them.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_detailsActive) return;
+      _details.requestFocus();
+      _details.nextFocus();
+    });
   }
 
   @override
@@ -88,17 +105,21 @@ class SettingsCategoryPaneState extends State<SettingsCategoryPane> {
                     padding: EdgeInsets.zero,
                     children: [
                       Padding(
-                        padding: EdgeInsets.only(left: tv ? 14 : 0, bottom: tv ? 24 : 25),
+                        padding: EdgeInsets.only(left: tv ? 14 : 0, bottom: tv ? 18 : 25),
                         child: Text(t.settings.title, style: MonoPresentation.pageTitle(context)),
                       ),
                       for (final item in widget.categories)
                         Focus(
                           canRequestFocus: false,
                           onFocusChange: (focused) {
-                            if (focused && category.id != item.id) setState(() => _selectedId = item.id);
+                            if (!focused || (category.id == item.id && !_detailsActive)) return;
+                            setState(() {
+                              _selectedId = item.id;
+                              _detailsActive = false;
+                            });
                           },
                           child: Padding(
-                            padding: EdgeInsets.only(bottom: tv ? 8 : 7),
+                            padding: EdgeInsets.only(bottom: tv ? 4 : 7),
                             child: Material(
                               color: category.id == item.id
                                   ? Theme.of(context).colorScheme.primaryContainer
@@ -112,26 +133,28 @@ class SettingsCategoryPaneState extends State<SettingsCategoryPane> {
                                 ),
                               ),
                               clipBehavior: Clip.antiAlias,
-                              child: FocusableListTile(
-                                focusNode: _node(item.id),
-                                selected: category.id == item.id,
-                                contentPadding: EdgeInsets.symmetric(horizontal: tv ? 16 : 13, vertical: tv ? 5 : 4),
-                                horizontalTitleGap: tv ? 15 : 12,
-                                leading: AppIcon(item.icon, size: tv ? 25 : 24),
-                                title: Text(
-                                  item.title,
-                                  style: SettingsPresentation.title(context).copyWith(
-                                    fontSize: tv ? 16 : 15,
-                                    color: category.id == item.id ? Theme.of(context).colorScheme.primary : null,
-                                    fontWeight: category.id == item.id ? FontWeight.w600 : FontWeight.w400,
+                              // TV rows stay compact so the whole category list fits a 540 dp screen.
+                              child: ListTileTheme.merge(
+                                minTileHeight: tv ? 50 : null,
+                                child: FocusableListTile(
+                                  focusNode: _node(item.id),
+                                  selected: category.id == item.id,
+                                  contentPadding: EdgeInsets.symmetric(horizontal: tv ? 16 : 13, vertical: tv ? 2 : 4),
+                                  horizontalTitleGap: tv ? 15 : 12,
+                                  leading: AppIcon(item.icon, size: tv ? 25 : 24),
+                                  title: Text(
+                                    item.title,
+                                    style: SettingsPresentation.title(context).copyWith(
+                                      fontSize: tv ? 16 : 15,
+                                      color: category.id == item.id ? Theme.of(context).colorScheme.primary : null,
+                                      fontWeight: category.id == item.id ? FontWeight.w600 : FontWeight.w400,
+                                    ),
                                   ),
+                                  onTap: () {
+                                    setState(() => _selectedId = item.id);
+                                    if (InputModeTracker.isKeyboardMode(context, listen: false)) _enterDetails();
+                                  },
                                 ),
-                                onTap: () {
-                                  setState(() => _selectedId = item.id);
-                                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                                    if (mounted && tv) _enterDetails();
-                                  });
-                                },
                               ),
                             ),
                           ),
@@ -147,12 +170,23 @@ class SettingsCategoryPaneState extends State<SettingsCategoryPane> {
                   onKeyEvent: (_, event) {
                     if (event.logicalKey.isBackKey) return handleBackKeyAction(event, focusCategory);
                     if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-                      _node(category.id).requestFocus();
+                      focusCategory();
                       return KeyEventResult.handled;
                     }
                     return KeyEventResult.ignored;
                   },
-                  child: KeyedSubtree(key: ValueKey(category.id), child: category.builder(context)),
+                  child: Listener(
+                    behavior: HitTestBehavior.translucent,
+                    onPointerDown: (_) {
+                      if (!_detailsActive) setState(() => _detailsActive = true);
+                    },
+                    child: ExcludeFocus(
+                      excluding: !_detailsFocusable(context),
+                      child: SettingsPaneScope(
+                        child: KeyedSubtree(key: ValueKey(category.id), child: category.builder(context)),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],

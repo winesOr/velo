@@ -97,7 +97,10 @@ class _DanmakuSettingsSheetState extends State<DanmakuSettingsSheet> {
       _keywords.text = _savedKeywords;
       setState(() {
         _initializing = false;
-        if (_session.enabled && _session.sources.isEmpty && _session.comments.isEmpty) {
+        // In the player an empty setup goes straight to adding a source. The
+        // settings page keeps that one click away: on TV it is also previewed
+        // while the category list has focus.
+        if (!widget.settingsPage && _session.enabled && _session.sources.isEmpty && _session.comments.isEmpty) {
           _sourcesOpen = true;
           _addOnOpen = true;
         }
@@ -412,7 +415,8 @@ class _DanmakuSettingsSheetState extends State<DanmakuSettingsSheet> {
         onPopInvokedWithResult: (didPop, _) {
           if (!didPop) setState(() => _sourcesOpen = false);
         },
-        child: sources,
+        // The settings background is a plain box; rows need a Material for ink.
+        child: Material(type: MaterialType.transparency, child: sources),
       );
     }
     final embedded = BaseVideoControlSheet.embeddedIn(context);

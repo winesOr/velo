@@ -9,9 +9,11 @@ import '../../services/discord_rpc_service.dart';
 import '../../services/settings_service.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/catalog_source_logo.dart';
-import '../../widgets/focused_scroll_scaffold.dart';
+import '../../theme/settings_presentation.dart';
+import '../../utils/platform_detector.dart';
 import '../../widgets/focusable_list_tile.dart';
 import '../../widgets/setting_tile.dart';
+import '../../widgets/settings_page.dart';
 import '../../widgets/settings_section.dart';
 import 'seerr_connect_screen.dart';
 import 'seerr_settings_screen.dart';
@@ -25,19 +27,15 @@ class ServicesSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FocusedScrollScaffold(
+    final tv = PlatformDetector.isTV();
+    return SettingsPage.slivers(
       title: Text(t.services.title),
       slivers: [
         SliverList(
           delegate: SliverChildListDelegate([
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Text(
-                t.services.hubSubtitle,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-              ),
+              padding: EdgeInsets.fromLTRB(tv ? 34 : 16, 0, tv ? 34 : 16, 12),
+              child: Text(t.services.hubSubtitle, style: SettingsPresentation.description(context)),
             ),
             SettingsGroup(children: [for (final info in TrackerServiceInfo.all) _TrackerHubRow(info), _seerr()]),
             if (DiscordRPCService.isAvailable)
