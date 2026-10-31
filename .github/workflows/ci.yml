@@ -629,7 +629,9 @@ jobs:
   linux-packages:
     name: Linux package smoke build
     if: ${{ inputs.build_linux_packages || github.event_name == 'push' }}
-    runs-on: ubuntu-latest
+    # The pinned prebuilt libmpv links libdisplay-info.so.1 (Ubuntu 24.04);
+    # ubuntu-latest moved to 26.04, which only ships libdisplay-info3.
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:

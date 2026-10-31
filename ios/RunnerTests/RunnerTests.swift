@@ -4,7 +4,7 @@ import UIKit
 import Flutter
 import XCTest
 
-@testable import Plezy
+@testable import Velo
 
 final class ControllablePropertyCore: MpvPlayerCoreBase {
   var nextResult: Result<Void, Error>?
