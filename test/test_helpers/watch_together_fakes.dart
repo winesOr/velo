@@ -284,6 +284,10 @@ class FakeSyncPlayer implements Player {
     await _durationController.close();
   }
 
+  /// Mirrors [PlayerBase]: no fake output carries HDR.
+  @override
+  Future<bool> isHdrOutputSupported() async => false;
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
