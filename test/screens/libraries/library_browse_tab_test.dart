@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -544,6 +545,53 @@ void main() {
       expect(firstRow.length, scale == 1 ? 3 : 1);
       expect(tester.takeException(), isNull);
       await expectLater(find.byKey(boundary), matchesGoldenFile('goldens/fusion_library_phone_${scale.toInt()}x.png'));
+      debugDefaultTargetPlatformOverride = null;
+    });
+  }
+
+  for (final f in [
+    (name: 'phone', size: const Size(390, 844), platform: TargetPlatform.iOS),
+    (name: 'tablet', size: const Size(820, 1180), platform: TargetPlatform.android),
+  ]) {
+    testWidgets('${f.name} grid scrolls beneath the fixed search and filter header', (tester) async {
+      debugDefaultTargetPlatformOverride = f.platform;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      final harness = _PlexBrowseHarness(itemCount: 240);
+      addTearDown(harness.dispose);
+      final boundary = GlobalKey();
+      await pumpLibraryTab(
+        tester,
+        provider: harness.provider,
+        size: f.size,
+        tab: RepaintBoundary(
+          key: boundary,
+          child: LibraryBrowseTab(library: harness.library, canGroupByFolders: true, isActive: true),
+        ),
+      );
+      await pumpRequestFrames(tester);
+      await tester.pumpAndSettle();
+      final sort = find.text(t.libraries.sort);
+      final headerBottom = tester.getRect(sort).bottom.ceil() + 2;
+      Future<List<int>> headerPixels() async {
+        final render = tester.renderObject<RenderRepaintBoundary>(find.byKey(boundary));
+        final bytes = await tester.runAsync(() async {
+          final image = await render.toImage();
+          final data = await image.toByteData();
+          final width = image.width;
+          image.dispose();
+          return data!.buffer.asUint8List().sublist(0, width * 4 * headerBottom);
+        });
+        return bytes!;
+      }
+
+      final before = await headerPixels();
+      await tester.drag(find.byType(FocusableMediaCard).first, const Offset(0, -500));
+      await tester.pumpAndSettle();
+
+      // Cards scrolled under the header must not paint over the search box
+      // or the filter chips.
+      expect(await headerPixels(), before);
+      expect(tester.takeException(), isNull);
       debugDefaultTargetPlatformOverride = null;
     });
   }

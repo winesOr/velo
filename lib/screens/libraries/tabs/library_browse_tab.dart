@@ -1865,7 +1865,11 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaItem, LibraryBrows
               _unsupportedFiltersRemoved ? t.libraries.unsupportedFiltersRemoved : t.libraries.filterDiscoveryFailed,
             ),
           ),
-        Expanded(child: content),
+        // The grid leaves its edges unclipped for focus rings, but must not
+        // paint over the search and filter header above it while scrolling.
+        Expanded(
+          child: ClipRect(clipper: const _BelowHeaderClipper(), child: content),
+        ),
       ],
     );
   }
@@ -2595,4 +2599,17 @@ class LoadedFiltersAndSorts {
   final Map<String, List<MediaFilterValue>> cachedValues;
 
   const LoadedFiltersAndSorts({required this.filters, required this.sorts, this.cachedValues = const {}});
+}
+
+/// Clips only the top edge, keeping horizontal and bottom overflow visible.
+class _BelowHeaderClipper extends CustomClipper<Rect> {
+  const _BelowHeaderClipper();
+
+  static const _overflow = 10000.0;
+
+  @override
+  Rect getClip(Size size) => Rect.fromLTRB(-_overflow, 0, size.width + _overflow, size.height + _overflow);
+
+  @override
+  bool shouldReclip(_BelowHeaderClipper oldClipper) => false;
 }
