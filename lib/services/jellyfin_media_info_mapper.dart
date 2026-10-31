@@ -115,11 +115,22 @@ PlaybackExtras jellyfinPlaybackExtrasFromRaw(
   final chapters = raw is Map<String, dynamic> ? raw['Chapters'] : null;
   final runtimeMs = raw is Map<String, dynamic> ? jellyfinTicksToMs(raw['RunTimeTicks']) : null;
   final mapped = <MediaChapter>[];
+  final boundaries = <({int id, String type, int timeMs})>[];
+  final boundaryIds = <int>{};
   if (chapters is List) {
     for (var i = 0; i < chapters.length; i++) {
       final entry = chapters[i];
       if (entry is! Map<String, dynamic>) continue;
       final startMs = jellyfinTicksToMs(entry['StartPositionTicks']) ?? 0;
+      final markerType = entry['MarkerType']?.toString().toLowerCase();
+      if (markerType == 'introstart' || markerType == 'introend' || markerType == 'creditsstart') {
+        // Emby stores native boundaries among ordinary chapters. Pair their
+        // types directly: a generated five-minute chapter can lie inside an
+        // intro, and an "Intro End" title must never start another intro.
+        boundaryIds.add(i);
+        final timeMs = jellyfinTicksToMs(entry['StartPositionTicks']);
+        if (timeMs != null && timeMs >= 0) boundaries.add((id: i, type: markerType!, timeMs: timeMs));
+      }
       // Jellyfin chapter image path: `/Items/{itemId}/Images/Chapter/{i}?tag=...`.
       final imageTag = entry['ImageTag'];
       final thumb = imageTag is String && imageTag.isNotEmpty
@@ -131,13 +142,38 @@ PlaybackExtras jellyfinPlaybackExtrasFromRaw(
     }
     MediaChapter.backfillEndOffsets(mapped, runtimeMs: runtimeMs);
   }
-  return PlaybackExtras.withChapterFallback(
-    chapters: mapped,
-    markers: markers,
+  boundaries.sort((a, b) => a.timeMs.compareTo(b.timeMs));
+  final nativeMarkers = <MediaMarker>[];
+  ({int id, int timeMs})? introStart;
+  for (final boundary in boundaries) {
+    switch (boundary.type) {
+      case 'introstart':
+        introStart = (id: boundary.id, timeMs: boundary.timeMs);
+      case 'introend':
+        final start = introStart;
+        if (start != null && boundary.timeMs > start.timeMs) {
+          nativeMarkers.add(
+            MediaMarker(id: start.id, type: 'intro', startTimeOffset: start.timeMs, endTimeOffset: boundary.timeMs),
+          );
+        }
+        introStart = null;
+      case 'creditsstart':
+        if (runtimeMs != null && runtimeMs > boundary.timeMs) {
+          nativeMarkers.add(
+            MediaMarker(id: boundary.id, type: 'credits', startTimeOffset: boundary.timeMs, endTimeOffset: runtimeMs),
+          );
+        }
+    }
+  }
+  final explicitTypes = markers.map((marker) => marker.type).toSet();
+  final extras = PlaybackExtras.withChapterFallback(
+    chapters: boundaryIds.isEmpty ? mapped : mapped.where((chapter) => !boundaryIds.contains(chapter.id)).toList(),
+    markers: [...markers, ...nativeMarkers.where((marker) => !explicitTypes.contains(marker.type))],
     introPatternStr: introPattern,
     creditsPatternStr: creditsPattern,
     forceChapterFallback: forceChapterFallback,
   );
+  return PlaybackExtras(chapters: mapped, markers: extras.markers);
 }
 
 List<MediaMarker> jellyfinMediaSegmentsToMarkers(dynamic raw) {

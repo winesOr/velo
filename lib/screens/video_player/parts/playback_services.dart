@@ -127,6 +127,22 @@ extension _VideoPlayerPlaybackServiceMethods on VideoPlayerScreenState {
 
     _playerStreamSubscriptions.add(
       currentPlayer.streams.completed.listen((done) {
+        // Backends can deliver a terminal signal from the outgoing file after
+        // the replacement has opened and the transition lock is idle again.
+        // A replacement parked at zero has no meaningful duration yet. Ignore
+        // only that exact shape: a real mid-file stream death must still reach
+        // spurious-EOF recovery with its original positive position.
+        if (done) {
+          final posMs = currentPlayer.state.position.inMilliseconds;
+          final durMs = currentPlayer.state.duration.inMilliseconds;
+          if (posMs <= 0 && durMs > 0) {
+            appLogger.i(
+              'Ignoring completion from a superseded source '
+              '(position=${posMs}ms duration=${durMs}ms)',
+            );
+            return;
+          }
+        }
         if (done &&
             (_nativeSeekDrain != null ||
                 (_userSeekSuppressEofUntil != null && DateTime.now().isBefore(_userSeekSuppressEofUntil!)))) {
@@ -157,11 +173,17 @@ extension _VideoPlayerPlaybackServiceMethods on VideoPlayerScreenState {
           _onVideoCompleted(false);
           return;
         }
+        if (_transitionGate.transition != PlaybackTransition.idle) return;
+        final generation = _transitionGate.generation;
         unawaited(
           _eofRecovery
               .interceptEof(currentPlayer)
               .then((intercepted) {
-                if (intercepted || !mounted || _shuttingDown || player != currentPlayer) return;
+                if (intercepted ||
+                    !_isCurrentPlaybackGeneration(generation, currentPlayer) ||
+                    _transitionGate.transition != PlaybackTransition.idle) {
+                  return;
+                }
                 // A stacked item's file ended with another to follow: the
                 // item goes on in the next file instead of completing.
                 if (_advanceStackedPart()) return;

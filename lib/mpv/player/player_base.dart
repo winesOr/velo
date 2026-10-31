@@ -177,6 +177,22 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
   String? _lastErrorLogText;
   int? _activeSourceId;
   bool _activeSourceReadyEmitted = false;
+  final Set<int> _retiredSourceIds = {};
+
+  /// A backend may describe one end of file twice: mpv can publish both the
+  /// `eof-reached` property and `end-file`, and ExoPlayer does both in its
+  /// STATE_ENDED callback. Completion consumers advance to the next item, so
+  /// publishing both lets the second signal complete that replacement too.
+  /// Rearm only at a file boundary, an explicit false edge, or a seek that
+  /// moves back into the media.
+  bool _completionEmittedForActiveFile = false;
+
+  /// Set by [resetPlaybackProgress] until the opened file reports
+  /// `file-loaded`. A terminal EOF in that window belongs to the file being
+  /// replaced (ExoPlayer even tags a late STATE_ENDED with the new generation),
+  /// and publishing it would auto-advance past the episode that was just
+  /// opened — in a Watch Together room the host then switches every guest too.
+  bool _awaitingFileLoadedAfterOpen = false;
 
   /// The active file's previous `demuxer-cache-state` reader sample, the
   /// baseline [_detectDemuxerProgress] compares against. Cleared at
@@ -403,6 +419,7 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
 
   void handlePropertyChange(String name, dynamic value, {int? sourceId}) {
     if (_disposed) return;
+    if (sourceId != null && sourceId != _activeSourceId) return;
     switch (name) {
       case 'pause':
         final playing = value == false;
@@ -417,8 +434,7 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
             '[$logPrefix] eof-reached at ${_state.position.inMilliseconds}ms/${_state.duration.inMilliseconds}ms',
           );
         }
-        _state = _state.copyWith(completed: completed);
-        completedController.add(completed);
+        _emitCompletion(completed);
         break;
 
       case 'paused-for-cache':
@@ -428,7 +444,6 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
         break;
 
       case 'time-pos':
-        if (sourceId != null && sourceId != _activeSourceId) break;
         final positionMs = _timelineMsFromSourceSeconds(value, round: true);
         if (positionMs != null) {
           final pos = Duration(milliseconds: positionMs);
@@ -648,14 +663,19 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
     switch (name) {
       case 'start-file':
         _deferringTrackList = false;
+        if (sourceId != null && _retiredSourceIds.contains(sourceId)) {
+          appLogger.d('[$logPrefix] ignoring late start-file for ended source $sourceId');
+          break;
+        }
         _activeSourceId = sourceId;
         _activeSourceReadyEmitted = false;
+        _completionEmittedForActiveFile = false;
         _primaryMediaLoadStarted = true;
         _primaryMediaReadyEmitted = false;
         _primaryFileLoaded = false;
         _lastDemuxerReaderSample = null;
         _lastErrorLogText = null;
-        _state = _state.copyWith(hasRenderedFrame: false);
+        _state = _state.copyWith(hasRenderedFrame: false, hasLoadedFile: false);
         fileStartedController.add(null);
         if (sourceId != null) {
           sourceStartedController.add(PlayerSourceStarted(sourceId));
@@ -663,7 +683,10 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
         break;
 
       case 'end-file':
-        if (sourceId != null && _activeSourceId != null && sourceId != _activeSourceId) break;
+        // Once the first terminal event clears [_activeSourceId], a delayed
+        // duplicate still carries the old source id. Strict equality rejects
+        // it even while no source is active.
+        if (sourceId != null && sourceId != _activeSourceId) break;
         final loadAbandoned = _primaryMediaLoadStarted && !_primaryFileLoaded;
         _primaryMediaLoadStarted = false;
         setSeekable(false);
@@ -683,8 +706,7 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
           '${rawCause is String ? ' cause=$rawCause' : ''}',
         );
         if (reason == 'eof') {
-          _state = _state.copyWith(completed: true);
-          completedController.add(true);
+          _emitCompletion(true);
         } else if (reason == 'error') {
           fileLoadFailedController.add(null);
           final rawMessage = data?['message'];
@@ -709,16 +731,30 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
             '${_lastErrorLogText == null ? '' : ' lastError=$_lastErrorLogText'}',
           );
         }
+        final endedSourceId = _activeSourceId ?? sourceId;
+        if (endedSourceId != null) _retiredSourceIds.add(endedSourceId);
         _activeSourceId = null;
         _activeSourceReadyEmitted = false;
         break;
 
       case 'file-loaded':
-        if (sourceId != null && sourceId != _activeSourceId) break;
+        // Android establishes the active generation at open(), then publishes
+        // this readiness boundary from its media-item transition. Keep the
+        // fallback path for native backends whose first source event is loaded.
+        if (sourceId != null) {
+          if (_retiredSourceIds.contains(sourceId)) {
+            appLogger.d('[$logPrefix] ignoring late file-loaded for ended source $sourceId');
+            break;
+          }
+          if (_activeSourceId != null && sourceId != _activeSourceId) break;
+          _activeSourceId = sourceId;
+        }
         _primaryFileLoaded = true;
+        _awaitingFileLoadedAfterOpen = false;
         // ExoPlayer reports no start-file: its media-item transition is the
         // only "new file" boundary before the frame it renders next.
-        _state = _state.copyWith(completed: false, hasRenderedFrame: false);
+        _completionEmittedForActiveFile = false;
+        _state = _state.copyWith(completed: false, hasRenderedFrame: false, hasLoadedFile: true);
         completedController.add(false);
         fileLoadedController.add(null);
         break;
@@ -776,6 +812,25 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
     -20 => 'something happened',
     _ => null,
   };
+
+  /// Publish completion at most once for the active file.
+  ///
+  /// False remains an explicit rearm edge because consumers use it to reset
+  /// their own completion latch. A duplicate true still leaves state complete
+  /// but does not run a second Play Next / room media switch.
+  void _emitCompletion(bool completed) {
+    if (completed && _awaitingFileLoadedAfterOpen) {
+      appLogger.d('[$logPrefix] end-of-file before the opened file loaded ignored (source $_activeSourceId)');
+      return;
+    }
+    if (completed && _completionEmittedForActiveFile) {
+      appLogger.d('[$logPrefix] duplicate end-of-file for active source $_activeSourceId ignored');
+      return;
+    }
+    _completionEmittedForActiveFile = completed;
+    _state = _state.copyWith(completed: completed);
+    completedController.add(completed);
+  }
 
   bool _hasPrimaryMediaTrack(List trackList) {
     for (final track in trackList) {
@@ -1253,6 +1308,15 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
   @protected
   void resetPlaybackProgress(Duration position) {
     _positionMs = position.inMilliseconds;
+    _completionEmittedForActiveFile = false;
+    _awaitingFileLoadedAfterOpen = true;
+    // A reload invalidates the outgoing backend source immediately. Waiting
+    // for the new start-file/file-loaded leaves a window in which a delayed
+    // EOF from the old file can complete the file it replaced.
+    final outgoingSourceId = _activeSourceId;
+    if (outgoingSourceId != null) _retiredSourceIds.add(outgoingSourceId);
+    _activeSourceId = null;
+    _activeSourceReadyEmitted = false;
     // A source is being installed at this position; nothing has been reported
     // about it yet, and its predecessor's position says nothing about it.
     // Neither does its predecessor's rendered frame: `open()` resolves before
@@ -1266,6 +1330,7 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
       buffer: Duration.zero,
       bufferRanges: const [],
       hasRenderedFrame: false,
+      hasLoadedFile: false,
     );
     _takeOperationOwnership(++_playheadOperations);
     _lastPositionWriter = _playheadOperations;
@@ -1294,6 +1359,8 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
   void restorePlaybackProgress(PlayerState snapshot, {Duration? position}) {
     final restoredPosition = position ?? snapshot.position;
     _positionMs = restoredPosition.inMilliseconds;
+    _completionEmittedForActiveFile = snapshot.completed;
+    _awaitingFileLoadedAfterOpen = false;
     _state = _state.copyWith(
       completed: snapshot.completed,
       position: restoredPosition,
@@ -1301,6 +1368,7 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
       buffer: snapshot.buffer,
       bufferRanges: snapshot.bufferRanges,
       hasRenderedFrame: snapshot.hasRenderedFrame,
+      hasLoadedFile: snapshot.hasLoadedFile,
     );
     _takeOperationOwnership(++_playheadOperations);
     _lastPositionWriter = _playheadOperations;
@@ -1654,6 +1722,13 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
 
     try {
       await seekFn();
+      final duration = _state.duration;
+      if (duration <= Duration.zero || position < duration) {
+        // Seeking out of EOF makes a later arrival a new end, not a duplicate.
+        // The backend normally publishes eof-reached=false as well; this
+        // covers backends that omit that edge on seek.
+        _completionEmittedForActiveFile = false;
+      }
       settle(landed: true);
     } on PlatformException catch (e) {
       settle(landed: false);

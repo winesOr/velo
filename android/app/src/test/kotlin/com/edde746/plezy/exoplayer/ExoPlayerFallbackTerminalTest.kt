@@ -38,9 +38,8 @@ class ExoPlayerFallbackTerminalTest {
 
       assertEquals(2, delegate.fallbackRequests)
       assertEquals(listOf("paused-for-cache" to false, "pause" to true), delegate.properties)
-      assertEquals(1, delegate.events.size)
-      assertEquals("end-file", delegate.events.single().first)
-      assertEquals("error", delegate.events.single().second?.get("reason"))
+      assertEquals(listOf("file-loaded", "end-file"), delegate.events.map { it.first })
+      assertEquals("error", delegate.events.last().second?.get("reason"))
     } finally {
       core.dispose()
     }
@@ -83,6 +82,8 @@ class ExoPlayerFallbackTerminalTest {
   @Test
   fun newOpenRearmsFirstFrameAndTerminalStateForItsMediaGeneration() {
     val core = ExoPlayerCore(Robolectric.buildActivity(Activity::class.java).setup().get())
+    val delegate = RecordingDelegate(handlesFallback = false)
+    core.delegate = delegate
     setField(core, "isInitialized", true)
     setField(core, "firstFrameRendered", true)
     setField(core, "terminalErrorGeneration", 2)
@@ -100,6 +101,8 @@ class ExoPlayerFallbackTerminalTest {
       assertEquals(3, getField(core, "currentMediaGeneration"))
       assertEquals(null, getField(core, "terminalErrorGeneration"))
       assertEquals("3", mediaItemId(core))
+      assertEquals("start-file", delegate.events.single().first)
+      assertEquals(3L, delegate.events.single().second?.get("sourceId"))
     } finally {
       core.dispose()
     }
@@ -377,6 +380,8 @@ class ExoPlayerFallbackTerminalTest {
       assertEquals("eof", endFiles.single().second?.get("reason"))
       assertTrue(delegate.properties.contains("eof-reached" to true))
       assertTrue(delegate.properties.contains("pause" to true))
+      assertTrue(delegate.propertySources.isNotEmpty())
+      assertTrue(delegate.propertySources.all { it == 7L })
       // The timeline is pinned at the end: Dart classifies an EOF by position
       // against duration, so an overrun would read as a mid-file stream death.
       assertEquals(2623.668, delegate.properties.last { it.first == "time-pos" }.second)
@@ -620,6 +625,7 @@ class ExoPlayerFallbackTerminalTest {
     var fallbackRequests = 0
     var lastFallbackPositionMs = -1L
     val properties = mutableListOf<Pair<String, Any?>>()
+    val propertySources = mutableListOf<Long?>()
     val events = mutableListOf<Pair<String, Map<String, Any>?>>()
 
     override fun onFormatUnsupported(
@@ -637,6 +643,11 @@ class ExoPlayerFallbackTerminalTest {
 
     override fun onPropertyChange(name: String, value: Any?) {
       properties += name to value
+    }
+
+    override fun onPropertyChange(name: String, value: Any?, sourceId: Long?) {
+      properties += name to value
+      propertySources += sourceId
     }
 
     override fun onEvent(name: String, data: Map<String, Any>?) {

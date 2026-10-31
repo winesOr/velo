@@ -703,7 +703,7 @@ void main() {
     );
   });
 
-  Future<({GlobalKey<VideoPlayerScreenState> key, _ReloadPlayer player})> pumpReloadScreen(
+  Future<({GlobalKey<VideoPlayerScreenState> key, _ReloadPlayer player, _ReloadClient client})> pumpReloadScreen(
     WidgetTester tester, {
     WatchTogetherProvider? watchTogether,
   }) async {
@@ -748,8 +748,327 @@ void main() {
     final fakePlayer = _ReloadPlayer(opens: true);
     addTearDown(fakePlayer.dispose);
     key.currentState!.player = fakePlayer;
-    return (key: key, player: fakePlayer);
+    return (key: key, player: fakePlayer, client: client);
   }
+
+  for (final fileSize in ['1024', null]) {
+    testWidgets('a delayed EOF check cannot ${fileSize == null ? 'recover' : 'complete'} the next room episode', (
+      tester,
+    ) async {
+      await SettingsService.instance.write(SettingsService.autoPlayNextEpisode, true);
+      await SettingsService.instance.write(SettingsService.playNextCountdown, 0);
+      final peer = _ScreenPeerService();
+      final watchTogether = WatchTogetherProvider(peerServiceFactory: ({endpoint}) => peer);
+      await watchTogether.createSession(
+        controlMode: ControlMode.anyone,
+        relayEndpoint: WatchTogetherRelayEndpoint.defaultEndpoint,
+      );
+      watchTogether.selectMedia(
+        ratingKey: 'movie-prior',
+        serverId: ServerId('srv-1'),
+        mediaTitle: 'Prior episode',
+        position: const Duration(seconds: 121),
+        rate: 1.25,
+        lease: watchTogether.capturePlaybackLease(selection: true),
+      );
+      addTearDown(watchTogether.dispose);
+      await withMockPlayerChannels(
+        methodChannelName: 'com.plezy/mpv_player',
+        eventChannelName: 'com.plezy/mpv_player/events',
+        testBody: () async {
+          final screen = await pumpReloadScreen(tester, watchTogether: watchTogether);
+          final state = screen.key.currentState!;
+          final fakePlayer = screen.player;
+          await state.debugWirePlayerStreamsForTesting();
+          state.debugBindWatchTogetherForTesting();
+          fakePlayer.emitPlaybackRestart();
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+
+          final next = testMediaItem(id: 'next', serverId: 'srv-1', backend: MediaBackend.jellyfin);
+          final later = testMediaItem(id: 'later', serverId: 'srv-1', backend: MediaBackend.jellyfin);
+          Provider.of<PlaybackStateProvider>(
+            screen.key.currentContext!,
+            listen: false,
+          ).setPlaybackFromLocalQueue(LocalPlayQueue(items: [state.widget.metadata, next, later], currentIndex: 0));
+          final eofRead = Completer<String?>();
+          fakePlayer.fileSizeRead = eofRead;
+          fakePlayer.emitCompletion(true);
+          await tester.pump();
+          expect(fakePlayer.fileSizeReads, 1, reason: 'the outgoing EOF is awaiting native source information');
+
+          var switched = false;
+          final switching = state.navigateToQueueItem(next).whenComplete(() => switched = true);
+          await pumpUntil(tester, () => switched);
+          await switching;
+          expect(fakePlayer.openCalls, 1);
+          expect(watchTogether.currentMediaRatingKey, next.id);
+          expect(watchTogether.hasAttachedPlayer, isTrue);
+          state.debugCommitAdjacentEpisodesForTesting(
+            AdjacentEpisodes(
+              next: later,
+              nextStatus: QueueNavigationStatus.found,
+              previousStatus: QueueNavigationStatus.found,
+            ),
+          );
+
+          eofRead.complete(fileSize);
+          await tester.pump();
+          for (var i = 0; i < 20; i++) {
+            await tester.pump(const Duration(milliseconds: 50));
+            await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 2)));
+          }
+          expect(fakePlayer.openCalls, 1, reason: 'the previous source cannot advance or reload the new episode');
+          expect(watchTogether.currentMediaRatingKey, next.id);
+          expect(state.debugPlayNextPromptVisibleForTesting, isFalse);
+          expect(state.debugPlaybackParkedForTesting, isFalse);
+          expect(
+            screen.client.reports.where(
+              (report) => report.kind == PlaybackReportKind.stopped && report.itemId == next.id,
+            ),
+            isEmpty,
+            reason: 'the new episode must not be reported as watched by its predecessor',
+          );
+        },
+      );
+    });
+  }
+
+  testWidgets('real room EOF advances once and starts the next episode at zero', (tester) async {
+    await SettingsService.instance.write(SettingsService.autoPlayNextEpisode, true);
+    await SettingsService.instance.write(SettingsService.playNextCountdown, 0);
+    final peer = _ScreenPeerService();
+    final watchTogether = WatchTogetherProvider(peerServiceFactory: ({endpoint}) => peer);
+    await watchTogether.createSession(
+      controlMode: ControlMode.anyone,
+      relayEndpoint: WatchTogetherRelayEndpoint.defaultEndpoint,
+    );
+    watchTogether.selectMedia(
+      ratingKey: 'movie-prior',
+      serverId: ServerId('srv-1'),
+      mediaTitle: 'Prior episode',
+      position: const Duration(seconds: 121),
+      rate: 1.25,
+      lease: watchTogether.capturePlaybackLease(selection: true),
+    );
+    addTearDown(watchTogether.dispose);
+    await withMockPlayerChannels(
+      methodChannelName: 'com.plezy/mpv_player',
+      eventChannelName: 'com.plezy/mpv_player/events',
+      testBody: () async {
+        final screen = await pumpReloadScreen(tester, watchTogether: watchTogether);
+        final state = screen.key.currentState!;
+        final fakePlayer = screen.player;
+        await state.debugWirePlayerStreamsForTesting();
+        state.debugBindWatchTogetherForTesting();
+        fakePlayer.emitPlaybackRestart();
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        final next = testMediaItem(id: 'next', serverId: 'srv-1', backend: MediaBackend.jellyfin);
+        final later = testMediaItem(id: 'later', serverId: 'srv-1', backend: MediaBackend.jellyfin);
+        Provider.of<PlaybackStateProvider>(
+          screen.key.currentContext!,
+          listen: false,
+        ).setPlaybackFromLocalQueue(LocalPlayQueue(items: [state.widget.metadata, next, later], currentIndex: 0));
+        state.debugCommitAdjacentEpisodesForTesting(
+          AdjacentEpisodes(
+            next: next,
+            nextStatus: QueueNavigationStatus.found,
+            previousStatus: QueueNavigationStatus.boundary,
+          ),
+        );
+        fakePlayer.setPosition(fakePlayer.state.duration);
+        // mpv can publish both eof-reached and end-file for the same EOF.
+        fakePlayer.emitCompletion(true);
+        fakePlayer.emitCompletion(true);
+        await pumpUntil(
+          tester,
+          () => watchTogether.currentMediaRatingKey == next.id && watchTogether.hasAttachedPlayer,
+        );
+        await tester.pump(const Duration(seconds: 3));
+
+        expect(fakePlayer.openCalls, 1);
+        expect(fakePlayer.state.playing, isTrue);
+        expect(fakePlayer.currentPosition, Duration.zero);
+        expect(peer.latestState.phase, PlaybackPhase.playing);
+        expect(peer.latestState.anchorPositionMs, 0);
+        expect(watchTogether.currentMediaRatingKey, next.id);
+        expect(state.debugPlayNextPromptVisibleForTesting, isFalse);
+        expect(
+          screen.client.reports.where(
+            (report) => report.kind == PlaybackReportKind.stopped && report.itemId == next.id,
+          ),
+          isEmpty,
+        );
+      },
+    );
+  });
+
+  testWidgets('delayed duplicate EOF after the room opens the next episode cannot advance again', (tester) async {
+    await SettingsService.instance.write(SettingsService.autoPlayNextEpisode, true);
+    await SettingsService.instance.write(SettingsService.playNextCountdown, 0);
+    final peer = _ScreenPeerService();
+    final watchTogether = WatchTogetherProvider(peerServiceFactory: ({endpoint}) => peer);
+    await watchTogether.createSession(
+      controlMode: ControlMode.anyone,
+      relayEndpoint: WatchTogetherRelayEndpoint.defaultEndpoint,
+    );
+    watchTogether.selectMedia(
+      ratingKey: 'movie-prior',
+      serverId: ServerId('srv-1'),
+      mediaTitle: 'Prior episode',
+      position: const Duration(seconds: 121),
+      rate: 1.25,
+      lease: watchTogether.capturePlaybackLease(selection: true),
+    );
+    addTearDown(watchTogether.dispose);
+    await withMockPlayerChannels(
+      methodChannelName: 'com.plezy/mpv_player',
+      eventChannelName: 'com.plezy/mpv_player/events',
+      testBody: () async {
+        final screen = await pumpReloadScreen(tester, watchTogether: watchTogether);
+        final state = screen.key.currentState!;
+        final fakePlayer = screen.player;
+        await state.debugWirePlayerStreamsForTesting();
+        state.debugBindWatchTogetherForTesting();
+        fakePlayer.emitPlaybackRestart();
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        final next = testMediaItem(id: 'next', serverId: 'srv-1', backend: MediaBackend.jellyfin);
+        final later = testMediaItem(id: 'later', serverId: 'srv-1', backend: MediaBackend.jellyfin);
+        Provider.of<PlaybackStateProvider>(
+          screen.key.currentContext!,
+          listen: false,
+        ).setPlaybackFromLocalQueue(LocalPlayQueue(items: [state.widget.metadata, next, later], currentIndex: 0));
+        state.debugCommitAdjacentEpisodesForTesting(
+          AdjacentEpisodes(
+            next: next,
+            nextStatus: QueueNavigationStatus.found,
+            previousStatus: QueueNavigationStatus.boundary,
+          ),
+        );
+        fakePlayer.setPosition(fakePlayer.state.duration);
+        fakePlayer.emitCompletion(true);
+        await pumpUntil(
+          tester,
+          () => watchTogether.currentMediaRatingKey == next.id && watchTogether.hasAttachedPlayer,
+        );
+        await tester.pump(const Duration(seconds: 3));
+        expect(fakePlayer.openCalls, 1);
+        expect(watchTogether.currentMediaRatingKey, next.id);
+
+        // This models the native EOF duplicate reaching the screen after the
+        // replacement has committed and its completion latch has reset.
+        fakePlayer.setPosition(Duration.zero);
+        fakePlayer.emitStaleCompletionAfterOpen(true);
+        await tester.pump(const Duration(seconds: 3));
+
+        expect(fakePlayer.openCalls, 1, reason: 'the delayed old EOF cannot open a third episode');
+        expect(fakePlayer.state.playing, isTrue);
+        expect(fakePlayer.currentPosition, Duration.zero);
+        expect(peer.latestState.phase, PlaybackPhase.playing);
+        expect(peer.latestState.anchorPositionMs, 0);
+        expect(watchTogether.currentMediaRatingKey, next.id);
+        expect(state.debugPlayNextPromptVisibleForTesting, isFalse);
+        expect(
+          screen.client.reports.where(
+            (report) => report.kind == PlaybackReportKind.stopped && report.itemId == next.id,
+          ),
+          isEmpty,
+          reason: 'the replacement must not be reported watched by its predecessor',
+        );
+      },
+    );
+  });
+
+  group('completion before first frame', () {
+    testWidgets('an end signal from an item that never rendered does not advance', (tester) async {
+      await withMockPlayerChannels(
+        methodChannelName: 'com.plezy/mpv_player',
+        eventChannelName: 'com.plezy/mpv_player/events',
+        testBody: () async {
+          final screen = await pumpReloadScreen(tester);
+          final state = screen.key.currentState!;
+          final fakePlayer = screen.player;
+          await state.debugWirePlayerStreamsForTesting();
+          await tester.pump();
+          final next = testMediaItem(
+            id: 'next',
+            title: 'Next episode',
+            serverId: 'srv-1',
+            backend: MediaBackend.jellyfin,
+          );
+          Provider.of<PlaybackStateProvider>(
+            screen.key.currentContext!,
+            listen: false,
+          ).setPlaybackFromLocalQueue(LocalPlayQueue(items: [state.widget.metadata, next], currentIndex: 0));
+          state.debugCommitAdjacentEpisodesForTesting(
+            AdjacentEpisodes(
+              next: next,
+              nextStatus: QueueNavigationStatus.found,
+              previousStatus: QueueNavigationStatus.boundary,
+            ),
+          );
+
+          // The open stalls: no frame ever renders, then the backend gives up
+          // with an end of file. That is a failed open, not a finished episode.
+          final opensBefore = fakePlayer.openCalls;
+          fakePlayer.setCompleted(true);
+          state.debugCompleteVideoForTesting();
+          await tester.pump(const Duration(seconds: 15));
+
+          expect(state.debugPlayNextPromptVisibleForTesting, isFalse);
+          expect(fakePlayer.openCalls, opensBefore, reason: 'the next episode must not start');
+        },
+      );
+    });
+  });
+
+  group('Watch Together host media switch', () {
+    testWidgets('a host still opening the room media does not reload itself', (tester) async {
+      final peer = _ScreenPeerService();
+      final watchTogether = WatchTogetherProvider(peerServiceFactory: ({endpoint}) => peer);
+      await watchTogether.createSession(
+        controlMode: ControlMode.anyone,
+        relayEndpoint: WatchTogetherRelayEndpoint.defaultEndpoint,
+      );
+      watchTogether.selectMedia(
+        ratingKey: 'movie-prior',
+        serverId: ServerId('srv-1'),
+        mediaTitle: 'Prior movie',
+        position: Duration.zero,
+        rate: 1.0,
+        lease: watchTogether.capturePlaybackLease(selection: true),
+      );
+      addTearDown(watchTogether.dispose);
+
+      await withMockPlayerChannels(
+        methodChannelName: 'com.plezy/mpv_player',
+        eventChannelName: 'com.plezy/mpv_player/events',
+        testBody: () async {
+          final screen = await pumpReloadScreen(tester, watchTogether: watchTogether);
+          final fakePlayer = screen.player;
+          await tester.pump();
+          // No player is bound yet (the open is still running), so the host's
+          // coordinator asks for the room media — which is this very item.
+          expect(watchTogether.hasAttachedPlayer, isFalse);
+          final switchHandler = watchTogether.onPlayerMediaSwitched ?? watchTogether.onMediaSwitched;
+          expect(switchHandler, isNotNull);
+          final opensBefore = fakePlayer.openCalls;
+          var done = false;
+          final handled = switchHandler!(
+            'movie-prior',
+            ServerId('srv-1'),
+            'Prior movie',
+          ).whenComplete(() => done = true);
+          await pumpUntil(tester, () => done);
+
+          expect(await handled, isTrue, reason: 'handled, so the heartbeat stops re-dispatching it');
+          expect(fakePlayer.openCalls, opensBefore, reason: 'the host must not restart its own open');
+        },
+      );
+    });
+  });
 
   group('TV background suspend', () {
     testWidgets('a suspend under the Play Next prompt restores the prompt and its countdown', (tester) async {
@@ -1103,6 +1422,8 @@ class _ReloadPlayer extends FakeSyncPlayer {
     : super(playing: true, position: const Duration(seconds: 121), duration: const Duration(minutes: 40), rate: 1.25);
   bool opens;
   int openCalls = 0;
+  Completer<String?>? fileSizeRead;
+  int fileSizeReads = 0;
 
   /// When set, open() waits for it before loading.
   Completer<void>? openGate;
@@ -1125,7 +1446,13 @@ class _ReloadPlayer extends FakeSyncPlayer {
   Future<void> setProperty(String name, String value) async {}
 
   @override
-  Future<String?> getProperty(String name) async => null;
+  Future<String?> getProperty(String name) async {
+    if (name == 'file-size') {
+      fileSizeReads++;
+      return fileSizeRead?.future;
+    }
+    return name == 'file-format' ? 'matroska,webm' : null;
+  }
 
   @override
   Future<void> updateFrame() async {}

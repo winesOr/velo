@@ -47,6 +47,11 @@ class AttachedPlayer {
     _subscriptions.add(player.streams.playing.listen(_onPlayingEvent));
     _subscriptions.add(player.streams.buffering.listen(_onBufferingEvent));
     _subscriptions.add(
+      player.streams.fileLoaded.listen((_) {
+        if (!_disposed) _fileLoadedSignalsController.add(null);
+      }),
+    );
+    _subscriptions.add(
       player.streams.playbackRestart.listen((_) {
         if (!_disposed) _loadedSignalsController.add(null);
       }),
@@ -68,6 +73,7 @@ class AttachedPlayer {
   final _playingIntentsController = StreamController<bool>.broadcast();
   final _playingAcksController = StreamController<bool>.broadcast();
   final _bufferingChangesController = StreamController<bool>.broadcast();
+  final _fileLoadedSignalsController = StreamController<void>.broadcast();
   final _loadedSignalsController = StreamController<void>.broadcast();
 
   late bool _lastPlaying;
@@ -85,6 +91,11 @@ class AttachedPlayer {
   /// reload, a promotion, a room that adopted media before the screen bound
   /// its output — sees the same fact as one that watched it happen.
   bool get firstFrameSeen => _player.state.hasRenderedFrame;
+
+  /// Whether the current source has been accepted by the backend. This is
+  /// weaker than [firstFrameSeen], but it lets a room recover when a paused
+  /// open has a valid file yet its renderer never reports the first frame.
+  bool get fileLoaded => _player.state.hasLoadedFile;
 
   bool wraps(Player player) => identical(_player, player);
 
@@ -119,6 +130,10 @@ class AttachedPlayer {
 
   /// Raw buffering transitions (`paused-for-cache`).
   Stream<bool> get bufferingChanges => _bufferingChangesController.stream;
+
+  /// The backend accepted a file. A paused open can stop here when its
+  /// renderer never presents a first frame.
+  Stream<void> get fileLoadedSignals => _fileLoadedSignalsController.stream;
 
   /// `playback-restart` events: first frame rendered after load and after
   /// every seek.
@@ -326,6 +341,7 @@ class AttachedPlayer {
     await _playingIntentsController.close();
     await _playingAcksController.close();
     await _bufferingChangesController.close();
+    await _fileLoadedSignalsController.close();
     await _loadedSignalsController.close();
   }
 }

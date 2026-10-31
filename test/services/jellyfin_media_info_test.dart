@@ -670,6 +670,66 @@ void main() {
       expect(markers[1].endTimeOffset, 100000);
     });
 
+    test('pairs Emby native intro boundaries across ordinary chapters and ignores boundary titles', () {
+      final extras = jellyfinPlaybackExtrasFromRaw({
+        'RunTimeTicks': _ticks(600000),
+        'Chapters': [
+          {'Name': 'Chapter 1', 'StartPositionTicks': 0, 'MarkerType': 'Chapter'},
+          {'Name': '片头', 'StartPositionTicks': _ticks(270138), 'MarkerType': 'IntroStart'},
+          {'Name': 'Chapter 2', 'StartPositionTicks': _ticks(300000), 'MarkerType': 'Chapter'},
+          {'Name': 'Intro End', 'StartPositionTicks': _ticks(301087), 'MarkerType': 'IntroEnd'},
+          {'Name': '片尾', 'StartPositionTicks': _ticks(550000), 'MarkerType': 'CreditsStart'},
+          {'Name': 'Chapter 3', 'StartPositionTicks': _ticks(570000), 'MarkerType': 'Chapter'},
+        ],
+      }, 'item-1');
+
+      expect(extras.chapters, hasLength(6));
+      expect(extras.markers.map((m) => m.type), ['intro', 'credits']);
+      expect(extras.markers[0].startTimeOffset, 270138);
+      expect(extras.markers[0].endTimeOffset, 301087);
+      expect(extras.markers[1].startTimeOffset, 550000);
+      expect(extras.markers[1].endTimeOffset, 600000);
+    });
+
+    test('unpaired or invalid Emby boundaries never become title-based skip markers', () {
+      final extras = jellyfinPlaybackExtrasFromRaw({
+        'RunTimeTicks': _ticks(600000),
+        'Chapters': [
+          {'Name': 'Intro End', 'StartPositionTicks': _ticks(10000), 'MarkerType': 'IntroEnd'},
+          {'Name': 'Intro', 'StartPositionTicks': _ticks(20000), 'MarkerType': 'IntroStart'},
+          {'Name': 'Intro End', 'StartPositionTicks': _ticks(20000), 'MarkerType': 'IntroEnd'},
+          {'Name': 'Intro', 'MarkerType': 'IntroStart'},
+          {'Name': 'Credits', 'StartPositionTicks': _ticks(700000), 'MarkerType': 'CreditsStart'},
+        ],
+      }, 'item-1');
+
+      expect(extras.markers, isEmpty);
+    });
+
+    test('explicit server segments take precedence over Emby chapter markers', () {
+      final extras = jellyfinPlaybackExtrasFromRaw(
+        {
+          'RunTimeTicks': _ticks(120000),
+          'Chapters': [
+            {'Name': 'Intro', 'StartPositionTicks': 0, 'MarkerType': 'IntroStart'},
+            {'Name': 'Intro End', 'StartPositionTicks': _ticks(30000), 'MarkerType': 'IntroEnd'},
+            {'Name': 'Credits', 'StartPositionTicks': _ticks(90000), 'MarkerType': 'CreditsStart'},
+          ],
+        },
+        'item-1',
+        markers: jellyfinMediaSegmentsToMarkers({
+          'Items': [
+            {'Type': 'Intro', 'StartTicks': _ticks(10000), 'EndTicks': _ticks(45000)},
+          ],
+        }),
+      );
+
+      expect(extras.markers.map((m) => m.type), ['intro', 'credits']);
+      expect(extras.markers[0].startTimeOffset, 10000);
+      expect(extras.markers[0].endTimeOffset, 45000);
+      expect(extras.markers[1].startTimeOffset, 90000);
+    });
+
     test('keeps native segments and fills missing marker types from chapters', () {
       final extras = jellyfinPlaybackExtrasFromRaw(
         {

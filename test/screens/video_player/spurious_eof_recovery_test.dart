@@ -55,6 +55,7 @@ void main() {
     bool serverStopped = false,
     MediaPartTimeline? partTimeline,
     int metadataDurationMs = durationMs,
+    PlaybackTransitionGate? transitionGate,
   }) {
     final reloads = <Duration>[];
     var fault = faultSeen;
@@ -62,7 +63,7 @@ void main() {
       isLive: false,
       isOffline: () => false,
       isTranscoding: () => transcoding,
-      transitionGate: PlaybackTransitionGate(),
+      transitionGate: transitionGate ?? PlaybackTransitionGate(),
       player: () => player,
       metadata: () => testMediaItem(durationMs: metadataDurationMs),
       partTimeline: () => partTimeline,
@@ -85,6 +86,38 @@ void main() {
     expect(await recovery.interceptEof(player), isFalse);
     expect(reloads, isEmpty);
     expect(recovery.parked, isFalse);
+  });
+
+  test('a source replaced during EOF inspection consumes the old signal even after becoming idle', () async {
+    final player = shortEofPlayer();
+    addTearDown(player.dispose);
+    final gate = PlaybackTransitionGate();
+    final (:recovery, :reloads, setFault: _) = build(player, transitionGate: gate);
+    player.onRead = () {
+      player.onRead = null;
+      gate.beginGeneration(isMediaReload: true);
+    };
+
+    expect(await recovery.interceptEof(player), isTrue);
+    expect(gate.transition, PlaybackTransition.idle);
+    expect(reloads, isEmpty);
+    expect(recovery.parked, isFalse);
+  });
+
+  test('an EOF received during a source transition is consumed without inspecting the source', () async {
+    final player = shortEofPlayer();
+    addTearDown(player.dispose);
+    final gate = PlaybackTransitionGate();
+    final lease = gate.tryAcquire(PlaybackTransition.reloadingMedia)!;
+    final (:recovery, :reloads, setFault: _) = build(player, transitionGate: gate);
+    var reads = 0;
+    player.onRead = () => reads++;
+
+    expect(await recovery.interceptEof(player), isTrue);
+    expect(reads, 0);
+    expect(reloads, isEmpty);
+    expect(recovery.parked, isFalse);
+    gate.release(lease);
   });
 
   test('a short EOF after any transport fault in this file recovers, then parks (#1520)', () async {

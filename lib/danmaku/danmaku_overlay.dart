@@ -160,9 +160,11 @@ class _DanmakuOverlayState extends State<DanmakuOverlay> with SingleTickerProvid
     }
     _controller?.updateOption(_option);
     if (!session.enabled || session.comments.isEmpty) {
-      _controller?.clear();
       _comments = const [];
       _syncRunning();
+      // canvas_danmaku only invalidates its scrolling painter on clear when
+      // its ticker is stopped. Pause first so the last painted frame is erased.
+      _controller?.clear();
       return;
     }
     if (!identical(_comments, session.comments)) {

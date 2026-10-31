@@ -1210,7 +1210,7 @@ void main() {
       expect(query.containsKey('ApiKey'), isFalse);
     });
 
-    test('Emby synthesizes one item-derived PlaySessionId for a replay triple', () async {
+    test('Emby keeps one fallback PlaySessionId across a device replay triple', () async {
       final requests = _RequestCapture((_) => http.Response('', 204));
       final client = testEmbyClient(handler: requests.handle);
       addTearDown(client.close);
@@ -1223,12 +1223,38 @@ void main() {
         'POST /Sessions/Playing/Stopped?',
       ]);
       final bodies = requests.requests.map((request) => jsonDecode(request.body) as Map<String, dynamic>).toList();
-      expect(bodies.map((body) => body['PlaySessionId']).toList(), [
-        'plezy-replay-item-1',
-        'plezy-replay-item-1',
-        'plezy-replay-item-1',
-      ]);
+      final sessionId = bodies.first['PlaySessionId'];
+      expect(sessionId, isA<String>().having((value) => value.isNotEmpty, 'nonempty', isTrue));
+      expect(bodies.map((body) => body['PlaySessionId']).toSet(), {sessionId});
       expect(bodies.every((body) => body['ItemId'] == 'item-1'), isTrue);
+    });
+
+    test('two devices on the same Emby account do not share a fallback playback session', () async {
+      final phoneRequests = _RequestCapture((_) => http.Response('', 204));
+      final tabletRequests = _RequestCapture((_) => http.Response('', 204));
+      final phone = testEmbyClient(
+        connection: testEmbyConnection(deviceId: 'phone'),
+        handler: phoneRequests.handle,
+      );
+      final tablet = testEmbyClient(
+        connection: testEmbyConnection(deviceId: 'tablet'),
+        handler: tabletRequests.handle,
+      );
+      addTearDown(phone.close);
+      addTearDown(tablet.close);
+
+      // Both devices report the same episode with the same account and token.
+      // Their start/progress/stop reports must never address the other's row.
+      await Future.wait([_reportPlaybackTriple(phone), _reportPlaybackTriple(tablet)]);
+      final phoneIds = phoneRequests.requests
+          .map((request) => (jsonDecode(request.body) as Map<String, dynamic>)['PlaySessionId'])
+          .toSet();
+      final tabletIds = tabletRequests.requests
+          .map((request) => (jsonDecode(request.body) as Map<String, dynamic>)['PlaySessionId'])
+          .toSet();
+      expect(phoneIds, hasLength(1));
+      expect(tabletIds, hasLength(1));
+      expect(phoneIds.intersection(tabletIds), isEmpty);
     });
 
     test('Emby preserves an explicit PlaySessionId across the replay triple', () async {
@@ -1590,32 +1616,35 @@ void main() {
       expect(lyrics!.lines.map((line) => line.text).toList(), ['Line one']);
     });
 
-    test('Emby derives chapter markers when native intro timestamps are absent', () async {
-      final requests = _RequestCapture((request) {
-        if (request.url.path == '/Users/user-1/Items/item-1') {
-          return jsonResponse(_chapterItem());
-        }
-        if (request.url.path == '/Episode/item-1/IntroTimestamps') {
-          return http.Response('not available', 404);
-        }
-        return http.Response('unexpected ${request.url}', 500);
-      });
-      final client = testEmbyClient(handler: requests.handle);
-      addTearDown(client.close);
+    test(
+      'Emby falls back to chapters when intro timestamps are unavailable without requesting media segments',
+      () async {
+        final requests = _RequestCapture((request) {
+          if (request.url.path == '/Users/user-1/Items/item-1') {
+            return jsonResponse(_chapterItem());
+          }
+          if (request.url.path == '/Episode/item-1/IntroTimestamps') {
+            return http.Response('not installed', 404);
+          }
+          return http.Response('unexpected ${request.url}', 500);
+        });
+        final client = testEmbyClient(handler: requests.handle);
+        addTearDown(client.close);
 
-      final extras = await client.fetchPlaybackExtras('item-1');
+        final extras = await client.fetchPlaybackExtras('item-1');
 
-      expect(requests.requests.map((request) => '${request.method} ${request.url.path}').toList(), [
-        'GET /Users/user-1/Items/item-1',
-        'GET /Episode/item-1/IntroTimestamps',
-      ], reason: requests.log.join('\n'));
-      expect(requests.requests.where((request) => request.url.path == '/MediaSegments/item-1'), isEmpty);
-      expect(extras.markers.map((marker) => marker.type).toList(), ['intro', 'credits']);
-      expect(extras.markers.first.startTimeOffset, 10000);
-      expect(extras.markers.first.endTimeOffset, 45000);
-      expect(extras.markers.last.startTimeOffset, 90000);
-      expect(extras.markers.last.endTimeOffset, 120000);
-    });
+        expect(requests.requests.map((request) => '${request.method} ${request.url.path}').toList(), [
+          'GET /Users/user-1/Items/item-1',
+          'GET /Episode/item-1/IntroTimestamps',
+        ], reason: requests.log.join('\n'));
+        expect(requests.requests.where((request) => request.url.path == '/MediaSegments/item-1'), isEmpty);
+        expect(extras.markers.map((marker) => marker.type).toList(), ['intro', 'credits']);
+        expect(extras.markers.first.startTimeOffset, 10000);
+        expect(extras.markers.first.endTimeOffset, 45000);
+        expect(extras.markers.last.startTimeOffset, 90000);
+        expect(extras.markers.last.endTimeOffset, 120000);
+      },
+    );
 
     test('Jellyfin keeps requesting native media segments for playback markers', () async {
       final requests = _RequestCapture((request) {

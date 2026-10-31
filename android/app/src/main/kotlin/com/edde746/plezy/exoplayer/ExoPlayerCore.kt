@@ -392,6 +392,7 @@ class ExoPlayerCore(private val activity: Activity) :
   private var currentMediaIsLive: Boolean = false
   private var currentMediaGeneration: Int = 0
   private var terminalErrorGeneration: Int? = null
+  private var activeSourceGeneration: Int? = null
   private var currentVisible: Boolean = false
   private var selectedAudioTrackId: String? = null
   private var selectedSubtitleTrackId: String? = null
@@ -452,18 +453,46 @@ class ExoPlayerCore(private val activity: Activity) :
       )
     }
   }
+
+  private fun emitGenerationProperty(name: String, value: Any?, mediaGeneration: Int = currentMediaGeneration) {
+    delegate?.onPropertyChange(name, value, mediaGeneration.toLong())
+  }
+
+  private fun establishSourceGeneration(mediaGeneration: Int) {
+    if (mediaGeneration != currentMediaGeneration || activeSourceGeneration == mediaGeneration) return
+    activeSourceGeneration = mediaGeneration
+    delegate?.onEvent(
+      "file-loaded",
+      mapOf("sourceId" to mediaGeneration.toLong())
+    )
+  }
+
+  private fun emitGenerationEvent(
+    name: String,
+    data: Map<String, Any>? = null,
+    mediaGeneration: Int = currentMediaGeneration
+  ) {
+    val payload = data.orEmpty().toMutableMap()
+    payload["sourceId"] = mediaGeneration.toLong()
+    delegate?.onEvent(name, payload)
+  }
+
   private fun emitPlaybackErrorOnce(mediaGeneration: Int, message: String, cause: String? = null) {
     if (mediaGeneration != currentMediaGeneration || terminalErrorGeneration == mediaGeneration) return
     terminalErrorGeneration = mediaGeneration
+    // A terminal state is an event boundary. Generation-qualified properties
+    // still need an active source even when no media-item transition was
+    // observed (synthetic EOF and early failures).
+    establishSourceGeneration(mediaGeneration)
     exoPlayer?.playWhenReady = false
-    delegate?.onPropertyChange("paused-for-cache", false)
-    delegate?.onPropertyChange("pause", true)
+    emitGenerationProperty("paused-for-cache", false, mediaGeneration)
+    emitGenerationProperty("pause", true, mediaGeneration)
     val data = mutableMapOf<String, Any>(
       "reason" to "error",
       "message" to message
     )
     if (cause != null) data["cause"] = cause
-    delegate?.onEvent("end-file", data)
+    emitGenerationEvent("end-file", data, mediaGeneration)
   }
 
   /**
@@ -481,14 +510,21 @@ class ExoPlayerCore(private val activity: Activity) :
   private fun emitPlaybackEofOnce(mediaGeneration: Int, positionMs: Long) {
     if (mediaGeneration != currentMediaGeneration || terminalErrorGeneration == mediaGeneration) return
     terminalErrorGeneration = mediaGeneration
+    // Establish the source generation before its terminal properties. On the
+    // normal path onMediaItemTransition already did this; synthetic EOF can
+    // arrive before that callback and must not be discarded as stale.
+    delegate?.onEvent(
+      "file-loaded",
+      mapOf("sourceId" to mediaGeneration.toLong())
+    )
     exoPlayer?.playWhenReady = false
     pendingPlayWhenReady = null
     lastPosition = positionMs
-    delegate?.onPropertyChange("time-pos", positionMs / 1000.0)
-    delegate?.onPropertyChange("paused-for-cache", false)
-    delegate?.onPropertyChange("pause", true)
-    delegate?.onPropertyChange("eof-reached", true)
-    delegate?.onEvent("end-file", mapOf("reason" to "eof"))
+    emitGenerationProperty("time-pos", positionMs / 1000.0, mediaGeneration)
+    emitGenerationProperty("paused-for-cache", false, mediaGeneration)
+    emitGenerationProperty("pause", true, mediaGeneration)
+    emitGenerationProperty("eof-reached", true, mediaGeneration)
+    emitGenerationEvent("end-file", mapOf("reason" to "eof"), mediaGeneration)
   }
 
   private fun requestFormatFallback(
@@ -1028,19 +1064,19 @@ class ExoPlayerCore(private val activity: Activity) :
           if (currentPosition != lastPosition && terminalErrorGeneration != currentMediaGeneration) {
             lastPosition = currentPosition
             if (currentPosition > lastKnownGoodPositionMs) lastKnownGoodPositionMs = currentPosition
-            delegate?.onPropertyChange("time-pos", currentPosition / 1000.0)
+            emitGenerationProperty("time-pos", currentPosition / 1000.0)
           }
 
           // Emit duration changes
           if (duration != lastDuration && duration != C.TIME_UNSET) {
             lastDuration = duration
-            delegate?.onPropertyChange("duration", duration / 1000.0)
+            emitGenerationProperty("duration", duration / 1000.0)
           }
 
           // Emit buffer changes
           if (bufferedPosition != lastBufferedPosition && bufferedPosition != C.TIME_UNSET) {
             lastBufferedPosition = bufferedPosition
-            delegate?.onPropertyChange("demuxer-cache-time", bufferedPosition / 1000.0)
+            emitGenerationProperty("demuxer-cache-time", bufferedPosition / 1000.0)
           }
 
           handler.postDelayed(this, 250)
@@ -1074,13 +1110,13 @@ class ExoPlayerCore(private val activity: Activity) :
     lastBufferedPosition = 0L
     // Dart already seeds the visible timeline before open. Emitting native
     // zeroes here races HLS resume/restart state back to 0:00.
-    delegate?.onPropertyChange("eof-reached", false)
+    emitGenerationProperty("eof-reached", false)
   }
 
   private fun emitSeekable(seekable: Boolean, force: Boolean = false) {
     if (!force && lastSeekable == seekable) return
     lastSeekable = seekable
-    delegate?.onPropertyChange("seekable", seekable)
+    emitGenerationProperty("seekable", seekable)
   }
 
   private fun emitCurrentSeekable(force: Boolean = false) {
@@ -1152,7 +1188,7 @@ class ExoPlayerCore(private val activity: Activity) :
     frameWatchdogStartTime = System.currentTimeMillis()
     if (isPlaying) pendingPlayWhenReady = null
     if (isPlaying) armResumeStallWatchdog() else cancelResumeStallWatchdog()
-    delegate?.onPropertyChange("pause", !isPlaying)
+    emitGenerationProperty("pause", !isPlaying)
   }
 
   private fun handlePlaybackStateChanged(state: Int) {
@@ -1168,7 +1204,7 @@ class ExoPlayerCore(private val activity: Activity) :
 
     when (state) {
       Player.STATE_BUFFERING -> {
-        delegate?.onPropertyChange("paused-for-cache", true)
+        emitGenerationProperty("paused-for-cache", true)
         armBufferingStallWatchdog()
       }
       Player.STATE_READY -> {
@@ -1189,7 +1225,7 @@ class ExoPlayerCore(private val activity: Activity) :
           emitLog("warn", "state", "playWhenReady lost (now $currentPlayWhenReady, expected $pendingPlay) — restoring")
           exoPlayer?.playWhenReady = pendingPlay
         }
-        delegate?.onPropertyChange("paused-for-cache", false)
+        emitGenerationProperty("paused-for-cache", false)
         emitTrackList()
 
         // Video becomes ready only when a frame renders. Audio-only media has
@@ -1203,14 +1239,14 @@ class ExoPlayerCore(private val activity: Activity) :
             emitLog("debug", "audio", "Audio-only playback ready")
           }
           stopFrameWatchdog()
-          delegate?.onEvent("playback-restart", null)
+          emitGenerationEvent("playback-restart")
         }
       }
       Player.STATE_ENDED -> {
         stopFrameWatchdog()
         cancelBufferingStallWatchdog()
-        delegate?.onPropertyChange("eof-reached", true)
-        delegate?.onEvent("end-file", mapOf("reason" to "eof"))
+        emitGenerationProperty("eof-reached", true)
+        emitGenerationEvent("end-file", mapOf("reason" to "eof"))
       }
     }
   }
@@ -1742,8 +1778,8 @@ class ExoPlayerCore(private val activity: Activity) :
     val mediaGeneration = mediaItem?.mediaId?.toIntOrNull() ?: return
     if (mediaGeneration != currentMediaGeneration) return
     Log.d(TAG, "onMediaItemTransition: ${mediaItem?.mediaId}, reason: $reason")
-    delegate?.onEvent("file-loaded", null)
-    delegate?.onPropertyChange("eof-reached", false)
+    establishSourceGeneration(mediaGeneration)
+    emitGenerationProperty("eof-reached", false, mediaGeneration)
     emitCurrentSeekable(force = true)
     // Re-calibrate the subtitle/video layer offset each play: tear down the converged calibrator
     // so the metadata listener lazily spins up a fresh one. The seeded (persisted) value stays
@@ -2058,18 +2094,18 @@ class ExoPlayerCore(private val activity: Activity) :
     // Emit selected track IDs
     if (selectedAudioId != null) {
       selectedAudioTrackId = selectedAudioId
-      delegate?.onPropertyChange("aid", selectedAudioId)
+      emitGenerationProperty("aid", selectedAudioId)
     }
 
     if (selectedSubId != null) {
       selectedSubtitleTrackId = selectedSubId
-      delegate?.onPropertyChange("sid", selectedSubId)
+      emitGenerationProperty("sid", selectedSubId)
     } else if (textGroups.isNotEmpty()) {
       selectedSubtitleTrackId = "no"
-      delegate?.onPropertyChange("sid", "no")
+      emitGenerationProperty("sid", "no")
     }
 
-    delegate?.onPropertyChange("track-list", trackList)
+    emitGenerationProperty("track-list", trackList)
   }
 
   private fun captureTrackRestore(): PendingTrackRestore? {
@@ -3052,7 +3088,7 @@ class ExoPlayerCore(private val activity: Activity) :
       // so this callback also fires after each seek. That is exactly MPV's
       // MPV_EVENT_PLAYBACK_RESTART contract — first frame after load *and*
       // after every seek — which the Dart consumers rely on.
-      delegate?.onEvent("playback-restart", null)
+      emitGenerationEvent("playback-restart", mediaGeneration = mediaGeneration)
     }
   }
 
@@ -3464,10 +3500,14 @@ class ExoPlayerCore(private val activity: Activity) :
     updateAudioDecoderPolicy("open")
     currentMediaGeneration = mediaGeneration
     terminalErrorGeneration = null
+    activeSourceGeneration = null
     currentMediaUri = uri
     currentHeaders = headers
     currentMediaIsLive = isLive
     resetPlaybackProgress(startPositionMs)
+    // Establish the new source before prepare() can deliver any callback from
+    // it. file-loaded remains the later readiness boundary.
+    emitGenerationEvent("start-file", mediaGeneration = mediaGeneration)
 
     // Apply auth/custom headers to the HTTP DataSource for this session
     httpDataSourceFactory?.setDefaultRequestProperties(
@@ -3848,19 +3888,19 @@ class ExoPlayerCore(private val activity: Activity) :
       // policy prefers it over the live loader state, so a stale answer would decide the new window.
       observingLoadControl?.reset()
     }
-    delegate?.onPropertyChange("time-pos", clampedPositionMs / 1000.0)
+    emitGenerationProperty("time-pos", clampedPositionMs / 1000.0)
   }
 
   fun setVolume(volume: Float) {
     exoPlayer?.volume = volume.coerceIn(0f, 1f)
-    delegate?.onPropertyChange("volume", (volume * 100).toDouble())
+    emitGenerationProperty("volume", (volume * 100).toDouble())
   }
 
   fun setPlaybackSpeed(speed: Float) {
     val clampedSpeed = speed.coerceIn(MIN_PLAYBACK_SPEED, MAX_PLAYBACK_SPEED)
     exoPlayer?.setPlaybackSpeed(clampedSpeed)
     updateTunnelingState("speed changed")
-    delegate?.onPropertyChange("speed", clampedSpeed.toDouble())
+    emitGenerationProperty("speed", clampedSpeed.toDouble())
   }
 
   fun selectAudioTrack(trackId: String) {
@@ -3875,7 +3915,7 @@ class ExoPlayerCore(private val activity: Activity) :
     )
 
     selectedAudioTrackId = trackId
-    delegate?.onPropertyChange("aid", trackId)
+    emitGenerationProperty("aid", trackId)
   }
 
   fun selectSubtitleTrack(trackId: String?) {
@@ -3888,7 +3928,7 @@ class ExoPlayerCore(private val activity: Activity) :
         reason = "subtitle disabled",
         textDisabled = true
       )
-      delegate?.onPropertyChange("sid", "no")
+      emitGenerationProperty("sid", "no")
       return
     }
 
@@ -3907,7 +3947,7 @@ class ExoPlayerCore(private val activity: Activity) :
       textOverride = TrackSelectionOverride(trackGroup, 0),
       textDisabled = false
     )
-    delegate?.onPropertyChange("sid", trackId)
+    emitGenerationProperty("sid", trackId)
   }
 
   fun addSubtitleTrack(uri: String, title: String?, language: String?, mimeType: String?, select: Boolean, isContainer: Boolean = false) {

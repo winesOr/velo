@@ -127,10 +127,11 @@ class SpuriousEofRecovery {
   /// the caller run the normal completion flow.
   Future<bool> interceptEof(Player currentPlayer) async {
     // Live EOFs have their own handling, an offline file can't lose its
-    // stream, and in-flight transitions already produce expected EOFs that
-    // the completion flow ignores — all fall through untouched.
+    // stream. An EOF during a source transition belongs to the outgoing
+    // file and is consumed here, never forwarded to the replacement.
     if (isLive || _isOffline()) return false;
-    if (_transitionGate.transition != PlaybackTransition.idle) return false;
+    if (_transitionGate.transition != PlaybackTransition.idle) return true;
+    final generation = _transitionGate.generation;
     // Already parked: swallow duplicate EOF signals without burning budget
     // or re-toasting.
     if (_parked) return true;
@@ -154,11 +155,18 @@ class SpuriousEofRecovery {
     _SourceShape? source;
     if (!_transportFaultSeen() && !_isTranscoding()) {
       source = await _readSourceShape(currentPlayer);
-      // The reads yielded: a transition or a park may have landed meanwhile,
-      // the player may no longer be the screen's, and mpv delivers property
+      // An in-place reload reuses this player and may already be idle again.
+      // Only the captured generation proves these reads still describe the
+      // file that emitted the EOF. Stale EOFs are consumed so neither
+      // completion nor recovery can act on its replacement. mpv delivers property
       // changes ahead of queued log lines, so the fault behind this very EOF
       // may only now have reached the log tap.
-      if (_transitionGate.transition != PlaybackTransition.idle || _player() != currentPlayer) return false;
+      if (_transitionGate.generation != generation ||
+          _transitionGate.transition != PlaybackTransition.idle ||
+          _player() != currentPlayer ||
+          currentPlayer.disposed) {
+        return true;
+      }
       if (_parked) return true;
       if (_transportFaultSeen()) source = null;
     }

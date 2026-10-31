@@ -184,6 +184,19 @@ extension _VideoPlayerWatchTogetherMethods on VideoPlayerScreenState {
     final switchKey = '$serverId:$ratingKey';
     final localTarget = watchTogether.resolveLocalPlayback(ratingKey: ratingKey, serverId: serverId);
 
+    // The host's coordinator re-requests the room media whenever no player is
+    // bound to it — including the gap while the host's own open of that item
+    // runs (_currentMetadata is set at reload start). Reloading here would
+    // restart that open and loop with every heartbeat. A host on other media
+    // (a promoted guest) still switches below.
+    final hostMetadata = _playbackSession?.metadata ?? _currentMetadata;
+    if (watchTogether.isHost &&
+        hostMetadata.id == localTarget.ratingKey &&
+        hostMetadata.serverId == localTarget.serverId) {
+      appLogger.d('WatchTogether: host already on room media $switchKey; switch ignored');
+      return true;
+    }
+
     // Idempotent retry: already on the target with a settled player. Don't
     // test identity mid-transition — _currentMetadata is set eagerly at
     // reload start and can roll back on failure.

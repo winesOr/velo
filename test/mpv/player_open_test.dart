@@ -1355,6 +1355,117 @@ void main() {
       );
     });
 
+    test('MPV publishes each file completion once and ignores a stale source completion', () async {
+      await withMockPlayerChannels(
+        methodChannelName: 'com.plezy/mpv_player',
+        eventChannelName: 'com.plezy/mpv_player/events',
+        testBody: () async {
+          final player = PlayerNative();
+          final completions = <bool>[];
+          final subscription = player.streams.completed.listen(completions.add);
+          try {
+            player.handlePlayerEvent('start-file', {'sourceId': 1});
+            player.handlePropertyChange('eof-reached', true, sourceId: 1);
+            player.handlePlayerEvent('end-file', {'sourceId': 1, 'reason': 'eof'});
+            await Future<void>.delayed(Duration.zero);
+
+            expect(completions.where((value) => value), [true]);
+            expect(player.state.completed, isTrue);
+
+            player.handlePlayerEvent('start-file', {'sourceId': 2});
+            player.handlePlayerEvent('file-loaded', {'sourceId': 1});
+            expect(player.state.hasLoadedFile, isFalse, reason: 'the ended source cannot report the new file loaded');
+            player.handlePlayerEvent('file-loaded', {'sourceId': 2});
+            completions.clear();
+
+            // The first end-file cleared source 1, and file-loaded rearmed the
+            // new file. A delayed duplicate for source 1 still cannot complete
+            // source 2; a genuine source-2 EOF then emits exactly once.
+            player.handlePropertyChange('eof-reached', true, sourceId: 1);
+            player.handlePlayerEvent('end-file', {'sourceId': 1, 'reason': 'eof'});
+            player.handlePropertyChange('eof-reached', true, sourceId: 2);
+            player.handlePlayerEvent('end-file', {'sourceId': 2, 'reason': 'eof'});
+            await Future<void>.delayed(Duration.zero);
+
+            expect(completions.where((value) => value), [true]);
+          } finally {
+            await subscription.cancel();
+            await player.dispose();
+          }
+        },
+      );
+    });
+
+    for (final backend in ['MPV', 'ExoPlayer']) {
+      test('$backend ignores an end-of-file that arrives after open() but before the new file loads', () async {
+        final isMpv = backend == 'MPV';
+        await withMockPlayerChannels(
+          methodChannelName: isMpv ? 'com.plezy/mpv_player' : 'com.plezy/exo_player',
+          eventChannelName: isMpv ? 'com.plezy/mpv_player/events' : 'com.plezy/exo_player/events',
+          testBody: () async {
+            final player = isMpv ? PlayerNative() : PlayerAndroid();
+            final completions = <bool>[];
+            final subscription = player.streams.completed.listen(completions.add);
+            try {
+              await player.open(Media('https://example.test/next.mkv'));
+
+              // The replaced file's terminal EOF lands after open() reset the
+              // active source. Publishing it would auto-advance past the
+              // episode that was just opened (Watch Together loops forever).
+              player.handlePropertyChange('eof-reached', true);
+              player.handlePlayerEvent('end-file', {'reason': 'eof'});
+              await Future<void>.delayed(Duration.zero);
+              expect(completions.where((value) => value), isEmpty);
+              expect(player.state.completed, isFalse);
+
+              player.handlePlayerEvent('file-loaded', {});
+              player.handlePropertyChange('eof-reached', true);
+              player.handlePlayerEvent('end-file', {'reason': 'eof'});
+              await Future<void>.delayed(Duration.zero);
+              expect(completions.where((value) => value), [true]);
+            } finally {
+              await subscription.cancel();
+              await player.dispose();
+            }
+          },
+        );
+      });
+    }
+
+    test('source-qualified properties from a replaced file cannot mutate the active file', () async {
+      await withMockPlayerChannels(
+        methodChannelName: 'com.plezy/mpv_player',
+        eventChannelName: 'com.plezy/mpv_player/events',
+        testBody: () async {
+          final player = PlayerNative();
+          try {
+            player.handlePlayerEvent('start-file', {'sourceId': 1});
+            player.handlePropertyChange('pause', false, sourceId: 1);
+            player.handlePropertyChange('duration', 100.0, sourceId: 1);
+            expect(player.state.playing, isTrue);
+            expect(player.state.duration, const Duration(seconds: 100));
+
+            player.handlePlayerEvent('start-file', {'sourceId': 2});
+            player.handlePropertyChange('pause', true, sourceId: 1);
+            player.handlePropertyChange('paused-for-cache', true, sourceId: 1);
+            player.handlePropertyChange('seekable', false, sourceId: 1);
+            player.handlePropertyChange('duration', 200.0, sourceId: 1);
+            expect(player.state.playing, isTrue);
+            expect(player.state.buffering, isFalse);
+            expect(player.state.seekable, isFalse);
+            expect(player.state.duration, const Duration(seconds: 100));
+
+            player.handlePropertyChange('pause', false, sourceId: 2);
+            player.handlePropertyChange('duration', 300.0, sourceId: 2);
+            expect(player.state.playing, isTrue);
+            expect(player.state.duration, const Duration(seconds: 300));
+          } finally {
+            await player.dispose();
+          }
+        },
+      );
+    });
+
     test('state records whether the current file has rendered a frame', () async {
       await withMockPlayerChannels(
         methodChannelName: 'com.plezy/mpv_player',
@@ -1366,8 +1477,10 @@ void main() {
             player.handlePlayerEvent('start-file', {'sourceId': 1});
             player.handlePlayerEvent('file-loaded', {'sourceId': 1});
             expect(player.state.hasRenderedFrame, isFalse);
+            expect(player.state.hasLoadedFile, isTrue);
             player.handlePlayerEvent('playback-restart', {'sourceId': 1, 'positionSeconds': 0.0});
             expect(player.state.hasRenderedFrame, isTrue);
+            expect(player.state.hasLoadedFile, isTrue);
 
             // A seek's restart and end of file leave the fact in place.
             player.handlePlayerEvent('playback-restart', {'sourceId': 1, 'positionSeconds': 30.0});
@@ -1378,6 +1491,7 @@ void main() {
             // restart cannot claim the new one's frame.
             player.handlePlayerEvent('start-file', {'sourceId': 2});
             expect(player.state.hasRenderedFrame, isFalse);
+            expect(player.state.hasLoadedFile, isFalse);
             player.handlePlayerEvent('playback-restart', {'sourceId': 1, 'positionSeconds': 31.0});
             expect(player.state.hasRenderedFrame, isFalse);
             player.handlePlayerEvent('playback-restart', {'sourceId': 2, 'positionSeconds': 0.0});
@@ -1387,6 +1501,7 @@ void main() {
             // its media-item transition instead.
             player.handlePlayerEvent('file-loaded', {'sourceId': 2});
             expect(player.state.hasRenderedFrame, isFalse);
+            expect(player.state.hasLoadedFile, isTrue);
 
             // open() resolves before the backend's start-file: the fact is
             // already the new file's by then, not the outgoing file's.
@@ -1394,6 +1509,7 @@ void main() {
             expect(player.state.hasRenderedFrame, isTrue);
             await player.open(Media('https://example.test/next.mkv'));
             expect(player.state.hasRenderedFrame, isFalse);
+            expect(player.state.hasLoadedFile, isFalse);
           } finally {
             await player.dispose();
           }

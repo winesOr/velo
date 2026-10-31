@@ -121,7 +121,6 @@ class HostPlaybackCoordinator {
   int? _selfStallStartedMs;
   int _selfStallEndedMs = 0;
   int _lastSelfStallMs = 0;
-
   // Room state.
   PlaybackPhase _phase = PlaybackPhase.loading;
   int _timelinePositionMs = 0;
@@ -289,14 +288,17 @@ class HostPlaybackCoordinator {
       });
     }
     _playerSubscriptions.add(player.loadedSignals.listen((_) => _onLoadedSignal()));
+    _playerSubscriptions.add(player.fileLoadedSignals.listen((_) => _onFileLoadedSignal()));
     _playerSubscriptions.add(player.bufferingChanges.listen(_onSelfBuffering));
     _playerSubscriptions.add(player.playingIntents.listen(_onLocalPlayingIntent));
     _playerSubscriptions.add(player.playingAcks.listen(_onAcknowledgedPlaying));
     unawaited(player.setCachePauseWait(hostCachePauseWait));
-    if (player.firstFrameSeen) {
-      _localReady = true;
-      _maybeLocalLoaded();
-    }
+    // A paused open can finish at `file-loaded` without producing the
+    // renderer event until the coordinated play wakes it. A loaded file is
+    // therefore sufficient to join the group start; a frame is not a
+    // prerequisite for asking the player to render one.
+    _localReady = player.firstFrameSeen || player.fileLoaded;
+    if (_localReady) _maybeLocalLoaded();
     if (!_matchingPlayer) _requestMatchingMedia();
     if (_phase != PlaybackPhase.playing && player.playing) unawaited(player.pause());
     if (_phase == PlaybackPhase.waitingForPeers) _checkAllReady();
@@ -521,12 +523,25 @@ class HostPlaybackCoordinator {
     _maybeLocalLoaded();
   }
 
+  void _onFileLoadedSignal() {
+    if (!_matchingPlayer) return;
+    _becomeReadyFromLoadedFile();
+  }
+
+  void _becomeReadyFromLoadedFile() {
+    if (!_matchingPlayer || !_player!.fileLoaded) return;
+    if (_localReady) return;
+    appLogger.d('WatchTogether: File loaded; joining the coordinated start before the first-frame event');
+    _localReady = true;
+    _maybeLocalLoaded();
+  }
+
   void _maybeLocalLoaded() {
     if (!_matchingPlayer || !hasActiveEpoch) return;
     if (!_localReady || !_startupHoldResolved) {
       appLogger.d(
         'WatchTogether: Host player not ready yet '
-        '(frame=${_localReady ? 'seen' : 'pending'}, startupHold=${_startupHoldResolved ? 'released' : 'pending'})',
+        '(ready=${_localReady ? 'yes' : 'pending'}, startupHold=${_startupHoldResolved ? 'released' : 'pending'})',
       );
       return;
     }
@@ -837,7 +852,13 @@ class HostPlaybackCoordinator {
   }
 
   void _checkAllReady() {
-    if (_disposed || _phase != PlaybackPhase.waitingForPeers) return;
+    if (_disposed || _phase == PlaybackPhase.playing) return;
+    _becomeReadyFromLoadedFile();
+    if (_phase == PlaybackPhase.loading) {
+      if (!_localReady || !_startupHoldResolved) return;
+      _maybeLocalLoaded();
+    }
+    if (_phase != PlaybackPhase.waitingForPeers) return;
     final gating = _gatingPeers();
     if (gating.isNotEmpty) {
       _armSafetyIfGated();
@@ -1024,7 +1045,7 @@ class HostPlaybackCoordinator {
     if (_backgrounded || _disposed || !hasActiveEpoch) return;
     final player = _matchingPlayer ? _player : null;
     _requestMatchingMedia();
-    if (_phase == PlaybackPhase.waitingForPeers) _checkAllReady();
+    _checkAllReady();
     // Already-dispatched native rate commands cannot be retracted at a role
     // swap; the current owner repairs any late effect, never adopts it.
     if (player != null && (player.rate - _rate).abs() > 0.001) unawaited(player.setRate(_rate));

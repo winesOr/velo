@@ -24,6 +24,15 @@ class PlayerState {
   /// `start-file`). Survives seeks and end of file.
   final bool hasRenderedFrame;
 
+  /// Whether the backend accepted the current file (`file-loaded`).
+  ///
+  /// This is weaker than [hasRenderedFrame], but stronger than a non-zero
+  /// duration: an open can install a known timeline duration before the
+  /// backend has accepted the replacement file. Cleared when a new file
+  /// begins or an open starts, and restored with the outgoing file when a
+  /// replacement open is rejected.
+  final bool hasLoadedFile;
+
   const PlayerState({
     this.playing = false,
     this.completed = false,
@@ -40,6 +49,7 @@ class PlayerState {
     this.audioDevices = const [],
     this.bufferRanges = const [],
     this.hasRenderedFrame = false,
+    this.hasLoadedFile = false,
   });
 
   PlayerState copyWith({
@@ -58,6 +68,7 @@ class PlayerState {
     List<AudioDevice>? audioDevices,
     List<BufferRange>? bufferRanges,
     bool? hasRenderedFrame,
+    bool? hasLoadedFile,
   }) {
     return PlayerState(
       playing: playing ?? this.playing,
@@ -75,6 +86,7 @@ class PlayerState {
       audioDevices: audioDevices ?? this.audioDevices,
       bufferRanges: bufferRanges ?? this.bufferRanges,
       hasRenderedFrame: hasRenderedFrame ?? this.hasRenderedFrame,
+      hasLoadedFile: hasLoadedFile ?? this.hasLoadedFile,
     );
   }
 

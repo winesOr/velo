@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:canvas_danmaku/canvas_danmaku.dart';
 import 'package:canvas_danmaku/scroll_danmaku_painter.dart';
 import 'package:canvas_danmaku/static_danmaku_painter.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/danmaku/danmaku_comment.dart';
 import 'package:plezy/danmaku/danmaku_overlay.dart';
@@ -12,6 +14,24 @@ import 'package:plezy/danmaku/danmaku_settings_repository.dart';
 import 'package:plezy/mpv/mpv.dart';
 
 import '../test_helpers/player_streams.dart';
+
+const _canvasKey = ValueKey('danmaku_canvas');
+
+Future<int> _visiblePixels(WidgetTester tester) async {
+  return (await tester.runAsync(() async {
+    final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(_canvasKey));
+    final image = await boundary.toImage(pixelRatio: 1);
+    final bytes = (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+    image.dispose();
+    var count = 0;
+    for (var index = 0; index < bytes.lengthInBytes; index += 4) {
+      if (bytes.getUint8(index) != 0 || bytes.getUint8(index + 1) != 0 || bytes.getUint8(index + 2) != 0) {
+        count++;
+      }
+    }
+    return count;
+  }))!;
+}
 
 class _ClockPlayer implements Player {
   final positions = StreamController<Duration>.broadcast(sync: true);
@@ -112,11 +132,67 @@ void main() {
     // Mount production directly: no substituted controller or second canvas.
     await tester.pumpWidget(
       MaterialApp(
-        home: DanmakuOverlay(player: player, session: session),
+        home: RepaintBoundary(
+          key: _canvasKey,
+          child: ColoredBox(
+            color: Colors.black,
+            child: DanmakuOverlay(player: player, session: session),
+          ),
+        ),
       ),
     );
     await tester.pump();
     return (session: session, player: player);
+  }
+
+  for (final paused in [false, true]) {
+    testWidgets('disabling danmaku clears painted pixels while ${paused ? 'paused' : 'playing'}', (tester) async {
+      final fixture = await mount(tester);
+      fixture.session.load(const [
+        DanmakuComment(timeMs: 1000, text: 'scroll'),
+        DanmakuComment(timeMs: 1000, text: 'top', mode: 5),
+        DanmakuComment(timeMs: 1000, text: 'bottom', mode: 4),
+        DanmakuComment(timeMs: 3000, text: 'after enabling'),
+      ], sourceLabel: 'local');
+      final comments = fixture.session.comments;
+      fixture.player.tick(1000);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(_scroll(tester), hasLength(1));
+      expect(_scroll(tester).single.xPosition, lessThan(800));
+      expect(_fixed(tester), hasLength(2));
+      expect(await _visiblePixels(tester), greaterThan(0));
+      if (paused) fixture.player.setPaused(true);
+
+      await fixture.session.updateStyle(enabled: false);
+      await tester.pump();
+      expect(_scroll(tester), isEmpty);
+      expect(_fixed(tester), isEmpty);
+      expect(
+        await _visiblePixels(tester),
+        0,
+        reason: 'clearing the item lists must also remove the last painted frame',
+      );
+      fixture.player.tick(2000);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(await _visiblePixels(tester), 0);
+      expect(fixture.session.comments, same(comments));
+
+      await fixture.session.updateStyle(enabled: true);
+      await tester.pump();
+      expect(await _visiblePixels(tester), 0, reason: 're-enabling must not restore old comments');
+      fixture.player.setPaused(false);
+      fixture.player.tick(3000);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(_scroll(tester).map((item) => item.content.text), ['after enabling']);
+      expect(await _visiblePixels(tester), greaterThan(0));
+      expect(fixture.session.comments, same(comments));
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
   }
 
   testWidgets('one top lane admits following comments while its previous comments remain visible', (tester) async {

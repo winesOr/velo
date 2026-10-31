@@ -148,6 +148,7 @@ class GuestPlaybackReconciler {
       startupHold.then((_) {
         if (authority != _authority) return;
         _startupHoldResolved = true;
+        _becomeReadyFromLoadedFile();
         _maybeBecomeReady();
       });
     }
@@ -164,6 +165,7 @@ class GuestPlaybackReconciler {
         }
       }),
     );
+    _playerSubscriptions.add(player.fileLoadedSignals.listen((_) => _onFileLoaded()));
     _playerSubscriptions.add(
       player.bufferingChanges.listen((_) {
         _sendStatus();
@@ -173,12 +175,28 @@ class GuestPlaybackReconciler {
     _playerSubscriptions.add(player.playingAcks.listen((_) => _reconcile()));
 
     _tickTimer = Timer.periodic(const Duration(milliseconds: tickMs), (_) => _onTick());
-    if (_firstFrameSeen && _startupHoldResolved) {
-      _localReady = true;
-      appLogger.d('WatchTogether: Guest player ready for $_attachedMediaKey');
-    }
+    // The host's coordinated play may be the first command that makes a
+    // paused backend present a frame. `file-loaded` therefore proves this
+    // peer can follow the room even when the first-frame event has not
+    // arrived yet.
+    _localReady = _startupHoldResolved && (_firstFrameSeen || player.fileLoaded);
+    if (_localReady) appLogger.d('WatchTogether: Guest player ready for $_attachedMediaKey');
     _sendStatus();
     if (_localReady) _reconcile();
+  }
+
+  void _onFileLoaded() {
+    if (_localReady || _player == null || !_player!.fileLoaded) return;
+    _becomeReadyFromLoadedFile();
+  }
+
+  void _becomeReadyFromLoadedFile() {
+    if (_localReady || _player == null || !_player!.fileLoaded) return;
+    if (!_startupHoldResolved) return;
+    appLogger.d('WatchTogether: Guest file loaded; reporting ready before the first-frame event');
+    _localReady = true;
+    _sendStatus();
+    _reconcile();
   }
 
   void _maybeBecomeReady() {
@@ -186,7 +204,7 @@ class GuestPlaybackReconciler {
     if (!_firstFrameSeen || !_startupHoldResolved) {
       appLogger.d(
         'WatchTogether: Guest player not ready yet '
-        '(frame=${_firstFrameSeen ? 'seen' : 'pending'}, startupHold=${_startupHoldResolved ? 'released' : 'pending'})',
+        '(ready=${_localReady ? 'yes' : 'pending'}, startupHold=${_startupHoldResolved ? 'released' : 'pending'})',
       );
       return;
     }
@@ -444,6 +462,7 @@ class GuestPlaybackReconciler {
   // ---------------------------------------------------------------------
 
   void _onTick() {
+    _becomeReadyFromLoadedFile();
     _reconcile();
     // Keep the host's view fresh while we're the one buffering.
     final player = _player;

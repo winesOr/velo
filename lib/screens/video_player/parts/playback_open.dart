@@ -394,7 +394,21 @@ extension _VideoPlayerOpenMethods on VideoPlayerScreenState {
     required Future<void> Function(String reason) resumeAfterRefresh,
     required Future<void>? watchTogetherStartupHold,
   }) async {
-    appLogger.d('Display matching: waiting for the first frame before negotiating the display');
+    final watchTogetherOwnsStart = watchTogetherStartupHold != null;
+    if (watchTogetherOwnsStart) {
+      // A room start is a deliberate group play command. Waiting for
+      // playback-restart here creates a cycle: the paused open cannot render
+      // its first frame, the room cannot play until this hold releases, and
+      // this hold cannot release until playback renders. A loaded file is
+      // sufficient to accept the command. Keep the room bound so its
+      // scheduled start is observed, and let this negotiation finish once
+      // that first play has produced the frame.
+      appLogger.d(
+        'Display matching: waiting for the room start to produce the first frame before negotiating the display',
+      );
+    } else {
+      appLogger.d('Display matching: waiting for the first frame before negotiating the display');
+    }
     final startupReady = await plan._startupFrameReady;
     if (!isCurrent()) {
       appLogger.d('Display matching: startup gate released for a superseded or failed open; not resuming');
@@ -417,11 +431,7 @@ extension _VideoPlayerOpenMethods on VideoPlayerScreenState {
       }
     }
 
-    // Everything below drives pause/play transitions the viewer did not ask
-    // for (the measurement window, the hold around the switch); a bound
-    // Watch Together room would broadcast them as intents and service remote
-    // requests against the player mid-measurement.
-    await _withWatchTogetherDetached(startupHold: watchTogetherStartupHold, () async {
+    Future<void> negotiateDisplay() async {
       try {
         if (PlatformDetector.isAppleTV()) {
           // The decoded stream's criteria already went to AVDisplayManager
@@ -458,9 +468,22 @@ extension _VideoPlayerOpenMethods on VideoPlayerScreenState {
       } catch (e) {
         appLogger.w('Failed to negotiate the display at the first frame', error: e);
       }
-    });
+    }
+
+    // Everything below drives pause/play transitions the viewer did not ask
+    // for (the measurement window, the hold around the switch); a bound
+    // Watch Together room would broadcast them as intents and service remote
+    // requests against the player mid-measurement. The room-owned path first
+    // releases its startup hold so the coordinated start can produce the
+    // frame this method is waiting for, then detaches for the measurement.
+    if (watchTogetherOwnsStart) {
+      await resumeAfterRefresh('room start produced the first frame');
+    }
+    await _withWatchTogetherDetached(startupHold: watchTogetherStartupHold, negotiateDisplay);
     if (!isCurrent()) return;
-    await resumeAfterRefresh('first-frame display negotiation');
+    if (!watchTogetherOwnsStart) {
+      await resumeAfterRefresh('first-frame display negotiation');
+    }
   }
 
   /// What the player presents, measured rather than guessed. A decoder that

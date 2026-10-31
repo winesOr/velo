@@ -66,7 +66,20 @@ void main() {
     expect(classify('Could not open codec.', prefix: 'vd'), isNull);
   });
 
-  test('only error and fatal levels count', () {
+  test('an accepted file that ends without any media data fails before its empty restart', () {
+    // A paused Watch Together open can accept an MKV header, fail its HTTP
+    // seek with 403, then emit an empty playback-restart and EOF at zero.
+    // mpv logs this terminal verdict at info, without an end-file error.
+    expect(classify('got EOF with no data before it\n', level: PlayerLogLevel.info), PlayerError.streamInitFailed);
+  });
+
+  test('routine EOF and demuxer messages do not fail an open', () {
+    expect(classify('EOF reached.', level: PlayerLogLevel.info, prefix: 'mkv'), isNull);
+    expect(classify('video EOF reached', level: PlayerLogLevel.info), isNull);
+    expect(classify('got EOF with no data before it', level: PlayerLogLevel.info, prefix: 'ffmpeg'), isNull);
+  });
+
+  test('stream initialization diagnostics require error or fatal levels', () {
     expect(classify('Could not open/initialize audio device -> no sound.', level: PlayerLogLevel.warn), isNull);
   });
 

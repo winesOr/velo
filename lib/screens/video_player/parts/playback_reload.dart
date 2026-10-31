@@ -710,7 +710,14 @@ extension _VideoPlayerReloadMethods on VideoPlayerScreenState {
             return isCurrentReload();
           },
           afterMediaOpened: (_, holdPlaybackStart, _) async {
-            if (wtOwnsStart && holdPlaybackStart) reloadStartupHold = Completer<void>();
+            if (wtOwnsStart && holdPlaybackStart) {
+              final startupHold = Completer<void>();
+              reloadStartupHold = startupHold;
+              // File-loaded is this room's readiness boundary. Completing
+              // the display gate here lets the room start the replacement
+              // and thereby produce the first frame the gate is waiting for.
+              startupHold.complete();
+            }
             _episode.completionLatch.reset();
             if (isItemChange) {
               // Same-item reloads (including the spurious-EOF recovery itself

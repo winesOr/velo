@@ -395,6 +395,69 @@ void main() {
       });
     });
 
+    test('a loaded host starts the room without waiting for a first-frame event', () {
+      fakeAsync((async) {
+        final h = _Harness(async);
+        h.attachForMedia(async);
+
+        // A paused mpv open may accept the file without presenting a frame.
+        // The coordinated play is the command that makes it present one.
+        h.player.emitFileLoaded();
+        async.flushMicrotasks();
+        async.elapse(Duration.zero);
+
+        expect(h.last.phase, PlaybackPhase.playing);
+        expect(h.last.waitingOn, isEmpty);
+        expect(h.player.state.playing, isTrue);
+        h.dispose();
+      });
+    });
+
+    test('a file loaded before host attachment cannot leave the room loading forever', () {
+      fakeAsync((async) {
+        final h = _Harness(async);
+        // The screen attaches only after open() returns. A fast backend can
+        // have already emitted file-loaded by that point.
+        h.player.emitFileLoaded();
+        // Deliver the event to the already-created AttachedPlayer before the
+        // coordinator subscribes. Otherwise this only proves a queued event
+        // reaches the later listener, not that the player's loaded state can
+        // seed recovery after the signal has already gone.
+        async.flushMicrotasks();
+        h.attachForMedia(async);
+
+        async.flushMicrotasks();
+        async.elapse(Duration.zero);
+
+        expect(h.last.phase, PlaybackPhase.playing);
+        expect(h.last.waitingOn, isEmpty);
+        expect(h.player.state.playing, isTrue);
+        h.dispose();
+      });
+    });
+
+    test('a loaded host joins immediately once its startup gate releases', () {
+      fakeAsync((async) {
+        final h = _Harness(async);
+        final hold = Completer<void>();
+        h.coordinator.attach(h.attached, ratingKey: 'rk1', serverId: 'srv', startupHold: hold.future);
+        async.flushMicrotasks();
+        h.player.emitFileLoaded();
+
+        async.flushMicrotasks();
+        expect(h.last.phase, PlaybackPhase.loading);
+        expect(h.player.state.playing, isFalse);
+
+        hold.complete();
+        async.flushMicrotasks();
+        async.elapse(Duration.zero);
+
+        expect(h.last.phase, PlaybackPhase.playing);
+        expect(h.player.state.playing, isTrue);
+        h.dispose();
+      });
+    });
+
     test('a stale hold cannot release a replacement attachment of the same player', () {
       fakeAsync((async) {
         final h = _Harness(async);

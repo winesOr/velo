@@ -60,8 +60,13 @@ const List<String> _streamInitFailedLines = [
 /// Android's video plane that last step is a hold instead: the fork keeps the
 /// chain for the core's switch to a GL vo (`vo-format-rejected`).
 String? openFailureCauseFromLog({required PlayerLogLevel level, required String prefix, required String text}) {
-  if (level != PlayerLogLevel.error && level != PlayerLogLevel.fatal) return null;
   final line = text.trim();
+  // A demuxer can accept the headers, lose the stream (for example, an HTTP
+  // seek refused with 403), then report a clean EOF and an empty restart.
+  // This info-level verdict precedes that restart, which must not settle the
+  // open as successful or leave its zero-position EOF silently ignored.
+  if (prefix == 'cplayer' && line == 'got EOF with no data before it') return PlayerError.streamInitFailed;
+  if (level != PlayerLogLevel.error && level != PlayerLogLevel.fatal) return null;
   if (line == _audioOutputFailedLine) return PlayerError.audioOutputFailed;
   if (line == _videoChainFailedLine) return PlayerError.streamInitFailed;
   if (line == _outputConversionFailedLine) return prefix == 'af' ? PlayerError.streamInitFailed : null;

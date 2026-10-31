@@ -91,7 +91,7 @@ class ExoPlayerPlugin :
   }
 
   private sealed class PendingMpvSignal {
-    data class Property(val id: Int, val value: Any?) : PendingMpvSignal()
+    data class Property(val id: Int, val value: Any?, val sourceId: Long?) : PendingMpvSignal()
     data class Event(val name: String, val data: Map<String, Any>?) : PendingMpvSignal()
   }
 
@@ -103,7 +103,11 @@ class ExoPlayerPlugin :
 
   private inner class MpvDelegate(private val core: MpvPlayerCore) : PlayerDelegate {
     override fun onPropertyChange(name: String, value: Any?) {
-      runOnMain { forwardMpvProperty(core, name, value) }
+      runOnMain { forwardMpvProperty(core, name, value, null) }
+    }
+
+    override fun onPropertyChange(name: String, value: Any?, sourceId: Long?) {
+      runOnMain { forwardMpvProperty(core, name, value, sourceId) }
     }
 
     override fun onEvent(name: String, data: Map<String, Any>?) {
@@ -529,17 +533,17 @@ class ExoPlayerPlugin :
     request.error("OPEN_SUPERSEDED", "A newer media open replaced this request")
   }
 
-  private fun forwardMpvProperty(core: MpvPlayerCore, name: String, value: Any?) {
+  private fun forwardMpvProperty(core: MpvPlayerCore, name: String, value: Any?, sourceId: Long?) {
     if (mpvCore !== core || !usingMpvFallback) return
     val propId = observedProperties[name]?.id ?: return
     val gate = mpvSignalGate
     if (gate != null) {
       if (gate.core === core && gate.mediaGeneration == mediaGeneration) {
-        gate.signals.add(PendingMpvSignal.Property(propId, value))
+        gate.signals.add(PendingMpvSignal.Property(propId, value, sourceId))
       }
       return
     }
-    if (mpvForwardGeneration == mediaGeneration) channels.emitProperty(propId, value)
+    if (mpvForwardGeneration == mediaGeneration) channels.emitProperty(propId, value, sourceId)
   }
 
   private fun forwardMpvEvent(core: MpvPlayerCore, name: String, data: Map<String, Any>?) {
@@ -560,7 +564,7 @@ class ExoPlayerPlugin :
     mpvSignalGate = null
     for (signal in gate.signals) {
       when (signal) {
-        is PendingMpvSignal.Property -> channels.emitProperty(signal.id, signal.value)
+        is PendingMpvSignal.Property -> channels.emitProperty(signal.id, signal.value, signal.sourceId)
         is PendingMpvSignal.Event -> channels.emitEvent(signal.name, signal.data)
       }
     }
@@ -1325,8 +1329,12 @@ class ExoPlayerPlugin :
   // ExoPlayerDelegate
 
   override fun onPropertyChange(name: String, value: Any?) {
+    onPropertyChange(name, value, null)
+  }
+
+  override fun onPropertyChange(name: String, value: Any?, sourceId: Long?) {
     val propId = observedProperties[name]?.id ?: return
-    channels.emitProperty(propId, value)
+    channels.emitProperty(propId, value, sourceId)
   }
 
   override fun onEvent(name: String, data: Map<String, Any>?) {

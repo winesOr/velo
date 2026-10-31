@@ -20,6 +20,7 @@ class FakeSyncPlayer implements Player {
     bool seekable = true,
     double rate = 1.0,
     bool hasRenderedFrame = false,
+    bool hasLoadedFile = false,
   }) : _state = PlayerState(
          playing: playing,
          buffering: buffering,
@@ -28,10 +29,12 @@ class FakeSyncPlayer implements Player {
          seekable: seekable,
          rate: rate,
          hasRenderedFrame: hasRenderedFrame,
+         hasLoadedFile: hasLoadedFile,
        );
 
   PlayerState _state;
   bool _disposed = false;
+  bool _completionEmittedForActiveFile = false;
 
   /// When set, the next command throws this and clears the field.
   Object? nextCommandError;
@@ -52,10 +55,12 @@ class FakeSyncPlayer implements Player {
   final commandLog = <String>[];
 
   final _playingController = StreamController<bool>.broadcast();
+  final _completedController = StreamController<bool>.broadcast();
   final _bufferingController = StreamController<bool>.broadcast();
   final _rateController = StreamController<double>.broadcast();
   final _playbackRestartController = StreamController<void>.broadcast();
   final _fileStartedController = StreamController<void>.broadcast();
+  final _fileLoadedController = StreamController<void>.broadcast();
   final _durationController = StreamController<Duration>.broadcast();
 
   @override
@@ -67,7 +72,7 @@ class FakeSyncPlayer implements Player {
   @override
   PlayerStreams get streams => PlayerStreams(
     playing: _playingController.stream,
-    completed: const Stream<bool>.empty(),
+    completed: _completedController.stream,
     buffering: _bufferingController.stream,
     position: const Stream<Duration>.empty(),
     duration: _durationController.stream,
@@ -84,6 +89,7 @@ class FakeSyncPlayer implements Player {
     bufferRanges: const Stream<List<BufferRange>>.empty(),
     playbackRestart: _playbackRestartController.stream,
     fileStarted: _fileStartedController.stream,
+    fileLoaded: _fileLoadedController.stream,
     backendSwitched: const Stream<void>.empty(),
   );
 
@@ -183,7 +189,8 @@ class FakeSyncPlayer implements Player {
   /// resolved. Like the real player, the per-file facts reset here — before
   /// the backend's `start-file` or anything else from the new file arrives.
   void beginOpen() {
-    _state = _state.copyWith(completed: false, hasRenderedFrame: false);
+    _completionEmittedForActiveFile = false;
+    _state = _state.copyWith(completed: false, hasRenderedFrame: false, hasLoadedFile: false);
   }
 
   /// The backend started a load (mpv `start-file`). Every real backend sends
@@ -191,8 +198,17 @@ class FakeSyncPlayer implements Player {
   /// attempt's signals by it; a fake `open` emits it before its restart.
   /// Like the real player, the new file has rendered nothing yet.
   void emitFileStarted() {
-    _state = _state.copyWith(hasRenderedFrame: false);
+    _completionEmittedForActiveFile = false;
+    _state = _state.copyWith(hasRenderedFrame: false, hasLoadedFile: false);
     _fileStartedController.add(null);
+  }
+
+  /// The backend accepted the file. A paused open can stop here when its
+  /// renderer never presents a first frame.
+  void emitFileLoaded() {
+    _completionEmittedForActiveFile = false;
+    _state = _state.copyWith(hasRenderedFrame: false, hasLoadedFile: true);
+    _fileLoadedController.add(null);
   }
 
   /// First frame rendered (after load and after every seek). Like the real
@@ -231,6 +247,26 @@ class FakeSyncPlayer implements Player {
     _state = _state.copyWith(completed: completed);
   }
 
+  /// Emits the raw completion duplicate the native Android backend can produce
+  /// after the screen has already opened a replacement. This deliberately
+  /// bypasses per-file de-duplication so screen-level generation guards are
+  /// exercised rather than the fake hiding the race.
+  void emitStaleCompletionAfterOpen(bool completed) {
+    _state = _state.copyWith(completed: completed);
+    _completedController.add(completed);
+  }
+
+  void emitCompletion(bool completed) {
+    setCompleted(completed);
+    if (completed) {
+      if (_completionEmittedForActiveFile) return;
+      _completionEmittedForActiveFile = true;
+    } else {
+      _completionEmittedForActiveFile = false;
+    }
+    _completedController.add(completed);
+  }
+
   @override
   bool get disposed => _disposed;
 
@@ -239,10 +275,12 @@ class FakeSyncPlayer implements Player {
     if (_disposed) return;
     _disposed = true;
     await _playingController.close();
+    await _completedController.close();
     await _bufferingController.close();
     await _rateController.close();
     await _playbackRestartController.close();
     await _fileStartedController.close();
+    await _fileLoadedController.close();
     await _durationController.close();
   }
 

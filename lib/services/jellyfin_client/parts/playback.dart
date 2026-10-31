@@ -1170,12 +1170,13 @@ mixin _JellyfinPlaybackMethods on _JellyfinClientInternals implements PlaybackPr
   /// watch-progress sync, which replays a recorded position — leave it null,
   /// which Emby rejects with HTTP 400 (see
   /// [MediaBrowserDialect.requiresPlaySessionId]). The synthesized id is
-  /// derived from [itemId] so the started/progress/stopped triple of one replay
-  /// lands on a single server-side session row instead of orphaning each call.
+  /// scoped to this device, account, and [itemId] so a replay's
+  /// started/progress/stopped triple stays on one server-side session row.
+  /// An item-only id makes two devices watching the same episode collide.
   String? _resolvePlaySessionId(String? playSessionId, String itemId) {
     if (playSessionId != null) return playSessionId;
     if (!dialect.requiresPlaySessionId) return null;
-    return 'plezy-replay-$itemId';
+    return 'plezy-replay-${connection.deviceId}-${connection.userId}-$itemId';
   }
 
   /// Tell the server the user has started playing [itemId].

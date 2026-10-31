@@ -2,7 +2,7 @@ part of '../../video_player_screen.dart';
 
 extension _VideoPlayerPlaybackPromptMethods on VideoPlayerScreenState {
   void _onVideoCompleted(bool completed, {bool skipAutoPlayCountdown = false}) async {
-    if (!completed) return;
+    if (!completed || !mounted || _shuttingDown) return;
     // Live TV streams are continuous — ignore transient EOF events while an
     // HLS playlist refreshes or crosses a discontinuity.
     if (widget.isLive) {
@@ -19,6 +19,21 @@ extension _VideoPlayerPlaybackPromptMethods on VideoPlayerScreenState {
       _logVideoCompleted('resolvingAdjacency');
       return;
     }
+    // An item that never produced a frame has not played: an end signal here
+    // is a failed or stuck open, not the end of the episode. The open
+    // deadline and error UI own it; advancing would skip an unwatched item.
+    if (!_firstFrame.rendered) {
+      _logVideoCompleted('noFirstFrame');
+      return;
+    }
+    final generation = _transitionGate.generation;
+    final completionPlayer = player;
+    bool isCurrentCompletion() =>
+        mounted &&
+        !_shuttingDown &&
+        player == completionPlayer &&
+        _transitionGate.generation == generation &&
+        _transitionGate.transition == PlaybackTransition.idle;
 
     // mpv does not flip the `pause` property on EOF, so _onPlayingStateChanged
     // never fires false.  Normalize all playback-dependent state.
@@ -78,7 +93,7 @@ extension _VideoPlayerPlaybackPromptMethods on VideoPlayerScreenState {
       } finally {
         _episode.isResolvingCompletionAdjacency = false;
       }
-      if (!mounted) return;
+      if (!mounted || !isCurrentCompletion() || !_canNavigateMediaItems()) return;
       navigationAction = completionNavigationAction(
         hasNext: _episode.next != null,
         adjacentStatus: _episode.nextStatus,
@@ -114,7 +129,7 @@ extension _VideoPlayerPlaybackPromptMethods on VideoPlayerScreenState {
       final isKeyboardMode = PlatformDetector.isTV() && InputModeTracker.isKeyboardMode(context, listen: false);
 
       final settings = await SettingsService.getInstance();
-      if (!mounted) return;
+      if (!mounted || !isCurrentCompletion() || !_canNavigateMediaItems()) return;
       final autoPlayEnabled = !serverStopped && settings.read(SettingsService.autoPlayNextEpisode);
       final countdownSeconds = settings.read(SettingsService.playNextCountdown);
 

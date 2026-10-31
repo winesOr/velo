@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/watch_together/models/playback_state.dart';
@@ -427,6 +429,45 @@ void main() {
 
         h.reconciler.detachPlayer();
         expect(h.statuses.last.ready, isFalse);
+        h.dispose();
+      });
+    });
+
+    test('a loaded guest reports ready and follows the room before its first frame', () {
+      fakeAsync((async) {
+        final h = _Harness(async);
+        h.reconciler.attach(h.attached, ratingKey: 'rk1', serverId: 'srv');
+        h.player.emitFileLoaded();
+        async.flushMicrotasks();
+
+        h.reconciler.onState(
+          h.state(phase: PlaybackPhase.playing, anchorPositionMs: 0, anchorHostTimeMs: h.nowMs() - 1000),
+        );
+        async.flushMicrotasks();
+
+        expect(h.statuses.last.ready, isTrue);
+        expect(h.player.state.playing, isTrue);
+        h.dispose();
+      });
+    });
+
+    test('a loaded guest joins immediately once its startup gate releases', () {
+      fakeAsync((async) {
+        final h = _Harness(async);
+        final hold = Completer<void>();
+        h.reconciler.attach(h.attached, ratingKey: 'rk1', serverId: 'srv', startupHold: hold.future);
+        h.player.emitFileLoaded();
+
+        h.reconciler.onState(h.state(phase: PlaybackPhase.playing, anchorPositionMs: 0));
+        async.flushMicrotasks();
+        expect(h.statuses.last.ready, isFalse);
+        expect(h.player.state.playing, isFalse);
+
+        hold.complete();
+        async.flushMicrotasks();
+
+        expect(h.statuses.last.ready, isTrue);
+        expect(h.player.state.playing, isTrue);
         h.dispose();
       });
     });

@@ -321,8 +321,9 @@ extension _VideoPlayerPlaybackStartMethods on VideoPlayerScreenState {
         },
         afterMediaOpened: (shouldAutoPlay, holdPlaybackStart, wtOwnsStart) async {
           // Attach player to Watch Together session for sync (if in session).
-          // With a frame-rate startup gate pending, sync readiness waits for
-          // its release so the group start can't fire mid display switch.
+          // The room may begin from file-loaded even when a display-matching
+          // gate is pending. The resulting coordinated play produces the
+          // first frame that gate needs instead of waiting for one first.
           if (isCurrentStart() && !_isOfflinePlayback && watchTogetherLease != null) {
             _commitWatchTogetherSelection(
               watchTogether,
@@ -330,7 +331,14 @@ extension _VideoPlayerPlaybackStartMethods on VideoPlayerScreenState {
               _currentMetadata,
               resumePosition ?? Duration.zero,
             );
-            if (wtOwnsStart && holdPlaybackStart) wtStartupHold = Completer<void>();
+            if (wtOwnsStart && holdPlaybackStart) {
+              final startupHold = Completer<void>();
+              wtStartupHold = startupHold;
+              // Readiness is based on file-loaded. Release the startup hold
+              // immediately so the room's group start is not waiting on the
+              // first frame that only that start can render.
+              startupHold.complete();
+            }
             _attachToWatchTogetherSession(lease: watchTogetherLease, startupHold: wtStartupHold?.future);
           }
           if (shouldAutoPlay && PlatformDetector.isAutomotive()) {

@@ -56,8 +56,9 @@ void main() {
     expect(player.state.duration, duration);
     expect(player.state.playing, isTrue);
 
-    // The renderers never ended; the native side pins the timeline at the end
-    // and reports the file as finished.
+    // The renderers never ended; the native side establishes the source, pins
+    // the timeline at the end and reports the file as finished.
+    player.handlePlayerEvent('file-loaded', const {});
     player.handlePropertyChange('time-pos', durationMs / 1000.0);
     player.handlePropertyChange('paused-for-cache', false);
     player.handlePropertyChange('pause', true);
