@@ -264,7 +264,9 @@ class _SyncReceiveScreenState extends State<SyncReceiveScreen> {
           else if (imported)
             const SizedBox.square(
               dimension: 248,
-              child: Center(child: Icon(Icons.check_circle_rounded, size: 150, color: Colors.greenAccent)),
+              child: Center(
+                child: AppIcon(Symbols.check_circle_rounded, fill: 1, size: 150, color: Colors.greenAccent),
+              ),
             )
           else if (pairing != null)
             Container(

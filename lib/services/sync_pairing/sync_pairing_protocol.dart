@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
@@ -575,8 +574,6 @@ class SyncPairingCrypto {
     return SyncPayload.fromJson(Map<String, dynamic>.from(json));
   }
 }
-
-Uint8List utf8Bytes(String value) => Uint8List.fromList(utf8.encode(value));
 
 /// Small HTTP transport used only for the local, one-shot pairing exchange.
 ///

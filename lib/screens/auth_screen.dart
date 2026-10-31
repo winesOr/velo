@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:plezy/widgets/app_icon.dart';
 import 'package:provider/provider.dart';
 import '../connection/connection.dart';
 import '../connection/connection_registry.dart';
@@ -519,7 +520,7 @@ class _AuthScreenState extends State<AuthScreen> {
       children: [
         _buildTvActionButton(
           context: context,
-          icon: const Icon(Symbols.sync_rounded),
+          icon: const AppIcon(Symbols.sync_rounded),
           label: t.auth.syncFromPhone,
           onPressed: busy ? null : _openSyncReceive,
           primary: true,
@@ -527,7 +528,7 @@ class _AuthScreenState extends State<AuthScreen> {
         const SizedBox(height: 14),
         _buildTvActionButton(
           context: context,
-          icon: const Icon(Symbols.language_rounded),
+          icon: const AppIcon(Symbols.language_rounded),
           label: t.auth.useBrowser,
           onPressed: busy ? null : startBrowserAfterRecovery,
           primary: false,
@@ -644,7 +645,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 mainAxisAlignment: .center,
                 mainAxisSize: .min,
                 children: [
-                  const Icon(Symbols.sync_rounded, size: 20),
+                  const AppIcon(Symbols.sync_rounded, size: 20),
                   const SizedBox(width: 8),
                   Text(t.auth.syncFromPhone),
                 ],
@@ -669,7 +670,7 @@ class _AuthScreenState extends State<AuthScreen> {
             child: ElevatedButton.icon(
               onPressed: busy ? null : _openSyncScan,
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-              icon: const Icon(Symbols.qr_code_scanner_rounded, size: 20),
+              icon: const AppIcon(Symbols.qr_code_scanner_rounded, size: 20),
               label: Text(t.auth.scanSyncCode),
             ),
           ),
