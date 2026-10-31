@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../utils/desktop_window_padding.dart';
 import '../services/fullscreen_state_manager.dart';
 import '../theme/mono_presentation.dart';
+import '../utils/platform_detector.dart';
 import 'app_bar_back_button.dart';
 
 /// Page chrome stays outside the scrollable, including during pull-to-refresh
@@ -20,6 +21,7 @@ class DesktopPageAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: FullscreenStateManager(),
     builder: (context, _) {
+      final tv = PlatformDetector.isTV();
       final leading = DesktopAppBarHelper.buildAdjustedLeading(
         automaticallyImplyLeading && (ModalRoute.of(context)?.canPop ?? false)
             ? AppBarBackButton(style: BackButtonStyle.plain, onPressed: () => Navigator.of(context).pop())
@@ -33,11 +35,13 @@ class DesktopPageAppBar extends StatelessWidget implements PreferredSizeWidget {
         leadingWidth: DesktopAppBarHelper.calculateLeadingWidth(leading, context: context),
         automaticallyImplyLeading: false,
         actions: DesktopAppBarHelper.buildAdjustedActions(actions),
-        backgroundColor: MonoPresentation.headerSurface(context),
+        // TV pages sit on the same open background as the floating navigation
+        // and settings; a solid header band there reads as a separate app.
+        backgroundColor: tv ? Colors.transparent : MonoPresentation.headerSurface(context),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        shape: Border(bottom: BorderSide(color: MonoPresentation.headerEdge(context), width: .5)),
+        shape: tv ? null : Border(bottom: BorderSide(color: MonoPresentation.headerEdge(context), width: .5)),
       );
     },
   );

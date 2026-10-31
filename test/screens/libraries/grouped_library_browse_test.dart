@@ -139,6 +139,30 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('TV library lays out filters beside source rows without overflow', (tester) async {
+    await pumpGrouped(
+      tester,
+      (library, query, abort) async => LibraryPage(
+        items: [
+          for (var i = 0; i < 8; i++)
+            MediaItem(
+              id: 'film-$i',
+              backend: library.backend,
+              kind: MediaKind.movie,
+              title: 'Film $i',
+              year: 2020 + i,
+              serverId: library.serverId,
+            ),
+        ],
+        totalCount: 8,
+      ),
+      tv: true,
+      size: const Size(960, 540),
+    );
+    expect(tester.takeException(), isNull);
+    await captureTv(tester, find.byKey(const ValueKey('tablet-library')), 'library');
+  });
+
   testWidgets('TV source poster transfers left to filters and right to real content', (tester) async {
     await pumpGrouped(
       tester,

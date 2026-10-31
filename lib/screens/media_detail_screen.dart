@@ -4420,6 +4420,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       fullCardLayout: svc.read(SettingsService.tvFullCardLayout),
       gridSpacing: svc.read(SettingsService.gridSpacing),
       tallPosterScale: _tvDetailTallPosterScale,
+      minLabelHeight: MediaCard.gridLabelHeight(context),
     );
   }
 
@@ -4450,6 +4451,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       scale: scale,
       tallPosterScale: _tvDetailTallPosterScale,
       widePosterScale: 1.0,
+      minLabelHeight: MediaCard.gridLabelHeight(context),
     );
     final sectionHeight = TvBrowseRailLayout.hubSectionHeightFor(scale: scale, activeRailHeight: metrics.height);
     return TvBrowseRailLayout.railTopPaddingForScale(scale) +

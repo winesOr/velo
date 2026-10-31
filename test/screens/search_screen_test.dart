@@ -73,6 +73,14 @@ void main() {
     });
   }
 
+  testWidgets('TV search lays out the field and results without overflow', (tester) async {
+    final (_, key) = await _pumpTvSearchScreen(tester, size: const Size(960, 540));
+    (key.currentState! as SearchInputFocusable).submitSearchQuery('movie');
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await captureTv(tester, find.byKey(const ValueKey('tablet-search')), 'search');
+  });
+
   testWidgets('stale callbacks are no-ops after SearchScreen is disposed', (tester) async {
     final key = GlobalKey<State<SearchScreen>>();
     final item = testMediaItem(

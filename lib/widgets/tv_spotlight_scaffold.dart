@@ -12,6 +12,7 @@ import '../services/settings_service.dart';
 import '../utils/debouncer.dart';
 import '../utils/layout_constants.dart';
 import '../utils/formatters.dart';
+import 'media_card.dart';
 import 'tv_browse_rail.dart';
 import 'tv_spotlight_background.dart';
 
@@ -96,6 +97,7 @@ class TvSpotlightScaffold extends StatelessWidget {
             fullCardLayout: settings.read(SettingsService.tvFullCardLayout),
             gridSpacing: settings.read(SettingsService.gridSpacing),
             tallPosterScale: TvBrowseRailLayout.compactTallPosterScale,
+            minLabelHeight: MediaCard.gridLabelHeight(context),
           );
     final spotlightTop = (size.height * 0.075).clamp(64.0 * scale, 120.0 * scale).toDouble();
     final minimumSpotlightBottom = railHeight + (8 * scale);

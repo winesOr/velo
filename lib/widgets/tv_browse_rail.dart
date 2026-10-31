@@ -133,6 +133,7 @@ class TvBrowseRailLayout {
     double tallPosterScale = 1.0,
     double widePosterScale = 1.0,
     bool hasLeading = false,
+    double minLabelHeight = 0,
   }) {
     final focusExtra = FocusTheme.focusBorderWidth * 2 * scale;
     final railEdgePadding = focusExtra + (12 * scale);
@@ -167,7 +168,13 @@ class TvBrowseRailLayout {
     final posterHeight = (isPersonHub || isSquareHub)
         ? posterWidth
         : (useWideLayout ? posterWidth * 9 / 16 : posterWidth * 1.5);
-    final labelHeight = fullCardLayout ? 0.0 : ((isPersonHub ? 52 : 36) * scale);
+    // Captions are typeset by the card at the app's text size, so the scaled
+    // band only sets a floor; it must never be shorter than the text it holds.
+    final labelHeight = fullCardLayout
+        ? 0.0
+        : isPersonHub
+        ? 52 * scale
+        : math.max(36 * scale, minLabelHeight);
     final containerHeight = (posterHeight + labelHeight).ceilToDouble();
     final height = containerHeight + focusExtra + (10 * scale);
 
@@ -199,6 +206,7 @@ class TvBrowseRailLayout {
     GridSpacing gridSpacing = GridSpacing.tight,
     double tallPosterScale = 1.0,
     double widePosterScale = 1.0,
+    double minLabelHeight = 0,
   }) {
     var maxHeight = 0.0;
     for (final hub in hubs) {
@@ -212,6 +220,7 @@ class TvBrowseRailLayout {
         gridSpacing: gridSpacing,
         tallPosterScale: tallPosterScale,
         widePosterScale: widePosterScaleForHub?.call(hub) ?? widePosterScale,
+        minLabelHeight: minLabelHeight,
       );
       if (metrics.height > maxHeight) maxHeight = metrics.height;
     }
@@ -275,6 +284,7 @@ class TvBrowseRailLayout {
     GridSpacing gridSpacing = GridSpacing.tight,
     double tallPosterScale = 1.0,
     double widePosterScale = 1.0,
+    double minLabelHeight = 0,
   }) {
     if (hubs.isEmpty) return 0;
 
@@ -294,6 +304,7 @@ class TvBrowseRailLayout {
       gridSpacing: gridSpacing,
       tallPosterScale: tallPosterScale,
       widePosterScale: widePosterScale,
+      minLabelHeight: minLabelHeight,
     );
 
     final sectionHeight = hubSectionHeightFor(scale: scale, activeRailHeight: railHeight);
@@ -1176,6 +1187,7 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
                 tallPosterScale: widget.tallPosterScale,
                 widePosterScale: wideScales[i],
                 hasLeading: _hasLeadingFor(widget.hubs[i]),
+                minLabelHeight: MediaCard.gridLabelHeight(context),
               ),
           ];
           final sectionHeights = [

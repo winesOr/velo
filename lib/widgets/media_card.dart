@@ -283,6 +283,18 @@ class MediaCard extends StatefulWidget {
     this.cardShapeOverride,
   }) : usesContinueWatchingAction = usesContinueWatchingAction ?? isInContinueWatching;
 
+  /// Height of the title and caption band below a fixed-height grid poster,
+  /// including the poster gap and card padding. Rails size their rows with it
+  /// so the captions are never clipped at small TV resolutions.
+  static double gridLabelHeight(BuildContext context) {
+    final homeType = Theme.of(context).extension<HomeTypography>();
+    final scaler = MediaQuery.textScalerOf(context);
+    final title = scaler.scale(13) * (homeType?.cardTitle.height ?? 1.1);
+    final caption = scaler.scale(11) * (homeType?.caption.height ?? 1.1);
+    // 3 + 1 card padding, then the poster gap used by _buildStandardGridCard.
+    return (4 + (homeType != null ? 6 : 2) + title + caption).ceilToDouble();
+  }
+
   @override
   State<MediaCard> createState() => MediaCardState();
 }

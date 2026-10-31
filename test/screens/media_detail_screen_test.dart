@@ -1955,8 +1955,9 @@ void main() {
       Size viewport = const Size(1100, 2400),
       double textScale = 1,
       GlobalKey? screenshotKey,
+      bool tv = false,
     }) async {
-      TvDetectionService.debugSetAppleTVOverride(false);
+      TvDetectionService.debugSetAppleTVOverride(tv);
       await SettingsService.getInstance();
       tester.view.physicalSize = viewport;
       tester.view.devicePixelRatio = 1;
@@ -2092,6 +2093,26 @@ void main() {
           findsOneWidget,
         );
         expect(tester.takeException(), isNull);
+      });
+    }
+
+    for (final size in [const Size(960, 540), const Size(1280, 720)]) {
+      testWidgets('TV detail lays out the hero and episode rail at $size', (tester) async {
+        await loadTabletFonts(loadDefaultFont: true);
+        final show = buildShow();
+        final boundary = GlobalKey();
+        await pumpPhoneDetail(
+          tester,
+          singleSeasonClient(show, episodeCount: 6),
+          show,
+          viewport: size,
+          screenshotKey: boundary,
+          theme: tabletFixtureTheme(monoTheme(dark: true)),
+          tv: true,
+        );
+        await tester.pump(const Duration(seconds: 1));
+        expect(tester.takeException(), isNull);
+        await captureTv(tester, find.byKey(boundary), 'detail-${size.width.toInt()}');
       });
     }
 

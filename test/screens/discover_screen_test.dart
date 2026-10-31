@@ -27,6 +27,7 @@ import 'package:plezy/media/media_library.dart';
 import 'package:plezy/media/media_server_client.dart';
 import 'package:plezy/media/server_capabilities.dart';
 import 'package:plezy/navigation/fusion_navigation.dart';
+import 'package:plezy/navigation/main_screen_scope.dart';
 import 'package:plezy/navigation/home_theme.dart';
 import 'package:plezy/navigation/navigation_tabs.dart';
 import 'package:plezy/mixins/refreshable.dart';
@@ -1280,6 +1281,73 @@ void main() {
       expect(find.byTooltip(t.common.options), findsOneWidget);
       expect(tester.takeException(), isNull);
       await captureTablet(tester, find.byKey(boundary), 'home-${size.width.toInt()}');
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
+  for (final size in [const Size(960, 540), const Size(1280, 720)]) {
+    testWidgets('TV home renders the fusion hero below the top navigation at $size', (tester) async {
+      final controller = HomeThemeController();
+      addTearDown(controller.dispose);
+      final boundary = GlobalKey();
+      final movie = testMediaItem(
+        id: 'tv-film',
+        title: '沙丘：第二部',
+        originalTitle: 'DUNE PART TWO',
+        year: 2024,
+        rating: 8.3,
+        serverId: 'server_1',
+        thumbPath: 'https://home-visual.fixture/dune.jpg',
+        artPath: 'https://home-visual.fixture/interstellar-backdrop.jpg',
+        durationMs: 6000000,
+        viewOffsetMs: 1800000,
+      );
+      await loadTabletFonts(loadDefaultFont: true);
+      await _pumpDiscoverShell(
+        tester,
+        isTv: true,
+        size: size,
+        fixtureFont: true,
+        clients: [
+          _FakeMediaServerClient(
+            continueWatching: [movie],
+            hubs: [
+              MediaHub(id: 'recent', title: 'Recently added', type: 'movie', items: [movie, movie, movie], more: true),
+            ],
+          ),
+        ],
+        wrap: (child) => HomeThemeScope(
+          controller: controller,
+          child: RepaintBoundary(
+            key: boundary,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: MainScreenFocusScope(
+                    focusSidebar: () {},
+                    sideNavigationWidth: 0,
+                    hasTopNavigation: true,
+                    child: child,
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: FusionNavigation(
+                    tabs: NavigationTab.getVisibleTabs(isOffline: false),
+                    selectedTab: NavigationTabId.discover,
+                    isTv: true,
+                    onSelected: (_) {},
+                    onSecondary: () {},
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 700));
+      expect(tester.takeException(), isNull);
+      await captureTv(tester, find.byKey(boundary), 'home-${size.width.toInt()}');
       await tester.pumpWidget(const SizedBox());
     });
   }

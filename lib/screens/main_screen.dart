@@ -1267,6 +1267,14 @@ class _MainScreenState extends State<MainScreen>
     return [for (final tab in _getVisibleTabs(offline)) _buildScreenSlot(tab.id)];
   }
 
+  static const _tvContentBelowNavigation = {
+    NavigationTabId.settings,
+    NavigationTabId.together,
+    NavigationTabId.search,
+    NavigationTabId.downloads,
+    NavigationTabId.liveTv,
+  };
+
   Widget _buildScreenSlot(NavigationTabId tab) {
     if (!_mountedTabs.contains(tab)) return const SizedBox.shrink();
 
@@ -1284,9 +1292,10 @@ class _MainScreenState extends State<MainScreen>
       NavigationTabId.settings => SettingsScreen(key: _screenKeys[tab]),
       NavigationTabId.together => WatchTogetherScreen(key: _screenKeys[tab], embedded: true, onBack: _focusSidebar),
     };
-    // Artwork pages account for the floating TV navigation in their heroes.
-    // Ordinary pages need a separate content area below the same navigation.
-    if (PlatformDetector.isTV() && (tab == NavigationTabId.settings || tab == NavigationTabId.together)) {
+    // Artwork pages account for the floating TV navigation in their heroes,
+    // and Libraries flanks it with its own title and actions. Ordinary pages
+    // need a separate content area below the same navigation.
+    if (PlatformDetector.isTV() && _tvContentBelowNavigation.contains(tab)) {
       return SafeArea(
         bottom: false,
         minimum: const EdgeInsets.only(top: 18),
