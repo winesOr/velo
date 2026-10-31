@@ -140,14 +140,8 @@ class Translations$auth$en {
 	/// en: 'Camera permission is required to scan the TV QR code.'
 	String get syncCameraPermissionDenied => 'Camera permission is required to scan the TV QR code.';
 
-	/// en: 'Open settings'
-	String get syncOpenSettings => 'Open settings';
-
 	/// en: 'This is not a valid Velo TV sync code.'
 	String get syncInvalidCode => 'This is not a valid Velo TV sync code.';
-
-	/// en: 'Sign in to at least one media server before syncing.'
-	String get syncNoConnections => 'Sign in to at least one media server before syncing.';
 
 	/// en: 'Sending your servers, profile, and danmaku sources…'
 	String get syncSending => 'Sending your servers, profile, and danmaku sources…';
@@ -175,9 +169,6 @@ class Translations$auth$en {
 
 	/// en: 'The TV is preparing your profile, media libraries, and danmaku sources.'
 	String get syncImportedDescription => 'The TV is preparing your profile, media libraries, and danmaku sources.';
-
-	/// en: 'Show a new code'
-	String get syncOpenTvSettings => 'Show a new code';
 
 	/// en: 'Done'
 	String get syncDone => 'Done';
@@ -2481,9 +2472,6 @@ class Translations$videoControls$en {
 
 	/// en: 'Aspect ratio'
 	String get aspectRatioSection => 'Aspect ratio';
-
-	/// en: 'Fit'
-	String get aspectFit => 'Fit';
 
 	/// en: 'Fill'
 	String get aspectCover => 'Fill';
@@ -8061,9 +8049,7 @@ extension on Translations {
 			'auth.syncScanInstructions' => 'Point your camera at the sync QR code on your TV.',
 			'auth.syncCameraUnavailable' => 'Camera scanning is not available on this device.',
 			'auth.syncCameraPermissionDenied' => 'Camera permission is required to scan the TV QR code.',
-			'auth.syncOpenSettings' => 'Open settings',
 			'auth.syncInvalidCode' => 'This is not a valid Velo TV sync code.',
-			'auth.syncNoConnections' => 'Sign in to at least one media server before syncing.',
 			'auth.syncSending' => 'Sending your servers, profile, and danmaku sources…',
 			'auth.syncSuccess' => 'Sync complete',
 			'auth.syncSuccessDescription' => 'Your servers, profile, and danmaku sources were copied to the TV.',
@@ -8073,7 +8059,6 @@ extension on Translations {
 			'auth.syncWaitingDescription' => 'Keep this screen open while you scan with the Velo phone app.',
 			'auth.syncImportedTitle' => 'Setup synced',
 			'auth.syncImportedDescription' => 'The TV is preparing your profile, media libraries, and danmaku sources.',
-			'auth.syncOpenTvSettings' => 'Show a new code',
 			'auth.syncDone' => 'Done',
 			'auth.syncTryAgain' => 'Show a new code',
 			'auth.syncPhoneOnly' => 'Scan a TV sync code from the Velo phone app.',
@@ -8564,11 +8549,11 @@ extension on Translations {
 			'fileInfo.images' => 'Embedded Images',
 			'fileInfo.dataStreams' => 'Data Streams',
 			'fileInfo.lyrics' => 'Lyrics',
-			_ => null,
-		} ?? switch (path) {
 			'fileInfo.file' => 'File',
 			'fileInfo.attachments' => 'Attachments',
 			'fileInfo.delivery' => 'Delivery',
+			_ => null,
+		} ?? switch (path) {
 			'fileInfo.versionCounter' => ({required Object index, required Object count}) => 'Version ${index} of ${count}',
 			'fileInfo.fileCounter' => ({required Object index, required Object count}) => 'File ${index} of ${count}',
 			'fileInfo.noStreams' => 'The server reported no streams for this file.',
@@ -8855,7 +8840,6 @@ extension on Translations {
 			'videoControls.tabSubtitles' => 'Subtitles',
 			'videoControls.tabDanmaku' => 'Danmaku',
 			'videoControls.aspectRatioSection' => 'Aspect ratio',
-			'videoControls.aspectFit' => 'Fit',
 			'videoControls.aspectCover' => 'Fill',
 			'videoControls.aspectStretch' => 'Stretch',
 			'videoControls.autoSkipSection' => 'Skip intro & credits',
@@ -9078,12 +9062,12 @@ extension on Translations {
 			'accountPreferences.subtitleModes.always' => 'Always enabled',
 			'accountPreferences.subtitleModes.alwaysDescription' => 'Turn on a subtitle track in the preferred language whenever one exists.',
 			'accountPreferences.subtitleModes.onlyForced' => 'Only forced subtitles',
-			_ => null,
-		} ?? switch (path) {
 			'accountPreferences.subtitleModes.onlyForcedDescription' => 'Load only the tracks marked as forced.',
 			'accountPreferences.subtitleModes.smart' => 'Shown with foreign audio',
 			'accountPreferences.subtitleModes.smartDescription' => 'Turn subtitles on only when the audio is in another language.',
 			'accountPreferences.subtitleAccessibility' => 'SDH subtitles',
+			_ => null,
+		} ?? switch (path) {
 			'accountPreferences.subtitleAccessibilityOptions.preferNonSdh' => 'Prefer non-SDH subtitles',
 			'accountPreferences.subtitleAccessibilityOptions.preferSdh' => 'Prefer SDH subtitles',
 			'accountPreferences.subtitleAccessibilityOptions.onlySdh' => 'Only SDH subtitles',
@@ -9592,12 +9576,12 @@ extension on Translations {
 			'collections.removeFromCollectionError' => ({required Object error}) => 'Error removing from collection: ${error}',
 			'collections.searchCollections' => 'Search collections...',
 			'playlists.title' => 'Playlists',
-			_ => null,
-		} ?? switch (path) {
 			'playlists.playlist' => 'Playlist',
 			'playlists.noPlaylists' => 'No playlists found',
 			'playlists.create' => 'Create Playlist',
 			'playlists.playlistName' => 'Playlist Name',
+			_ => null,
+		} ?? switch (path) {
 			'playlists.enterPlaylistName' => 'Enter playlist name',
 			'playlists.delete' => 'Delete Playlist',
 			'playlists.removeItem' => 'Remove from Playlist',
@@ -10106,12 +10090,12 @@ extension on Translations {
 			'metadataEdit.tvdbAbsolute' => 'TheTVDB (Absolute)',
 			'metadataEdit.metadataLanguage' => 'Metadata Language',
 			'metadataEdit.useOriginalTitle' => 'Use Original Title',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.preferredAudioLanguage' => 'Preferred Audio Language',
 			'metadataEdit.preferredSubtitleLanguage' => 'Preferred Subtitle Language',
 			'metadataEdit.subtitleMode' => 'Auto-Select Subtitle Mode',
 			'metadataEdit.manuallySelected' => 'Manually selected',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.shownWithForeignAudio' => 'Shown with foreign audio',
 			'metadataEdit.alwaysEnabled' => 'Always enabled',
 			'metadataEdit.tags' => 'Tags',

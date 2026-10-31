@@ -119,9 +119,7 @@ class _Translations$auth$zh_Hant extends Translations$auth$zh {
 	@override String get syncScanInstructions => '請將相機對準電視上的同步 QR 碼。';
 	@override String get syncCameraUnavailable => '此裝置不支援相機掃碼。';
 	@override String get syncCameraPermissionDenied => '掃描電視 QR 碼需要相機權限。';
-	@override String get syncOpenSettings => '開啟設定';
 	@override String get syncInvalidCode => '這不是有效的 Velo 電視同步碼。';
-	@override String get syncNoConnections => '請先在至少一個媒體伺服器上登入，然後再同步。';
 	@override String get syncSending => '正在傳送伺服器、設定檔和彈幕網站…';
 	@override String get syncSuccess => '同步完成';
 	@override String get syncSuccessDescription => '伺服器、設定檔和彈幕網站已複製到電視。';
@@ -131,7 +129,6 @@ class _Translations$auth$zh_Hant extends Translations$auth$zh {
 	@override String get syncWaitingDescription => '請保持此畫面開啟，並用 Velo 手機應用程式掃描 QR 碼。';
 	@override String get syncImportedTitle => '設定已同步';
 	@override String get syncImportedDescription => '電視正在準備設定檔、媒體庫和彈幕網站。';
-	@override String get syncOpenTvSettings => '顯示新的 QR 碼';
 	@override String get syncDone => '完成';
 	@override String get syncTryAgain => '顯示新的 QR 碼';
 	@override String get syncPhoneOnly => '請使用 Velo 手機應用程式掃描電視同步碼。';
@@ -982,7 +979,6 @@ class _Translations$videoControls$zh_Hant extends Translations$videoControls$zh 
 	@override String get tabSubtitles => '字幕';
 	@override String get tabDanmaku => '彈幕';
 	@override String get aspectRatioSection => '畫面比例';
-	@override String get aspectFit => '適應';
 	@override String get aspectCover => '填滿';
 	@override String get aspectStretch => '拉伸';
 	@override String get autoSkipSection => '跳過片頭片尾';
@@ -3324,9 +3320,7 @@ extension on TranslationsZhHant {
 			'auth.syncScanInstructions' => '請將相機對準電視上的同步 QR 碼。',
 			'auth.syncCameraUnavailable' => '此裝置不支援相機掃碼。',
 			'auth.syncCameraPermissionDenied' => '掃描電視 QR 碼需要相機權限。',
-			'auth.syncOpenSettings' => '開啟設定',
 			'auth.syncInvalidCode' => '這不是有效的 Velo 電視同步碼。',
-			'auth.syncNoConnections' => '請先在至少一個媒體伺服器上登入，然後再同步。',
 			'auth.syncSending' => '正在傳送伺服器、設定檔和彈幕網站…',
 			'auth.syncSuccess' => '同步完成',
 			'auth.syncSuccessDescription' => '伺服器、設定檔和彈幕網站已複製到電視。',
@@ -3336,7 +3330,6 @@ extension on TranslationsZhHant {
 			'auth.syncWaitingDescription' => '請保持此畫面開啟，並用 Velo 手機應用程式掃描 QR 碼。',
 			'auth.syncImportedTitle' => '設定已同步',
 			'auth.syncImportedDescription' => '電視正在準備設定檔、媒體庫和彈幕網站。',
-			'auth.syncOpenTvSettings' => '顯示新的 QR 碼',
 			'auth.syncDone' => '完成',
 			'auth.syncTryAgain' => '顯示新的 QR 碼',
 			'auth.syncPhoneOnly' => '請使用 Velo 手機應用程式掃描電視同步碼。',
@@ -3827,11 +3820,11 @@ extension on TranslationsZhHant {
 			'fileInfo.images' => '內嵌圖片',
 			'fileInfo.dataStreams' => '資料串流',
 			'fileInfo.lyrics' => '歌詞',
-			_ => null,
-		} ?? switch (path) {
 			'fileInfo.file' => '檔案',
 			'fileInfo.attachments' => '附件',
 			'fileInfo.delivery' => '傳輸方式',
+			_ => null,
+		} ?? switch (path) {
 			'fileInfo.versionCounter' => ({required Object index, required Object count}) => '第 ${index} 個版本，共 ${count} 個',
 			'fileInfo.fileCounter' => ({required Object index, required Object count}) => '第 ${index} 個檔案，共 ${count} 個',
 			'fileInfo.noStreams' => '伺服器回報此檔案沒有串流。',
@@ -4118,7 +4111,6 @@ extension on TranslationsZhHant {
 			'videoControls.tabSubtitles' => '字幕',
 			'videoControls.tabDanmaku' => '彈幕',
 			'videoControls.aspectRatioSection' => '畫面比例',
-			'videoControls.aspectFit' => '適應',
 			'videoControls.aspectCover' => '填滿',
 			'videoControls.aspectStretch' => '拉伸',
 			'videoControls.autoSkipSection' => '跳過片頭片尾',
@@ -4341,12 +4333,12 @@ extension on TranslationsZhHant {
 			'accountPreferences.subtitleModes.always' => '一律啟用',
 			'accountPreferences.subtitleModes.alwaysDescription' => '只要有偏好語言的字幕軌就自動開啟。',
 			'accountPreferences.subtitleModes.onlyForced' => '僅強制字幕',
-			_ => null,
-		} ?? switch (path) {
 			'accountPreferences.subtitleModes.onlyForcedDescription' => '僅載入標記為強制的軌道。',
 			'accountPreferences.subtitleModes.smart' => '外語配音時顯示',
 			'accountPreferences.subtitleModes.smartDescription' => '僅在音訊為其他語言時開啟字幕。',
 			'accountPreferences.subtitleAccessibility' => 'SDH 字幕',
+			_ => null,
+		} ?? switch (path) {
 			'accountPreferences.subtitleAccessibilityOptions.preferNonSdh' => '偏好非 SDH 字幕',
 			'accountPreferences.subtitleAccessibilityOptions.preferSdh' => '偏好 SDH 字幕',
 			'accountPreferences.subtitleAccessibilityOptions.onlySdh' => '僅 SDH 字幕',
@@ -4855,12 +4847,12 @@ extension on TranslationsZhHant {
 			'collections.removeFromCollectionError' => ({required Object error}) => '從收藏集移除時發生錯誤：${error}',
 			'collections.searchCollections' => '搜尋收藏集…',
 			'playlists.title' => '播放清單',
-			_ => null,
-		} ?? switch (path) {
 			'playlists.playlist' => '播放清單',
 			'playlists.noPlaylists' => '找不到播放清單',
 			'playlists.create' => '建立播放清單',
 			'playlists.playlistName' => '播放清單名稱',
+			_ => null,
+		} ?? switch (path) {
 			'playlists.enterPlaylistName' => '輸入播放清單名稱',
 			'playlists.delete' => '刪除播放清單',
 			'playlists.removeItem' => '從播放清單中移除',
@@ -5369,12 +5361,12 @@ extension on TranslationsZhHant {
 			'metadataEdit.tvdbAbsolute' => 'TheTVDB（絕對集數順序）',
 			'metadataEdit.metadataLanguage' => '中繼資料語言',
 			'metadataEdit.useOriginalTitle' => '使用原始標題',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.preferredAudioLanguage' => '偏好音訊語言',
 			'metadataEdit.preferredSubtitleLanguage' => '偏好字幕語言',
 			'metadataEdit.subtitleMode' => '自動選擇字幕模式',
 			'metadataEdit.manuallySelected' => '手動選擇',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.shownWithForeignAudio' => '外語配音時顯示',
 			'metadataEdit.alwaysEnabled' => '一律啟用',
 			'metadataEdit.tags' => '標籤',
