@@ -665,6 +665,7 @@ void main() {
       episodePosterMode: settings.read(SettingsService.episodePosterMode),
       fullCardLayout: settings.read(SettingsService.tvFullCardLayout),
       tallPosterScale: TvBrowseRailLayout.compactTallPosterScale,
+      minLabelHeight: MediaCard.gridLabelHeight(tester.element(find.byType(TvBrowseRail))),
     );
     final minimumSpotlightBottom = railHeight + (8 * scale);
     final baseSpotlightBottom = (720 * 0.48).clamp(160.0, 820.0).toDouble();
@@ -1302,7 +1303,7 @@ void main() {
         durationMs: 6000000,
         viewOffsetMs: 1800000,
       );
-      await loadTabletFonts(loadDefaultFont: true);
+      await loadTabletFonts();
       await _pumpDiscoverShell(
         tester,
         isTv: true,

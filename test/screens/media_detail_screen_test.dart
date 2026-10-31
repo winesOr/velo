@@ -2098,7 +2098,7 @@ void main() {
 
     for (final size in [const Size(960, 540), const Size(1280, 720)]) {
       testWidgets('TV detail lays out the hero and episode rail at $size', (tester) async {
-        await loadTabletFonts(loadDefaultFont: true);
+        await loadTabletFonts();
         final show = buildShow();
         final boundary = GlobalKey();
         await pumpPhoneDetail(

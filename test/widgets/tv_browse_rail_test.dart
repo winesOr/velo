@@ -694,6 +694,7 @@ void main() {
 
     final scale = TvBrowseRailLayout.scaleForSize(tester.view.physicalSize / tester.view.devicePixelRatio);
     final metrics = TvBrowseRailLayout.metricsForHub(
+      minLabelHeight: _railLabelHeight(tester),
       hub: hub,
       availableWidth: 1280 - TvBrowseRailLayout.horizontalInsetForScale(scale),
       density: LibraryDensity.defaultValue,
@@ -1013,6 +1014,7 @@ void main() {
     final size = tester.view.physicalSize / tester.view.devicePixelRatio;
     final scale = TvBrowseRailLayout.scaleForSize(size);
     final metrics = TvBrowseRailLayout.metricsForHub(
+      minLabelHeight: _railLabelHeight(tester),
       hub: hub,
       availableWidth: size.width - TvBrowseRailLayout.horizontalInsetForScale(scale),
       density: LibraryDensity.defaultValue,
@@ -1495,6 +1497,7 @@ void main() {
     final fullCardLayout = SettingsService.instanceOrNull!.read(SettingsService.tvFullCardLayout);
     final availableWidth = 700 - TvBrowseRailLayout.horizontalInsetForScale(scale);
     final movieMetrics = TvBrowseRailLayout.metricsForHub(
+      minLabelHeight: _railLabelHeight(tester),
       hub: movieHub,
       availableWidth: availableWidth,
       density: LibraryDensity.defaultValue,
@@ -1522,6 +1525,7 @@ void main() {
     final position = _activeRailPosition(tester);
     final verticalPosition = _verticalRailPosition(tester);
     final metrics = TvBrowseRailLayout.metricsForHub(
+      minLabelHeight: _railLabelHeight(tester),
       hub: episodeHub,
       availableWidth: position.viewportDimension,
       density: LibraryDensity.defaultValue,
@@ -1610,6 +1614,7 @@ void main() {
     final scale = TvBrowseRailLayout.scaleForSize(tester.view.physicalSize / tester.view.devicePixelRatio);
     final availableWidth = 1280 - TvBrowseRailLayout.horizontalInsetForScale(scale);
     final firstWideMetrics = TvBrowseRailLayout.metricsForHub(
+      minLabelHeight: _railLabelHeight(tester),
       hub: firstHubWide,
       availableWidth: availableWidth,
       density: LibraryDensity.defaultValue,
@@ -1774,6 +1779,7 @@ void main() {
     final scale = TvBrowseRailLayout.scaleForSize(tester.view.physicalSize / tester.view.devicePixelRatio);
     final availableWidth = 1280 - TvBrowseRailLayout.horizontalInsetForScale(scale);
     final firstMetrics = TvBrowseRailLayout.metricsForHub(
+      minLabelHeight: _railLabelHeight(tester),
       hub: firstHub,
       availableWidth: availableWidth,
       density: LibraryDensity.defaultValue,
@@ -2038,6 +2044,7 @@ void main() {
     final size = tester.view.physicalSize / tester.view.devicePixelRatio;
     final scale = TvBrowseRailLayout.scaleForSize(size);
     final metrics = TvBrowseRailLayout.metricsForHub(
+      minLabelHeight: _railLabelHeight(tester),
       hub: hub,
       availableWidth: size.width - TvBrowseRailLayout.horizontalInsetForScale(scale),
       density: LibraryDensity.defaultValue,
@@ -2207,6 +2214,7 @@ void main() {
     final size = tester.view.physicalSize / tester.view.devicePixelRatio;
     final scale = TvBrowseRailLayout.scaleForSize(size);
     final metrics = TvBrowseRailLayout.metricsForHub(
+      minLabelHeight: _railLabelHeight(tester),
       hub: hub,
       availableWidth: size.width - TvBrowseRailLayout.horizontalInsetForScale(scale),
       density: LibraryDensity.defaultValue,
@@ -3156,3 +3164,7 @@ ScrollPosition _verticalRailPosition(WidgetTester tester) {
       .map((state) => state.position)
       .singleWhere((position) => axisDirectionToAxis(position.axisDirection) == Axis.vertical);
 }
+
+/// Caption band the mounted rail reserves below each poster.
+double _railLabelHeight(WidgetTester tester) =>
+    MediaCard.gridLabelHeight(tester.element(find.byType(TvBrowseRail).first));
