@@ -350,8 +350,10 @@ class TrackManager {
         defaultPlaybackSpeed: (playbackRateOwnedExternally?.call() ?? false)
             ? null
             : ScopedPlayerPrefs.resolve(ScopedPlayerPrefs.playbackSpeed, metadata),
-        onAudioTrackChanged: onAudioTrackChanged,
-        onSubtitleTrackChanged: persistAutomaticSubtitleSelection ? onSubtitleTrackChanged : null,
+        onAudioTrackChanged: (track) => onAudioTrackChanged(track, notifyFailure: false),
+        onSubtitleTrackChanged: persistAutomaticSubtitleSelection
+            ? (track) => onSubtitleTrackChanged(track, notifyFailure: false)
+            : null,
         isActive: selectionIsActive,
         onPlayerMutationDispatched: _trackDispatchedPlayerMutation,
         waitForPendingSource: waitForPendingSource,
@@ -486,9 +488,9 @@ class TrackManager {
   // ── Server preference sync ─────────────────────────────────────────
 
   /// Handle audio track changes — save stream selection and language preference.
-  Future<void> onAudioTrackChanged(AudioTrack track) async {
+  Future<void> onAudioTrackChanged(AudioTrack track, {bool notifyFailure = true}) async {
     final info = mediaInfo;
-    final partId = await _guardTrackChange(info, 'audio');
+    final partId = await _guardTrackChange(info, 'audio', notifyFailure);
     if (partId == null || info == null) return;
 
     final matchedPlex = findPlexTrackForMpvAudio(track, info.audioTracks, allMpvTracks: player.state.tracks.audio);
@@ -499,13 +501,13 @@ class TrackManager {
       appLogger.e('Could not match audio track to any Plex track');
     }
 
-    await _saveTrackPreferences(partId: partId, trackType: 'audio', streamID: streamID);
+    await _saveTrackPreferences(partId: partId, trackType: 'audio', streamID: streamID, notifyFailure: notifyFailure);
   }
 
   /// Handle subtitle track changes — save stream selection and language preference.
-  Future<void> onSubtitleTrackChanged(SubtitleTrack track, {int? sourceStreamId}) async {
+  Future<void> onSubtitleTrackChanged(SubtitleTrack track, {int? sourceStreamId, bool notifyFailure = true}) async {
     final info = mediaInfo;
-    final partId = await _guardTrackChange(info, 'subtitle');
+    final partId = await _guardTrackChange(info, 'subtitle', notifyFailure);
     if (partId == null) return;
 
     int? streamID;
@@ -530,7 +532,12 @@ class TrackManager {
       }
     }
 
-    await _saveTrackPreferences(partId: partId, trackType: 'subtitle', streamID: streamID);
+    await _saveTrackPreferences(
+      partId: partId,
+      trackType: 'subtitle',
+      streamID: streamID,
+      notifyFailure: notifyFailure,
+    );
   }
 
   /// Handle secondary subtitle track changes — no server save needed.
@@ -556,11 +563,11 @@ class TrackManager {
   /// or null when nothing is written per part — the user opted out, the
   /// backend remembers picks through its account instead (settled here), or
   /// the source cannot be addressed.
-  Future<int?> _guardTrackChange(MediaSourceInfo? info, String trackType) async {
+  Future<int?> _guardTrackChange(MediaSourceInfo? info, String trackType, bool notifyFailure) async {
     if (!await shouldPersistTrackSelections()) return null;
 
     if (persistTrackPreference == null) {
-      await _ensureServerRemembersSelections(trackType);
+      await _ensureServerRemembersSelections(trackType, notifyFailure);
       return null;
     }
 
@@ -572,7 +579,7 @@ class TrackManager {
     final partId = info.partId;
     if (partId == null) {
       appLogger.w('No part ID available, cannot save stream selection');
-      _reportSelectionNotRemembered();
+      if (notifyFailure) _reportSelectionNotRemembered();
     }
     return partId;
   }
@@ -583,10 +590,15 @@ class TrackManager {
   /// chosen track. There is no local fallback store, so the choice is simply
   /// lost — say so instead of reporting a save that never happened. The same
   /// goes for a server that answers without storing the choice.
-  Future<void> _saveTrackPreferences({required int partId, required String trackType, int? streamID}) async {
+  Future<void> _saveTrackPreferences({
+    required int partId,
+    required String trackType,
+    int? streamID,
+    required bool notifyFailure,
+  }) async {
     if (streamID == null) {
       appLogger.w('Not saving $trackType stream selection: no server stream matched the selected track');
-      _reportSelectionNotRemembered();
+      if (notifyFailure) _reportSelectionNotRemembered();
       return;
     }
     final persist = persistTrackPreference;
@@ -595,7 +607,7 @@ class TrackManager {
     try {
       stored = await persist(partId: partId, trackType: trackType, streamID: streamID);
     } catch (e, st) {
-      _handleServerSyncFailure('save the $trackType stream selection', e, st);
+      _handleServerSyncFailure('save the $trackType stream selection', e, st, notifyFailure);
       return;
     }
     if (stored) {
@@ -603,37 +615,37 @@ class TrackManager {
       return;
     }
     appLogger.w('Server did not store the $trackType stream selection');
-    _reportSelectionNotRemembered();
+    if (notifyFailure) _reportSelectionNotRemembered();
   }
 
   /// MediaBrowser: the pick itself travels in the progress reports; what can
   /// still go wrong is the server ignoring it, which the hook settles.
-  Future<void> _ensureServerRemembersSelections(String trackType) async {
+  Future<void> _ensureServerRemembersSelections(String trackType, bool notifyFailure) async {
     final enable = enableTrackSelectionMemory;
     if (enable == null || !isActive()) return;
     final bool remembered;
     try {
       remembered = await enable(trackType);
     } catch (e, st) {
-      _handleServerSyncFailure("turn on the account's $trackType selection memory", e, st);
+      _handleServerSyncFailure("turn on the account's $trackType selection memory", e, st, notifyFailure);
       return;
     }
     if (remembered) return;
     appLogger.w('Server will not remember $trackType selections');
-    _reportSelectionNotRemembered();
+    if (notifyFailure) _reportSelectionNotRemembered();
   }
 
   /// A request that never reached a verdict (network, timeout, client-side
   /// abort) says nothing about whether the server would store the pick, so it
   /// stays in the log. Anything else — a refusal carrying a status code, or a
   /// failure inside the client — means the pick is session-only.
-  void _handleServerSyncFailure(String action, Object error, StackTrace stackTrace) {
+  void _handleServerSyncFailure(String action, Object error, StackTrace stackTrace, bool notifyFailure) {
     if (error is MediaServerHttpException && (error.isTransient || error.isCancellation)) {
       appLogger.w('Could not $action: no server verdict', error: error, stackTrace: stackTrace);
       return;
     }
     appLogger.w('Server refused to $action', error: error, stackTrace: stackTrace);
-    _reportSelectionNotRemembered();
+    if (notifyFailure) _reportSelectionNotRemembered();
   }
 
   /// The pick took effect in the engine but will not be recorded against the

@@ -1307,6 +1307,27 @@ void main() {
       expect(otherPlayer.selectedSubtitle, isEmpty);
     });
 
+    test('automatic carried picks do not warn, but a later user pick does', () async {
+      await SettingsService.getInstance();
+      final player = _FakePlayer(tracks: availableTracks);
+      final messages = <String>[];
+      final mgr = _make(
+        player: player,
+        mediaInfo: _mediaInfoWithSubtitles(),
+        preferredAudioTrack: audioTracks[1],
+        preferredSubtitleTrack: subtitleTracks[1],
+        showMessage: (message, {duration}) => messages.add(message),
+      );
+      addTearDown(mgr.dispose);
+
+      await mgr.applyTrackSelection();
+      await Future<void>.delayed(Duration.zero);
+      expect(messages, isEmpty);
+
+      await mgr.onSubtitleTrackSelectedByUser(subtitleTracks[1]);
+      expect(messages, [t.messages.trackSelectionNotRemembered]);
+    });
+
     test('an automatic pass writes a carried pick to the server', () async {
       await SettingsService.getInstance();
       final player = _FakePlayer(
