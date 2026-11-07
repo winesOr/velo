@@ -1,6 +1,21 @@
 part of '../media_detail_screen.dart';
 
 extension _MediaDetailPresentation on _MediaDetailScreenState {
+  String _seasonLabel(MediaItem season) {
+    final number = season.index;
+    final title = season.title?.trim();
+    if (number == 0 &&
+        title != null &&
+        title.isNotEmpty &&
+        title != season.parentTitle &&
+        title != season.grandparentTitle) {
+      return title;
+    }
+    if (number != null) return t.common.seasonNumber(number: number);
+    if (title != null && title.isNotEmpty) return title;
+    return season.displaySubtitle ?? season.displayTitle;
+  }
+
   Future<void> _chooseCompactDetailSeason(BuildContext context) async {
     final selected = await OverlaySheetController.showAdaptive<int>(
       context,
@@ -20,7 +35,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   child: Row(
                     children: [
-                      Expanded(child: Text(_seasons[index].displayTitle)),
+                      Expanded(child: Text(_seasonLabel(_seasons[index]))),
                       if (index == _selectedSeasonIndex) const AppIcon(Symbols.check_rounded, size: 20),
                     ],
                   ),
@@ -38,11 +53,11 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
   Widget _buildCompactDetailEpisodeHeader(BuildContext context, MediaItem metadata, {bool chooseSeason = false}) {
     final season = chooseSeason ? _seasons[_selectedSeasonIndex] : null;
     final label =
-        season?.displayTitle ??
+        (season != null ? _seasonLabel(season) : null) ??
         (metadata.isSeason
-            ? metadata.displayTitle
+            ? _seasonLabel(metadata)
             : _seasons.length == 1
-            ? _seasons.first.displayTitle
+            ? _seasonLabel(_seasons.first)
             : t.libraries.groupings.episodes);
     return Row(
       key: _seasonsSectionKey,

@@ -643,6 +643,7 @@ void main() {
     expect(rail.leadingItemForHub, isNotNull);
     final seasonHubs = rail.hubs.where((hub) => hub.id.startsWith('detail_season_')).toList();
     expect(seasonHubs, hasLength(2));
+    expect(seasonHubs.map((hub) => hub.title), ['Season 1', 'Season 2']);
     expect(rail.leadingItemForHub!(seasonHubs[0])?.id, season1.id);
     expect(rail.leadingItemForHub!(seasonHubs[1])?.id, season2.id);
 
@@ -2157,14 +2158,31 @@ void main() {
 
     testWidgets('compact season picker updates the episode rail and primary playback target', (tester) async {
       final show = buildShow();
-      final first = buildSeason(show, 1);
-      final second = buildSeason(show, 2);
+      final first = buildSeason(show, 1).copyWith(parentTitle: show.title);
+      final second = buildSeason(show, 2).copyWith(parentTitle: show.title);
+      final specials = testMediaItem(
+        id: 'specials',
+        kind: MediaKind.season,
+        title: 'Specials',
+        index: 0,
+        parentId: show.id,
+        parentTitle: show.title,
+        serverId: show.serverId,
+      );
+      final unnumbered = testMediaItem(
+        id: 'unnumbered',
+        kind: MediaKind.season,
+        title: 'Bonus collection',
+        parentId: show.id,
+        parentTitle: show.title,
+        serverId: show.serverId,
+      );
       final firstEpisode = buildEpisode(show, first, 1);
       final secondEpisode = buildEpisode(show, second, 2);
       final client = _FakeMediaServerClient(
         show: show,
         childrenByParent: {
-          show.id: [first, second],
+          show.id: [specials, first, second, unnumbered],
           first.id: [firstEpisode],
           second.id: [secondEpisode],
         },
@@ -2173,6 +2191,8 @@ void main() {
       await tester.ensureVisible(find.text('Season 1'));
       await tester.tap(find.text('Season 1'));
       await tester.pumpAndSettle();
+      expect(find.text('Specials'), findsOneWidget);
+      expect(find.text('Bonus collection'), findsOneWidget);
       await tester.tap(find.text('Season 2'));
       await tester.pumpAndSettle();
       expect(find.text('Season 2'), findsOneWidget);
