@@ -841,6 +841,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
 
   VideoPlayerRoute? _videoPlayerRoute;
   bool get _isReplacingWithVideo => _videoPlayerRoute?.isReplacingWithVideo ?? false;
+  final Object _wakelockOwner = Object();
   ScrubPreviewSource? _scrubPreviewSource;
 
   /// Live TV session state (tune identity, heartbeats, capture buffer,
@@ -900,7 +901,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
       showErrorUi: false,
       reason: reason,
     ),
-    wakelock: _wakelockController,
+    setWakelock: _setWakelock,
   );
 
   late final FocusNode _playNextCancelFocusNode;
@@ -1001,7 +1002,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
     play: _playWithPlaybackIntent,
     wasPlayingBeforeInactive: () => _wasPlayingBeforeInactive,
     clearWasPlayingBeforeInactive: () => _wasPlayingBeforeInactive = false,
-    wakelock: _wakelockController,
+    setWakelock: _setWakelock,
     recordLifecycle: (state, {action}) => _recordLifecycleState(state, action: action),
   );
   ({bool canControlPlayback, bool canNavigateMediaItems})? _lastMediaControlAuthority;
@@ -1618,7 +1619,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
         } else {
           unawaited(_mediaControlsManager?.clear());
         }
-        unawaited(_wakelockController.setEnabled(false));
+        unawaited(_setWakelock(false));
         _recordLifecycleState('paused', action: 'backgrounded');
         break;
       case AppLifecycleState.resumed:
@@ -2148,7 +2149,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
         SleepTimerService().restartIfNeeded();
 
         // Enable wakelock to prevent screen from turning off during playback
-        unawaited(_wakelockController.setEnabled(true));
+        unawaited(_setWakelock(true));
         appLogger.d('Wakelock enabled for video playback');
       }
 
@@ -2538,7 +2539,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
       player!.abandonAudioFocus();
     }
 
-    unawaited(_wakelockController.setEnabled(false));
+    unawaited(_setWakelock(false));
     appLogger.d('Wakelock disabled');
 
     // A replacement acquires the guard once its own immersive request goes
@@ -2748,6 +2749,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
   }
 
   void _setPlayerState(VoidCallback fn) => setStateIfMounted(fn);
+
+  Future<void> _setWakelock(bool enabled) => _wakelockController.setEnabledForOwner(_wakelockOwner, enabled);
 
   /// Wait briefly for the active user's preferences to load in offline mode.
   /// This prevents default-track fallback when playback starts before

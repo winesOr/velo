@@ -37,7 +37,7 @@ extension _VideoPlayerPlaybackPromptMethods on VideoPlayerScreenState {
 
     // mpv does not flip the `pause` property on EOF, so _onPlayingStateChanged
     // never fires false.  Normalize all playback-dependent state.
-    unawaited(_wakelockController.setEnabled(false));
+    unawaited(_setWakelock(false));
     // A known, positive duration stands in for the EOF position everywhere
     // below — the position stream can stop a beat short of it on EOF.
     final duration = switch (player?.state.duration) {

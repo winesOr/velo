@@ -139,7 +139,7 @@ extension _VideoPlayerErrorMethods on VideoPlayerScreenState {
     // Nothing plays behind the view, so it must not hold the screen awake
     // while it waits; the playing-state handler takes the wakelock again once
     // a retried open plays.
-    unawaited(_wakelockController.setEnabled(false));
+    unawaited(_setWakelock(false));
     _setPlayerState(() {
       _playbackFailureMessage = message;
       _playbackFailureRetry = _retryFailedPlayback;

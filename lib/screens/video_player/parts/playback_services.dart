@@ -404,7 +404,7 @@ extension _VideoPlayerPlaybackServiceMethods on VideoPlayerScreenState {
       }
     }
     if (!mounted || _shuttingDown) return;
-    await _wakelockController.setEnabled(false);
+    await _setWakelock(false);
 
     if (mounted) {
       _isBuffering.value = false;
@@ -772,7 +772,7 @@ extension _VideoPlayerPlaybackServiceMethods on VideoPlayerScreenState {
       if (currentPlayer != null) {
         unawaited(_pauseWithPlaybackIntent(currentPlayer));
       }
-      unawaited(_wakelockController.setEnabled(false));
+      unawaited(_setWakelock(false));
       return;
     }
 
@@ -785,7 +785,7 @@ extension _VideoPlayerPlaybackServiceMethods on VideoPlayerScreenState {
       if (currentPlayer != null) {
         unawaited(_pauseWithPlaybackIntent(currentPlayer));
       }
-      unawaited(_wakelockController.setEnabled(false));
+      unawaited(_setWakelock(false));
       return;
     }
 
@@ -793,7 +793,7 @@ extension _VideoPlayerPlaybackServiceMethods on VideoPlayerScreenState {
     // Play Next prompt) a play press still reports playing while nothing
     // advances, and a lock taken there keeps a finished item lit until
     // someone comes back.
-    unawaited(_wakelockController.setEnabled(isPlaying && !(player?.state.completed ?? false)));
+    unawaited(_setWakelock(isPlaying && !(player?.state.completed ?? false)));
 
     if (isPlaying) {
       // Force a texture refresh on resume to unstick stale frames

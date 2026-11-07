@@ -23,7 +23,6 @@ import 'package:plezy/providers/offline_mode_provider.dart';
 import 'package:plezy/providers/playback_state_provider.dart';
 import 'package:plezy/screens/video_player/live_tv_session_args.dart';
 import 'package:plezy/screens/video_player/media_controls_screen_controller.dart';
-import 'package:plezy/screens/video_player/wakelock_controller.dart';
 import 'package:plezy/screens/video_player_screen.dart';
 import 'package:plezy/services/media_controls_manager.dart';
 import 'package:plezy/services/multi_server_manager.dart';
@@ -440,7 +439,7 @@ MediaControlsScreenController _liveController({
     play: (_) async {},
     wasPlayingBeforeInactive: () => false,
     clearWasPlayingBeforeInactive: () {},
-    wakelock: WakelockController(),
+    setWakelock: (_) async {},
     recordLifecycle: (_, {action}) {},
   );
 }

@@ -9,7 +9,6 @@ import '../../utils/snackbar_helper.dart';
 import 'completion_latch.dart';
 import 'media_reload_outcome.dart';
 import 'playback_transition_gate.dart';
-import 'wakelock_controller.dart';
 
 /// Recovery from spurious EOFs — a network stream dying mid-file that libmpv
 /// reports as a clean end-of-file (#1520).
@@ -32,7 +31,7 @@ class SpuriousEofRecovery {
     required this._transportFaultSeen,
     required this._serverStoppedSession,
     required this._reload,
-    required this._wakelock,
+    required this._setWakelock,
     this._partTimeline,
   });
 
@@ -69,7 +68,7 @@ class SpuriousEofRecovery {
   /// resumed it since (the progress tracker's `stoppedByServer`).
   final bool Function() _serverStoppedSession;
   final Future<MediaReloadOutcome> Function({required Duration resumePosition, required String reason}) _reload;
-  final WakelockController _wakelock;
+  final Future<void> Function(bool enabled) _setWakelock;
 
   int _attempts = 0;
   int? _baselineMs;
@@ -226,7 +225,7 @@ class SpuriousEofRecovery {
   /// stream (play/seek route to [retry] while parked).
   void _park() {
     _parked = true;
-    unawaited(_wakelock.setEnabled(false));
+    unawaited(_setWakelock(false));
     showGlobalErrorSnackBar(t.messages.streamInterrupted);
   }
 
