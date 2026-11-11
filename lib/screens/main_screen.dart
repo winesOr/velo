@@ -394,6 +394,8 @@ class _MainScreenState extends State<MainScreen>
   final _topNavigationNodes = {for (final id in NavigationTabId.values) id: FocusNode(debugLabel: 'top_${id.name}')};
   String? _selectedLibraryGlobalKey;
   Future<void>? _desktopExitFuture;
+  Map<String, dynamic>? _pendingStartupUpdate;
+  bool _isShowingUpdateDialog = false;
 
   /// Whether the app is in offline mode (no server connection)
   bool _isOffline = false;
@@ -861,20 +863,44 @@ class _MainScreenState extends State<MainScreen>
       final updateInfo = await UpdateService.checkForUpdatesOnStartup();
 
       if (updateInfo != null && updateInfo['hasUpdate'] == true && mounted) {
-        await _showUpdateDialog(updateInfo);
+        _pendingStartupUpdate = updateInfo;
+        await _presentPendingStartupUpdate();
       }
     } catch (e) {
       appLogger.e('Error checking for updates', error: e);
     }
   }
 
-  Future<void> _showUpdateDialog(Map<String, dynamic> updateInfo) => showUpdateAvailableDialog(
-    context,
-    updateInfo,
-    title: t.update.available,
-    dismissLabel: t.common.later,
-    showSkipVersion: true,
-  );
+  Future<void> _presentPendingStartupUpdate() async {
+    if (!mounted || _isShowingUpdateDialog || _pendingStartupUpdate == null) return;
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    if (lifecycle != null && lifecycle != AppLifecycleState.resumed) return;
+    if (ModalRoute.of(context)?.isCurrent != true || _isShowingProfileSelection) return;
+    final settingsService = await SettingsService.getInstance();
+    if (!mounted || _isShowingUpdateDialog || _pendingStartupUpdate == null) return;
+    if (!settingsService.read(SettingsService.autoCheckUpdatesOnStartup)) {
+      _pendingStartupUpdate = null;
+      return;
+    }
+    final currentLifecycle = WidgetsBinding.instance.lifecycleState;
+    if (currentLifecycle != null && currentLifecycle != AppLifecycleState.resumed) return;
+    if (ModalRoute.of(context)?.isCurrent != true || _isShowingProfileSelection) return;
+    final updateInfo = _pendingStartupUpdate!;
+    _pendingStartupUpdate = null;
+    _isShowingUpdateDialog = true;
+    try {
+      await showUpdateAvailableDialog(
+        context,
+        updateInfo,
+        title: t.update.available,
+        dismissLabel: t.common.later,
+        showSkipVersion: true,
+        autoDownload: Platform.isAndroid && settingsService.read(SettingsService.autoDownloadUpdates),
+      );
+    } finally {
+      _isShowingUpdateDialog = false;
+    }
+  }
 
   /// Set up the Watch Together navigation callback for guests
   void _setupWatchTogetherCallback() {
@@ -1187,6 +1213,11 @@ class _MainScreenState extends State<MainScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_presentPendingStartupUpdate());
+      });
+    }
     // Always consume: the gates latch backgrounding on every lifecycle event.
     final resumedFromBackground = _profileSelectionResumeGate.consumePromptOn(state);
     final refreshStaleContent = _contentRefreshResumeGate.consumeRefreshOn(state);
@@ -1773,6 +1804,9 @@ class _MainScreenState extends State<MainScreen>
 
   @override
   void didPopNext() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_presentPendingStartupUpdate());
+    });
     // Suppress stray back key events from the pop that just returned us here
     _suppressBackAfterPop = true;
     // Auto-clear after 2 frames in case no back event arrives

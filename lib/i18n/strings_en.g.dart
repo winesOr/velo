@@ -452,6 +452,42 @@ class Translations$update$en {
 
 	/// en: 'Failed to check for updates'
 	String get checkFailed => 'Failed to check for updates';
+
+	/// en: 'Download update'
+	String get download => 'Download update';
+
+	/// en: 'Downloading update…'
+	String get downloading => 'Downloading update…';
+
+	/// en: 'Downloading update: ${percent}%'
+	String downloadProgress({required Object percent}) => 'Downloading update: ${percent}%';
+
+	/// en: 'Checking the update before opening the Android installer…'
+	String get preparingInstall => 'Checking the update before opening the Android installer…';
+
+	/// en: 'The update is ready to install.'
+	String get readyToInstall => 'The update is ready to install.';
+
+	/// en: 'Install update'
+	String get installUpdate => 'Install update';
+
+	/// en: 'Allow Velo to install updates in Android settings, then return here to continue.'
+	String get permissionRequired => 'Allow Velo to install updates in Android settings, then return here to continue.';
+
+	/// en: 'Allow installation'
+	String get allowInstallation => 'Allow installation';
+
+	/// en: 'Confirm the update in the Android installer. If you cancelled, you can try again.'
+	String get installerOpened => 'Confirm the update in the Android installer. If you cancelled, you can try again.';
+
+	/// en: 'Could not download or install the update. Retry or view the release for details.'
+	String get updateFailed => 'Could not download or install the update. Retry or view the release for details.';
+
+	/// en: 'You can close this dialog while the download continues.'
+	String get downloadContinues => 'You can close this dialog while the download continues.';
+
+	/// en: 'This release cannot be installed automatically. Open the release to see the available downloads.'
+	String get manualUpdateRequired => 'This release cannot be installed automatically. Open the release to see the available downloads.';
 }
 
 // Path: settings
@@ -917,6 +953,15 @@ class Translations$settings$en {
 
 	/// en: 'Notify when an update is available at launch'
 	String get autoCheckUpdatesOnStartupDescription => 'Notify when an update is available at launch';
+
+	/// en: 'Automatically download updates'
+	String get autoDownloadUpdates => 'Automatically download updates';
+
+	/// en: 'Download new versions on any network, then ask Android to install them.'
+	String get autoDownloadUpdatesDescription => 'Download new versions on any network, then ask Android to install them.';
+
+	/// en: 'Check GitHub for a new version when Velo opens.'
+	String get androidAutoCheckUpdatesDescription => 'Check GitHub for a new version when Velo opens.';
 
 	/// en: 'Please enter a valid number'
 	String get validationErrorEnterNumber => 'Please enter a valid number';
@@ -8166,6 +8211,18 @@ extension on Translations {
 			'update.viewRelease' => 'View Release',
 			'update.latestVersion' => 'You are on the latest version',
 			'update.checkFailed' => 'Failed to check for updates',
+			'update.download' => 'Download update',
+			'update.downloading' => 'Downloading update…',
+			'update.downloadProgress' => ({required Object percent}) => 'Downloading update: ${percent}%',
+			'update.preparingInstall' => 'Checking the update before opening the Android installer…',
+			'update.readyToInstall' => 'The update is ready to install.',
+			'update.installUpdate' => 'Install update',
+			'update.permissionRequired' => 'Allow Velo to install updates in Android settings, then return here to continue.',
+			'update.allowInstallation' => 'Allow installation',
+			'update.installerOpened' => 'Confirm the update in the Android installer. If you cancelled, you can try again.',
+			'update.updateFailed' => 'Could not download or install the update. Retry or view the release for details.',
+			'update.downloadContinues' => 'You can close this dialog while the download continues.',
+			'update.manualUpdateRequired' => 'This release cannot be installed automatically. Open the release to see the available downloads.',
 			'settings.title' => 'Settings',
 			'settings.supportDeveloper' => 'Support Velo',
 			'settings.supportDeveloperDescription' => 'Donate via Liberapay to fund development',
@@ -8318,6 +8375,9 @@ extension on Translations {
 			'settings.checkForUpdates' => 'Check for Updates',
 			'settings.autoCheckUpdatesOnStartup' => 'Automatically check for updates on startup',
 			'settings.autoCheckUpdatesOnStartupDescription' => 'Notify when an update is available at launch',
+			'settings.autoDownloadUpdates' => 'Automatically download updates',
+			'settings.autoDownloadUpdatesDescription' => 'Download new versions on any network, then ask Android to install them.',
+			'settings.androidAutoCheckUpdatesDescription' => 'Check GitHub for a new version when Velo opens.',
 			'settings.validationErrorEnterNumber' => 'Please enter a valid number',
 			'settings.validationErrorDuration' => ({required Object min, required Object max, required Object unit}) => 'Duration must be between ${min} and ${max} ${unit}',
 			'settings.shortcutAlreadyAssigned' => ({required Object action}) => 'Shortcut already assigned to ${action}',
@@ -8537,6 +8597,8 @@ extension on Translations {
 			'hotkeys.actions.zoomOut' => 'Zoom Out',
 			'hotkeys.actions.zoomReset' => 'Reset Zoom',
 			'hotkeys.actions.subSeekNext' => 'Seek to Next Subtitle',
+			_ => null,
+		} ?? switch (path) {
 			'hotkeys.actions.subSeekPrev' => 'Seek to Previous Subtitle',
 			'hotkeys.actions.shaderToggle' => 'Toggle Shaders',
 			'hotkeys.actions.skipMarker' => 'Skip Intro/Credits',
@@ -8552,8 +8614,6 @@ extension on Translations {
 			'fileInfo.file' => 'File',
 			'fileInfo.attachments' => 'Attachments',
 			'fileInfo.delivery' => 'Delivery',
-			_ => null,
-		} ?? switch (path) {
 			'fileInfo.versionCounter' => ({required Object index, required Object count}) => 'Version ${index} of ${count}',
 			'fileInfo.fileCounter' => ({required Object index, required Object count}) => 'File ${index} of ${count}',
 			'fileInfo.noStreams' => 'The server reported no streams for this file.',
@@ -9051,6 +9111,8 @@ extension on Translations {
 			'accountPreferences.groups.libraryDisplay' => 'Library',
 			'accountPreferences.groups.personalMedia' => 'Personal media',
 			'accountPreferences.preferredAudioLanguage' => 'Preferred audio language',
+			_ => null,
+		} ?? switch (path) {
 			'accountPreferences.autoSelectAudio' => 'Choose audio by language',
 			'accountPreferences.autoSelectAudioDescription' => 'Off keeps whatever audio track the file marks as default.',
 			'accountPreferences.preferredSubtitleLanguage' => 'Preferred subtitle language',
@@ -9066,8 +9128,6 @@ extension on Translations {
 			'accountPreferences.subtitleModes.smart' => 'Shown with foreign audio',
 			'accountPreferences.subtitleModes.smartDescription' => 'Turn subtitles on only when the audio is in another language.',
 			'accountPreferences.subtitleAccessibility' => 'SDH subtitles',
-			_ => null,
-		} ?? switch (path) {
 			'accountPreferences.subtitleAccessibilityOptions.preferNonSdh' => 'Prefer non-SDH subtitles',
 			'accountPreferences.subtitleAccessibilityOptions.preferSdh' => 'Prefer SDH subtitles',
 			'accountPreferences.subtitleAccessibilityOptions.onlySdh' => 'Only SDH subtitles',
@@ -9565,6 +9625,8 @@ extension on Translations {
 			'collections.deleteFailedWithError' => ({required Object error}) => 'Failed to delete collection: ${error}',
 			'collections.selectCollection' => 'Select Collection',
 			'collections.collectionName' => 'Collection Name',
+			_ => null,
+		} ?? switch (path) {
 			'collections.enterCollectionName' => 'Enter collection name',
 			'collections.addedToCollection' => 'Added to collection',
 			'collections.errorAddingToCollection' => 'Failed to add to collection',
@@ -9580,8 +9642,6 @@ extension on Translations {
 			'playlists.noPlaylists' => 'No playlists found',
 			'playlists.create' => 'Create Playlist',
 			'playlists.playlistName' => 'Playlist Name',
-			_ => null,
-		} ?? switch (path) {
 			'playlists.enterPlaylistName' => 'Enter playlist name',
 			'playlists.delete' => 'Delete Playlist',
 			'playlists.removeItem' => 'Remove from Playlist',
@@ -10079,6 +10139,8 @@ extension on Translations {
 			'metadataEdit.never' => 'Never',
 			'metadataEdit.afterADay' => 'After a day',
 			'metadataEdit.afterAWeek' => 'After a week',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.afterAMonth' => 'After a month',
 			'metadataEdit.onNextRefresh' => 'On next refresh',
 			'metadataEdit.seasons' => 'Seasons',
@@ -10094,8 +10156,6 @@ extension on Translations {
 			'metadataEdit.preferredSubtitleLanguage' => 'Preferred Subtitle Language',
 			'metadataEdit.subtitleMode' => 'Auto-Select Subtitle Mode',
 			'metadataEdit.manuallySelected' => 'Manually selected',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.shownWithForeignAudio' => 'Shown with foreign audio',
 			'metadataEdit.alwaysEnabled' => 'Always enabled',
 			'metadataEdit.tags' => 'Tags',

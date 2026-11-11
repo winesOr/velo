@@ -668,6 +668,8 @@ class SettingsService extends BaseSharedPreferencesService {
   /// turning it off persists so the next download keeps the choice.
   static const downloadIncludeSpecials = BoolPref('download_include_specials', defaultValue: true);
   static const autoCheckUpdatesOnStartup = BoolPref('auto_check_updates_on_startup', defaultValue: true);
+  // TODO(VELO-UPDATE-UI-001): Revisit the default download policy if a metered-network option is added.
+  static const autoDownloadUpdates = BoolPref('auto_download_updates', defaultValue: false);
   static const showPerformanceOverlay = BoolPref('show_performance_overlay');
   static const autoHidePerformanceOverlay = BoolPref('auto_hide_performance_overlay', defaultValue: true);
   static const enableDiscordRPC = BoolPref('enable_discord_rpc');
@@ -1412,6 +1414,7 @@ class SettingsService extends BaseSharedPreferencesService {
     backgroundDownloadWarningAcknowledged,
     downloadIncludeSpecials,
     autoCheckUpdatesOnStartup,
+    autoDownloadUpdates,
     showPerformanceOverlay,
     autoHidePerformanceOverlay,
     enableDiscordRPC,

@@ -242,6 +242,18 @@ class _Translations$update$zh_Hant extends Translations$update$zh {
 	@override String get viewRelease => '查看版本詳情';
 	@override String get latestVersion => '已安裝的版本為最新版本';
 	@override String get checkFailed => '無法檢查更新';
+	@override String get download => '下載更新';
+	@override String get downloading => '正在下載更新…';
+	@override String downloadProgress({required Object percent}) => '正在下載更新：${percent}%';
+	@override String get preparingInstall => '正在檢查更新檔，完成後將開啟 Android 安裝程式…';
+	@override String get readyToInstall => '更新已下載，可以安裝。';
+	@override String get installUpdate => '安裝更新';
+	@override String get permissionRequired => '請在 Android 設定中允許 Velo 安裝應用程式，然後返回此處繼續。';
+	@override String get allowInstallation => '允許安裝';
+	@override String get installerOpened => '請在 Android 安裝程式中確認更新。如果已取消，可以再次安裝。';
+	@override String get updateFailed => '無法下載或安裝更新，請重試或查看版本詳情。';
+	@override String get downloadContinues => '關閉此視窗後，下載仍會繼續。';
+	@override String get manualUpdateRequired => '此版本無法自動安裝，請查看版本詳情中的下載檔案。';
 }
 
 // Path: settings
@@ -403,6 +415,9 @@ class _Translations$settings$zh_Hant extends Translations$settings$zh {
 	@override String get checkForUpdates => '檢查更新';
 	@override String get autoCheckUpdatesOnStartup => '啟動時自動檢查更新';
 	@override String get autoCheckUpdatesOnStartupDescription => '啟動時若有可用更新便顯示通知';
+	@override String get autoDownloadUpdates => '自動下載更新';
+	@override String get autoDownloadUpdatesDescription => '使用目前網路下載新版本，然後開啟 Android 安裝程式。';
+	@override String get androidAutoCheckUpdatesDescription => '開啟 Velo 時檢查 GitHub 上是否有新版本。';
 	@override String get validationErrorEnterNumber => '請輸入有效的數字';
 	@override String validationErrorDuration({required Object min, required Object max, required Object unit}) => '長度必須介於 ${min} 與 ${max} ${unit} 之間';
 	@override String shortcutAlreadyAssigned({required Object action}) => '該快速鍵已指派給 ${action}';
@@ -3437,6 +3452,18 @@ extension on TranslationsZhHant {
 			'update.viewRelease' => '查看版本詳情',
 			'update.latestVersion' => '已安裝的版本為最新版本',
 			'update.checkFailed' => '無法檢查更新',
+			'update.download' => '下載更新',
+			'update.downloading' => '正在下載更新…',
+			'update.downloadProgress' => ({required Object percent}) => '正在下載更新：${percent}%',
+			'update.preparingInstall' => '正在檢查更新檔，完成後將開啟 Android 安裝程式…',
+			'update.readyToInstall' => '更新已下載，可以安裝。',
+			'update.installUpdate' => '安裝更新',
+			'update.permissionRequired' => '請在 Android 設定中允許 Velo 安裝應用程式，然後返回此處繼續。',
+			'update.allowInstallation' => '允許安裝',
+			'update.installerOpened' => '請在 Android 安裝程式中確認更新。如果已取消，可以再次安裝。',
+			'update.updateFailed' => '無法下載或安裝更新，請重試或查看版本詳情。',
+			'update.downloadContinues' => '關閉此視窗後，下載仍會繼續。',
+			'update.manualUpdateRequired' => '此版本無法自動安裝，請查看版本詳情中的下載檔案。',
 			'settings.title' => '設定',
 			'settings.supportDeveloper' => '贊助 Velo',
 			'settings.supportDeveloperDescription' => '透過 Liberapay 捐款支持開發者',
@@ -3589,6 +3616,9 @@ extension on TranslationsZhHant {
 			'settings.checkForUpdates' => '檢查更新',
 			'settings.autoCheckUpdatesOnStartup' => '啟動時自動檢查更新',
 			'settings.autoCheckUpdatesOnStartupDescription' => '啟動時若有可用更新便顯示通知',
+			'settings.autoDownloadUpdates' => '自動下載更新',
+			'settings.autoDownloadUpdatesDescription' => '使用目前網路下載新版本，然後開啟 Android 安裝程式。',
+			'settings.androidAutoCheckUpdatesDescription' => '開啟 Velo 時檢查 GitHub 上是否有新版本。',
 			'settings.validationErrorEnterNumber' => '請輸入有效的數字',
 			'settings.validationErrorDuration' => ({required Object min, required Object max, required Object unit}) => '長度必須介於 ${min} 與 ${max} ${unit} 之間',
 			'settings.shortcutAlreadyAssigned' => ({required Object action}) => '該快速鍵已指派給 ${action}',
@@ -3808,6 +3838,8 @@ extension on TranslationsZhHant {
 			'hotkeys.actions.zoomOut' => '縮小',
 			'hotkeys.actions.zoomReset' => '重設縮放',
 			'hotkeys.actions.subSeekNext' => '跳轉至下一句字幕',
+			_ => null,
+		} ?? switch (path) {
 			'hotkeys.actions.subSeekPrev' => '跳轉至上一句字幕',
 			'hotkeys.actions.shaderToggle' => '切換著色器',
 			'hotkeys.actions.skipMarker' => '跳過片頭/片尾',
@@ -3823,8 +3855,6 @@ extension on TranslationsZhHant {
 			'fileInfo.file' => '檔案',
 			'fileInfo.attachments' => '附件',
 			'fileInfo.delivery' => '傳輸方式',
-			_ => null,
-		} ?? switch (path) {
 			'fileInfo.versionCounter' => ({required Object index, required Object count}) => '第 ${index} 個版本，共 ${count} 個',
 			'fileInfo.fileCounter' => ({required Object index, required Object count}) => '第 ${index} 個檔案，共 ${count} 個',
 			'fileInfo.noStreams' => '伺服器回報此檔案沒有串流。',
@@ -4322,6 +4352,8 @@ extension on TranslationsZhHant {
 			'accountPreferences.groups.libraryDisplay' => '媒體庫',
 			'accountPreferences.groups.personalMedia' => '個人媒體',
 			'accountPreferences.preferredAudioLanguage' => '偏好音訊語言',
+			_ => null,
+		} ?? switch (path) {
 			'accountPreferences.autoSelectAudio' => '依語言選擇音訊',
 			'accountPreferences.autoSelectAudioDescription' => '關閉時會使用檔案標記為預設的音訊軌。',
 			'accountPreferences.preferredSubtitleLanguage' => '偏好字幕語言',
@@ -4337,8 +4369,6 @@ extension on TranslationsZhHant {
 			'accountPreferences.subtitleModes.smart' => '外語配音時顯示',
 			'accountPreferences.subtitleModes.smartDescription' => '僅在音訊為其他語言時開啟字幕。',
 			'accountPreferences.subtitleAccessibility' => 'SDH 字幕',
-			_ => null,
-		} ?? switch (path) {
 			'accountPreferences.subtitleAccessibilityOptions.preferNonSdh' => '偏好非 SDH 字幕',
 			'accountPreferences.subtitleAccessibilityOptions.preferSdh' => '偏好 SDH 字幕',
 			'accountPreferences.subtitleAccessibilityOptions.onlySdh' => '僅 SDH 字幕',
@@ -4836,6 +4866,8 @@ extension on TranslationsZhHant {
 			'collections.deleteFailedWithError' => ({required Object error}) => '刪除收藏集失敗：${error}',
 			'collections.selectCollection' => '選擇收藏集',
 			'collections.collectionName' => '收藏集名稱',
+			_ => null,
+		} ?? switch (path) {
 			'collections.enterCollectionName' => '輸入收藏集名稱',
 			'collections.addedToCollection' => '已新增至收藏集',
 			'collections.errorAddingToCollection' => '新增至收藏集失敗',
@@ -4851,8 +4883,6 @@ extension on TranslationsZhHant {
 			'playlists.noPlaylists' => '找不到播放清單',
 			'playlists.create' => '建立播放清單',
 			'playlists.playlistName' => '播放清單名稱',
-			_ => null,
-		} ?? switch (path) {
 			'playlists.enterPlaylistName' => '輸入播放清單名稱',
 			'playlists.delete' => '刪除播放清單',
 			'playlists.removeItem' => '從播放清單中移除',
@@ -5350,6 +5380,8 @@ extension on TranslationsZhHant {
 			'metadataEdit.never' => '從不',
 			'metadataEdit.afterADay' => '一天後',
 			'metadataEdit.afterAWeek' => '一週後',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.afterAMonth' => '一個月後',
 			'metadataEdit.onNextRefresh' => '下次重新整理時',
 			'metadataEdit.seasons' => '季',
@@ -5365,8 +5397,6 @@ extension on TranslationsZhHant {
 			'metadataEdit.preferredSubtitleLanguage' => '偏好字幕語言',
 			'metadataEdit.subtitleMode' => '自動選擇字幕模式',
 			'metadataEdit.manuallySelected' => '手動選擇',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.shownWithForeignAudio' => '外語配音時顯示',
 			'metadataEdit.alwaysEnabled' => '一律啟用',
 			'metadataEdit.tags' => '標籤',

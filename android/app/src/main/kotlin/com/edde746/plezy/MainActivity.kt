@@ -124,6 +124,7 @@ class MainActivity : FlutterActivity() {
   private var flutterSurfaceReconnectPending = false
   private var activityStarted = false
   private val externalPlayerChannel = ExternalPlayerChannel(this)
+  private val appUpdateChannel = AppUpdateChannel(this)
   private val userCertificateChannel = UserCertificateChannel()
   private val dlnaMulticast = DlnaMulticastLease()
   private val exitDiagnosticsRequested = AtomicBoolean(false)
@@ -611,6 +612,7 @@ class MainActivity : FlutterActivity() {
   override fun onDestroy() {
     dlnaMulticast.dispose()
     externalPlayerChannel.dispose()
+    appUpdateChannel.dispose()
     systemBarsInsetsHost?.setOnApplyWindowInsetsListener(null)
     systemBarsInsetsHost = null
     cancelPendingSystemBarsHide()
@@ -848,6 +850,7 @@ class MainActivity : FlutterActivity() {
 
   override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
     super.configureFlutterEngine(flutterEngine)
+    appUpdateChannel.attach(flutterEngine.dartExecutor.binaryMessenger)
     flutterEngine.plugins.add(MpvPlayerPlugin())
     flutterEngine.plugins.add(ExoPlayerPlugin())
     flutterEngine.plugins.add(MpvAudioPlayerPlugin())

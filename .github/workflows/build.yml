@@ -47,8 +47,7 @@ env:
 jobs:
   validate-trusted-ref:
     name: Validate trusted build ref
-    # Velo release identifiers and signing must be configured before enabling this.
-    if: ${{ github.repository == 'edde746/plezy' }}
+    # A repository trusts its own main branch; signing secrets remain repository-scoped.
     runs-on: ubuntu-latest
     permissions: {}
     steps:
@@ -107,17 +106,45 @@ jobs:
         run: flutter pub get --enforce-lockfile --no-example
 
       - name: Configure Android signing
-        run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
-          cat > android/key.properties << EOF
-          storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
-          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
-          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          storeFile=upload-keystore.jks
-          EOF
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
+        run: python3 scripts/release/configure_android_signing.py
 
       - name: Build APKs
+        env:
+          VELO_ANDROID_GITHUB_UPDATE_BUILD: "true"
         run: flutter build apk --release --split-per-abi ${{ env.RELEASE_DART_DEFINES }} --dart-define=SENTRY_DIST=github-android-apk --obfuscate --split-debug-info=debug-info/android-apk --extra-gen-snapshot-options=--save-obfuscation-map=debug-info/android-apk/obfuscation.map.json
+
+      - name: Remove signing material
+        if: always()
+        run: rm -f android/app/upload-keystore.jks android/key.properties
+
+      - name: Verify release signing
+        shell: bash
+        env:
+          ANDROID_SIGNING_CERT_SHA256: ${{ secrets.ANDROID_SIGNING_CERT_SHA256 }}
+        run: |
+          apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
+          test -n "$apksigner"
+          shopt -s nullglob
+          apks=(build/app/outputs/flutter-apk/app-*-release.apk)
+          ((${#apks[@]} > 0)) || { echo "No release APKs found." >&2; exit 1; }
+          for apk in "${apks[@]}"; do
+            signing_output="$RUNNER_TEMP/$(basename "$apk").signing.txt"
+            "$apksigner" verify --verbose --print-certs "$apk" > "$signing_output"
+            if grep -Fq 'CN=Android Debug' "$signing_output"; then
+              echo "Refusing to publish a debug-signed APK: $apk" >&2
+              exit 1
+            fi
+            python3 scripts/release/validate_android_release.py \
+              --verify-signature-only \
+              --apksigner-output "$signing_output" \
+              --expected-cert-sha256 "$ANDROID_SIGNING_CERT_SHA256"
+          done
 
       - name: Upload symbols to bugs.plezy.app
         if: github.repository == 'edde746/plezy'
@@ -125,10 +152,6 @@ jobs:
           BUGS_ADMIN_TOKEN: ${{ secrets.BUGS_ADMIN_TOKEN }}
           SENTRY_DIST: github-android-apk
         run: ./scripts/upload-symbols.sh android-apk
-
-      - name: Clean up keystore
-        if: always()
-        run: rm -f android/app/upload-keystore.jks android/key.properties
 
       - name: Package APKs
         run: |

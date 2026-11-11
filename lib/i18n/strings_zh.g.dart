@@ -242,6 +242,18 @@ class Translations$update$zh extends Translations$update$en {
 	@override String get viewRelease => '查看发布详情';
 	@override String get latestVersion => '当前已是最新版本';
 	@override String get checkFailed => '无法检查更新';
+	@override String get download => '下载更新';
+	@override String get downloading => '正在下载更新…';
+	@override String downloadProgress({required Object percent}) => '正在下载更新：${percent}%';
+	@override String get preparingInstall => '正在检查更新包，完成后将打开 Android 安装器…';
+	@override String get readyToInstall => '更新已下载，可以安装。';
+	@override String get installUpdate => '安装更新';
+	@override String get permissionRequired => '请在 Android 设置中允许 Velo 安装应用，然后返回此处继续。';
+	@override String get allowInstallation => '允许安装';
+	@override String get installerOpened => '请在 Android 安装器中确认更新。如果已取消，可以再次安装。';
+	@override String get updateFailed => '无法下载或安装更新，请重试或查看发布详情。';
+	@override String get downloadContinues => '关闭此窗口后，下载仍会继续。';
+	@override String get manualUpdateRequired => '此版本无法自动安装，请查看发布详情中的下载文件。';
 }
 
 // Path: settings
@@ -403,6 +415,9 @@ class Translations$settings$zh extends Translations$settings$en {
 	@override String get checkForUpdates => '检查更新';
 	@override String get autoCheckUpdatesOnStartup => '启动时自动检查更新';
 	@override String get autoCheckUpdatesOnStartupDescription => '启动时有可用更新则通知';
+	@override String get autoDownloadUpdates => '自动下载更新';
+	@override String get autoDownloadUpdatesDescription => '使用当前网络下载新版本，然后打开 Android 安装器。';
+	@override String get androidAutoCheckUpdatesDescription => '打开 Velo 时检查 GitHub 上是否有新版本。';
 	@override String get validationErrorEnterNumber => '请输入有效数字';
 	@override String validationErrorDuration({required Object min, required Object max, required Object unit}) => '时长必须介于 ${min} 和 ${max} ${unit} 之间';
 	@override String shortcutAlreadyAssigned({required Object action}) => '快捷键已被分配给 ${action}';
@@ -3462,6 +3477,18 @@ extension on TranslationsZh {
 			'update.viewRelease' => '查看发布详情',
 			'update.latestVersion' => '当前已是最新版本',
 			'update.checkFailed' => '无法检查更新',
+			'update.download' => '下载更新',
+			'update.downloading' => '正在下载更新…',
+			'update.downloadProgress' => ({required Object percent}) => '正在下载更新：${percent}%',
+			'update.preparingInstall' => '正在检查更新包，完成后将打开 Android 安装器…',
+			'update.readyToInstall' => '更新已下载，可以安装。',
+			'update.installUpdate' => '安装更新',
+			'update.permissionRequired' => '请在 Android 设置中允许 Velo 安装应用，然后返回此处继续。',
+			'update.allowInstallation' => '允许安装',
+			'update.installerOpened' => '请在 Android 安装器中确认更新。如果已取消，可以再次安装。',
+			'update.updateFailed' => '无法下载或安装更新，请重试或查看发布详情。',
+			'update.downloadContinues' => '关闭此窗口后，下载仍会继续。',
+			'update.manualUpdateRequired' => '此版本无法自动安装，请查看发布详情中的下载文件。',
 			'settings.title' => '设置',
 			'settings.supportDeveloper' => '支持 Velo',
 			'settings.supportDeveloperDescription' => '通过 Liberapay 捐赠支持开发',
@@ -3614,6 +3641,9 @@ extension on TranslationsZh {
 			'settings.checkForUpdates' => '检查更新',
 			'settings.autoCheckUpdatesOnStartup' => '启动时自动检查更新',
 			'settings.autoCheckUpdatesOnStartupDescription' => '启动时有可用更新则通知',
+			'settings.autoDownloadUpdates' => '自动下载更新',
+			'settings.autoDownloadUpdatesDescription' => '使用当前网络下载新版本，然后打开 Android 安装器。',
+			'settings.androidAutoCheckUpdatesDescription' => '打开 Velo 时检查 GitHub 上是否有新版本。',
 			'settings.validationErrorEnterNumber' => '请输入有效数字',
 			'settings.validationErrorDuration' => ({required Object min, required Object max, required Object unit}) => '时长必须介于 ${min} 和 ${max} ${unit} 之间',
 			'settings.shortcutAlreadyAssigned' => ({required Object action}) => '快捷键已被分配给 ${action}',
@@ -3833,6 +3863,8 @@ extension on TranslationsZh {
 			'hotkeys.actions.zoomOut' => '缩小',
 			'hotkeys.actions.zoomReset' => '重置缩放',
 			'hotkeys.actions.subSeekNext' => '跳转到下一条字幕',
+			_ => null,
+		} ?? switch (path) {
 			'hotkeys.actions.subSeekPrev' => '跳转到上一条字幕',
 			'hotkeys.actions.shaderToggle' => '切换着色器',
 			'hotkeys.actions.skipMarker' => '跳过片头/片尾',
@@ -3848,8 +3880,6 @@ extension on TranslationsZh {
 			'fileInfo.file' => '文件',
 			'fileInfo.attachments' => '附件',
 			'fileInfo.delivery' => '传输方式',
-			_ => null,
-		} ?? switch (path) {
 			'fileInfo.versionCounter' => ({required Object index, required Object count}) => '第 ${index} 个版本，共 ${count} 个',
 			'fileInfo.fileCounter' => ({required Object index, required Object count}) => '第 ${index} 个文件，共 ${count} 个',
 			'fileInfo.noStreams' => '服务器报告此文件没有媒体流。',
@@ -4347,6 +4377,8 @@ extension on TranslationsZh {
 			'accountPreferences.groups.libraryDisplay' => '媒体库',
 			'accountPreferences.groups.personalMedia' => '个人媒体',
 			'accountPreferences.preferredAudioLanguage' => '首选音频语言',
+			_ => null,
+		} ?? switch (path) {
 			'accountPreferences.autoSelectAudio' => '按语言选择音频',
 			'accountPreferences.autoSelectAudioDescription' => '关闭后保留文件标记为默认的音轨。',
 			'accountPreferences.preferredSubtitleLanguage' => '首选字幕语言',
@@ -4362,8 +4394,6 @@ extension on TranslationsZh {
 			'accountPreferences.subtitleModes.smart' => '外语音频时显示',
 			'accountPreferences.subtitleModes.smartDescription' => '仅在音频为其他语言时打开字幕。',
 			'accountPreferences.subtitleAccessibility' => 'SDH 字幕',
-			_ => null,
-		} ?? switch (path) {
 			'accountPreferences.subtitleAccessibilityOptions.preferNonSdh' => '优先非 SDH 字幕',
 			'accountPreferences.subtitleAccessibilityOptions.preferSdh' => '优先 SDH 字幕',
 			'accountPreferences.subtitleAccessibilityOptions.onlySdh' => '仅 SDH 字幕',
@@ -4861,6 +4891,8 @@ extension on TranslationsZh {
 			'collections.deleteFailedWithError' => ({required Object error}) => '删除合集失败：${error}',
 			'collections.selectCollection' => '选择合集',
 			'collections.collectionName' => '合集名称',
+			_ => null,
+		} ?? switch (path) {
 			'collections.enterCollectionName' => '输入合集名称',
 			'collections.addedToCollection' => '已添加到合集',
 			'collections.errorAddingToCollection' => '添加到合集失败',
@@ -4876,8 +4908,6 @@ extension on TranslationsZh {
 			'playlists.noPlaylists' => '未找到播放列表',
 			'playlists.create' => '创建播放列表',
 			'playlists.playlistName' => '播放列表名称',
-			_ => null,
-		} ?? switch (path) {
 			'playlists.enterPlaylistName' => '输入播放列表名称',
 			'playlists.delete' => '删除播放列表',
 			'playlists.removeItem' => '从播放列表中移除',
@@ -5375,6 +5405,8 @@ extension on TranslationsZh {
 			'metadataEdit.never' => '从不',
 			'metadataEdit.afterADay' => '一天后',
 			'metadataEdit.afterAWeek' => '一周后',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.afterAMonth' => '一个月后',
 			'metadataEdit.onNextRefresh' => '下次刷新时',
 			'metadataEdit.seasons' => '季',
@@ -5390,8 +5422,6 @@ extension on TranslationsZh {
 			'metadataEdit.preferredSubtitleLanguage' => '首选字幕语言',
 			'metadataEdit.subtitleMode' => '自动选择字幕模式',
 			'metadataEdit.manuallySelected' => '手动选择',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.shownWithForeignAudio' => '外语音频时显示',
 			'metadataEdit.alwaysEnabled' => '始终启用',
 			'metadataEdit.tags' => '标签',

@@ -6,16 +6,22 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:plezy/utils/app_logger.dart';
 import 'package:plezy/utils/media_server_http_client.dart';
 import 'package:plezy/utils/platform_detector.dart';
+import 'android_app_update_service.dart';
 import 'base_shared_preferences_service.dart';
 
 /// Service to check for new versions on GitHub
-/// Only enabled when ENABLE_UPDATE_CHECK build flag is set
+/// Self-update is opt-in through ENABLE_UPDATE_CHECK.
 ///
 /// On macOS (non-Homebrew) and installed Windows: delegates to Sparkle/WinSparkle
 /// via auto_updater for native update dialogs and in-app installs.
-/// On all other platforms: falls back to GitHub API check + browser link dialog.
+/// Android downloads verified APK releases; other platforms use a browser link.
 class UpdateService {
   static const String _githubRepo = 'edde746/plezy';
+  // TODO(VELO-UPDATE-002): Keep the distribution repository configurable for downstream builds.
+  static const String _androidGithubRepo = String.fromEnvironment(
+    'ANDROID_UPDATE_REPOSITORY',
+    defaultValue: 'winesOr/velo',
+  );
   static const String _feedUrl = 'https://cdn.jsdelivr.net/gh/edde746/plezy@appcast/appcast.xml';
 
   static const String _keySkippedVersion = 'update_skipped_version';
@@ -23,13 +29,19 @@ class UpdateService {
 
   // Check cooldown: 6 hours
   static const Duration _checkCooldown = Duration(hours: 6);
+  // TODO(VELO-UPDATE-003): Revisit this default if GitHub rate limits affect startup checks.
+  static const Duration _androidCheckCooldown = Duration(
+    minutes: int.fromEnvironment('ANDROID_UPDATE_CHECK_INTERVAL_MINUTES', defaultValue: 0),
+  );
 
   static bool _nativeUpdaterInitialized = false;
+  static Future<Map<String, dynamic>?>? _androidStartupCheck;
+
+  @visibleForTesting
+  static const bool debugUpdateCheckBuildEnabled = bool.fromEnvironment('ENABLE_UPDATE_CHECK', defaultValue: false);
 
   /// Check if update checking is enabled via build flag
-  static bool get isUpdateCheckEnabled {
-    return const bool.fromEnvironment('ENABLE_UPDATE_CHECK', defaultValue: false);
-  }
+  static bool get isUpdateCheckEnabled => debugUpdateCheckBuildEnabled;
 
   /// Whether any in-app update path applies to this install.
   /// False inside a packaged (MSIX/Store) install: the Store owns updates and
@@ -106,7 +118,7 @@ class UpdateService {
   }
 
   /// Check if cooldown period has passed since last check
-  static Future<bool> shouldCheckForUpdates() async {
+  static Future<bool> shouldCheckForUpdates({bool? isAndroid}) async {
     final prefs = await BaseSharedPreferencesService.sharedCache();
     final lastCheckString = prefs.getString(_keyLastCheckTime);
     if (lastCheckString == null) return true;
@@ -118,7 +130,7 @@ class UpdateService {
       return true;
     }
 
-    return now.difference(lastCheck) >= _checkCooldown;
+    return now.difference(lastCheck) >= ((isAndroid ?? Platform.isAndroid) ? _androidCheckCooldown : _checkCooldown);
   }
 
   static Future<void> _updateLastCheckTime() async {
@@ -135,13 +147,16 @@ class UpdateService {
     MediaServerHttpClient? client,
     bool forceEnabled = false,
     bool throwOnFailure = false,
+    bool? isAndroid,
+    AndroidAppUpdateService? androidService,
   }) async {
     if (!forceEnabled && !isUpdateCheckAvailable) {
       return null;
     }
 
     // Check cooldown if requested
-    if (respectCooldown && !await shouldCheckForUpdates()) {
+    final android = isAndroid ?? Platform.isAndroid;
+    if (respectCooldown && !await shouldCheckForUpdates(isAndroid: android)) {
       return null;
     }
 
@@ -154,14 +169,26 @@ class UpdateService {
       }
 
       final response = await (client ?? httpClient).get(
-        'https://api.github.com/repos/$_githubRepo/releases/latest',
+        'https://api.github.com/repos/${android ? _androidGithubRepo : _githubRepo}/releases/latest',
         headers: {'Accept': 'application/vnd.github+json'},
       );
 
+      if (response.statusCode == 404) return null;
       if (response.statusCode != 200) {
         throw StateError('Release check returned HTTP ${response.statusCode}');
       }
       final data = response.data;
+      if (data is! Map<String, dynamic>) throw const FormatException('Invalid GitHub release response');
+      if (android) {
+        final update = await (androidService ?? AndroidAppUpdateService.instance).resolveReleaseUpdate(
+          release: data,
+          packageInfo: packageInfo,
+          metadataClient: client ?? httpClient,
+          repository: _androidGithubRepo,
+        );
+        if (update != null && await getSkippedVersion() == update['latestVersion']) return null;
+        return update;
+      }
       final latestVersion = data['tag_name'] as String;
 
       // Remove 'v' prefix if present
@@ -199,13 +226,28 @@ class UpdateService {
     required bool respectCooldown,
     required MediaServerHttpClient client,
     bool throwOnFailure = false,
+    bool? isAndroid,
+    AndroidAppUpdateService? androidService,
   }) {
     return _performUpdateCheck(
       respectCooldown: respectCooldown,
       client: client,
       forceEnabled: true,
       throwOnFailure: throwOnFailure,
+      isAndroid: isAndroid,
+      androidService: androidService,
     );
+  }
+
+  @visibleForTesting
+  static Future<Map<String, dynamic>?> debugCheckForUpdatesOnStartup({
+    required MediaServerHttpClient client,
+    required AndroidAppUpdateService androidService,
+  }) => _checkForUpdatesOnStartup(isAndroid: true, client: client, androidService: androidService, forceEnabled: true);
+
+  @visibleForTesting
+  static void debugResetStartupCheck() {
+    _androidStartupCheck = null;
   }
 
   /// Check for updates on GitHub (manual check, ignores cooldown)
@@ -218,7 +260,29 @@ class UpdateService {
 
   /// Check for updates on startup (respects cooldown and skipped versions)
   /// Returns update info if available, null otherwise
-  static Future<Map<String, dynamic>?> checkForUpdatesOnStartup() {
+  static Future<Map<String, dynamic>?> checkForUpdatesOnStartup() => _checkForUpdatesOnStartup();
+
+  static Future<Map<String, dynamic>?> _checkForUpdatesOnStartup({
+    bool? isAndroid,
+    MediaServerHttpClient? client,
+    AndroidAppUpdateService? androidService,
+    bool forceEnabled = false,
+  }) async {
+    // MainScreen can be recreated while changing servers. Share one Android
+    // network check, but let each live screen receive its result. The screen
+    // that initiated the request may have been disposed while awaiting it.
+    // Re-read the skip preference even when reusing a completed request.
+    if (isAndroid ?? Platform.isAndroid) {
+      final update = await (_androidStartupCheck ??= _performUpdateCheck(
+        respectCooldown: true,
+        isAndroid: true,
+        client: client,
+        androidService: androidService,
+        forceEnabled: forceEnabled,
+      ));
+      if (update != null && await getSkippedVersion() == update['latestVersion']) return null;
+      return update;
+    }
     return _performUpdateCheck(respectCooldown: true);
   }
 

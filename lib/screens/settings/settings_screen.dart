@@ -39,6 +39,7 @@ import '../../services/background_work_diagnostics_service.dart';
 import '../../services/settings_service.dart' as settings;
 import '../../services/settings_mutation_service.dart';
 import '../../widgets/background_download_warning_banner.dart';
+import '../../services/android_app_update_service.dart';
 import '../../services/update_service.dart';
 import '../../utils/dialogs.dart';
 import '../../utils/snackbar_helper.dart';
@@ -141,6 +142,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
   static const _kResetSettings = 'reset_settings';
   static const _kCheckForUpdates = 'check_for_updates';
   static const _kAutoCheckUpdatesOnStartup = 'auto_check_updates_on_startup';
+  static const _kAutoDownloadUpdates = 'auto_download_updates';
   static const _kAbout = 'about';
   static const _kWatchTogetherRelay = 'watch_together_relay';
   static const _kExportSettings = 'export_settings';
@@ -154,12 +156,17 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
 
   // Update checking state
   bool _isCheckingForUpdate = false;
+  bool _isShowingUpdateDialog = false;
   Map<String, dynamic>? _updateInfo;
 
   @override
   void initState() {
     super.initState();
     _focusTracker = FocusMemoryTracker(debugLabelPrefix: 'settings');
+    if (Platform.isAndroid) {
+      _updateInfo = AndroidAppUpdateService.instance.updateInfo;
+      AndroidAppUpdateService.instance.addListener(_handleAndroidUpdateChanged);
+    }
     if (_keyboardShortcutsSupported) {
       KeyboardShortcutsService.getInstance().then((s) {
         setStateIfMounted(() => _keyboardService = s);
@@ -169,6 +176,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
 
   @override
   void dispose() {
+    if (Platform.isAndroid) AndroidAppUpdateService.instance.removeListener(_handleAndroidUpdateChanged);
     _focusTracker.dispose();
     super.dispose();
   }
@@ -925,8 +933,40 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
     pref: settings.SettingsService.autoCheckUpdatesOnStartup,
     icon: Symbols.notifications_active_rounded,
     title: t.settings.autoCheckUpdatesOnStartup,
-    subtitle: t.settings.autoCheckUpdatesOnStartupDescription,
+    subtitle: Platform.isAndroid
+        ? t.settings.androidAutoCheckUpdatesDescription
+        : t.settings.autoCheckUpdatesOnStartupDescription,
   );
+
+  Widget _buildAutoDownloadUpdatesTile() => SettingSwitchTile(
+    focusNode: _focusTracker.get(_kAutoDownloadUpdates),
+    pref: settings.SettingsService.autoDownloadUpdates,
+    icon: Symbols.download_rounded,
+    title: t.settings.autoDownloadUpdates,
+    subtitle: t.settings.autoDownloadUpdatesDescription,
+  );
+
+  void _handleAndroidUpdateChanged() {
+    setStateIfMounted(() {
+      _updateInfo = AndroidAppUpdateService.instance.updateInfo ?? _updateInfo;
+    });
+  }
+
+  String? _androidUpdateDescription() {
+    if (!Platform.isAndroid) return null;
+    final service = AndroidAppUpdateService.instance;
+    return switch (service.status) {
+      AndroidUpdateStatus.downloading =>
+        service.progress == null
+            ? t.update.downloading
+            : t.update.downloadProgress(percent: (service.progress! * 100).round().toString()),
+      AndroidUpdateStatus.ready => t.update.readyToInstall,
+      AndroidUpdateStatus.needsPermission => t.update.permissionRequired,
+      AndroidUpdateStatus.installing => t.update.installerOpened,
+      AndroidUpdateStatus.error => t.update.updateFailed,
+      AndroidUpdateStatus.idle => null,
+    };
+  }
 
   Widget _buildUpdateSection() {
     if (UpdateService.useNativeUpdater) {
@@ -945,6 +985,9 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
     }
 
     final hasUpdate = _updateInfo != null && _updateInfo!['hasUpdate'] == true;
+    final updateDescription =
+        _androidUpdateDescription() ??
+        (hasUpdate ? t.update.versionAvailable(version: _updateInfo!['latestVersion']) : null);
 
     return SettingsGroup(
       title: t.settings.updates,
@@ -957,7 +1000,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
             color: hasUpdate ? Colors.orange : null,
           ),
           title: Text(hasUpdate ? t.settings.updateAvailable : t.settings.checkForUpdates),
-          subtitle: hasUpdate ? Text(t.update.versionAvailable(version: _updateInfo!['latestVersion'])) : null,
+          subtitle: updateDescription == null ? null : Text(updateDescription),
           trailing: _isCheckingForUpdate
               ? const LoadingIndicatorBox(size: 24)
               : const AppIcon(Symbols.chevron_right_rounded),
@@ -972,6 +1015,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
                 },
         ),
         _buildAutoCheckUpdatesOnStartupTile(),
+        if (Platform.isAndroid) _buildAutoDownloadUpdatesTile(),
       ],
     );
   }
@@ -1207,6 +1251,8 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
 
         if (updateInfo == null || updateInfo['hasUpdate'] != true) {
           showAppSnackBar(context, t.update.latestVersion);
+        } else if (Platform.isAndroid) {
+          unawaited(_showUpdateDialog());
         }
       }
     } catch (e) {
@@ -1217,12 +1263,23 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
     }
   }
 
-  void _showUpdateDialog() {
+  Future<void> _showUpdateDialog() async {
     final updateInfo = _updateInfo;
-    if (updateInfo == null) return;
-    unawaited(
-      showUpdateAvailableDialog(context, updateInfo, title: t.settings.updateAvailable, dismissLabel: t.common.close),
-    );
+    if (updateInfo == null || _isShowingUpdateDialog) return;
+    _isShowingUpdateDialog = true;
+    try {
+      final settingsService = await settings.SettingsService.getInstance();
+      if (!mounted) return;
+      await showUpdateAvailableDialog(
+        context,
+        updateInfo,
+        title: t.settings.updateAvailable,
+        dismissLabel: t.common.close,
+        autoDownload: Platform.isAndroid && settingsService.read(settings.SettingsService.autoDownloadUpdates),
+      );
+    } finally {
+      _isShowingUpdateDialog = false;
+    }
   }
 }
 

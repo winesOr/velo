@@ -383,6 +383,15 @@ android {
   }
 }
 
+androidComponents {
+  onVariants { variant ->
+    // Store distributions must not advertise an installer they cannot use with their signing key.
+    if (System.getenv("VELO_ANDROID_GITHUB_UPDATE_BUILD") == "true") {
+      variant.sources.manifests?.addStaticManifestFile("src/github/AndroidManifest.xml")
+    }
+  }
+}
+
 // BackgroundWorkDiagnostics routes users to background_downloader's private
 // notification channel. Fail the build if an upstream ref changes that ID.
 val verifyBackgroundDownloaderNotificationChannel = tasks.register("verifyBackgroundDownloaderNotificationChannel") {

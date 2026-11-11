@@ -412,9 +412,9 @@ void main() {
 
       await tester.tap(find.text(t.settings.downloadLocationDefault));
       await _pumpUi(tester);
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
       expect(find.text(t.settings.downloadLocationDescription), findsOneWidget);
-      Navigator.of(tester.element(find.byType(AlertDialog))).pop();
+      Navigator.of(tester.element(find.byWidgetPredicate((widget) => widget is AlertDialog))).pop();
       await _pumpUi(tester);
     }
 

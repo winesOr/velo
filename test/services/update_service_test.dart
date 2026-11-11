@@ -7,6 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:plezy/utils/media_server_http_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/services/base_shared_preferences_service.dart';
+import 'package:plezy/services/settings_service.dart';
 import 'package:plezy/services/update_service.dart';
 
 import '../test_helpers/prefs.dart';
@@ -15,6 +16,17 @@ void main() {
   const lastCheckKey = 'update_last_check_time';
 
   setUp(resetSharedPreferencesForTest);
+
+  test('Android self-update and automatic download default off', () {
+    expect(SettingsService.autoDownloadUpdates.defaultValue, isFalse);
+    expect(UpdateService.debugUpdateCheckBuildEnabled, isFalse);
+  });
+
+  test('an explicit automatic-download preference overrides the safe default', () async {
+    final settings = await SettingsService.getInstance();
+    await settings.write(SettingsService.autoDownloadUpdates, true);
+    expect(settings.read(SettingsService.autoDownloadUpdates), isTrue);
+  });
   PackageInfo.setMockInitialValues(
     appName: 'Plezy',
     packageName: 'com.plezy.test',
@@ -85,6 +97,16 @@ void main() {
         ),
       ),
     );
+    addTearDown(client.close);
+
+    expect(
+      await UpdateService.debugPerformUpdateCheck(respectCooldown: false, client: client, throwOnFailure: true),
+      isNull,
+    );
+  });
+
+  test('a repository without a public release returns no update', () async {
+    final client = MediaServerHttpClient(client: MockClient((_) async => http.Response('{}', 404)));
     addTearDown(client.close);
 
     expect(
