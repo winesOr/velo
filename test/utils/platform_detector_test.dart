@@ -28,6 +28,45 @@ void main() {
     expect(instances.first.isTV, isTrue);
   });
 
+  group('native TV detection', () {
+    test('uses the tvOS build flag before initialization', () {
+      expect(PlatformDetector.isNativeTV(), const bool.fromEnvironment('TVOS_BUILD'));
+    });
+
+    test('forcing TV mode does not turn a handheld or desktop into a native TV', () async {
+      final service = await TvDetectionService.getInstance();
+
+      expect(PlatformDetector.isTV(), isFalse);
+      expect(PlatformDetector.isNativeTV(), isFalse);
+
+      service.setForceTv(true);
+      expect(PlatformDetector.isTV(), isTrue);
+      expect(PlatformDetector.isNativeTV(), isFalse);
+
+      service.setForceTv(false);
+      expect(PlatformDetector.isTV(), isFalse);
+      expect(PlatformDetector.isNativeTV(), isFalse);
+    }, skip: const bool.fromEnvironment('TVOS_BUILD'));
+
+    test('a native TV stays native when the force-TV preference is switched off', () async {
+      final service = await TvDetectionService.getInstance(forceTv: true);
+      TvDetectionService.debugSetAppleTVOverride(true);
+
+      expect(PlatformDetector.isNativeTV(), isTrue);
+      service.setForceTv(false);
+      expect(PlatformDetector.isNativeTV(), isTrue);
+      expect(PlatformDetector.isTV(), isTrue);
+    });
+
+    test('clearing the native TV test override restores system detection', () {
+      TvDetectionService.debugSetAppleTVOverride(true);
+      expect(PlatformDetector.isNativeTV(), isTrue);
+
+      TvDetectionService.debugSetAppleTVOverride(null);
+      expect(PlatformDetector.isNativeTV(), const bool.fromEnvironment('TVOS_BUILD'));
+    });
+  });
+
   group('detectAndroidTvFromSystemFeatures', () {
     test('detects leanback devices', () {
       final detection = detectAndroidTvFromSystemFeatures([

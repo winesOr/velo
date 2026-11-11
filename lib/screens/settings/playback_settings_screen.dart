@@ -26,7 +26,10 @@ import 'settings_utils.dart';
 import 'subtitle_styling_screen.dart';
 
 class PlaybackSettingsScreen extends StatelessWidget {
-  const PlaybackSettingsScreen({super.key});
+  const PlaybackSettingsScreen({super.key, this.isAndroidOverride});
+
+  @visibleForTesting
+  final bool? isAndroidOverride;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +50,7 @@ class PlaybackSettingsScreen extends StatelessWidget {
       ],
       builder: (context) {
         final svc = SettingsService.instance;
-        final exoActive = Platform.isAndroid && svc.read(SettingsService.useExoPlayer);
+        final exoActive = (isAndroidOverride ?? Platform.isAndroid) && svc.read(SettingsService.useExoPlayer);
         // ExoPlayer only has the stereo fold, so a 5.1 limit set on mpv plays
         // (and shows) as Original there.
         final storedChannelLimit = svc.read(SettingsService.audioChannelLimit);
@@ -74,7 +77,7 @@ class PlaybackSettingsScreen extends StatelessWidget {
                 if (Platform.isAndroid) const PlayerCoreSettingTile(),
                 if (PlatformDetector.supportsExternalPlayers()) _externalPlayerTile(),
                 if (!exoActive) _mpvConfigTile(),
-                _hardwareDecodingTile(),
+                if (!exoActive) _hardwareDecodingTile(),
                 if (exoActive) _playbackBufferTile(),
                 if (exoActive) _tunneledPlaybackTile(),
                 if (PlatformDetector.supportsPictureInPicture()) _autoPipTile(),

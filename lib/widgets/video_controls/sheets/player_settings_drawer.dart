@@ -123,23 +123,25 @@ class _PlayerSettingsDrawerState extends State<PlayerSettingsDrawer> {
       padding: const EdgeInsets.only(bottom: 8),
       children: [
         _AspectRatioRow(state: widget.state),
-        const _AutoSkipRow(),
-        SettingNumberTile(
-          pref: SettingsService.customSkipIntroSeconds,
-          icon: Symbols.fast_forward_rounded,
-          title: t.settings.customSkipIntroSeconds,
-          subtitleBuilder: (v) => v == 0 ? t.settings.skipSecondsOff : t.settings.secondsUnit(seconds: v.toString()),
-          labelText: t.settings.secondsLabel,
-          suffixText: t.settings.secondsShort,
-        ),
-        SettingNumberTile(
-          pref: SettingsService.customSkipEndSeconds,
-          icon: Symbols.skip_next_rounded,
-          title: t.settings.customSkipEndSeconds,
-          subtitleBuilder: (v) => v == 0 ? t.settings.skipSecondsOff : t.settings.secondsUnit(seconds: v.toString()),
-          labelText: t.settings.secondsLabel,
-          suffixText: t.settings.secondsShort,
-        ),
+        if (!widget.state.isLive) ...[
+          const _AutoSkipRow(),
+          SettingNumberTile(
+            pref: SettingsService.customSkipIntroSeconds,
+            icon: Symbols.fast_forward_rounded,
+            title: t.settings.customSkipIntroSeconds,
+            subtitleBuilder: (v) => v == 0 ? t.settings.skipSecondsOff : t.settings.secondsUnit(seconds: v.toString()),
+            labelText: t.settings.secondsLabel,
+            suffixText: t.settings.secondsShort,
+          ),
+          SettingNumberTile(
+            pref: SettingsService.customSkipEndSeconds,
+            icon: Symbols.skip_next_rounded,
+            title: t.settings.customSkipEndSeconds,
+            subtitleBuilder: (v) => v == 0 ? t.settings.skipSecondsOff : t.settings.secondsUnit(seconds: v.toString()),
+            labelText: t.settings.secondsLabel,
+            suffixText: t.settings.secondsShort,
+          ),
+        ],
         PlayerDrawerHeading(t.videoControls.moreButton),
         if (widget.coreLabel != null)
           FocusableListTile(

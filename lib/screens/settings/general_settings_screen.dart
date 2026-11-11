@@ -43,7 +43,7 @@ class GeneralSettingsScreen extends StatelessWidget {
                 title: t.settings.requireProfileSelectionOnOpen,
                 subtitle: t.settings.requireProfileSelectionOnOpenDescription,
               ),
-            if (Platform.isAndroid || PlatformDetector.isDesktopOS())
+            if ((Platform.isAndroid || PlatformDetector.isDesktopOS()) && !PlatformDetector.isNativeTV())
               SettingSwitchTile(
                 pref: SettingsService.forceTvMode,
                 icon: Symbols.tv_rounded,

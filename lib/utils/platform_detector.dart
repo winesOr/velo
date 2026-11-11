@@ -181,6 +181,10 @@ class TvDetectionService {
   /// and siblings); these raw accessors exist for the facade and tests.
   static bool isTVSync() => _debugAppleTVOverride ?? _singleton.instance?.isTV ?? false;
 
+  /// System-detected TV status, excluding the user's force-TV preference.
+  /// tvOS builds and the existing Apple TV test override count as native TVs.
+  static bool isNativeTVSync() => _debugAppleTVOverride ?? (_tvosBuild || _singleton.instance?._detected == true);
+
   /// Synchronous Apple TV check (returns false if not initialized or not tvOS).
   static bool isAppleTVSync() => _debugAppleTVOverride ?? (_tvosBuild || _singleton.instance?._isAppleTV == true);
 
@@ -213,6 +217,12 @@ class TvDetectionService {
 class PlatformDetector {
   static bool isTV() {
     return TvDetectionService.isTVSync();
+  }
+
+  /// True for a system-detected TV, even when the force-TV preference is off.
+  /// A handheld or desktop using force-TV mode still returns false.
+  static bool isNativeTV() {
+    return TvDetectionService.isNativeTVSync();
   }
 
   static bool isAppleTV() {

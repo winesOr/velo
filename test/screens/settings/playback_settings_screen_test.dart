@@ -19,6 +19,41 @@ void main() {
     LocaleSettings.setLocaleSync(AppLocale.en);
   });
 
+  for (final size in [const Size(390, 844), const Size(820, 1180), const Size(1280, 720)]) {
+    testWidgets('hardware decoding follows the Android core without resetting its preference at $size', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = size;
+      addTearDown(tester.view.reset);
+      final isTv = size.width == 1280;
+      TvDetectionService.debugSetAppleTVOverride(isTv);
+      addTearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
+      final settings = SettingsService.instance;
+      await settings.write(SettingsService.enableHardwareDecoding, false);
+      await settings.write(SettingsService.useExoPlayer, true);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: monoTheme(dark: true).copyWith(platform: TargetPlatform.android),
+          home: const PlaybackSettingsScreen(isAndroidOverride: true),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(t.settings.hardwareDecoding), findsNothing);
+
+      await settings.write(SettingsService.useExoPlayer, false);
+      await tester.pumpAndSettle();
+      expect(find.text(t.settings.hardwareDecoding), findsOneWidget);
+      expect(settings.read(SettingsService.enableHardwareDecoding), isFalse);
+      await tester.tap(find.text(t.settings.hardwareDecoding));
+      await tester.pumpAndSettle();
+      expect(settings.read(SettingsService.enableHardwareDecoding), isTrue);
+
+      await settings.write(SettingsService.useExoPlayer, true);
+      await tester.pumpAndSettle();
+      expect(find.text(t.settings.hardwareDecoding), findsNothing);
+      expect(settings.read(SettingsService.enableHardwareDecoding), isTrue);
+    });
+  }
+
   testWidgets('shows and changes the persisted music quality', (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(1000, 1400);

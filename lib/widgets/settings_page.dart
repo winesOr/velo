@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/mono_presentation.dart';
 import '../theme/settings_presentation.dart';
+import '../utils/platform_detector.dart';
 import 'focused_scroll_scaffold.dart';
 import 'system_bottom_inset.dart';
 
@@ -77,7 +78,9 @@ class SettingsPage extends StatelessWidget {
         slivers: pageSlivers,
       ),
     );
-    if (!MonoPresentation.isTablet(context)) return content;
+    if (PlatformDetector.isTV() || (!MonoPresentation.isTablet(context) && !PlatformDetector.isDesktopOS())) {
+      return content;
+    }
     return Center(
       child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 900), child: content),
     );

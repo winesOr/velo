@@ -28,9 +28,13 @@ import 'package:plezy/media/media_server_client.dart';
 import 'package:plezy/media/media_version.dart';
 import 'package:plezy/models/audio_channel_limit.dart';
 import 'package:plezy/mpv/player/player.dart';
+import 'package:plezy/mpv/player/audio_rendering_mode.dart';
 import 'package:plezy/mpv/player/player_native.dart';
 import 'package:plezy/mpv/player/player_state.dart';
 import 'package:plezy/mpv/player/player_streams.dart';
+import 'package:plezy/utils/formatters.dart';
+import 'package:plezy/utils/platform_detector.dart';
+import 'package:plezy/widgets/focusable_list_tile.dart';
 import 'package:plezy/providers/multi_server_provider.dart';
 import 'package:plezy/screens/settings/subtitle_styling_screen.dart';
 import 'package:plezy/services/base_shared_preferences_service.dart';
@@ -297,6 +301,93 @@ void main() {
 
     expect(find.text('Audio Passthrough'), findsNothing);
   });
+
+  for (final fixture in [
+    (name: 'phone', size: const Size(390, 844), tv: false),
+    (name: 'tablet', size: const Size(820, 1180), tv: false),
+    (name: 'TV', size: const Size(1280, 720), tv: true),
+  ]) {
+    testWidgets('audio output follows real device enumeration on ${fixture.name}', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = fixture.size;
+      addTearDown(tester.view.reset);
+      TvDetectionService.debugSetAppleTVOverride(fixture.tv);
+      addTearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
+      final player = _FakeSettingsPlayer();
+      addTearDown(player.dispose);
+      await _pumpSheet(tester, player: player, withSheetHost: true, platform: TargetPlatform.android);
+      await tester.scrollUntilVisible(find.text('Normalize Loudness'), 250, scrollable: find.byType(Scrollable).first);
+      await tester.pumpAndSettle();
+      expect(find.text(t.videoSettings.audioOutput), findsNothing);
+
+      player.emitAudioDevices([AudioDevice.auto]);
+      await tester.pumpAndSettle();
+      expect(find.text(t.videoSettings.audioOutput), findsNothing);
+
+      const output = AudioDevice(name: 'test/hdmi', description: 'HDMI');
+      // playerType remains exoplayer, just like a real Android mpv fallback.
+      player.emitAudioDevices([AudioDevice.auto, output]);
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(FocusableListTile, t.videoSettings.audioOutput), findsOneWidget);
+
+      player.emitAudioDevices([]);
+      await tester.pumpAndSettle();
+      expect(find.text(t.videoSettings.audioOutput), findsNothing);
+
+      player.emitAudioDevices([AudioDevice.auto, output]);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text(t.videoSettings.audioOutput));
+      await tester.tap(find.text(t.videoSettings.audioOutput));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('HDMI'));
+      await tester.pumpAndSettle();
+      expect(player.selectedAudioDevice, output);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final isLive in [false, true]) {
+    testWidgets('TV ${isLive ? 'live' : 'VOD'} settings only offer applicable completion actions', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(1280, 720);
+      addTearDown(tester.view.reset);
+      TvDetectionService.debugSetAppleTVOverride(true);
+      addTearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
+      await _pumpSheet(
+        tester,
+        withSheetHost: true,
+        trackControlsState: TrackControlsState(canControl: true, isLive: isLive),
+      );
+      await tester.scrollUntilVisible(find.text('Normalize Loudness'), 250, scrollable: find.byType(Scrollable).first);
+      expect(find.text(t.videoControls.autoPlayNext), isLive ? findsNothing : findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text(t.videoSettings.sleepTimer),
+        -250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text(t.videoSettings.sleepTimer));
+      await tester.pumpAndSettle();
+      expect(find.text(t.videoControls.sleepTimerEndOfVideo), isLive ? findsNothing : findsOneWidget);
+      expect(find.text(t.videoControls.sleepTimerStopAtHeader), isLive ? findsNothing : findsOneWidget);
+
+      final durationLabel = formatDurationTextual(5 * 60 * 1000, abbreviated: false);
+      expect(find.widgetWithText(FocusableListTile, durationLabel), findsOneWidget);
+      await tester.tap(find.text(durationLabel));
+      await tester.pumpAndSettle();
+      expect(SleepTimerService().originalDuration, const Duration(minutes: 5));
+      await tester.tap(find.text(t.common.cancel));
+      await tester.pumpAndSettle();
+      expect(SleepTimerService().isActive, isFalse);
+
+      // A timer inherited from a previous VOD remains cancellable on live TV.
+      SleepTimerService().armEndOfVideo();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(t.common.cancel));
+      await tester.pumpAndSettle();
+      expect(SleepTimerService().isActive, isFalse);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('localizes Off, Normal, and Active video setting values', (tester) async {
     LocaleSettings.setLocaleSync(AppLocale.ru);
@@ -820,6 +911,7 @@ Future<void> _pumpSheet(
   double height = 700,
   double width = 900,
   double textScale = 1,
+  TargetPlatform? platform,
   TrackControlsState? trackControlsState,
 }) async {
   final sheet = SizedBox(
@@ -833,7 +925,7 @@ Future<void> _pumpSheet(
   );
   await tester.pumpWidget(
     MaterialApp(
-      theme: ThemeData(extensions: const [testMonoTokensAnimated]),
+      theme: ThemeData(platform: platform, extensions: const [testMonoTokensAnimated]),
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
         child: child!,
@@ -885,15 +977,35 @@ class _FakeSettingsPlayer implements Player {
   /// Closed by [dispose], which the tests that emit on it call through
   /// `addTearDown`.
   final hdrOutputChanged = StreamController<void>.broadcast();
+  final audioDevicesChanged = StreamController<List<AudioDevice>>.broadcast();
+
+  void emitAudioDevices(List<AudioDevice> devices) {
+    initialState = state.copyWith(audioDevices: devices);
+    audioDevicesChanged.add(devices);
+  }
+
+  AudioDevice? selectedAudioDevice;
+
+  @override
+  Future<void> setAudioDevice(AudioDevice device) async {
+    selectedAudioDevice = device;
+  }
+
+  @override
+  Future<AudioRenderingMode?> getAudioRenderingMode() async => null;
 
   @override
   Future<void> dispose({bool preserveDisplayMode = false}) async {
     await hdrOutputChanged.close();
+    await audioDevicesChanged.close();
   }
 
-  late final PlayerStreams _streams = emptyPlayerStreams(hdrOutputChanged: hdrOutputChanged.stream);
+  late final PlayerStreams _streams = emptyPlayerStreams(
+    hdrOutputChanged: hdrOutputChanged.stream,
+    audioDevices: audioDevicesChanged.stream,
+  );
 
-  final PlayerState? initialState;
+  PlayerState? initialState;
   double? lastSubtitleFontSize;
   @override
   bool get supportsSecondarySubtitles => false;

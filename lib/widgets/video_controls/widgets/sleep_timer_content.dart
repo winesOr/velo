@@ -27,8 +27,15 @@ class SleepTimerContent extends StatelessWidget {
   final SleepTimerService sleepTimer;
   final int? defaultDuration;
   final VoidCallback? onCancel;
+  final bool allowEndOfVideo;
 
-  const SleepTimerContent({super.key, required this.sleepTimer, this.defaultDuration, this.onCancel});
+  const SleepTimerContent({
+    super.key,
+    required this.sleepTimer,
+    this.defaultDuration,
+    this.onCancel,
+    this.allowEndOfVideo = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -48,12 +55,16 @@ class SleepTimerContent extends StatelessWidget {
               Divider(color: Theme.of(context).dividerColor, height: 1),
             ],
             Flexible(
-              child: SheetSplitColumns(
-                start: FocusTraversalGroup(child: _SleepTimerEventColumn(sleepTimer: sleepTimer)),
-                end: FocusTraversalGroup(
-                  child: _SleepTimerDurationColumn(sleepTimer: sleepTimer, defaultDuration: defaultDuration),
-                ),
-              ),
+              child: allowEndOfVideo
+                  ? SheetSplitColumns(
+                      start: FocusTraversalGroup(child: _SleepTimerEventColumn(sleepTimer: sleepTimer)),
+                      end: FocusTraversalGroup(
+                        child: _SleepTimerDurationColumn(sleepTimer: sleepTimer, defaultDuration: defaultDuration),
+                      ),
+                    )
+                  : FocusTraversalGroup(
+                      child: _SleepTimerDurationColumn(sleepTimer: sleepTimer, defaultDuration: defaultDuration),
+                    ),
             ),
           ],
         );

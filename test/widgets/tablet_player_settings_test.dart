@@ -6,6 +6,7 @@ import 'package:plezy/theme/mono_theme.dart';
 import 'package:plezy/widgets/overlay_sheet.dart';
 import 'package:plezy/widgets/video_controls/models/track_controls_state.dart';
 import 'package:plezy/widgets/video_controls/sheets/player_settings_drawer.dart';
+import 'package:plezy/widgets/video_controls/sheets/player_settings_controls.dart';
 
 import '../test_helpers/watch_together_fakes.dart';
 import '../test_helpers/media_items.dart';
@@ -59,6 +60,45 @@ void main() {
     }
     expect(tester.takeException(), isNull);
   });
+
+  for (final size in [const Size(390, 844), const Size(820, 1180)]) {
+    for (final isLive in [false, true]) {
+      testWidgets('touch ${isLive ? 'live' : 'VOD'} drawer shows applicable skip controls at $size', (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final player = _TabletPlayer();
+        addTearDown(player.dispose);
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: tabletFixtureTheme(monoTheme(dark: true)),
+            home: Scaffold(
+              body: OverlaySheetHost(
+                child: Center(
+                  child: PlayerSettingsDrawer(
+                    player: player,
+                    state: TrackControlsState(isLive: isLive),
+                    metadata: testMediaItem(id: 'skip-applicability'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        for (final label in [
+          t.videoControls.autoSkipSection,
+          t.videoControls.autoSkipToggle,
+          t.settings.customSkipIntroSeconds,
+          t.settings.customSkipEndSeconds,
+        ]) {
+          expect(find.text(label), isLive ? findsNothing : findsOneWidget);
+        }
+        expect(find.widgetWithText(PlayerDrawerHeading, t.videoControls.moreButton), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
 
   for (final size in [const Size(820, 1180), const Size(1180, 820)]) {
     testWidgets('tablet player settings keeps a wider stable panel at $size', (tester) async {

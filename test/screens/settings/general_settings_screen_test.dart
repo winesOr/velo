@@ -12,6 +12,7 @@ import 'package:plezy/profiles/profile_registry.dart';
 import 'package:plezy/screens/settings/general_settings_screen.dart';
 import 'package:plezy/services/settings_service.dart';
 import 'package:plezy/theme/mono_theme.dart';
+import 'package:plezy/utils/platform_detector.dart';
 import 'package:provider/provider.dart';
 
 import '../../test_helpers/prefs.dart';
@@ -22,13 +23,23 @@ void main() {
     SettingsService.resetForTesting();
     await SettingsService.getInstance();
     LocaleSettings.setLocaleSync(AppLocale.en);
+    TvDetectionService.debugSetAppleTVOverride(null);
+    await TvDetectionService.getInstance();
+    TvDetectionService.setForceTVSync(false);
+  });
+
+  tearDown(() {
+    TvDetectionService.debugSetAppleTVOverride(null);
+    TvDetectionService.setForceTVSync(false);
   });
 
   Future<({AppDatabase database, PlexHomeService plexHome, ActiveProfileProvider activeProfile})> pumpGeneralScreen(
-    WidgetTester tester,
-  ) async {
+    WidgetTester tester, {
+    Size size = const Size(1000, 1400),
+    TargetPlatform? platform,
+  }) async {
     tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(1000, 1400);
+    tester.view.physicalSize = size;
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.view.resetPhysicalSize);
 
@@ -52,7 +63,10 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<ActiveProfileProvider>.value(
         value: activeProfile,
-        child: MaterialApp(theme: monoTheme(dark: true), home: const GeneralSettingsScreen()),
+        child: MaterialApp(
+          theme: monoTheme(dark: true).copyWith(platform: platform),
+          home: const GeneralSettingsScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -82,6 +96,32 @@ void main() {
 
     await disposeHarness(tester, harness);
   });
+
+  testWidgets('native TV hides the ineffective force TV switch', (tester) async {
+    TvDetectionService.debugSetAppleTVOverride(true);
+    final harness = await pumpGeneralScreen(tester, size: const Size(1280, 720));
+    expect(find.text(t.settings.forceTvMode), findsNothing);
+    expect(find.text(t.settings.startupSection), findsOneWidget);
+    await disposeHarness(tester, harness);
+  });
+
+  for (final size in [const Size(390, 844), const Size(820, 1180)]) {
+    testWidgets('forced TV retains the exit switch on a touch device at $size', (tester) async {
+      await SettingsService.instance.write(SettingsService.forceTvMode, true);
+      TvDetectionService.setForceTVSync(true);
+      final harness = await pumpGeneralScreen(tester, size: size, platform: TargetPlatform.android);
+      expect(PlatformDetector.isTV(), isTrue);
+      expect(PlatformDetector.isNativeTV(), isFalse);
+      await tester.ensureVisible(find.text(t.settings.forceTvMode));
+      await tester.tap(find.text(t.settings.forceTvMode));
+      await tester.pumpAndSettle();
+      expect(SettingsService.instance.read(SettingsService.forceTvMode), isFalse);
+      expect(PlatformDetector.isTV(), isFalse);
+      expect(find.text(t.settings.forceTvMode), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await disposeHarness(tester, harness);
+    });
+  }
 
   testWidgets('changes the persisted startup section', (tester) async {
     final harness = await pumpGeneralScreen(tester);
