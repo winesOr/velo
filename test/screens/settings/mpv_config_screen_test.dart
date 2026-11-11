@@ -197,7 +197,7 @@ void main() {
     saveTile.onTap!();
     await tester.pumpAndSettle();
 
-    final dialog = find.byType(AlertDialog);
+    final dialog = find.byWidgetPredicate((widget) => widget is AlertDialog);
     expect(dialog, findsOneWidget);
     final nameField = find.descendant(of: dialog, matching: find.byType(TextField));
     expect(nameField, findsOneWidget);

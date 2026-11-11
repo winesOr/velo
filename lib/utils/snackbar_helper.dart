@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
+
+import '../theme/overlay_tokens.dart';
+import '../widgets/app_glass_surface.dart';
+import '../widgets/app_icon.dart';
 
 import '../navigation/profile_navigation_scope.dart';
 import 'layout_constants.dart';
@@ -10,9 +15,8 @@ final rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 /// Types of snackbars available in the app
 enum SnackBarType { info, success, error }
 
-const double _kDesktopSnackBarMaxWidth = 480.0;
+const double _kDesktopSnackBarMaxWidth = OverlayTokens.notificationMaxWidth;
 const double _kDesktopSnackBarHorizontalInset = 16.0;
-const EdgeInsets _kDismissibleSnackBarPadding = EdgeInsets.symmetric(horizontal: 16, vertical: 14);
 
 /// Utility functions for showing snackbars throughout the application
 
@@ -20,30 +24,64 @@ SnackBar _buildSnackBar(
   BuildContext context,
   ScaffoldMessengerState messenger, {
   required Widget content,
-  required Color? backgroundColor,
+  required SnackBarType type,
   required Duration duration,
   bool? dismissible,
 }) {
   final isDesktop = PlatformDetector.isDesktopOS();
   final tapToDismiss = dismissible ?? isDesktop;
-  final body = tapToDismiss
-      ? MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => messenger.hideCurrentSnackBar(reason: SnackBarClosedReason.dismiss),
-            child: Padding(padding: _kDismissibleSnackBarPadding, child: content),
+  final colors = Theme.of(context).colorScheme;
+  final dark = colors.brightness == Brightness.dark;
+  final (icon, accent) = switch (type) {
+    SnackBarType.info => (Symbols.info_rounded, colors.primary),
+    SnackBarType.success => (Symbols.check_circle_rounded, dark ? const Color(0xFF88D8B0) : const Color(0xFF216B4B)),
+    SnackBarType.error => (Symbols.error_rounded, colors.error),
+  };
+  void dismiss() => messenger.hideCurrentSnackBar(reason: SnackBarClosedReason.dismiss);
+  final body = AppGlassSurface(
+    radius: OverlayTokens.compactRadius,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: AppIcon(icon, color: accent, size: 22),
           ),
-        )
-      : content;
-
+          const SizedBox(width: 12),
+          Expanded(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: (MediaQuery.maybeSizeOf(context)?.height ?? 640) * 0.3),
+              child: SingleChildScrollView(
+                child: DefaultTextStyle.merge(
+                  style: TextStyle(color: colors.onSurface, height: 1.4),
+                  child: content,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
   return SnackBar(
-    content: body,
-    backgroundColor: backgroundColor,
+    content: Semantics(
+      onDismiss: tapToDismiss ? dismiss : null,
+      child: tapToDismiss
+          ? MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: dismiss, child: body),
+            )
+          : body,
+    ),
+    backgroundColor: Colors.transparent,
+    elevation: 0,
     duration: duration,
-    behavior: isDesktop ? SnackBarBehavior.floating : null,
+    behavior: SnackBarBehavior.floating,
     width: isDesktop ? _desktopSnackBarWidth(context) : null,
-    padding: tapToDismiss ? EdgeInsets.zero : null,
+    padding: EdgeInsets.zero,
+    clipBehavior: Clip.none,
   );
 }
 
@@ -60,10 +98,9 @@ double _desktopSnackBarWidth(BuildContext context) {
   return width < _kDesktopSnackBarMaxWidth ? width : _kDesktopSnackBarMaxWidth;
 }
 
-(Color?, Duration) _snackBarStyle(SnackBarType type) => switch (type) {
-  SnackBarType.info => (null, AppDurations.snackBarDefault),
-  SnackBarType.success => (Colors.green, AppDurations.snackBarDefault),
-  SnackBarType.error => (Colors.red, AppDurations.snackBarLong),
+Duration _snackBarDuration(SnackBarType type) => switch (type) {
+  SnackBarType.info || SnackBarType.success => AppDurations.snackBarDefault,
+  SnackBarType.error => AppDurations.snackBarLong,
 };
 
 void showSnackBar(
@@ -75,14 +112,14 @@ void showSnackBar(
 }) {
   if (!context.mounted) return;
 
-  final (backgroundColor, defaultDuration) = _snackBarStyle(type);
+  final defaultDuration = _snackBarDuration(type);
   final messenger = ScaffoldMessenger.of(context);
   messenger.showSnackBar(
     _buildSnackBar(
       context,
       messenger,
       content: Text(message),
-      backgroundColor: backgroundColor,
+      type: type,
       duration: duration ?? defaultDuration,
       dismissible: dismissible,
     ),
@@ -106,7 +143,7 @@ void showGlobalErrorSnackBar(String message) {
       messenger.context,
       messenger,
       content: Text(message),
-      backgroundColor: Colors.red,
+      type: SnackBarType.error,
       duration: AppDurations.snackBarLong,
     ),
   );
@@ -121,7 +158,7 @@ void showMainSnackBar(String message, {Duration duration = AppDurations.snackBar
   messenger
     ..removeCurrentSnackBar()
     ..showSnackBar(
-      _buildSnackBar(messenger.context, messenger, content: Text(message), backgroundColor: null, duration: duration),
+      _buildSnackBar(messenger.context, messenger, content: Text(message), type: SnackBarType.info, duration: duration),
     );
 }
 

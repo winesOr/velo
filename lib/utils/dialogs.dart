@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../widgets/app_dialog.dart';
 import 'package:flutter/services.dart';
 import '../focus/focusable_text_field.dart';
 import '../focus/input_mode_tracker.dart';
@@ -77,8 +79,9 @@ Future<bool> showConfirmDialog(
     context: context,
     builder: (dialogContext) {
       final colorScheme = Theme.of(dialogContext).colorScheme;
-      return AlertDialog(
+      return AppAlertDialog(
         title: Text(title),
+        scrollable: true,
         content: warning == null
             ? Text(message)
             : SingleChildScrollView(
@@ -217,7 +220,7 @@ Future<void> showPlaybackNotAllowedDialog(BuildContext context) async {
   await showScopedDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (ctx) => AlertDialog(
+    builder: (ctx) => AppAlertDialog(
       title: Text(t.messages.playbackNotAllowedTitle),
       content: Text(t.messages.playbackNotAllowedBody),
       actions: [
@@ -238,7 +241,7 @@ Future<void> showServerLimitDialog(BuildContext context) async {
   await showScopedDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (ctx) => AlertDialog(
+    builder: (ctx) => AppAlertDialog(
       title: Text(t.messages.serverLimitTitle),
       content: Text(t.messages.serverLimitBody),
       actions: [
@@ -260,7 +263,7 @@ Future<void> showMediaUnreadableDialog(BuildContext context) async {
   await showScopedDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (ctx) => AlertDialog(
+    builder: (ctx) => AppAlertDialog(
       title: Text(t.messages.mediaUnreadableTitle),
       content: Text(t.messages.mediaUnreadableBody),
       actions: [
@@ -283,7 +286,7 @@ Future<void> showServerBusyDialog(BuildContext context) async {
   await showScopedDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (ctx) => AlertDialog(
+    builder: (ctx) => AppAlertDialog(
       title: Text(t.messages.serverBusyTitle),
       content: Text(t.messages.serverBusyBody),
       actions: [
@@ -339,7 +342,7 @@ Future<bool?> showConfirmWithSwitchDialog(
       return StatefulBuilder(
         builder: (context, setState) {
           final colorScheme = Theme.of(context).colorScheme;
-          return AlertDialog(
+          return AppAlertDialog(
             title: Text(title),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -496,7 +499,7 @@ class _TextInputDialogState extends State<_TextInputDialog> with ControllerDispo
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return AppAlertDialog(
       title: Text(widget.title),
       content: widget.multiline ? SizedBox(width: 400, child: textField) : textField,
       actions: [

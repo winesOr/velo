@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../widgets/app_dialog.dart';
 import 'package:provider/provider.dart';
 import '../i18n/strings.g.dart';
 import '../providers/download_provider.dart';
@@ -49,7 +51,7 @@ class SmartDeletionHandler {
           final progress = provider.getDeletionProgress(globalKey);
 
           if (progress == null) {
-            return AlertDialog(
+            return AppAlertDialog(
               content: Row(
                 mainAxisSize: .min,
                 children: [const CircularProgressIndicator(), const SizedBox(width: 20), Text(t.downloads.deleting)],

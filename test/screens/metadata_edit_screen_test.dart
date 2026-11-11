@@ -58,7 +58,7 @@ void main() {
     await tester.tap(_fieldTile('Episode Sorting'), warnIfMissed: false);
     await tester.tap(_fieldTile('Keep'), warnIfMissed: false);
     await tester.pump();
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
     expect(requests.preferenceUpdateCalls, 1);
 
     await tester.binding.handlePopRoute();
@@ -123,13 +123,13 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.select);
     await tester.pumpAndSettle();
 
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(_dialogOptionFocus(tester, 'Library default').hasPrimaryFocus, isTrue);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pumpAndSettle();
 
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(_dialogOptionFocus(tester, 'Oldest first').hasPrimaryFocus, isTrue);
     expect(requests.preferenceUpdateCalls, 0);
 
@@ -137,7 +137,7 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.select);
     await tester.pumpAndSettle();
 
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
     expect(_tileText('Episode Sorting', 'Newest first'), findsOneWidget);
     expect(requests.preferenceUpdatePayloads.single['episodeSort'], '1');
   });
@@ -197,7 +197,7 @@ void main() {
     await tester.tap(_fieldTile('Title'), warnIfMissed: false);
     await tester.binding.handlePopRoute();
     await tester.pump();
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
     expect(find.byType(MetadataEditScreen), findsOneWidget);
 
     save.complete(_response(500));
@@ -338,7 +338,10 @@ Finder _tileText(String label, String value) {
 }
 
 FocusNode _dialogOptionFocus(WidgetTester tester, String option) {
-  final tile = find.descendant(of: find.byType(AlertDialog), matching: find.widgetWithText(FocusableListTile, option));
+  final tile = find.descendant(
+    of: find.byWidgetPredicate((widget) => widget is AlertDialog),
+    matching: find.widgetWithText(FocusableListTile, option),
+  );
   return tester.state<FocusableTileStateMixin<FocusableListTile>>(tile).effectiveFocusNode;
 }
 

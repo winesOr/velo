@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../widgets/app_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../i18n/strings.g.dart';
@@ -37,7 +38,7 @@ Future<void> showUpdateAvailableDialog(
       final latestVersion = updateInfo['latestVersion'] as String;
       final releaseUrl = updateInfo['releaseUrl'] as String;
 
-      return AlertDialog(
+      return AppAlertDialog(
         title: Text(title),
         content: Column(
           mainAxisSize: .min,
@@ -227,7 +228,7 @@ class _AndroidUpdateDialogState extends State<AndroidUpdateDialog> with WidgetsB
 
     return PopScope(
       canPop: !_actionInProgress,
-      child: AlertDialog(
+      child: AppAlertDialog(
         title: Text(widget.title),
         content: SingleChildScrollView(
           child: Column(

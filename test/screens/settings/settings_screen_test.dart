@@ -367,8 +367,8 @@ void main() {
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await _pumpUi(tester);
-    expect(find.byType(AlertDialog), findsOneWidget);
-    Navigator.of(tester.element(find.byType(AlertDialog))).pop();
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
+    Navigator.of(tester.element(find.byWidgetPredicate((widget) => widget is AlertDialog))).pop();
     await _pumpUi(tester);
     Navigator.of(tester.element(find.text(t.settings.watchTogetherRelay))).pop();
     await _pumpUi(tester);
@@ -382,7 +382,7 @@ void main() {
     expect(cache.focusNode!.canRequestFocus, isTrue);
     await tester.tap(find.text(t.settings.clearImageCache));
     await _pumpUi(tester);
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
   });
 
   testWidgets('special download and generic update rows keep rich content on the shared compact row', (tester) async {
@@ -529,7 +529,7 @@ void main() {
     await tester.tap(find.text(t.common.save));
     await _pumpUi(tester);
 
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(find.text(t.settings.watchTogetherRelayInvalid), findsOneWidget);
     expect(SettingsService.instance.read(SettingsService.customRelayUrl), isNull);
   });
@@ -544,7 +544,7 @@ void main() {
     await tester.tap(find.text(t.common.save));
     await _pumpUi(tester);
 
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
     expect(SettingsService.instance.read(SettingsService.customRelayUrl), 'http://relay.example.test:8080/prefix');
 
     await tester.tap(find.text(t.settings.watchTogetherRelay));
@@ -650,6 +650,23 @@ void main() {
     expect(find.text(t.settings.resetSettingsSuccess), findsOneWidget);
   });
 
+  testWidgets('crash reporting follows the build capability and preserves its privacy preference', (tester) async {
+    await SettingsService.instance.write(SettingsService.crashReporting, false);
+    final harness = await _pumpSettingsScreen(tester, openCategory: t.settings.about);
+    addTearDown(() => harness.dispose(tester));
+    await tester.scrollUntilVisible(find.text(t.settings.debugLogging), 300, scrollable: find.byType(Scrollable).first);
+    await _pumpUi(tester);
+
+    const reportingAvailable = bool.fromEnvironment('ENABLE_SENTRY', defaultValue: false);
+    expect(find.text(t.settings.crashReporting), reportingAvailable ? findsOneWidget : findsNothing);
+    expect(SettingsService.instance.read(SettingsService.crashReporting), isFalse);
+    if (reportingAvailable) {
+      await tester.tap(find.text(t.settings.crashReporting));
+      await _pumpUi(tester);
+      expect(SettingsService.instance.read(SettingsService.crashReporting), isTrue);
+    }
+  });
+
   testWidgets('cancelled directory picker remains silent and leaves the dialog retryable', (tester) async {
     final harness = await _pumpSettingsScreen(tester, openCategory: t.settings.downloadsOffline);
     addTearDown(() => harness.dispose(tester));
@@ -659,7 +676,7 @@ void main() {
     await tester.tap(find.text(t.settings.selectFolder));
     await _pumpUi(tester);
 
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(find.text(t.settings.saveFailed), findsNothing);
     expect(find.text(t.settings.downloadLocationChanged), findsNothing);
     expect(harness.locationEvents, isEmpty);
@@ -675,7 +692,7 @@ void main() {
     await tester.tap(find.text(t.settings.selectFolder));
     await _pumpUi(tester);
 
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(find.text(t.settings.saveFailed), findsOneWidget);
     expect(harness.locationEvents, isEmpty);
   });
@@ -694,7 +711,7 @@ void main() {
     await tester.tap(find.text(t.settings.selectFolder));
     await _pumpUi(tester);
 
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(find.text(t.settings.saveFailed), findsOneWidget);
     expect(harness.locationEvents, isEmpty);
   });

@@ -11,6 +11,7 @@ import '../../../danmaku/danmaku_session.dart';
 import '../../../focus/focusable_slider.dart';
 import '../../../focus/focusable_text_field.dart';
 import '../../../utils/episode_titles.dart';
+import '../../../utils/snackbar_helper.dart';
 import '../../../i18n/strings.g.dart';
 import '../../../media/media_item.dart';
 import '../../../media/media_kind.dart';
@@ -371,7 +372,7 @@ class _DanmakuSettingsSheetState extends State<DanmakuSettingsSheet> {
   }
 
   void _toast(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    showAppSnackBar(context, message);
   }
 
   String _sourceName(String? sourceId) {

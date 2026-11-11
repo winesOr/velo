@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'app_dialog.dart';
 import '../models/download_models.dart';
 import '../i18n/strings.g.dart';
 
@@ -13,7 +15,7 @@ class DeletionProgressDialog extends StatelessWidget {
 
     return PopScope(
       canPop: false, // Prevent back button dismissal
-      child: AlertDialog(
+      child: AppAlertDialog(
         content: Column(
           mainAxisSize: .min,
           children: [

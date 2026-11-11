@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../widgets/app_dialog.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../models/hotkey_model.dart';
@@ -106,7 +108,7 @@ class _HotKeyRecorderWidgetState extends State<HotKeyRecorderWidget> {
 
     return PopScope(
       canPop: !_isSaving,
-      child: AlertDialog(
+      child: AppAlertDialog(
         title: Text(t.hotkeys.setShortcutFor(actionName: widget.actionName)),
         content: SizedBox(
           width: double.maxFinite,

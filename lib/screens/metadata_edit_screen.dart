@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import '../media/ids.dart';
 import 'package:flutter/material.dart';
+
+import '../widgets/app_dialog.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
@@ -540,7 +542,7 @@ class _ArtworkPickerDialogState extends State<ArtworkPickerDialog> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: !_isApplying,
-      child: AlertDialog(
+      child: AppAlertDialog(
         title: Text(_config.selectTitle),
         content: SizedBox(
           width: 500,

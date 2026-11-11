@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+
+import '../../widgets/app_dialog.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:plezy/widgets/app_icon.dart';
@@ -215,7 +217,7 @@ class _AddCustomPlayerDialogState extends State<_AddCustomPlayerDialog> {
   @override
   Widget build(BuildContext context) {
     final (:label, :hint) = _valueFieldInfo;
-    return AlertDialog(
+    return AppAlertDialog(
       title: Text(t.externalPlayer.addCustomPlayer),
       content: SizedBox(
         width: 300,

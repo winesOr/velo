@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import 'app_dialog.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -628,9 +630,7 @@ class _TvVirtualKeyboardDialogState extends State<_TvVirtualKeyboardDialog> {
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final metrics = _metricsFor(media.size);
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Dialog(
+    return AppDialog(
       key: const Key('tv_virtual_keyboard_dialog'),
       alignment: .bottomCenter,
       insetPadding: .only(
@@ -639,19 +639,14 @@ class _TvVirtualKeyboardDialogState extends State<_TvVirtualKeyboardDialog> {
         top: media.padding.top + 48,
         bottom: media.padding.bottom + metrics.bottomInset,
       ),
-      backgroundColor: Colors.transparent,
-      elevation: 0,
+      constraints: BoxConstraints(maxWidth: metrics.panelWidth),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(metrics.panelRadius)),
       child: Focus(
         focusNode: _focusNode,
         onKeyEvent: _handleKey,
-        child: Container(
+        child: Padding(
           key: const Key('tv_virtual_keyboard_panel'),
-          constraints: BoxConstraints(maxWidth: metrics.panelWidth),
           padding: .all(metrics.panelPadding),
-          decoration: BoxDecoration(
-            color: colorScheme.surface.withValues(alpha: 0.96),
-            borderRadius: BorderRadius.circular(metrics.panelRadius),
-          ),
           child: SizedBox(
             width: metrics.gridWidth,
             child: Column(

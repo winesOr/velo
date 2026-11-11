@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,13 +8,15 @@ import '../focus/dpad_navigator.dart';
 import '../focus/input_mode_tracker.dart';
 import '../focus/key_event_utils.dart';
 import '../utils/platform_detector.dart';
+import '../theme/overlay_tokens.dart';
+import 'app_glass_surface.dart';
 
 /// Surface treatment for a hosted sheet.
 enum OverlaySheetStyle {
-  /// Opaque theme surface, 16 radius. Used everywhere outside the player.
+  /// Opaque theme surface for callers that explicitly opt out of glass.
   solid,
 
-  /// Player menus: translucent blurred surface with a hairline edge. Follows
+  /// Translucent blurred surface with a hairline edge. Follows
   /// the app brightness; [OverlaySheetController.show] keeps the edge inset.
   glass,
 }
@@ -25,21 +26,17 @@ enum OverlaySheetStyle {
 class GlassSheetColors {
   const GlassSheetColors._(this.surface, this.edge, this.foreground, this.muted, this.selected);
 
-  factory GlassSheetColors.of(BuildContext context) => Theme.of(context).brightness == Brightness.dark
-      ? const GlassSheetColors._(
-          Color(0x851A1B20),
-          Color(0x24FFFFFF),
-          Color(0xFFF2F3F5),
-          Color(0x8CF2F3F5),
-          Color(0x1FFFFFFF),
-        )
-      : const GlassSheetColors._(
-          Color(0xA6F6F6F8),
-          Color(0xB3FFFFFF),
-          Color(0xFF1C1C1E),
-          Color(0x801C1C1E),
-          Color(0x0F000000),
-        );
+  factory GlassSheetColors.of(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final dark = colors.brightness == Brightness.dark;
+    return GlassSheetColors._(
+      colors.surface.withValues(alpha: dark ? OverlayTokens.darkOpacity : OverlayTokens.lightOpacity),
+      colors.onSurface.withValues(alpha: dark ? 0.12 : 0.10),
+      colors.onSurface,
+      colors.onSurface.withValues(alpha: 0.72),
+      colors.onSurface.withValues(alpha: 0.08),
+    );
+  }
 
   final Color surface;
   final Color edge;
@@ -110,8 +107,8 @@ class OverlaySheetController {
     FocusNode? initialFocusNode,
     Alignment alignment = Alignment.center,
     bool showDragHandle = false,
-    OverlaySheetStyle style = OverlaySheetStyle.solid,
-    double blurSigma = 32,
+    OverlaySheetStyle style = OverlaySheetStyle.glass,
+    double blurSigma = OverlayTokens.blurSigma,
     Rect? anchor,
   }) {
     return _state._show<T>(
@@ -188,6 +185,8 @@ class OverlaySheetController {
     FocusNode? initialFocusNode,
     Alignment alignment = Alignment.center,
     bool showDragHandle = false,
+    OverlaySheetStyle style = OverlaySheetStyle.glass,
+    double blurSigma = OverlayTokens.blurSigma,
   }) async {
     final controller = maybeOf(context);
     if (controller != null) {
@@ -199,6 +198,8 @@ class OverlaySheetController {
         initialFocusNode: initialFocusNode,
         alignment: alignment,
         showDragHandle: showDragHandle,
+        style: style,
+        blurSigma: blurSigma,
       );
     }
     final effectiveConstraints = constraints ?? _defaultSheetConstraints(context);
@@ -210,11 +211,13 @@ class OverlaySheetController {
         barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
         barrierColor: Colors.black54,
         barrierDismissible: barrierDismissible,
-        transitionDuration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 170),
+        transitionDuration: AppGlassSurface.reduceEffects(context) ? Duration.zero : OverlayTokens.motion,
         pageBuilder: (dialogContext, _, _) => _FallbackFloatingPanel(
           alignment: alignment,
           constraints: effectiveConstraints,
           backgroundColor: backgroundColor,
+          style: style,
+          blurSigma: blurSigma,
           initialFocusNode: initialFocusNode,
           builder: builder,
         ),
@@ -247,6 +250,8 @@ class OverlaySheetController {
     bool barrierDismissible = true,
     bool isScrollControlled = false,
     bool showDragHandle = false,
+    OverlaySheetStyle style = OverlaySheetStyle.glass,
+    double blurSigma = OverlayTokens.blurSigma,
     Alignment alignment = Alignment.center,
   }) async {
     final controller = maybeOf(context);
@@ -261,6 +266,8 @@ class OverlaySheetController {
         barrierDismissible: barrierDismissible,
         initialFocusNode: initialFocusNode,
         showDragHandle: showDragHandle,
+        style: style,
+        blurSigma: blurSigma,
         alignment: alignment,
       );
     }
@@ -273,6 +280,8 @@ class OverlaySheetController {
       barrierDismissible: barrierDismissible,
       isScrollControlled: isScrollControlled,
       showDragHandle: showDragHandle,
+      style: style,
+      blurSigma: blurSigma,
       alignment: alignment,
     );
   }
@@ -359,8 +368,8 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
   BoxConstraints? _constraints;
   Color? _explicitBackgroundColor;
   Alignment _alignment = Alignment.center;
-  OverlaySheetStyle _style = OverlaySheetStyle.solid;
-  double _blurSigma = 32;
+  OverlaySheetStyle _style = OverlaySheetStyle.glass;
+  double _blurSigma = OverlayTokens.blurSigma;
 
   /// Global rect of the control that opened an anchored popover. The sheet
   /// sits above it, horizontally centred on it and clamped to the host.
@@ -420,8 +429,8 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
     FocusNode? initialFocusNode,
     Alignment alignment = Alignment.center,
     bool showDragHandle = false,
-    OverlaySheetStyle style = OverlaySheetStyle.solid,
-    double blurSigma = 32,
+    OverlaySheetStyle style = OverlaySheetStyle.glass,
+    double blurSigma = OverlayTokens.blurSigma,
     Rect? anchor,
   }) {
     BackKeyCoordinator.clear();
@@ -461,9 +470,7 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
     }
 
     BackKeyUpSuppressor.clearSuppression();
-    _animationController.duration = MediaQuery.disableAnimationsOf(context)
-        ? Duration.zero
-        : const Duration(milliseconds: 170);
+    _animationController.duration = AppGlassSurface.reduceEffects(context) ? Duration.zero : OverlayTokens.motion;
     _animationController.forward(from: 0);
     _autoFocus();
 
@@ -712,10 +719,10 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
     );
   }
 
-  Widget _buildSurface(BuildContext context, ColorScheme colorScheme, BoxConstraints constraints) {
+  Widget _buildSurface(BuildContext context, BoxConstraints constraints) {
     final body = AnimatedSize(
       key: ValueKey(_sheetSession),
-      duration: const Duration(milliseconds: 180),
+      duration: AppGlassSurface.reduceEffects(context) ? Duration.zero : OverlayTokens.motion,
       curve: Curves.easeOutCubic,
       alignment: _alignment,
       child: ConstrainedBox(
@@ -723,43 +730,12 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
         child: PrimaryScrollController.none(child: _pageStack.isNotEmpty ? _buildPageStack() : const SizedBox.shrink()),
       ),
     );
-    if (_style == OverlaySheetStyle.solid) {
-      return Material(
-        color: _explicitBackgroundColor ?? colorScheme.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.45)),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: body,
-      );
-    }
-    final glass = GlassSheetColors.of(context);
-    final radius = BorderRadius.circular(_anchor == null ? 22 : 18);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        boxShadow: const [BoxShadow(color: Color(0x47000000), blurRadius: 36, offset: Offset(0, 12))],
-      ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: _blurSigma, sigmaY: _blurSigma),
-          child: Material(
-            color: _explicitBackgroundColor ?? glass.surface,
-            textStyle: TextStyle(color: glass.foreground),
-            shape: RoundedRectangleBorder(
-              borderRadius: radius,
-              side: BorderSide(color: glass.edge),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: IconTheme.merge(
-              data: IconThemeData(color: glass.foreground),
-              child: body,
-            ),
-          ),
-        ),
-      ),
+    return AppGlassSurface(
+      radius: _anchor == null ? OverlayTokens.radius : OverlayTokens.compactRadius,
+      backgroundColor: _explicitBackgroundColor,
+      blurSigma: _blurSigma,
+      frosted: _style == OverlaySheetStyle.glass,
+      child: body,
     );
   }
 
@@ -783,13 +759,12 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
   }
 
   Widget _buildSheet(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final effectiveConstraints = _constraints ?? OverlaySheetController._defaultSheetConstraints(context);
     return Positioned.fill(
       child: SafeArea(
         child: AnimatedPadding(
           padding: EdgeInsets.fromLTRB(12, 12, 12, 12 + MediaQuery.viewInsetsOf(context).bottom),
-          duration: const Duration(milliseconds: 170),
+          duration: AppGlassSurface.reduceEffects(context) ? Duration.zero : OverlayTokens.motion,
           curve: Curves.easeOutCubic,
           child: FocusScope(
             node: _sheetFocusScopeNode,
@@ -809,7 +784,7 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
                       child: Transform.scale(scale: 0.97 + 0.03 * _slideCurve.value, child: child),
                     ),
                   ),
-                  child: _buildSurface(context, colorScheme, effectiveConstraints),
+                  child: _buildSurface(context, effectiveConstraints),
                 ),
               ),
             ),
@@ -827,6 +802,8 @@ class _FallbackFloatingPanel extends StatefulWidget {
     required this.alignment,
     required this.constraints,
     required this.backgroundColor,
+    required this.style,
+    required this.blurSigma,
     required this.initialFocusNode,
     required this.builder,
   });
@@ -834,6 +811,8 @@ class _FallbackFloatingPanel extends StatefulWidget {
   final Alignment alignment;
   final BoxConstraints constraints;
   final Color? backgroundColor;
+  final OverlaySheetStyle style;
+  final double blurSigma;
   final FocusNode? initialFocusNode;
   final WidgetBuilder builder;
 
@@ -854,10 +833,9 @@ class _FallbackFloatingPanelState extends State<_FallbackFloatingPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return SafeArea(
       child: AnimatedPadding(
-        duration: const Duration(milliseconds: 170),
+        duration: AppGlassSurface.reduceEffects(context) ? Duration.zero : OverlayTokens.motion,
         padding: EdgeInsets.fromLTRB(12, 12, 12, 12 + MediaQuery.viewInsetsOf(context).bottom),
         child: Align(
           alignment: widget.alignment,
@@ -869,13 +847,10 @@ class _FallbackFloatingPanelState extends State<_FallbackFloatingPanel> {
               if (event.logicalKey.isBackKey) return handleBackKeyAction(event, () => Navigator.pop(context));
               return KeyEventResult.ignored;
             },
-            child: Material(
-              color: widget.backgroundColor ?? colors.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.45)),
-              ),
-              clipBehavior: Clip.antiAlias,
+            child: AppGlassSurface(
+              backgroundColor: widget.backgroundColor,
+              frosted: widget.style == OverlaySheetStyle.glass,
+              blurSigma: widget.blurSigma,
               child: ConstrainedBox(
                 constraints: widget.constraints,
                 child: PrimaryScrollController.none(child: Builder(builder: widget.builder)),

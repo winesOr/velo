@@ -893,7 +893,6 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
 
   Widget _buildMenuView() {
     final sleepTimer = SleepTimerService();
-    final isDesktop = PlatformDetector.isDesktop(context);
     const video = VideoSettingsSection.video;
     const audio = VideoSettingsSection.audio;
     const subtitle = VideoSettingsSection.subtitle;
@@ -1018,27 +1017,40 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
             onTap: () => _navigateTo(_SettingsView.hdrToneMapping),
           ),
 
-        if (advanced && _in(video))
+        if (advanced && _in(video) && !_state.isLive)
           _SettingsToggleItem(
             pref: SettingsService.autoPlayNextEpisode,
             icon: Symbols.skip_next_rounded,
             title: t.videoControls.autoPlayNext,
           ),
 
-        if (advanced && _in(audio) && isDesktop)
-          StreamBuilder<AudioDevice>(
-            stream: widget.player.streams.audioDevice,
-            initialData: widget.player.state.audioDevice,
+        if (advanced && _in(audio))
+          StreamBuilder<List<AudioDevice>>(
+            stream: widget.player.streams.audioDevices,
+            initialData: widget.player.state.audioDevices,
             builder: (context, snapshot) {
-              final currentDevice = snapshot.data ?? widget.player.state.audioDevice;
-              final deviceLabel = currentDevice.description.isEmpty ? currentDevice.name : currentDevice.description;
-
-              return _SettingsMenuItem(
-                icon: Symbols.speaker_rounded,
-                title: t.videoSettings.audioOutput,
-                valueText: deviceLabel,
-                allowValueOverflow: true,
-                onTap: () => _navigateTo(_SettingsView.audioDevice),
+              // Enumeration is a runtime capability: an ExoPlayer instance can
+              // later gain real outputs after falling back to mpv.
+              final devices = snapshot.data ?? widget.player.state.audioDevices;
+              if (!devices.any((device) => device.name.isNotEmpty && device.name != 'auto')) {
+                return const SizedBox.shrink();
+              }
+              return StreamBuilder<AudioDevice>(
+                stream: widget.player.streams.audioDevice,
+                initialData: widget.player.state.audioDevice,
+                builder: (context, selectedSnapshot) {
+                  final currentDevice = selectedSnapshot.data ?? widget.player.state.audioDevice;
+                  final deviceLabel = currentDevice.description.isEmpty
+                      ? currentDevice.name
+                      : currentDevice.description;
+                  return _SettingsMenuItem(
+                    icon: Symbols.speaker_rounded,
+                    title: t.videoSettings.audioOutput,
+                    valueText: deviceLabel,
+                    allowValueOverflow: true,
+                    onTap: () => _navigateTo(_SettingsView.audioDevice),
+                  );
+                },
               );
             },
           ),

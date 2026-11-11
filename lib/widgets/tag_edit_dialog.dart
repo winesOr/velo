@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import 'app_dialog.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../focus/dpad_navigator.dart';
 import '../focus/focusable_button.dart';
@@ -114,7 +116,7 @@ class _TagEditDialogState extends State<TagEditDialog> with ControllerDisposerMi
   @override
   Widget build(BuildContext context) {
     final visibleSuggestions = _visibleSuggestions;
-    return AlertDialog(
+    return AppAlertDialog(
       title: Text(widget.title),
       content: SizedBox(
         width: 400,

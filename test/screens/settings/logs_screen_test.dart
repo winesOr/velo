@@ -148,7 +148,7 @@ void main() {
     expect(contentType, startsWith('text/plain'));
     expect(uploadedBody, contains('widget upload seed'));
 
-    final dialog = find.byType(AlertDialog);
+    final dialog = find.byWidgetPredicate((widget) => widget is AlertDialog);
     final copyButton = find.descendant(of: dialog, matching: find.byType(IconButton));
     expect(copyButton, findsOneWidget);
     await tester.tap(copyButton);

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../widgets/app_dialog.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -37,7 +39,7 @@ class _JoinSessionDialogState extends State<JoinSessionDialog> with ControllerDi
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Dialog(
+    return AppDialog(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 400),
         child: Padding(

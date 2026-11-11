@@ -54,7 +54,7 @@ void main() {
     await deletion;
     await tester.pump();
 
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
     expect(find.text('underlying page'), findsOneWidget);
   });
 }

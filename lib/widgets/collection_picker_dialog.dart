@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import 'app_dialog.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../focus/focusable_text_field.dart';
@@ -144,7 +146,7 @@ class _PickerDialogScaffoldState<T> extends State<_PickerDialogScaffold<T>> {
     final showStatus = _hasMore || _isLoading || _errorMessage != null || _filteredItems.isEmpty;
     return Focus(
       onKeyEvent: (_, event) => handleBackKeyNavigation(context, event),
-      child: AlertDialog(
+      child: AppAlertDialog(
         title: Text(widget.title),
         content: SizedBox(
           width: double.maxFinite,

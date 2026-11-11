@@ -380,7 +380,7 @@ void main() {
     await tester.tap(find.text('Переопределение ASS'));
     await tester.pumpAndSettle();
 
-    final dialog = find.byType(AlertDialog);
+    final dialog = find.byWidgetPredicate((widget) => widget is AlertDialog);
     for (final label in ['Нет', 'Да', 'Масштаб', 'Принудительно', 'Удалить стили']) {
       expect(find.descendant(of: dialog, matching: find.text(label)), findsOneWidget);
     }

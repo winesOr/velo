@@ -38,7 +38,7 @@ void main() {
     await tester.tap(_saveButton());
     await tester.pumpAndSettle();
 
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
     expect(service.getHotkey('play_pause'), isNull);
     expect(find.text(t.hotkeys.noShortcutSet), findsOneWidget);
     final stored =
@@ -89,7 +89,7 @@ void main() {
     await tester.tap(_saveButton());
     await tester.pumpAndSettle();
 
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
     expect(service.getHotkey('play_pause')?.key, PhysicalKeyboardKey.space);
     expect(service.getHotkey('volume_up')?.key, PhysicalKeyboardKey.arrowUp);
     expect(
@@ -104,7 +104,8 @@ void main() {
     await service.setHotkey('play_pause', const HotKey(key: PhysicalKeyboardKey.keyK));
     await _pumpScreen(tester, service);
 
-    Finder dialogButton(String label) => find.descendant(of: find.byType(AlertDialog), matching: find.text(label));
+    Finder dialogButton(String label) =>
+        find.descendant(of: find.byWidgetPredicate((widget) => widget is AlertDialog), matching: find.text(label));
 
     await tester.tap(find.widgetWithText(TextButton, t.common.reset));
     await tester.pumpAndSettle();
@@ -137,7 +138,7 @@ void main() {
     await tester.tap(_saveButton());
     await tester.pumpAndSettle();
 
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(service.getHotkey('play_pause')?.key, PhysicalKeyboardKey.space);
     expect(find.text(t.common.error), findsOneWidget);
     expect(
@@ -147,7 +148,7 @@ void main() {
 
     await tester.tap(_saveButton());
     await tester.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
     expect(service.getHotkey('play_pause'), isNull);
   });
 }
@@ -167,7 +168,7 @@ Future<void> _pumpScreen(WidgetTester tester, KeyboardShortcutsService service) 
 Future<void> _openAction(WidgetTester tester, KeyboardShortcutsService service, String action) async {
   await tester.tap(find.widgetWithText(FocusableListTile, service.getActionDisplayName(action)));
   await tester.pumpAndSettle();
-  expect(find.byType(AlertDialog), findsOneWidget);
+  expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
 }
 
 Finder _recorderSurface() =>

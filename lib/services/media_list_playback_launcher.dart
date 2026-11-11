@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../widgets/app_dialog.dart';
+
 import '../exceptions/media_server_exceptions.dart';
 import '../i18n/strings.g.dart';
 import '../media/media_backend.dart';
@@ -346,7 +348,7 @@ class _CancellableLoadingDialogState extends State<_CancellableLoadingDialog> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _cancelAndDismiss();
       },
-      child: AlertDialog(
+      child: AppAlertDialog(
         title: Text(widget.actionLabel),
         content: const Center(widthFactor: 1, heightFactor: 1, child: CircularProgressIndicator()),
         actions: [DialogActionButton(onPressed: _cancelAndDismiss, label: t.common.cancel)],

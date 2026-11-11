@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 // ignore: depend_on_referenced_packages
 import 'package:shared_preferences_foundation/shared_preferences_foundation.dart';
 import 'package:flutter/material.dart';
+
+import 'widgets/app_dialog.dart';
 import 'package:flutter/material.dart' as material show ThemeMode;
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/gestures.dart';
@@ -575,7 +577,7 @@ Future<void> showRepairOutcomeDialog(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
       builder: (dialogContext, setDialogState) {
-        return AlertDialog(
+        return AppAlertDialog(
           title: Text(outcome.requiresRestart ? t.startup.repairNeedsRestart : t.startup.repairSucceeded),
           content: Column(
             mainAxisSize: MainAxisSize.min,

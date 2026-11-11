@@ -132,12 +132,12 @@ Future<void> _openScanConfirmation(WidgetTester tester) async {
   await tester.sendKeyEvent(LogicalKeyboardKey.enter);
   await tester.pumpAndSettle();
 
-  expect(find.byType(AlertDialog), findsOneWidget);
+  expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
   expect(find.text(t.libraries.manageLibraries), findsNothing);
   expect(find.text(t.libraries.scanLibraryFiles), findsNothing);
   expect(OverlaySheetController.openSheetCount.value, 0);
 
-  final dialogElement = tester.element(find.byType(AlertDialog));
+  final dialogElement = tester.element(find.byWidgetPredicate((widget) => widget is AlertDialog));
   final primaryFocusContext = FocusManager.instance.primaryFocus?.context;
   var dialogOwnsPrimaryFocus = false;
   primaryFocusContext?.visitAncestorElements((element) {
@@ -158,7 +158,7 @@ Future<void> _confirmLibraryAction(WidgetTester tester, String actionLabel) asyn
   await tester.tap(find.text(actionLabel));
   await tester.pumpAndSettle();
 
-  expect(find.byType(AlertDialog), findsOneWidget);
+  expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
   await tester.tap(find.text(t.common.confirm));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));
@@ -206,7 +206,7 @@ void main() {
       await tester.sendKeyEvent(interaction.key);
       await tester.pumpAndSettle();
 
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
       expect(find.text('Open library management'), findsOneWidget);
       expect(underlyingActions.selects(), selectsBeforeDialogAction);
       expect(underlyingActions.backs(), backsBeforeDialogAction);

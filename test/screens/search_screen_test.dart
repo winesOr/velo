@@ -229,7 +229,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(client.queries, isEmpty);
-    expect(find.byIcon(Symbols.error_rounded), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(SliverFillRemaining), matching: find.byIcon(Symbols.error_rounded)),
+      findsOneWidget,
+    );
     expect(find.byKey(const Key('tv_virtual_keyboard_panel')), findsNothing);
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'SearchInput');
     expect(tester.widget<TextField>(find.byType(TextField)).readOnly, isTrue);

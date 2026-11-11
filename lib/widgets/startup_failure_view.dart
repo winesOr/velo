@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'app_dialog.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -103,7 +105,7 @@ class _StartupFailureViewState extends State<StartupFailureView> {
       if (!mounted) return;
       await showScopedDialog<void>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
+        builder: (dialogContext) => AppAlertDialog(
           title: Text(t.messages.logsUploaded),
           content: Column(
             mainAxisSize: MainAxisSize.min,

@@ -196,7 +196,7 @@ Future<void> _openLeaveConfirmation(WidgetTester tester, _OverlayHarness harness
   await tester.tap(find.text(harness.provider.isHost ? t.watchTogether.endSession : t.watchTogether.leaveSession));
   await tester.pumpAndSettle();
 
-  expect(find.byType(AlertDialog), findsOneWidget);
+  expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
 }
 
 class _OverlayHarness {

@@ -46,11 +46,24 @@ class DialogActionButton extends StatelessWidget {
         onPressed: onPressed,
         style: style,
         icon: icon,
-        label: Text(label),
+        label: Text(label, textAlign: TextAlign.center),
       ),
-      (true, null) => FilledButton(onPressed: onPressed, style: style, child: Text(label)),
-      (false, final Widget icon) => TextButton.icon(onPressed: onPressed, style: style, icon: icon, label: Text(label)),
-      (false, null) => TextButton(onPressed: onPressed, style: style, child: Text(label)),
+      (true, null) => FilledButton(
+        onPressed: onPressed,
+        style: style,
+        child: Text(label, textAlign: TextAlign.center),
+      ),
+      (false, final Widget icon) => TextButton.icon(
+        onPressed: onPressed,
+        style: style,
+        icon: icon,
+        label: Text(label, textAlign: TextAlign.center),
+      ),
+      (false, null) => TextButton(
+        onPressed: onPressed,
+        style: style,
+        child: Text(label, textAlign: TextAlign.center),
+      ),
     };
 
     return FocusableButton(

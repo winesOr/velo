@@ -389,7 +389,7 @@ void main() {
       await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.pumpAndSettle();
 
-      final dialog = find.byType(AlertDialog);
+      final dialog = find.byWidgetPredicate((widget) => widget is AlertDialog);
       expect(dialog, findsOneWidget);
       expect(find.descendant(of: dialog, matching: find.text(t.mediaMenu.deleteEpisodeTitle)), findsOneWidget);
       expect(
@@ -426,7 +426,7 @@ void main() {
       await tester.tap(find.text(t.mediaMenu.deleteShowFromServer));
       await tester.pumpAndSettle();
 
-      final dialog = find.byType(AlertDialog);
+      final dialog = find.byWidgetPredicate((widget) => widget is AlertDialog);
       expect(find.descendant(of: dialog, matching: find.text(t.mediaMenu.deleteShowTitle)), findsOneWidget);
       expect(
         find.descendant(of: dialog, matching: find.text(t.mediaMenu.deleteEpisodeCountWarning(n: 62))),
@@ -578,11 +578,14 @@ void main() {
       gate.complete();
       await tester.pumpAndSettle();
 
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.text('home screen'), findsNothing);
       expect(
-        find.descendant(of: find.byType(AlertDialog), matching: find.text(t.mediaMenu.deleteEpisodeConfirm)),
+        find.descendant(
+          of: find.byWidgetPredicate((widget) => widget is AlertDialog),
+          matching: find.text(t.mediaMenu.deleteEpisodeConfirm),
+        ),
         findsOneWidget,
       );
     });
@@ -640,7 +643,7 @@ void main() {
       await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.pumpAndSettle();
 
-      final dialog = find.byType(AlertDialog);
+      final dialog = find.byWidgetPredicate((widget) => widget is AlertDialog);
       expect(
         find.descendant(of: dialog, matching: find.text(t.mediaMenu.deleteScopeUnverifiedNoFileInfo)),
         findsOneWidget,
@@ -684,7 +687,7 @@ void main() {
       await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.pumpAndSettle();
 
-      final dialog = find.byType(AlertDialog);
+      final dialog = find.byWidgetPredicate((widget) => widget is AlertDialog);
       expect(find.descendant(of: dialog, matching: find.text(t.mediaMenu.deleteEpisodeConfirm)), findsOneWidget);
       expect(find.text(t.mediaMenu.deleteAnyway), findsNothing);
       expect(find.text(t.mediaMenu.deleteScopeUnverifiedNoFileInfo), findsNothing);
@@ -1000,7 +1003,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
       expect(find.text(t.common.cancel), findsOneWidget);
       expect(client.activeAbort, isNotNull);
       await tester.tap(find.text(t.common.cancel));

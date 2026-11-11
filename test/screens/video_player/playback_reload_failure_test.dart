@@ -626,7 +626,7 @@ void main() {
         await tester.binding.handlePopRoute();
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
         final successorKey = GlobalKey<VideoPlayerScreenState>();
         unawaited(
           VideoPlayerRoute(
@@ -675,7 +675,7 @@ void main() {
         await tester.binding.handlePopRoute();
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
         await tester.pump(const Duration(seconds: 30));
         expect(screen.key.currentState, isNotNull, reason: 'confirmation has no navigation deadline');
         await tester.tap(find.text('Cancel'));

@@ -10,6 +10,8 @@ import '../focus/focusable_tile_mixin.dart';
 import '../focus/input_mode_tracker.dart';
 import '../focus/key_event_utils.dart';
 import '../theme/mono_tokens.dart';
+import '../theme/overlay_tokens.dart';
+import 'app_glass_surface.dart';
 import '../utils/focus_utils.dart';
 import 'app_icon.dart';
 import 'clickable_cursor.dart';
@@ -86,7 +88,7 @@ Future<T?> showAppMenu<T>(
     barrierDismissible: true,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: Colors.transparent,
-    transitionDuration: const Duration(milliseconds: 120),
+    transitionDuration: AppGlassSurface.reduceEffects(context) ? Duration.zero : OverlayTokens.motion,
     pageBuilder: (dialogContext, _, _) => _AppMenuPopup<T>(
       entries: entries,
       position: position,
@@ -138,7 +140,7 @@ Future<T?> showAnchoredPanel<T>(
     barrierDismissible: true,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: Colors.transparent,
-    transitionDuration: const Duration(milliseconds: 120),
+    transitionDuration: AppGlassSurface.reduceEffects(context) ? Duration.zero : OverlayTokens.motion,
     pageBuilder: (dialogContext, _, _) => _AnchoredPanel(
       anchorRect: anchorRect,
       anchorAlignment: anchorAlignment,
@@ -185,7 +187,6 @@ class _AnchoredPanel extends StatelessWidget {
     final screenSize = MediaQuery.sizeOf(context);
     const edgePadding = 8.0;
     const gap = 4.0;
-    final colorScheme = Theme.of(context).colorScheme;
     final panelWidth = width.clamp(0.0, math.max(160.0, screenSize.width - edgePadding * 2)).toDouble();
     final leftCandidate = switch (anchorAlignment) {
       AppMenuAnchorAlignment.start => anchorRect.left,
@@ -203,12 +204,8 @@ class _AnchoredPanel extends StatelessWidget {
     final availableHeight = openBelow ? spaceBelow : anchorRect.top - gap - edgePadding;
     final effectiveMaxHeight = math.max(120.0, math.min(maxHeight, availableHeight));
 
-    final panel = Material(
-      elevation: 3,
-      shadowColor: colorScheme.shadow,
-      color: Color.alphaBlend(colorScheme.onSurface.withValues(alpha: 0.08), colorScheme.surface),
-      borderRadius: BorderRadius.circular(tokens(context).radiusMd),
-      clipBehavior: Clip.antiAlias,
+    final panel = AppGlassSurface(
+      radius: OverlayTokens.compactRadius,
       child: ConstrainedBox(
         constraints: BoxConstraints(minWidth: panelWidth, maxWidth: panelWidth, maxHeight: effectiveMaxHeight),
         child: PrimaryScrollController.none(child: builder(context)),
@@ -819,14 +816,8 @@ class _AppMenuSurface<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final surface = Color.alphaBlend(colorScheme.onSurface.withValues(alpha: 0.08), colorScheme.surface);
-    return Material(
-      elevation: 3,
-      shadowColor: colorScheme.shadow,
-      color: surface,
-      borderRadius: BorderRadius.circular(tokens(context).radiusMd),
-      clipBehavior: Clip.antiAlias,
+    return AppGlassSurface(
+      radius: OverlayTokens.compactRadius,
       child: ConstrainedBox(
         constraints: BoxConstraints(minWidth: width, maxWidth: width, maxHeight: maxHeight),
         child: PrimaryScrollController.none(

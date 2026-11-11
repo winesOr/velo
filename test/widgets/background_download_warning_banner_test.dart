@@ -206,7 +206,7 @@ void main() {
 
     expect(
       find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byWidgetPredicate((widget) => widget is AlertDialog),
         matching: find.text(t.downloads.backgroundWarning.sheetTitleDegraded),
       ),
       findsOneWidget,

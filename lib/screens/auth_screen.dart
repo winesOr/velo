@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import '../widgets/app_dialog.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:provider/provider.dart';
@@ -826,7 +828,7 @@ class _DebugTokenDialogState extends State<_DebugTokenDialog> with ControllerDis
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return AppAlertDialog(
       title: const Text('Debug: Enter Plex Token'),
       content: Column(
         mainAxisSize: .min,

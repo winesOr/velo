@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../app_dialog.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
@@ -99,7 +101,7 @@ class _RemoteSessionDialogState extends State<RemoteSessionDialog> with MountedS
       child: Consumer<CompanionRemoteProvider>(
         builder: (context, provider, child) {
           if (_isStarting) {
-            return Dialog(
+            return AppDialog(
               child: Padding(
                 padding: const EdgeInsets.all(32.0),
                 child: Column(
@@ -115,7 +117,7 @@ class _RemoteSessionDialogState extends State<RemoteSessionDialog> with MountedS
           }
 
           if (_errorMessage != null) {
-            return AlertDialog(
+            return AppAlertDialog(
               title: Text(t.common.error),
               content: Text(_errorMessage!, style: const TextStyle(fontFamily: 'monospace')),
               actions: [
@@ -140,7 +142,7 @@ class _RemoteSessionDialogState extends State<RemoteSessionDialog> with MountedS
             );
           }
 
-          return Dialog(
+          return AppDialog(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 500),
               child: SingleChildScrollView(

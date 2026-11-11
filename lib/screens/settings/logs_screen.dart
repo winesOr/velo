@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+
+import '../../widgets/app_dialog.dart';
 import 'package:flutter/rendering.dart' show SelectedContent;
 import 'package:plezy/utils/media_server_http_client.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -275,7 +277,7 @@ class _LogsScreenState extends State<LogsScreen> with MountedSetStateMixin {
       unawaited(
         showScopedDialog<void>(
           context: context,
-          builder: (ctx) => AlertDialog(
+          builder: (ctx) => AppAlertDialog(
             title: Text(t.messages.logsUploaded),
             content: Column(
               mainAxisSize: MainAxisSize.min,

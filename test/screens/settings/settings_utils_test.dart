@@ -44,7 +44,7 @@ void main() {
     await tester.pumpAndSettle();
     final fieldFinder = find.byType(TextField);
 
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(find.byKey(const Key('tv_virtual_keyboard_dialog')), findsNothing);
     expect(tester.widget<TextField>(fieldFinder).readOnly, isFalse);
     await tester.showKeyboard(fieldFinder);
@@ -52,21 +52,21 @@ void main() {
     await tester.sendKeyDownEvent(LogicalKeyboardKey.escape);
     await tester.pump();
 
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(tester.widget<TextField>(fieldFinder).readOnly, isTrue);
 
     await tester.sendKeyUpEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('tv_virtual_keyboard_dialog')), findsNothing);
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(tester.widget<TextField>(fieldFinder).readOnly, isTrue);
     expect(tester.takeException(), isNull);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
 
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
     expect(saved, isEmpty);
     expect(tester.takeException(), isNull);
   });
@@ -85,7 +85,7 @@ void main() {
     await tester.tap(_saveButton());
     await tester.pump();
 
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(find.text(t.settings.saveFailed), findsOneWidget);
   });
 
@@ -103,7 +103,7 @@ void main() {
     await tester.tap(_saveButton());
     await tester.pump();
 
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(find.text(t.settings.saveFailed), findsOneWidget);
   });
 
@@ -123,7 +123,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(saved, isTrue);
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
   });
 
   testWidgets('disposed settings save context does not present late feedback', (tester) async {
@@ -167,7 +167,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(saved, isEmpty);
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(find.text(t.settings.invalidRegex), findsOneWidget);
   });
 
@@ -193,7 +193,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(saved, isEmpty);
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
   });
 
   testWidgets('non-blank pattern is persisted verbatim without trimming', (tester) async {
@@ -215,7 +215,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(saved, [r' credits\s*roll ']);
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
   });
 }
 

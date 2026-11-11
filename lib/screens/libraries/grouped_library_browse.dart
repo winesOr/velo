@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import '../../widgets/app_dialog.dart';
 import '../../theme/mono_presentation.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -269,7 +271,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
 
   Future<void> _showFilters() => showScopedDialog<void>(
     context: context,
-    builder: (dialogContext) => Dialog(
+    builder: (dialogContext) => AppDialog(
       key: const ValueKey('grouped-library-filters'),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       insetPadding: const EdgeInsets.all(20),

@@ -186,7 +186,7 @@ void main() {
       final resultFuture = launcher.launchFromCollectionOrPlaylist(item: playlist, shuffle: false);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
 
       await tester.binding.handlePopRoute();
       await tester.pump();
@@ -194,7 +194,7 @@ void main() {
 
       expect(await resultFuture, isA<PlayQueueCancelled>());
       await tester.pumpAndSettle();
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
       expect(playbackState.isQueueActive, isFalse);
       expect(didNavigate, isFalse);
       expect(find.byType(SnackBar), findsNothing);
@@ -247,7 +247,8 @@ void main() {
       final resultFuture = launcher.launchFromCollectionOrPlaylist(item: playlist, shuffle: shuffle);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      final title = (tester.widget<AlertDialog>(find.byType(AlertDialog)).title as Text?)?.data;
+      final title =
+          (tester.widget<AlertDialog>(find.byWidgetPredicate((widget) => widget is AlertDialog)).title as Text?)?.data;
 
       gate.complete();
       await tester.pumpAndSettle();

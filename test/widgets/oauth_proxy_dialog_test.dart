@@ -60,7 +60,7 @@ void main() {
     );
 
     // Wide layout: QR beside the instructions, dialog fully on screen.
-    final dialogRect = tester.getRect(find.byType(AlertDialog));
+    final dialogRect = tester.getRect(find.byWidgetPredicate((widget) => widget is AlertDialog));
     expect(dialogRect.height, lessThanOrEqualTo(540));
     expect(tester.takeException(), isNull);
   });

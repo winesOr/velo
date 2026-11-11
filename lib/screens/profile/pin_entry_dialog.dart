@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../widgets/app_dialog.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -92,7 +94,7 @@ class _PinEntryDialogState extends State<PinEntryDialog> with SingleTickerProvid
   }
 
   Widget _buildMobileDialog(ThemeData theme) {
-    return AlertDialog(
+    return AppAlertDialog(
       title: _buildTitle(theme),
       content: Column(
         mainAxisSize: .min,
@@ -127,16 +129,11 @@ class _PinEntryDialogState extends State<PinEntryDialog> with SingleTickerProvid
   Widget _buildTvDialog(ThemeData theme) {
     final colorScheme = theme.colorScheme;
 
-    return Dialog(
+    return AppDialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 56, vertical: 32),
-      backgroundColor: Colors.transparent,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 320),
+      constraints: const BoxConstraints(maxWidth: 320),
+      child: Padding(
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: colorScheme.surface.withValues(alpha: 0.96),
-          borderRadius: BorderRadius.circular(28),
-        ),
         child: Column(
           mainAxisSize: .min,
           crossAxisAlignment: .stretch,

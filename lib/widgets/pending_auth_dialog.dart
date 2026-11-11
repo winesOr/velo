@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'app_dialog.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -8,6 +10,7 @@ import '../focus/focusable_button.dart';
 import '../focus/focusable_wrapper.dart';
 import '../i18n/strings.g.dart';
 import '../utils/platform_detector.dart';
+import '../theme/overlay_tokens.dart';
 import '../utils/snackbar_helper.dart';
 import 'app_icon.dart';
 import 'dialog_action_button.dart';
@@ -138,33 +141,30 @@ class PendingAuthDialog extends StatelessWidget {
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) onCancel();
       },
-      child: AlertDialog(
+      child: AppAlertDialog(
+        constraints: const BoxConstraints(maxWidth: OverlayTokens.wideDialogMaxWidth),
         scrollable: true,
         title: Text(title),
-        // Wide: the QR fills the left pane and everything textual lives in the
-        // right column — body at the QR's top edge, button/spinner at its bottom
-        // edge, the URL above the button, and any service extras (activation
-        // code) centered in the remaining space. Both flows fill their column,
-        // so neither pane floats in empty space.
+        // Keep each pane at its natural height. Activation codes can be
+        // taller than the space left beside the QR (especially with scaled
+        // text); the alert's scroll view owns any vertical overflow.
         content: wide
-            ? IntrinsicHeight(
-                child: Row(
-                  mainAxisSize: .min,
-                  crossAxisAlignment: .stretch,
-                  children: [
-                    Column(mainAxisSize: .min, mainAxisAlignment: .center, children: [qr]),
-                    const SizedBox(width: 28),
-                    ConstrainedBox(
+            ? Row(
+                mainAxisSize: .min,
+                crossAxisAlignment: .center,
+                children: [
+                  qr,
+                  const SizedBox(width: 28),
+                  Flexible(
+                    child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 320),
                       child: Column(
+                        mainAxisSize: .min,
                         crossAxisAlignment: .stretch,
                         children: [
                           bodyText,
-                          Expanded(
-                            child: children.isEmpty
-                                ? const SizedBox.shrink()
-                                : Column(mainAxisAlignment: .center, children: children),
-                          ),
+                          const SizedBox(height: 12),
+                          ...children,
                           Align(
                             alignment: .centerLeft,
                             child: urlChip(textAlign: TextAlign.start),
@@ -175,8 +175,8 @@ class PendingAuthDialog extends StatelessWidget {
                         ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               )
             : Column(
                 mainAxisSize: .min,

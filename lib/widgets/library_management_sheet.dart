@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import 'app_dialog.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 
@@ -421,7 +423,7 @@ class _LibraryManagementSheetState extends State<_LibraryManagementSheet>
     final hiddenLibraryKeys = hiddenLibrariesProvider.hiddenLibraryKeys;
 
     if (widget.isDialog) {
-      return Dialog(
+      return AppDialog(
         child: PopScope(
           canPop: false, // Prevent system back from double-popping; handled by handleReorderKeyEvent
           // ignore: no-empty-block - required callback, blocks system back on Android TV

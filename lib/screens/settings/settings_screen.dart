@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import '../../widgets/app_dialog.dart';
 import 'package:flutter/services.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -830,13 +832,14 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
     return SettingsGroup(
       title: t.settings.advanced,
       children: [
-        SettingSwitchTile(
-          focusNode: _focusTracker.get(_kCrashReporting),
-          pref: settings.SettingsService.crashReporting,
-          icon: Symbols.monitoring_rounded,
-          title: t.settings.crashReporting,
-          subtitle: t.settings.crashReportingDescription,
-        ),
+        if (const bool.fromEnvironment('ENABLE_SENTRY', defaultValue: false))
+          SettingSwitchTile(
+            focusNode: _focusTracker.get(_kCrashReporting),
+            pref: settings.SettingsService.crashReporting,
+            icon: Symbols.monitoring_rounded,
+            title: t.settings.crashReporting,
+            subtitle: t.settings.crashReportingDescription,
+          ),
         SettingSwitchTile(
           focusNode: _focusTracker.get(_kDebugLogging),
           pref: settings.SettingsService.enableDebugLogging,
@@ -1026,7 +1029,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
 
     await showScopedDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => AppAlertDialog(
         title: Text(t.settings.downloads),
         content: Column(
           mainAxisSize: .min,
@@ -1337,7 +1340,7 @@ class _RelayUrlDialogState extends State<_RelayUrlDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return AppAlertDialog(
       title: Text(t.settings.watchTogetherRelay),
       content: FocusableTextField(
         controller: _controller,

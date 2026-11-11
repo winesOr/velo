@@ -13,6 +13,7 @@ import 'package:plezy/profiles/profile.dart';
 import 'package:plezy/profiles/profile_connection.dart';
 import 'package:plezy/profiles/profile_connection_registry.dart';
 import 'package:plezy/providers/companion_remote_provider.dart';
+import 'package:plezy/screens/companion_remote/mobile_remote_screen.dart';
 import 'package:plezy/services/companion_remote/companion_remote_peer_service.dart';
 import 'package:plezy/services/companion_remote/lan_discovery_service.dart';
 import 'package:plezy/services/companion_remote/remote_auth_context.dart';
@@ -54,6 +55,9 @@ void main() {
   });
 
   testWidgets('a failed connect restarts discovery and re-lists the broadcasting host', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     resetSharedPreferencesForTest();
     final stack = await ProfileStack.create(homeUsers: [_adminHomeUser('remote-admin')]);
     var stackDisposed = false;
@@ -115,7 +119,7 @@ void main() {
         ],
         child: MaterialApp(
           theme: ThemeData(extensions: const [testMonoTokens]),
-          home: const InputModeTracker(child: Scaffold(body: DiscoveryView())),
+          home: const InputModeTracker(child: MobileRemoteScreen()),
         ),
       ),
     );

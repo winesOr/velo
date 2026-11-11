@@ -24,7 +24,7 @@ void main() {
     );
     await tester.tap(find.text(t.settings.playerBackend));
     await tester.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(find.text(t.settings.exoPlayer), findsOneWidget);
     expect(SettingsService.instance.read(SettingsService.useExoPlayer), isFalse);
     await tester.binding.handlePopRoute();
@@ -36,7 +36,7 @@ void main() {
     await tester.tap(find.text(t.settings.exoPlayer));
     await tester.pumpAndSettle();
     expect(SettingsService.instance.read(SettingsService.useExoPlayer), isTrue);
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'app_dialog.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -137,7 +139,7 @@ Future<bool> showBackgroundDownloadWarningDialog(
     context: context,
     builder: (dialogContext) {
       final theme = Theme.of(dialogContext);
-      return AlertDialog(
+      return AppAlertDialog(
         title: Text(
           preFlight
               ? t.downloads.backgroundWarning.dialogTitle

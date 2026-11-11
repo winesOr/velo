@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../widgets/app_dialog.dart';
 import 'package:provider/provider.dart';
 
 import '../../focus/focusable_button.dart';
@@ -177,7 +179,7 @@ class _LocalMediaMatchDialogState extends State<LocalMediaMatchDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return AppAlertDialog(
       title: Text(t.watchTogether.changeMatch),
       scrollable: true,
       content: SizedBox(

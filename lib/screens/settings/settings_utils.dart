@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
+
+import '../../widgets/app_dialog.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -147,7 +149,7 @@ class _SettingsInputDialogState extends State<_SettingsInputDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return AppAlertDialog(
       title: Text(widget.title),
       content: widget.contentBuilder(context, context, setState, _saveFocusNode),
       actions: [
@@ -174,7 +176,7 @@ Future<DialogOption<T>?> showSelectionDialog<T>({
   final focusFirstItem = InputModeTracker.isKeyboardMode(context, listen: false);
   return showScopedDialog<DialogOption<T>>(
     context: context,
-    builder: (dialogContext) => AlertDialog(
+    builder: (dialogContext) => AppAlertDialog(
       title: Text(title),
       contentPadding: const EdgeInsets.only(top: 12, bottom: 24),
       content: ScrollInkBoundary(

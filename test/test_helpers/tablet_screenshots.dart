@@ -25,6 +25,10 @@ ThemeData tabletFixtureTheme(ThemeData theme) => theme.copyWith(
   appBarTheme: theme.appBarTheme.copyWith(
     titleTextStyle: theme.appBarTheme.titleTextStyle?.copyWith(fontFamily: 'TabletFixture'),
   ),
+  dialogTheme: theme.dialogTheme.copyWith(
+    titleTextStyle: theme.dialogTheme.titleTextStyle?.copyWith(fontFamily: 'TabletFixture'),
+    contentTextStyle: theme.dialogTheme.contentTextStyle?.copyWith(fontFamily: 'TabletFixture'),
+  ),
 );
 
 /// Opt-in captures of production widgets with fixture data, not device photos.

@@ -453,7 +453,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(find.text(t.common.cancel), findsOneWidget);
     expect(harness.client.activeAbort, isNotNull);
     await tester.tap(find.text(t.common.cancel));
@@ -485,13 +485,16 @@ void main() {
       expect(request.playlistID, 42);
       expect(request.key, '/library/metadata/$itemId');
       expect(request.shuffle, 0);
-      final dialogTitle = find.descendant(of: find.byType(AlertDialog), matching: find.text(t.common.play));
+      final dialogTitle = find.descendant(
+        of: find.byWidgetPredicate((widget) => widget is AlertDialog),
+        matching: find.text(t.common.play),
+      );
       expect(dialogTitle, findsOneWidget);
 
       await tester.tap(find.text(t.common.cancel));
       request.completeEmpty();
       await tester.pumpAndSettle();
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
       expect(harness.playbackState.isQueueActive, isFalse);
     }
 
@@ -787,7 +790,7 @@ Future<void> _pushPlaylistRoute(WidgetTester tester, _PlaylistHarness harness) a
 Future<void> _choosePlaylistDeletion(WidgetTester tester, {required bool confirm}) async {
   await tester.tap(find.byTooltip(t.playlists.delete));
   await tester.pumpAndSettle();
-  expect(find.byType(AlertDialog), findsOneWidget);
+  expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
 
   await tester.tap(find.text(confirm ? t.common.delete : t.common.cancel));
   await tester.pumpAndSettle();

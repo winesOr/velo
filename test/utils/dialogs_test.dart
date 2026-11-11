@@ -73,7 +73,7 @@ void main() {
 
     await expectLater(outerResult, completion(isNull));
     await expectLater(innerResult, completion(isNull));
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
     expect(ModalRoute.of(hostContext)!.isCurrent, isTrue);
   });
 
@@ -101,7 +101,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await expectLater(innerResult, completion(isNull));
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
     expect(ModalRoute.of(hostContext)!.isCurrent, isTrue);
   });
 
@@ -270,7 +270,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await expectLater(result, completion('New name'));
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
   });
 
   testWidgets('text input dialog returns null when cancelled', (tester) async {
@@ -299,7 +299,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Too short'), findsOneWidget);
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'valid');
     await tester.tap(find.text('Save'));
@@ -346,20 +346,20 @@ void main() {
 
     await tester.sendKeyDownEvent(LogicalKeyboardKey.escape);
     await tester.pump();
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(tester.widget<TextField>(fieldFinder).readOnly, isTrue);
 
     await tester.sendKeyUpEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('tv_virtual_keyboard_dialog')), findsNothing);
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(field.focusNode?.hasPrimaryFocus, isTrue);
     expect(tester.widget<TextField>(fieldFinder).readOnly, isTrue);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     await expectLater(result, completion(isNull));
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
   });
 
   testWidgets('media-unreadable dialog names the server-side cause and cannot be dismissed by the barrier', (
@@ -378,12 +378,12 @@ void main() {
     // Barrier taps must not strand the caller's future.
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
 
     await tester.tap(find.text(t.common.close));
     await tester.pumpAndSettle();
     await expectLater(result, completes);
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
   });
 
   testWidgets('server-limit dialog stays distinct from the media-unreadable one', (tester) async {

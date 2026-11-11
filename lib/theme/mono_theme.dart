@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'glass_slider_thumb_shape.dart';
 import '../utils/platform_detector.dart';
 import 'mono_tokens.dart';
+import 'overlay_tokens.dart';
 import 'velo_brand.dart';
 
 final Map<({bool dark, bool oled, TargetPlatform platform, bool tv}), ThemeData> _monoThemeCache = {};
@@ -88,6 +89,7 @@ ThemeData _buildMonoTheme({required bool dark, required bool oled, required Targ
     mouseCursor: clickableCursor,
     padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 18, vertical: 14)),
     elevation: const WidgetStatePropertyAll(0),
+    minimumSize: const WidgetStatePropertyAll(Size(48, 48)),
     backgroundColor: WidgetStateProperty.resolveWith(
       (states) => states.contains(WidgetState.disabled) ? c.text.withValues(alpha: 0.12) : VeloBrand.accent,
     ),
@@ -113,8 +115,8 @@ ThemeData _buildMonoTheme({required bool dark, required bool oled, required Targ
       onSecondary: isDark ? const Color(0xff211b3b) : Colors.white,
       surface: c.surface,
       onSurface: c.text,
-      error: const Color(0xFFB00020),
-      onError: Colors.white,
+      error: isDark ? const Color(0xFFFFB4AB) : const Color(0xFFB3261E),
+      onError: isDark ? const Color(0xFF690005) : Colors.white,
       tertiary: VeloBrand.foreground(isDark ? Brightness.dark : Brightness.light),
       onTertiary: isDark ? const Color(0xff211b3b) : Colors.white,
       primaryContainer: VeloBrand.selection(isDark ? Brightness.dark : Brightness.light),
@@ -159,8 +161,25 @@ ThemeData _buildMonoTheme({required bool dark, required bool oled, required Targ
     inputDecorationTheme: _inputDecorationTheme(c.text, c.textMuted),
     elevatedButtonTheme: ElevatedButtonThemeData(style: buttonStyle),
     filledButtonTheme: FilledButtonThemeData(style: buttonStyle),
-    textButtonTheme: TextButtonThemeData(style: ButtonStyle(mouseCursor: clickableCursor)),
-    outlinedButtonTheme: OutlinedButtonThemeData(style: ButtonStyle(mouseCursor: clickableCursor)),
+    textButtonTheme: TextButtonThemeData(
+      style: ButtonStyle(
+        mouseCursor: clickableCursor,
+        minimumSize: const WidgetStatePropertyAll(Size(48, 48)),
+        padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 18, vertical: 12)),
+        shape: const WidgetStatePropertyAll(StadiumBorder()),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: ButtonStyle(
+        mouseCursor: clickableCursor,
+        minimumSize: const WidgetStatePropertyAll(Size(48, 48)),
+        padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 18, vertical: 12)),
+        shape: const WidgetStatePropertyAll(StadiumBorder()),
+        side: WidgetStateProperty.resolveWith(
+          (states) => BorderSide(color: c.text.withValues(alpha: states.contains(WidgetState.focused) ? 0.65 : 0.20)),
+        ),
+      ),
+    ),
     iconButtonTheme: IconButtonThemeData(style: ButtonStyle(mouseCursor: clickableCursor)),
     sliderTheme: SliderThemeData(
       // The mono scheme maps surfaceContainerHighest (the M3 default inactive
@@ -202,13 +221,44 @@ ThemeData _buildMonoTheme({required bool dark, required bool oled, required Targ
     // Floating snackbars auto-offset above the Scaffold's bottom NavigationBar,
     // so they don't cover it on mobile. Background color tracks the theme to
     // avoid jarring brightness on HDR playback / dark mode.
+    dialogTheme: DialogThemeData(
+      backgroundColor: c.surface,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(OverlayTokens.radius))),
+      titleTextStyle: _textTheme(c.text, c.textMuted, compact: !tv).titleLarge,
+      contentTextStyle: _textTheme(c.text, c.textMuted, compact: !tv).bodyMedium,
+      actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      barrierColor: Colors.black.withValues(alpha: isDark ? 0.5 : 0.32),
+    ),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: c.surface,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(OverlayTokens.radius))),
+    ),
+    popupMenuTheme: PopupMenuThemeData(
+      color: c.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(OverlayTokens.compactRadius))),
+      textStyle: TextStyle(color: c.text, fontSize: tv ? 17 : 14),
+    ),
+    tooltipTheme: TooltipThemeData(
+      textStyle: TextStyle(color: c.text, fontSize: tv ? 14 : 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: c.outline),
+      ),
+    ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
       backgroundColor: c.surface,
       contentTextStyle: TextStyle(color: c.text),
       actionTextColor: c.text,
-      elevation: 6,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+      elevation: 0,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(OverlayTokens.compactRadius))),
       insetPadding: const EdgeInsets.all(16),
     ),
   );
@@ -250,7 +300,7 @@ InputDecorationTheme _inputDecorationTheme(Color text, Color textMuted) {
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     border: border,
     enabledBorder: border,
-    focusedBorder: border,
+    focusedBorder: border.copyWith(borderSide: BorderSide(color: text.withValues(alpha: 0.45), width: 1.5)),
     hintStyle: TextStyle(color: textMuted),
   );
 }

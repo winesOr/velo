@@ -4,6 +4,8 @@ import '../../media/ids.dart';
 
 import 'package:flutter/material.dart';
 
+import '../../widgets/app_dialog.dart';
+
 import '../../utils/future_extensions.dart';
 
 import 'package:flutter/services.dart';
@@ -369,7 +371,7 @@ class _NotInSessionViewState extends State<_NotInSessionView> with MountedSetSta
   Future<ControlMode?> _showControlModeDialog() {
     return showScopedDialog<ControlMode>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => AppAlertDialog(
         title: Text(t.watchTogether.controlMode),
         content: Text(t.watchTogether.controlModeQuestion),
         actions: [
@@ -476,7 +478,7 @@ class _RenameRoomDialogState extends State<_RenameRoomDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return AppAlertDialog(
       title: Text(t.watchTogether.renameRoom),
       content: FocusableTextField(
         controller: _controller,

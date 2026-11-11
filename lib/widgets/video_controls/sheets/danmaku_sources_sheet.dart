@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../app_dialog.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../danmaku/danmaku_session.dart';
@@ -106,7 +108,7 @@ class _DanmakuSourcesSheetState extends State<DanmakuSourcesSheet> {
   Future<void> _delete(DanmakuSource source) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => AppAlertDialog(
         title: Text(t.danmaku.deleteSourceTitle),
         content: Text(t.danmaku.deleteSourceDescription(name: source.name)),
         actions: [
