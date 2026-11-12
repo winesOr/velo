@@ -11,15 +11,32 @@ class WakelockController {
   factory WakelockController({
     WakelockPlatformToggle? platformToggle,
     Duration refreshInterval = const Duration(seconds: 5),
-  }) =>
-      WakelockController._(platformToggle: platformToggle ?? _togglePlatformWakelock, refreshInterval: refreshInterval);
+    // TODO(VELO-P1-01): Tune the configurable retry delays on physical devices.
+    List<Duration> retryDelays = const [Duration(seconds: 1), Duration(seconds: 2), Duration(seconds: 5)],
+  }) {
+    if (refreshInterval <= Duration.zero) {
+      throw ArgumentError.value(refreshInterval, 'refreshInterval', 'Must be positive');
+    }
+    if (retryDelays.isEmpty || retryDelays.any((delay) => delay <= Duration.zero)) {
+      throw ArgumentError.value(retryDelays, 'retryDelays', 'Must contain positive delays');
+    }
+    return WakelockController._(
+      platformToggle: platformToggle ?? _togglePlatformWakelock,
+      refreshInterval: refreshInterval,
+      retryDelays: List<Duration>.unmodifiable(retryDelays),
+    );
+  }
 
-  WakelockController._({required this._platformToggle, required this._refreshInterval});
+  WakelockController._({required this._platformToggle, required this._refreshInterval, required this._retryDelays});
 
   final WakelockPlatformToggle _platformToggle;
   final Duration _refreshInterval;
+  final List<Duration> _retryDelays;
   final Set<Object> _enabledOwners = <Object>{};
   Timer? _refreshTimer;
+  Timer? _retryTimer;
+  int _retryIndex = 0;
+  bool? _lastLoggedFailureTarget;
   bool _refreshQueued = false;
 
   Future<void> _tail = Future<void>.value();
@@ -30,8 +47,8 @@ class WakelockController {
   /// Requests a wakelock state and completes after this queued reconciliation.
   ///
   /// Platform failures are logged and absorbed so detached UI callers cannot
-  /// produce unhandled errors. A failed state is not recorded as effective;
-  /// the same value can therefore be retried by a later explicit request.
+  /// produce unhandled errors. Failed acquisitions retry with a bounded delay
+  /// while an owner still needs the lock; explicit requests can retry sooner.
   Future<void> setEnabled(bool enabled) {
     _unownedEnabled = enabled;
     if (!enabled && _requestedEnabled) return _tail;
@@ -56,7 +73,10 @@ class WakelockController {
 
   Future<void> _enqueueReconciliation({required bool reassert}) {
     _desiredEnabled = _requestedEnabled;
-    if (!_desiredEnabled) _cancelRefreshTimer();
+    if (!_desiredEnabled) {
+      _cancelRefreshTimer();
+      _cancelRetryTimer();
+    }
     final operation = _tail.then((_) => _reconcile(refreshEnabled: reassert && _desiredEnabled));
     _tail = operation;
     return operation;
@@ -80,14 +100,22 @@ class WakelockController {
       try {
         await _platformToggle(target);
         _effectiveEnabled = target;
+        _lastLoggedFailureTarget = null;
       } catch (error, stackTrace) {
-        appLogger.w('Wakelock ${target ? 'enable' : 'disable'} failed', error: error, stackTrace: stackTrace);
+        // A platform call can apply its side effect before returning an error.
+        // An opposing request must therefore reconcile even if the old cache
+        // happened to match it.
+        _effectiveEnabled = null;
+        if (_lastLoggedFailureTarget != target) {
+          appLogger.w('Wakelock ${target ? 'enable' : 'disable'} failed', error: error, stackTrace: stackTrace);
+          _lastLoggedFailureTarget = target;
+        }
 
         // Do not spin on a persistent failure. If an opposing request arrived
         // during the await, it still gets one attempt before this operation
-        // settles; an identical state retries only through another setEnabled.
+        // settles. Acquisitions then retry without overlapping platform work.
         if (_desiredEnabled == target) {
-          if (target) _cancelRefreshTimer();
+          if (target) _scheduleRetry();
           return;
         }
       }
@@ -96,8 +124,26 @@ class WakelockController {
   }
 
   void _startRefreshTimer() {
+    _cancelRetryTimer();
     if (!_desiredEnabled || _effectiveEnabled != true || _refreshTimer != null) return;
     _refreshTimer = Timer.periodic(_refreshInterval, (_) => _refresh());
+  }
+
+  void _scheduleRetry() {
+    _cancelRefreshTimer();
+    if (!_desiredEnabled || _retryTimer != null) return;
+    final delay = _retryDelays[_retryIndex];
+    if (_retryIndex < _retryDelays.length - 1) _retryIndex++;
+    _retryTimer = Timer(delay, () {
+      _retryTimer = null;
+      if (_desiredEnabled) _refresh();
+    });
+  }
+
+  void _cancelRetryTimer() {
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    _retryIndex = 0;
   }
 
   void _cancelRefreshTimer() {

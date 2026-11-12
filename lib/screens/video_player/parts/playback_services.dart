@@ -127,6 +127,7 @@ extension _VideoPlayerPlaybackServiceMethods on VideoPlayerScreenState {
 
     _playerStreamSubscriptions.add(
       currentPlayer.streams.completed.listen((done) {
+        if (!mounted || _shuttingDown || player != currentPlayer) return;
         // Backends can deliver a terminal signal from the outgoing file after
         // the replacement has opened and the transition lock is idle again.
         // A replacement parked at zero has no meaningful duration yet. Ignore
@@ -160,6 +161,10 @@ extension _VideoPlayerPlaybackServiceMethods on VideoPlayerScreenState {
           final posMs = currentPlayer.state.position.inMilliseconds;
           if (durMs <= 0 || posMs < durMs - _episode.completionLatch.rearmWindowMs) {
             _rearmCompletionLatch();
+            // mpv can resume after EOF without changing its pause property.
+            // Re-sync only the lock; progress and media controls retain their
+            // normal event paths. A stray reset parked at EOF must not acquire.
+            _syncPlaybackWakelock();
           }
         }
         // A mid-file EOF is the stream dying under us (#1520), not the media
@@ -197,6 +202,11 @@ extension _VideoPlayerPlaybackServiceMethods on VideoPlayerScreenState {
     );
 
     _playerStreamSubscriptions.add(currentPlayer.streams.error.listen(_onPlayerError));
+    _playerStreamSubscriptions.add(
+      currentPlayer.streams.playbackActivity.listen((_) {
+        if (player == currentPlayer) _syncPlaybackWakelock();
+      }),
+    );
 
     // warn is included so we can catch ffmpeg's "HTTP error 4xx/5xx" line in
     // _onPlayerLog — the error-level log that follows omits the status code.
@@ -213,6 +223,7 @@ extension _VideoPlayerPlaybackServiceMethods on VideoPlayerScreenState {
     _playerStreamSubscriptions.add(
       currentPlayer.streams.buffering.listen((isBuffering) {
         _isBuffering.value = isBuffering;
+        if (player == currentPlayer) _syncPlaybackWakelock();
       }),
     );
 
@@ -793,7 +804,7 @@ extension _VideoPlayerPlaybackServiceMethods on VideoPlayerScreenState {
     // Play Next prompt) a play press still reports playing while nothing
     // advances, and a lock taken there keeps a finished item lit until
     // someone comes back.
-    unawaited(_setWakelock(isPlaying && !(player?.state.completed ?? false)));
+    _syncPlaybackWakelock();
 
     if (isPlaying) {
       // Force a texture refresh on resume to unstick stale frames
@@ -822,6 +833,32 @@ extension _VideoPlayerPlaybackServiceMethods on VideoPlayerScreenState {
       unawaited(_updateAutoPipState(isPlaying: isPlaying));
     }
   }
+
+  bool _shouldKeepPlaybackScreenAwake() {
+    final currentPlayer = player;
+    if (currentPlayer == null) return false;
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    final attempt = _playbackAttempt;
+    return shouldKeepPlaybackScreenAwake(
+      state: currentPlayer.state,
+      hasCurrentPlayback:
+          mounted && !_shuttingDown && !_isExiting.value && _launchCurrent && lifecycle != AppLifecycleState.detached,
+      visible: lifecycle == null || lifecycle == AppLifecycleState.resumed || lifecycle == AppLifecycleState.inactive,
+      pipActive: PipService().isPipActive.value,
+      fatalError: _hasFatalPlaybackError || _playerInitializationError != null || _playbackFailureMessage != null,
+      automotiveAllowed: automotivePlaybackAllowedNow(),
+      tvBackgroundSuspended: _mediaControls.suspendedForTvBackground,
+      // The existing open outcome/watchdog owns this bounded startup period.
+      openingWithPlayIntent:
+          attempt != null &&
+          attempt.isCurrent &&
+          !attempt.outcome.isSettled &&
+          _playbackIntentShouldPlay &&
+          !_firstFrame.rendered,
+    );
+  }
+
+  void _syncPlaybackWakelock() => unawaited(_setWakelock(_shouldKeepPlaybackScreenAwake()));
 
   bool _isAppleAudioSessionEvent(Object event) =>
       event is AudioInterruptionBeganEvent ||

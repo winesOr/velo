@@ -477,6 +477,28 @@ class ExoPlayerCore(private val activity: Activity) :
     delegate?.onEvent(name, payload)
   }
 
+  /** A separate intent snapshot; legacy pause/isPlaying consumers stay unchanged. */
+  private fun emitPlaybackActivity(state: Int, playWhenReady: Boolean, mediaGeneration: Int) {
+    if (mediaGeneration != currentMediaGeneration) return
+    val phase = when (state) {
+      Player.STATE_IDLE -> "idle"
+      Player.STATE_BUFFERING -> "buffering"
+      Player.STATE_READY -> "ready"
+      Player.STATE_ENDED -> "ended"
+      else -> return
+    }
+    emitGenerationEvent(
+      "playback-activity",
+      mapOf("phase" to phase, "playWhenReady" to playWhenReady),
+      mediaGeneration
+    )
+  }
+
+  private fun emitCurrentPlaybackActivity() {
+    val player = exoPlayer ?: return
+    emitPlaybackActivity(player.playbackState, player.playWhenReady, currentMediaGeneration)
+  }
+
   private fun emitPlaybackErrorOnce(mediaGeneration: Int, message: String, cause: String? = null) {
     if (mediaGeneration != currentMediaGeneration || terminalErrorGeneration == mediaGeneration) return
     terminalErrorGeneration = mediaGeneration
@@ -485,6 +507,7 @@ class ExoPlayerCore(private val activity: Activity) :
     // observed (synthetic EOF and early failures).
     establishSourceGeneration(mediaGeneration)
     exoPlayer?.playWhenReady = false
+    emitPlaybackActivity(Player.STATE_IDLE, false, mediaGeneration)
     emitGenerationProperty("paused-for-cache", false, mediaGeneration)
     emitGenerationProperty("pause", true, mediaGeneration)
     val data = mutableMapOf<String, Any>(
@@ -519,6 +542,7 @@ class ExoPlayerCore(private val activity: Activity) :
     )
     exoPlayer?.playWhenReady = false
     pendingPlayWhenReady = null
+    emitPlaybackActivity(Player.STATE_ENDED, false, mediaGeneration)
     lastPosition = positionMs
     emitGenerationProperty("time-pos", positionMs / 1000.0, mediaGeneration)
     emitGenerationProperty("paused-for-cache", false, mediaGeneration)
@@ -1245,10 +1269,12 @@ class ExoPlayerCore(private val activity: Activity) :
       Player.STATE_ENDED -> {
         stopFrameWatchdog()
         cancelBufferingStallWatchdog()
+        emitPlaybackActivity(state, exoPlayer?.playWhenReady ?: false, currentMediaGeneration)
         emitGenerationProperty("eof-reached", true)
         emitGenerationEvent("end-file", mapOf("reason" to "eof"))
       }
     }
+    if (state != Player.STATE_ENDED) emitCurrentPlaybackActivity()
   }
 
   override fun onTracksChanged(tracks: Tracks) {
@@ -1779,6 +1805,7 @@ class ExoPlayerCore(private val activity: Activity) :
     if (mediaGeneration != currentMediaGeneration) return
     Log.d(TAG, "onMediaItemTransition: ${mediaItem?.mediaId}, reason: $reason")
     establishSourceGeneration(mediaGeneration)
+    emitCurrentPlaybackActivity()
     emitGenerationProperty("eof-reached", false, mediaGeneration)
     emitCurrentSeekable(force = true)
     // Re-calibrate the subtitle/video layer offset each play: tear down the converged calibrator
@@ -2921,6 +2948,17 @@ class ExoPlayerCore(private val activity: Activity) :
   }
 
   private val decoderHangListener = object : AnalyticsListener {
+    override fun onPlayWhenReadyChanged(
+      eventTime: AnalyticsListener.EventTime,
+      playWhenReady: Boolean,
+      reason: Int
+    ) {
+      val mediaGeneration = mediaGenerationAt(eventTime) ?: return
+      if (mediaGeneration != currentMediaGeneration) return
+      val player = exoPlayer ?: return
+      emitPlaybackActivity(player.playbackState, playWhenReady, mediaGeneration)
+    }
+
     override fun onIsPlayingChanged(eventTime: AnalyticsListener.EventTime, isPlaying: Boolean) {
       if (mediaGenerationAt(eventTime) != currentMediaGeneration) return
       handleIsPlayingChanged(isPlaying)
@@ -3596,6 +3634,8 @@ class ExoPlayerCore(private val activity: Activity) :
       // generation. The runnable cancels itself as soon as the player is not buffering.
       armBufferingStallWatchdog()
     }
+
+    emitCurrentPlaybackActivity()
 
     val sourceLabel = if (isLive) "live HLS" else "media"
     emitLog(

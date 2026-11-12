@@ -651,6 +651,9 @@ class ExoPlayerFallbackTerminalTest {
     }
 
     override fun onEvent(name: String, data: Map<String, Any>?) {
+      // These assertions cover the pre-existing terminal protocol. The additive
+      // intent stream has its own generation/compatibility tests.
+      if (name == "playback-activity") return
       events += name to data
     }
   }

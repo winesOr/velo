@@ -44,6 +44,7 @@ class MediaControlsScreenController {
     required this._clearWasPlayingBeforeInactive,
     required this._setWakelock,
     required this._recordLifecycle,
+    this._shouldKeepScreenAwake,
   });
 
   final MediaControlsManager? Function() _manager;
@@ -74,6 +75,7 @@ class MediaControlsScreenController {
   final bool Function() _wasPlayingBeforeInactive;
   final void Function() _clearWasPlayingBeforeInactive;
   final Future<void> Function(bool enabled) _setWakelock;
+  final bool Function()? _shouldKeepScreenAwake;
   final void Function(String state, {String? action}) _recordLifecycle;
 
   bool _suspendedForTvBackground = false;
@@ -162,7 +164,7 @@ class MediaControlsScreenController {
   Future<void> restoreAfterResume() async {
     if (!_isPlayerInitialized() || !_isMounted()) return;
 
-    unawaited(_setWakelock(_player()?.state.isActive ?? false));
+    unawaited(_setWakelock(_shouldKeepScreenAwake?.call() ?? (_player()?.state.isActive ?? false)));
 
     final manager = _manager();
     final currentPlayer = _player();

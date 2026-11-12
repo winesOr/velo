@@ -54,12 +54,14 @@ android {
         implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
         testImplementation 'org.jetbrains.kotlin:kotlin-test'
         testImplementation 'org.mockito:mockito-core:5.0.0'
+        testImplementation 'junit:junit:4.13.2'
+        testImplementation 'org.robolectric:robolectric:4.16.1'
     }
 
     testOptions {
         unitTests.includeAndroidResources = true
         unitTests.all {
-            useJUnitPlatform()
+            useJUnit()
 
             testLogging {
                 events 'passed', 'skipped', 'failed', 'standardOut', 'standardError'

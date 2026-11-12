@@ -62,6 +62,7 @@ extension _VideoPlayerLifecycleMethods on VideoPlayerScreenState {
   }
 
   Future<void> _handleAppHidden() async {
+    _syncPlaybackWakelock();
     if (_shouldSkipForPip) {
       _recordLifecycleState('hidden', action: 'skipped_for_pip');
       return;
@@ -218,6 +219,7 @@ extension _VideoPlayerLifecycleMethods on VideoPlayerScreenState {
     }
 
     _resumeLiveTimelineAfterBackgroundIfNeeded();
+    _syncPlaybackWakelock();
     _recordLifecycleState('resumed', action: 'complete');
   }
 

@@ -172,6 +172,7 @@ extension _VideoPlayerPipMethods on VideoPlayerScreenState {
     }
 
     final isInPip = PipService().isPipActive.value;
+    _syncPlaybackWakelock();
     _setAndroidAutoPipTransitionInFlight(false, reason: 'pip_state_changed');
     _recordLifecycleState('pip_state_changed', action: isInPip ? 'entered' : 'exited');
 

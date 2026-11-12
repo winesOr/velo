@@ -1,4 +1,5 @@
 import '../models.dart';
+import 'player_playback_activity.dart';
 
 /// A native MPV source identified by its lifetime-unique playlist entry id.
 class PlayerSourceStarted {
@@ -36,6 +37,9 @@ class PlayerStreams {
 
   /// Stream of buffering state changes.
   final Stream<bool> buffering;
+
+  /// Optional intent/phase snapshots; null returns consumers to legacy state.
+  final Stream<PlayerPlaybackActivity?> playbackActivity;
 
   /// Stream of position updates.
   final Stream<Duration> position;
@@ -156,6 +160,7 @@ class PlayerStreams {
     required this.playing,
     required this.completed,
     required this.buffering,
+    this.playbackActivity = const Stream<PlayerPlaybackActivity?>.empty(),
     required this.position,
     required this.duration,
     required this.seekable,
