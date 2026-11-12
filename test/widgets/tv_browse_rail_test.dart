@@ -21,6 +21,7 @@ import 'package:plezy/theme/mono_theme.dart';
 import 'package:plezy/utils/platform_detector.dart';
 import 'package:plezy/widgets/animated_dim_scrim.dart';
 import 'package:plezy/widgets/media_card.dart';
+import 'package:plezy/widgets/media_ratings_strip.dart';
 import 'package:plezy/widgets/rasterized_gradient.dart';
 import 'package:plezy/widgets/side_navigation_rail.dart';
 import 'package:plezy/widgets/tv_browse_rail.dart';
@@ -384,6 +385,48 @@ void main() {
     SettingsService.resetForTesting();
     focusMemory = HubFocusMemory();
     await SettingsService.getInstance();
+  });
+
+  testWidgets('TV recommended rail scores honor the preference and Continue Watching exclusion', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1280, 720);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+    final item = testMediaItem(
+      id: 'rated',
+      backend: MediaBackend.plex,
+      kind: MediaKind.movie,
+      title: 'Rated',
+      rating: 8.1,
+    );
+    final hub = MediaHub(id: 'recommendations', title: 'Recommendations', type: 'movie', items: [item], size: 1);
+    Future<void> pumpRail({bool continuing = false}) => tester.pumpWidget(
+      MaterialApp(
+        theme: monoTheme(dark: true),
+        home: Scaffold(
+          body: SizedBox(
+            width: 1280,
+            height: 720,
+            child: TvBrowseRail(
+              focusMemory: focusMemory,
+              hubs: [hub],
+              iconForHub: (_, _) => Icons.movie_rounded,
+              isContinueWatchingHub: (_) => continuing,
+            ),
+          ),
+        ),
+      ),
+    );
+    await pumpRail();
+    await tester.pump();
+    expect(find.byType(MediaCardRatingBadge), findsOneWidget);
+    await SettingsService.instance.write(SettingsService.showRatingBadges, false);
+    await tester.pump();
+    expect(find.byType(MediaCardRatingBadge), findsNothing);
+    await SettingsService.instance.write(SettingsService.showRatingBadges, true);
+    await pumpRail(continuing: true);
+    await tester.pump();
+    expect(find.byType(MediaCardRatingBadge), findsNothing);
   });
 
   testWidgets('semantic selection proxy stays fixed while animated rail selection changes', (tester) async {

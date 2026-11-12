@@ -3,6 +3,7 @@ import 'dart:ui';
 import '../media/ids.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:intl/intl.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -36,11 +37,15 @@ import '../utils/media_navigation_helper.dart';
 import '../utils/snackbar_helper.dart';
 import '../theme/mono_tokens.dart';
 import '../theme/home_typography.dart';
+import '../theme/interaction_tokens.dart';
 import '../i18n/strings.g.dart';
 import 'media_context_menu.dart';
 import 'media_card_list_layout.dart';
+import 'media_rating_badge.dart';
+import 'media_ratings_strip.dart';
 import 'backend_badge.dart';
 import 'optimized_media_image.dart';
+import 'press_feedback.dart';
 
 const _failedPosterUrlCacheLimit = 512;
 final _failedPosterUrls = <String>{};
@@ -277,7 +282,7 @@ class MediaCard extends StatefulWidget {
     this.episodePosterModeOverride,
     this.fullBleedImage = false,
     this.showWatchProgress = true,
-    this.showRatingBadge = false,
+    this.showRatingBadge = true,
     this.showTitleImplied = false,
     this.artworkDim,
     this.cardShapeOverride,
@@ -300,9 +305,18 @@ class MediaCard extends StatefulWidget {
 }
 
 class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard> {
+  final _keyboardActivation = ValueNotifier<int>(0);
+
   /// Public method to trigger tap action (for keyboard/gamepad SELECT)
   void handleTap() {
+    _keyboardActivation.value++;
     _handleTap(context, _effectiveItemForAction(context));
+  }
+
+  @override
+  void dispose() {
+    _keyboardActivation.dispose();
+    super.dispose();
   }
 
   CatalogItem? _cachedCatalogItem;
@@ -454,6 +468,8 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
         SettingsService.hideSpoilers,
         SettingsService.showUnwatchedCount,
         SettingsService.showWatchedIndicators,
+        SettingsService.showRatingBadges,
+        ...ratingDisplayPrefs,
       ],
       builder: _buildContent,
     );
@@ -463,7 +479,18 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
     final item = _effectiveItem(context);
     final viewMode = widget.viewModeOverride ?? SettingsService.instance.read(SettingsService.viewMode);
 
-    final semanticLabel = _semanticLabel(item);
+    final badgeRating =
+        widget.showRatingBadge &&
+            !widget.isInContinueWatching &&
+            SettingsService.instance.read(SettingsService.showRatingBadges) &&
+            item is MediaItem &&
+            (item.isMovie || item.isShow || item.isEpisode)
+        ? mediaCardRatingFor(item)
+        : null;
+    final semanticLabel = [
+      _semanticLabel(item),
+      if (badgeRating != null) ratingsSemanticLabel([badgeRating]),
+    ].join(', ');
     final accessibleNavigation = MediaQuery.accessibleNavigationOf(context);
     final enableDetailLinks = widget.onTap == null;
     final preservePointerDetailSemantics = !PlatformDetector.isTV() || accessibleNavigation;
@@ -475,6 +502,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
         ? _buildGridCard(context, item, localPosterPath, preserveDetailSemantics: preserveDetailSemantics)
         : _MediaCardList(
             item: item,
+            keyboardActivation: _keyboardActivation,
             onTap: () => _handleTap(context, item),
             onTapDown: storeTapPosition,
             onLongPress: showContextMenuFromTap,
@@ -594,6 +622,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
 
   /// Activation plus the long-press / right-click context-menu seams.
   Widget _buildTapRegion(BuildContext context, Object item, {required Widget child}) => _CardTapRegion(
+    keyboardActivation: _keyboardActivation,
     onTap: () => _handleTap(context, item),
     onTapDown: storeTapPosition,
     onLongPress: showContextMenuFromTap,
@@ -630,55 +659,19 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
       artworkDim: widget.artworkDim,
       showFallbackIcon: !widget.isInContinueWatching,
     );
+    final badgeRating = item is MediaItem ? mediaCardRatingFor(item) : null;
     final overlays = <Widget>[
       if (widget.showRatingBadge &&
           !widget.isInContinueWatching &&
+          SettingsService.instance.read(SettingsService.showRatingBadges) &&
           item is MediaItem &&
           (item.isMovie || item.isShow || item.isEpisode) &&
-          item.rating != null &&
-          item.rating!.isFinite &&
-          item.rating! > 0 &&
-          item.rating! <= 10)
-        Positioned(
-          top: 6,
-          right:
-              item.isWatched &&
-                  !item.hasActiveProgress &&
-                  SettingsService.instance.read(SettingsService.showWatchedIndicators)
-              ? 34
-              : 6,
+          badgeRating != null)
+        PositionedDirectional(
+          bottom: 8,
+          start: 6,
           child: IgnorePointer(
-            child: Container(
-              key: ValueKey('recommendation-score-${item.globalKey}'),
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-              decoration: BoxDecoration(
-                color: const Color(0xb81c1c22),
-                border: Border.all(color: const Color(0x24ffffff), width: .6),
-                borderRadius: BorderRadius.circular(5),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppIcon(
-                    Symbols.star_rounded,
-                    fill: 1,
-                    color: const Color(0xffdfc18a),
-                    size: PlatformDetector.isTV() ? 13 : 10,
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    formatRating(item.rating!),
-                    style: TextStyle(
-                      color: const Color(0xfff6f2ea),
-                      fontSize: PlatformDetector.isTV() ? 12 : 10,
-                      fontWeight: FontWeight.w600,
-                      height: 1.1,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            child: MediaCardRatingBadge(key: ValueKey('recommendation-score-${item.globalKey}'), rating: badgeRating),
           ),
         ),
       if (item is MediaItem && _showsWatchedIndicator(item))
@@ -794,6 +787,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
 class _MediaCardList extends StatelessWidget {
   /// Either a [MediaItem] or a [MediaPlaylist].
   final Object item;
+  final ValueListenable<int> keyboardActivation;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
   final void Function(TapDownDetails)? onTapDown;
@@ -811,6 +805,7 @@ class _MediaCardList extends StatelessWidget {
 
   const _MediaCardList({
     required this.item,
+    required this.keyboardActivation,
     required this.onTap,
     required this.onLongPress,
     this.onTapDown,
@@ -933,6 +928,7 @@ class _MediaCardList extends StatelessWidget {
       borderRadius: tokens(context).radiusSm,
       strokeAlign: BorderSide.strokeAlignInside,
       child: _CardTapRegion(
+        keyboardActivation: keyboardActivation,
         onTap: onTap,
         onTapDown: onTapDown,
         onLongPress: onLongPress,
@@ -1695,7 +1691,7 @@ class SkeletonLoader extends StatelessWidget {
 /// that adds up while scrolling card grids.
 /// Keyboard focus is handled by the focus wrappers either way
 /// (canRequestFocus stays false on the InkWell).
-class _CardTapRegion extends StatelessWidget {
+class _CardTapRegion extends StatefulWidget {
   const _CardTapRegion({
     required this.onTap,
     this.onTapDown,
@@ -1704,6 +1700,7 @@ class _CardTapRegion extends StatelessWidget {
     this.onSecondaryTapDown,
     this.borderRadius,
     required this.child,
+    this.keyboardActivation,
   });
 
   final VoidCallback onTap;
@@ -1713,32 +1710,87 @@ class _CardTapRegion extends StatelessWidget {
   final GestureTapDownCallback? onSecondaryTapDown;
   final BorderRadius? borderRadius;
   final Widget child;
+  final ValueListenable<int>? keyboardActivation;
+
+  @override
+  State<_CardTapRegion> createState() => _CardTapRegionState();
+}
+
+class _CardTapRegionState extends State<_CardTapRegion> {
+  bool _pressed = false;
+  Timer? _confirmation;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.keyboardActivation?.addListener(_confirm);
+  }
+
+  @override
+  void didUpdateWidget(_CardTapRegion oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.keyboardActivation != widget.keyboardActivation) {
+      oldWidget.keyboardActivation?.removeListener(_confirm);
+      widget.keyboardActivation?.addListener(_confirm);
+    }
+  }
+
+  void _setPressed(bool value) {
+    _confirmation?.cancel();
+    if (mounted && _pressed != value) setState(() => _pressed = value);
+  }
+
+  void _confirm() {
+    _setPressed(true);
+    _confirmation = Timer(InteractionTokens.pressDuration, () => _setPressed(false));
+  }
+
+  @override
+  void dispose() {
+    widget.keyboardActivation?.removeListener(_confirm);
+    _confirmation?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    Widget surface;
     if (!PlatformDetector.isDesktopOS()) {
-      return GestureDetector(
+      surface = GestureDetector(
         excludeFromSemantics: true,
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        onTapDown: onTapDown,
-        onLongPress: onLongPress,
-        onSecondaryTap: onSecondaryTap,
-        onSecondaryTapDown: onSecondaryTapDown,
-        child: child,
+        onTap: widget.onTap,
+        onTapDown: (details) {
+          _setPressed(true);
+          widget.onTapDown?.call(details);
+        },
+        onTapUp: (_) => _setPressed(false),
+        onTapCancel: () => _setPressed(false),
+        onLongPress: widget.onLongPress,
+        onSecondaryTap: widget.onSecondaryTap,
+        onSecondaryTapDown: widget.onSecondaryTapDown,
+        child: widget.child,
+      );
+    } else {
+      surface = InkWell(
+        excludeFromSemantics: true,
+        mouseCursor: SystemMouseCursors.click,
+        canRequestFocus: false,
+        onTap: widget.onTap,
+        onTapDown: widget.onTapDown,
+        onHighlightChanged: _setPressed,
+        onLongPress: widget.onLongPress,
+        onSecondaryTapDown: widget.onSecondaryTapDown,
+        onSecondaryTap: widget.onSecondaryTap,
+        borderRadius: widget.borderRadius,
+        child: widget.child,
       );
     }
-    return InkWell(
-      excludeFromSemantics: true,
-      mouseCursor: SystemMouseCursors.click,
-      canRequestFocus: false,
-      onTap: onTap,
-      onTapDown: onTapDown,
-      onLongPress: onLongPress,
-      onSecondaryTapDown: onSecondaryTapDown,
-      onSecondaryTap: onSecondaryTap,
-      borderRadius: borderRadius,
-      child: child,
+    return PressFeedback(
+      pressed: _pressed,
+      pressedScale: InteractionTokens.cardPressedScale,
+      borderRadius: widget.borderRadius ?? const BorderRadius.all(Radius.circular(14)),
+      child: surface,
     );
   }
 }

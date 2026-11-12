@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../media/media_item.dart';
 import '../utils/content_utils.dart';
-import '../utils/formatters.dart';
+import '../utils/rating_display_policy.dart';
+import 'media_rating_badge.dart';
+import 'settings_builder.dart';
 import '../utils/media_quality_labels.dart';
 
 /// Compact metadata from the already-loaded catalog row; never fetches details.
@@ -21,11 +23,12 @@ class HeroMetadataBadges extends StatelessWidget {
   final double fontSize;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => SettingsBuilder(prefs: ratingDisplayPrefs, builder: _buildBadges);
+
+  Widget _buildBadges(BuildContext context) {
     final lightInk = foreground.computeLuminance() > .5;
     final genres = item.genres?.map((g) => g.trim()).where((g) => g.isNotEmpty).take(2) ?? const <String>[];
     final labels = <String>{
-      if (item.rating != null) '★ ${formatRating(item.rating!)}',
       if (item.year != null) item.year.toString(),
       if (item.contentRating?.trim().isNotEmpty ?? false) formatContentRating(item.contentRating!),
       ...buildMediaQualityLabels(item),
@@ -36,6 +39,11 @@ class HeroMetadataBadges extends StatelessWidget {
       spacing: 6,
       runSpacing: 6,
       children: [
+        for (final rating in preferredMediaRatingsFor(item, limit: RatingDisplayPolicy.heroLimit))
+          InlineRatingBadges(
+            ratings: [rating],
+            textStyle: TextStyle(color: foreground, fontSize: fontSize),
+          ),
         for (final label in labels)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),

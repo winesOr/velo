@@ -12,6 +12,8 @@ import 'package:plezy/media/media_backend.dart';
 import 'package:plezy/media/media_item.dart';
 
 import 'package:plezy/media/media_kind.dart';
+import 'package:plezy/media/media_rating.dart';
+import 'package:plezy/widgets/media_ratings_strip.dart';
 import 'package:plezy/models/catalog/catalog_item.dart';
 import 'package:plezy/models/catalog/catalog_metadata.dart';
 import 'package:plezy/services/settings_service.dart';
@@ -21,6 +23,7 @@ import 'package:plezy/utils/platform_detector.dart';
 import 'package:plezy/widgets/focusable_media_card.dart';
 import 'package:plezy/widgets/media_card.dart';
 import 'package:plezy/widgets/media_grid_delegate.dart';
+import 'package:plezy/widgets/press_feedback.dart';
 import 'package:plezy/widgets/optimized_media_image.dart';
 
 import '../test_helpers/prefs.dart';
@@ -41,6 +44,119 @@ void main() {
 
   tearDown(() {
     TvDetectionService.debugSetAppleTVOverride(null);
+  });
+
+  testWidgets('card press cancels on scrolling and keeps long press separate from tap', (tester) async {
+    var taps = 0;
+    var holds = 0;
+    await tester.pumpWidget(
+      _TestApp(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              SizedBox(
+                width: 180,
+                height: 270,
+                child: MediaCard(
+                  item: testMediaItem(title: 'Feedback'),
+                  viewModeOverride: ViewMode.grid,
+                  fullBleedImage: true,
+                  onTap: () => taps++,
+                  onLongPress: () => holds++,
+                ),
+              ),
+              const SizedBox(height: 1200),
+            ],
+          ),
+        ),
+      ),
+    );
+    final card = find.byType(MediaCard);
+    final feedback = find.descendant(of: card, matching: find.byType(PressFeedback));
+    final drag = await tester.startGesture(tester.getCenter(card));
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(tester.widget<PressFeedback>(feedback).pressed, isTrue);
+    await drag.moveBy(const Offset(0, -90));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(tester.widget<PressFeedback>(feedback).pressed, isFalse);
+    await drag.up();
+    await tester.pumpAndSettle();
+    expect(taps, 0);
+    await tester.ensureVisible(card);
+    await tester.longPress(card);
+    await tester.pumpAndSettle();
+    expect(holds, 1);
+    expect(taps, 0);
+    await tester.tap(card);
+    await tester.pumpAndSettle();
+    expect(taps, 1);
+  });
+
+  testWidgets('keyboard card activation paints confirmation without changing layout or duplicating action', (
+    tester,
+  ) async {
+    final key = GlobalKey<MediaCardState>();
+    var taps = 0;
+    await tester.pumpWidget(
+      _TestApp(
+        child: SizedBox(
+          width: 180,
+          height: 270,
+          child: MediaCard(
+            key: key,
+            item: testMediaItem(title: 'Keyboard'),
+            viewModeOverride: ViewMode.grid,
+            fullBleedImage: true,
+            onTap: () => taps++,
+            onLongPress: () {},
+          ),
+        ),
+      ),
+    );
+    final bounds = tester.getRect(find.byType(MediaCard));
+    key.currentState!.handleTap();
+    await tester.pump();
+    final feedback = tester.widget<PressFeedback>(
+      find.descendant(of: find.byType(MediaCard), matching: find.byType(PressFeedback)),
+    );
+    expect(feedback.pressed, isTrue);
+    expect(feedback.pressedScale, .96);
+    expect(tester.getRect(find.byType(MediaCard)), bounds);
+    expect(taps, 1);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('poster score defaults on, honors preferences, and excludes Continue Watching', (tester) async {
+    const item = MediaItem.plex(
+      id: 'rated',
+      kind: MediaKind.movie,
+      title: 'Rated',
+      userRating: 9,
+      ratings: [MediaRatingSource(source: 'imdb', value: 8.1)],
+    );
+    Future<void> pumpCard({bool continuing = false}) => tester.pumpWidget(
+      _TestApp(
+        child: SizedBox(
+          width: 200,
+          height: 330,
+          child: MediaCard(
+            item: item,
+            isOffline: true,
+            isInContinueWatching: continuing,
+            viewModeOverride: ViewMode.grid,
+          ),
+        ),
+      ),
+    );
+    await pumpCard();
+    expect(find.byType(MediaCardRatingBadge), findsOneWidget);
+    expect(find.text('9.0/10'), findsOneWidget);
+    await SettingsService.instance.write(SettingsService.showRatingBadges, false);
+    await tester.pump();
+    expect(find.byType(MediaCardRatingBadge), findsNothing);
+    await SettingsService.instance.write(SettingsService.showRatingBadges, true);
+    await pumpCard(continuing: true);
+    expect(find.byType(MediaCardRatingBadge), findsNothing);
   });
 
   test('full bleed grid delegates use image aspect ratios', () {
@@ -420,7 +536,15 @@ void main() {
     // The crisp focus border stays in-card as a foreground decoration; the glow
     // is no longer in the background decoration.
     final borderContainer = tester.widget<AnimatedContainer>(
-      find.descendant(of: find.byType(FocusGlowOverlay), matching: find.byType(AnimatedContainer)).first,
+      find.descendant(
+        of: find.byType(FocusGlowOverlay),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is AnimatedContainer &&
+              widget.foregroundDecoration is BoxDecoration &&
+              (widget.foregroundDecoration! as BoxDecoration).border != null,
+        ),
+      ),
     );
     expect(borderContainer.decoration, isNull);
     final border = (borderContainer.foregroundDecoration as BoxDecoration).border as Border;

@@ -43,6 +43,7 @@ class FocusableMediaCard extends StatefulWidget {
 
   /// Render grid cards as image-only full-bleed cards.
   final bool fullBleedImage;
+  final bool showRatingBadge;
 
   /// Overrides the silhouette inferred from [item]. Used for container types
   /// such as music collections and playlists.
@@ -102,6 +103,7 @@ class FocusableMediaCard extends StatefulWidget {
     this.isOffline = false,
     this.mixedHubContext = false,
     this.fullBleedImage = false,
+    this.showRatingBadge = true,
     this.cardShapeOverride,
     this.showServerName = false,
     this.libraryName,
@@ -162,6 +164,7 @@ class _FocusableMediaCardState extends State<FocusableMediaCard> {
         isOffline: widget.isOffline,
         mixedHubContext: widget.mixedHubContext,
         fullBleedImage: widget.fullBleedImage,
+        showRatingBadge: widget.showRatingBadge,
         cardShapeOverride: widget.cardShapeOverride,
         showServerName: widget.showServerName,
         libraryName: widget.libraryName,

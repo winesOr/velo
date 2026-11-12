@@ -14,6 +14,7 @@ import '../media/media_server_client.dart';
 import '../services/device_performance.dart';
 import '../utils/content_utils.dart';
 import '../utils/formatters.dart';
+import '../utils/rating_display_policy.dart';
 import '../utils/layout_constants.dart';
 import '../utils/media_image_helper.dart';
 import '../services/settings_service.dart';
@@ -208,7 +209,7 @@ class TvSpotlightBackground extends StatelessWidget {
       children: [
         _buildLogoOrTitle(context, media, title, width),
         SizedBox(height: _sectionGap(scale)),
-        _buildMetadataLine(context, media),
+        SettingsBuilder(prefs: ratingDisplayPrefs, builder: (context) => _buildMetadataLine(context, media)),
         if (summary != null && summary.isNotEmpty) ...[
           SizedBox(height: _sectionGap(scale)),
           Text(
@@ -345,7 +346,7 @@ class TvSpotlightBackground extends StatelessWidget {
     // Hub listings carry the scalar rating pair, so the dashboard spotlight
     // shows every score the shelf request already returned — no per-item
     // hydration to lengthen it.
-    final ratings = mediaRatingsFor(media);
+    final ratings = preferredMediaRatingsFor(media, limit: RatingDisplayPolicy.heroLimit);
     if (ratings.isNotEmpty) parts.add(MetadataLineRatings(ratings, dropPriority: 4));
     if (media.contentRating != null) {
       parts.add(MetadataLineText(formatContentRating(media.contentRating!), dropPriority: 2));
