@@ -151,220 +151,80 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
     );
   }
 
-  Widget _buildCompactDetailHeader(BuildContext context, MediaItem metadata) {
-    final theme = Theme.of(context);
-    final tablet = MonoPresentation.isTablet(context);
-    final leftAligned = MonoPresentation.isLandscapeTablet(context);
-    final textAlign = leftAligned ? TextAlign.left : TextAlign.center;
-    final target = _playbackTargetItem(metadata);
-    final labels = <String>[];
-    void addLabel(String? value) {
-      final label = value?.trim();
-      if (label == null || label.isEmpty || labels.contains(label)) return;
-      labels.add(label);
+  Widget _buildNaturalDetailTitle(
+    BuildContext context,
+    MediaItem metadata, {
+    required bool centered,
+    bool tv = false,
+    double scale = 1,
+  }) {
+    final fontSize = tv
+        ? 64 * scale
+        : centered
+        ? 40.0
+        : 48.0;
+    Widget title(BuildContext context, String text) => Text(
+      text,
+      key: const ValueKey('detail_natural_title'),
+      textAlign: centered ? TextAlign.center : TextAlign.start,
+      style: Theme.of(context).textTheme.displaySmall?.copyWith(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w600,
+        height: 1.12,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
+    );
+    // A text title has no height budget: accessibility text must be allowed
+    // to wrap. Logos keep their aspect-ratio slot; large text uses the title.
+    if (metadata.clearLogoPath == null || MediaQuery.textScalerOf(context).scale(1) > 1.3) {
+      return title(context, metadata.displayTitle);
     }
-
-    final identity = [
-      if (metadata.year != null) '${metadata.year}',
-      if (metadata.studio?.isNotEmpty == true) metadata.studio!,
-      ...?metadata.genres?.take(2),
-    ];
-    addLabel(metadata.contentRating == null ? null : formatContentRating(metadata.contentRating!));
-    final durationMs = target?.durationMs ?? metadata.durationMs;
-    if (durationMs != null) addLabel(formatDurationTextual(durationMs));
-    if (metadata.isShow && metadata.leafCount != null) {
-      addLabel(t.explore.episodeCount(n: metadata.leafCount!));
-    }
-    for (final label in buildMediaQualityLabels(target ?? metadata)) {
-      addLabel(label);
-    }
-
-    return Align(
-      alignment: leftAligned ? Alignment.bottomLeft : Alignment.bottomCenter,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: leftAligned ? CrossAxisAlignment.start : CrossAxisAlignment.center,
-        children: [
-          _buildDetailLogoOrTitle(
-            context,
-            metadata,
-            width: tablet ? 400 : 300,
-            height: metadata.clearLogoPath == null ? 76 * math.max(1, MediaQuery.textScalerOf(context).scale(1)) : 86,
-            availableWidth: tablet ? 560 : MediaQuery.sizeOf(context).width - 32,
-            alignment: leftAligned ? Alignment.centerLeft : Alignment.center,
-            titleBuilder: (context, title) => _buildDetailTitle(
-              context,
-              title,
-              fontSize: tablet ? 34 : 26,
-              fontWeight: FontWeight.w600,
-              textAlign: textAlign,
-            ),
-          ),
-          const SizedBox(height: 7),
-          if (identity.isNotEmpty) ...[
-            Text(
-              identity.join(' · '),
-              textAlign: textAlign,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(fontSize: tablet ? 13 : 11, height: 1.5, color: Colors.white),
-            ),
-            const SizedBox(height: 5),
-          ],
-          Text(
-            labels.join(' · '),
-            textAlign: textAlign,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontSize: tablet ? 13 : 11,
-              height: 1.5,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 14),
-          _buildActionButtons(metadata),
-        ],
+    return LayoutBuilder(
+      builder: (context, constraints) => _buildDetailLogoOrTitle(
+        context,
+        metadata,
+        width: math.min(constraints.maxWidth, tv ? 640 * scale : 400),
+        height: tv ? 110 * scale : 100,
+        availableWidth: constraints.maxWidth,
+        alignment: centered ? Alignment.center : Alignment.centerLeft,
+        titleBuilder: (context, text) => FittedBox(fit: BoxFit.scaleDown, child: title(context, text)),
       ),
     );
   }
 
-  Widget _buildDetailSourceRow(BuildContext context, MediaItem metadata) {
-    return ValueListenableBuilder<int>(
-      valueListenable: _playbackStatusRevision,
-      builder: (context, _, _) {
-        final target = _playbackTargetItem(metadata);
-        final probed = target == null ? null : _playbackSources[target.globalKey];
-        if (target != null && probed == null) _scheduleTargetProbe(context, target);
-        final item = probed?.item ?? target ?? metadata;
-        final versionIndex = probed?.mediaIndex ?? 0;
-        final labels = [
-          ...buildMediaVideoLabels(item, versionIndex: versionIndex),
-          ?buildMediaSizeLabel(item, versionIndex: versionIndex),
-        ];
-        final client = _getMediaClientForMetadata(context);
-        final versions = item.mediaVersions;
-        final versionCount = versions?.length ?? 0;
-        final canChoose = target != null && !widget.isOffline && client != null && versionCount > 1;
-        final serverLabel = item.serverName?.trim().isNotEmpty == true ? item.serverName!.trim() : item.backend.id;
-        final detailLabel = labels.isNotEmpty ? labels.join(' · ') : item.libraryTitle?.trim();
-        final inline =
-            MediaQuery.sizeOf(context).width < ScreenBreakpoints.mobile &&
-            MediaQuery.textScalerOf(context).scale(1) <= 1.3;
-        return FocusableWrapper(
-          key: const ValueKey('detail_source_version'),
-          disableScale: true,
-          canRequestFocus: canChoose,
-          onSelect: canChoose ? () => unawaited(_chooseDetailVersion(target)) : null,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: canChoose ? () => unawaited(_chooseDetailVersion(target)) : null,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .024),
-                border: Border.all(color: Colors.white.withValues(alpha: .082)),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  BackendBadge(backend: item.backend, size: 20, color: BackendBadge.brandColor(item.backend)),
-                  const SizedBox(width: 7),
-                  Expanded(
-                    child: inline
-                        ? Row(
-                            children: [
-                              ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 60),
-                                child: Text(
-                                  serverLabel,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.bodySmall?.copyWith(fontSize: 11, color: Colors.white),
-                                ),
-                              ),
-                              if (detailLabel != null && detailLabel.isNotEmpty) ...[
-                                const SizedBox(width: 7),
-                                Expanded(
-                                  child: Text(
-                                    detailLabel,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                serverLabel,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                              ),
-                              if (detailLabel != null && detailLabel.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  detailLabel,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                  ),
-                  if (versionCount > 1)
-                    Semantics(
-                      label: t.fileInfo.versionCounter(index: versionIndex + 1, count: versionCount),
-                      excludeSemantics: true,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 124),
-                        child: Text(
-                          t.fileInfo.versionCounter(index: versionIndex + 1, count: versionCount),
-                          key: const ValueKey('detail_source_version_label'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.end,
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (canChoose) const DetailActionIcon(DetailActionGlyph.next, size: 17),
-                ],
-              ),
-            ),
+  Widget _buildCompactDetailHeader(BuildContext context, MediaItem metadata) {
+    final centered =
+        MediaQuery.sizeOf(context).width < 720 ||
+        (MonoPresentation.isTablet(context) && !MonoPresentation.isLandscapeTablet(context));
+    final target = _playbackTargetItem(metadata);
+    final labels = <String>[
+      if (metadata.year != null) '${metadata.year}',
+      if (metadata.contentRating?.isNotEmpty == true) formatContentRating(metadata.contentRating!),
+      if ((target?.durationMs ?? metadata.durationMs) case final int duration) formatDurationTextual(duration),
+      if (metadata.isShow && metadata.leafCount != null) t.explore.episodeCount(n: metadata.leafCount!),
+      ...?metadata.genres?.take(2),
+      ...buildMediaQualityLabels(target ?? metadata),
+    ];
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      children: [
+        _buildNaturalDetailTitle(context, metadata, centered: centered),
+        const SizedBox(height: 14),
+        if (labels.isNotEmpty)
+          Text(
+            labels.join(' · '),
+            key: const ValueKey('detail_plain_metadata'),
+            textAlign: centered ? TextAlign.center : TextAlign.start,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
           ),
-        );
-      },
+        MediaRatingsStrip(item: metadata, alignment: centered ? WrapAlignment.center : WrapAlignment.start),
+        const SizedBox(height: 18),
+        if (!_usesCompactHero(MediaQuery.sizeOf(context).width - _heroSideInset * 2) && _canEditDetailRating(metadata))
+          Padding(padding: const EdgeInsets.only(bottom: 8), child: _buildUserRatingChip(metadata)),
+        _buildActionButtons(metadata),
+      ],
     );
-  }
-
-  Future<void> _chooseDetailVersion(MediaItem target) async {
-    final client = _getMediaClientForMetadata(context);
-    if (!_canUseDetail || widget.isOffline || client == null) return;
-    final versions = await resolveMediaVersions(target, client);
-    if (!mounted || !_canUseDetail || _playbackTargetItem(_metadata)?.globalKey != target.globalKey) return;
-    if (versions.length < 2) return;
-    final selected = await showVersionPickerDialog(context, versions, t.mediaMenu.playVersion);
-    if (selected == null || !_canUseDetail || _playbackTargetItem(_metadata)?.globalKey != target.globalKey) return;
-    await saveMediaVersionPreferenceFor(target, index: selected, versions: versions);
   }
 
   Widget _buildDetailTechnicalInfo(BuildContext context, MediaItem metadata) {

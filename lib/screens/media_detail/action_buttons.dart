@@ -61,85 +61,42 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
         ? const DetailActionIcon(DetailActionGlyph.play, size: 19)
         : AppIcon(playIcon, fill: 1, size: playIconSize);
 
-    // Split "Play Version" segment (#1881): a visible second Play segment
-    // that surfaces multiple versions without opening the ⋮ menu. Only when
-    // the item itself carries a real choice — a movie/episode with more than
-    // one inline version — and its server is reachable (offline playback and
-    // unreachable servers have at most one playable version, so the picker
-    // would offer versions that can't play; see #1440). Transcode-only
-    // quality picking deliberately stays in the ⋮ menu: a chevron on every
-    // item would stop signaling "multiple versions exist".
-    final itemServerId = serverIdOrNull(metadata.serverId);
-    final showVersionSplit =
-        !compactPresentation &&
-        !widget.isOffline &&
-        (metadata.isMovie || metadata.isEpisode) &&
-        (metadata.mediaVersions?.length ?? 0) > 1 &&
-        itemServerId != null &&
-        context.read<MultiServerProvider>().serverManager.isClientOnline(itemServerId);
-    // M3E split-button geometry: stadium outer corners, small joined inner
-    // corners, a hairline gap between the two segments, and a trailing
-    // segment narrower than a full action so it reads as Play's appendix.
-    final splitGap = isTv ? 2.0 * tvScale : 2.0;
-    final versionSegmentWidth = actionSize * 0.75;
-    final splitInnerRadius = Radius.circular(isTv ? 8.0 * tvScale : 8.0);
-    final splitOuterRadius = Radius.circular(actionSize / 2);
-    final playShape = showVersionSplit
-        ? RoundedRectangleBorder(
-            borderRadius: BorderRadiusDirectional.horizontal(start: splitOuterRadius, end: splitInnerRadius),
-          )
-        : null;
-
     Future<void> onPlayPressed() async {
-      if (!_canUseDetail) return;
-      // For TV shows, play the episode the hero describes (focused on TV,
-      // otherwise on-deck); with neither, the first episode of the first season.
-      if (metadata.isShow) {
-        final episode = _showPlayEpisode();
-        if (episode != null) {
-          appLogger.d('Playing episode: ${episode.title}');
+      if (!_canUseDetail || _playLaunchPending) return;
+      final target = _playbackTargetItem(metadata);
+      final targetKey = target?.globalKey;
+      final probed = _playbackSources[targetKey];
+      final choice = _detailPlaybackSelections[targetKey];
+      final explicitIndex = choice?.versionIndex(probed?.item.mediaVersions ?? target?.mediaVersions);
+      final freezePreview = choice?.hasTrackChoice == true;
+      setStateIfMounted(() => _playLaunchPending = true);
+      try {
+        if (target == null) {
+          await _playFirstEpisode();
+        } else {
           await navigateToVideoPlayerWithRefresh(
             context,
-            metadata: episode,
+            metadata: target,
             isOffline: widget.isOffline,
+            preferredAudioTrack: choice?.audioFor(probed?.source),
+            preferredSubtitleTrack: choice?.subtitleFor(probed?.source),
+            selectedMediaIndex: explicitIndex ?? (freezePreview ? probed?.mediaIndex : null),
+            selectedMediaSourceId: explicitIndex != null
+                ? choice?.versionId
+                : freezePreview
+                ? probed?.source?.mediaSourceId
+                : null,
             onRefresh: _refreshWatchState,
-            isLaunchCurrent: () => _canUseDetail,
+            isLaunchCurrent: () => _canUseDetail && _playbackTargetItem(_metadata)?.globalKey == targetKey,
           );
-        } else {
-          await _playFirstEpisode();
         }
-      } else if (metadata.isSeason) {
-        final episode = _playbackTargetItem(metadata);
-        if (episode != null) {
-          await navigateToVideoPlayerWithRefresh(
-            context,
-            metadata: episode,
-            isOffline: widget.isOffline,
-            onRefresh: _refreshWatchState,
-            isLaunchCurrent: () => _canUseDetail,
-          );
-        } else {
-          await _playFirstEpisode();
+      } catch (error) {
+        if (_canUseDetail && context.mounted) {
+          showErrorSnackBar(context, t.messages.errorLoading(error: localizedErrorReason(error)));
         }
-      } else {
-        appLogger.d('Playing: ${metadata.title}');
-        // For movies or episodes, play directly
-        await navigateToVideoPlayerWithRefresh(
-          context,
-          metadata: metadata,
-          isOffline: widget.isOffline,
-          onRefresh: _refreshWatchState,
-          isLaunchCurrent: () => _canUseDetail,
-        );
+      } finally {
+        setStateIfMounted(() => _playLaunchPending = false);
       }
-    }
-
-    Future<void> onPlayVersionPressed() async {
-      if (!_canUseDetail) return;
-      final didNavigate = await promptAndPlayVersion(context, metadata);
-      // Same post-playback refresh plain Play gets from
-      // navigateToVideoPlayerWithRefresh; the split segment is online-only.
-      if (didNavigate && mounted) unawaited(_refreshWatchState());
     }
 
     final primaryTrailer = _getPrimaryTrailer();
@@ -168,12 +125,12 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     }) {
       if (compactPresentation && padding == null) {
         return IconButton.styleFrom(
-          minimumSize: const Size(46, 40),
-          maximumSize: const Size(46, 40),
+          minimumSize: const Size(48, 48),
+          maximumSize: const Size(48, 48),
           padding: EdgeInsets.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.standard,
-          foregroundColor: Colors.white,
+          foregroundColor: colorScheme.onSurface,
           backgroundColor: showFocus ? Colors.white.withValues(alpha: .12) : Colors.transparent,
           side: showFocus ? const BorderSide(color: Colors.white) : BorderSide.none,
         );
@@ -220,21 +177,22 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     );
 
     Widget playButton(FocusableActionBuildState state) {
-      return Semantics(
+      final button = Semantics(
         label: playSemanticsLabel,
         value: progressTime,
         button: true,
-        onTap: onPlayPressed,
+        onTap: _playLaunchPending ? null : onPlayPressed,
         excludeSemantics: true,
-        child: SizedBox(
-          height: compactPresentation ? 47 : actionSize,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: math.max(48, actionSize)),
           child: FilledButton(
-            onPressed: onPlayPressed,
+            statesController: _playButtonStates,
+            onPressed: _playLaunchPending ? null : onPlayPressed,
             style:
                 actionButtonStyle(
                       showFocus: state.showFocus,
-                      padding: .symmetric(horizontal: isTv ? 17 * tvScale : 16, vertical: isTv ? 9 * tvScale : 0),
-                      shape: playShape,
+                      padding: .symmetric(horizontal: isTv ? 17 * tvScale : 16, vertical: isTv ? 9 * tvScale : 12),
+                      shape: const StadiumBorder(),
                     )
                     .merge(
                       compactPresentation
@@ -242,7 +200,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                               backgroundColor: const Color(0xfff4f5f6),
                               foregroundColor: const Color(0xff202126),
                               shape: const StadiumBorder(),
-                              minimumSize: const Size(0, 47),
+                              minimumSize: const Size(0, 48),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               visualDensity: VisualDensity.standard,
                               elevation: 0,
@@ -256,7 +214,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                           : ButtonStyle(
                               backgroundBuilder: (context, states, child) => ClipPath(
                                 clipper: ShapeBorderClipper(
-                                  shape: playShape ?? const StadiumBorder(),
+                                  shape: const StadiumBorder(),
                                   textDirection: Directionality.of(context),
                                 ),
                                 child: Stack(
@@ -287,7 +245,12 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                               ),
                             ),
                     ),
-            child: playButtonLabel.isNotEmpty
+            child: _playLaunchPending
+                ? SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: t.common.loading),
+                  )
+                : playButtonLabel.isNotEmpty
                 ? Row(
                     mainAxisSize: .min,
                     children: [
@@ -306,33 +269,15 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
           ),
         ),
       );
-    }
-
-    // The trailing segment of the split Play button. A plain FilledButton
-    // (not IconButton) so both segments share color roles and focus styling.
-    Widget versionButton(FocusableActionBuildState state) {
-      return Semantics(
-        label: t.mediaMenu.playVersion,
-        button: true,
-        onTap: onPlayVersionPressed,
-        excludeSemantics: true,
-        child: Tooltip(
-          message: t.mediaMenu.playVersion,
-          child: SizedBox(
-            width: versionSegmentWidth,
-            height: actionSize,
-            child: FilledButton(
-              onPressed: onPlayVersionPressed,
-              style: actionButtonStyle(
-                showFocus: state.showFocus,
-                padding: .zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadiusDirectional.horizontal(start: splitInnerRadius, end: splitOuterRadius),
-                ),
-              ).merge(whitePlayStyle),
-              child: AppIcon(Symbols.keyboard_arrow_down_rounded, fill: 1, size: playIconSize),
-            ),
-          ),
+      return ListenableBuilder(
+        listenable: _playButtonStates,
+        child: button,
+        builder: (context, child) => PressFeedback(
+          pressed: _playButtonStates.value.contains(WidgetState.pressed),
+          enabled: !_playLaunchPending,
+          pressedScale: InteractionTokens.mainPressedScale,
+          borderRadius: const BorderRadius.all(Radius.circular(100)),
+          child: child!,
         ),
       );
     }
@@ -345,19 +290,25 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       Color? foregroundColor,
     }) {
       if (compactPresentation) {
-        return IconButton(
+        return DetailActionPress(
+          builder: (states) => IconButton(
+            statesController: states,
+            onPressed: onPressed,
+            icon: icon,
+            tooltip: tooltip,
+            style: actionButtonStyle(foregroundColor: foregroundColor, showFocus: state.showFocus),
+          ),
+        );
+      }
+      return DetailActionPress(
+        builder: (states) => IconButton.filledTonal(
+          statesController: states,
           onPressed: onPressed,
           icon: icon,
           tooltip: tooltip,
+          iconSize: isTv ? 21 * tvScale : 20,
           style: actionButtonStyle(foregroundColor: foregroundColor, showFocus: state.showFocus),
-        );
-      }
-      return IconButton.filledTonal(
-        onPressed: onPressed,
-        icon: icon,
-        tooltip: tooltip,
-        iconSize: isTv ? 21 * tvScale : 20,
-        style: actionButtonStyle(foregroundColor: foregroundColor, showFocus: state.showFocus),
+        ),
       );
     }
 
@@ -365,18 +316,9 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       debugLabel: 'detail_play',
       focusNode: _playButtonFocusNode,
       autofocus: isKeyboardMode,
-      onPressed: onPlayPressed,
+      onPressed: _playLaunchPending ? null : onPlayPressed,
       builder: (context, state) => playButton(state),
     );
-
-    final versionAction = showVersionSplit
-        ? FocusableAction(
-            debugLabel: 'detail_play_version',
-            spacingBefore: splitGap,
-            onPressed: onPlayVersionPressed,
-            builder: (context, state) => versionButton(state),
-          )
-        : null;
 
     final trailerAction = primaryTrailer == null
         ? null
@@ -475,7 +417,6 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
 
     final allActions = <FocusableAction>[
       playAction,
-      ?versionAction,
       ?trailerAction,
       ?shuffleAction,
       ?downloadAction,
@@ -503,7 +444,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       if (actions.isEmpty) return 0;
       var width = estimatedPlayWidth;
       for (var i = 1; i < actions.length; i++) {
-        final actionWidth = identical(actions[i], versionAction) ? versionSegmentWidth : actionSize;
+        final actionWidth = actionSize;
         width += (actions[i].spacingBefore ?? gap) + actionWidth;
       }
       return width;
@@ -516,13 +457,13 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
         return compact;
       }
 
-      final medium = <FocusableAction>[playAction, ?versionAction, ?downloadAction, watchedAction, ?moreActionsAction];
+      final medium = <FocusableAction>[playAction, ?downloadAction, watchedAction, ?moreActionsAction];
       if (!maxWidth.isFinite || estimatedRowWidth(medium) <= maxWidth) return medium;
 
-      final compact = <FocusableAction>[playAction, ?versionAction, watchedAction, ?moreActionsAction];
+      final compact = <FocusableAction>[playAction, watchedAction, ?moreActionsAction];
       if (estimatedRowWidth(compact) <= maxWidth) return compact;
 
-      return [playAction, ?versionAction, ?moreActionsAction];
+      return [playAction, ?moreActionsAction];
     }
 
     Widget actionBar(List<FocusableAction> actions) {
@@ -533,18 +474,6 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
         onNavigateUp: _focusAboveActionRow,
         onNavigateDown: _focusBelowActionRow,
       );
-    }
-
-    // Off TV the track status sits at the row's far end, right-aligned so it
-    // reads as information about the row rather than a sixth button. It takes
-    // only the leftover width and is the first thing to go, so the buttons
-    // never compact because of it. On TV the hero is a 60% column, so the
-    // status is placed at the screen edge by _buildTvDetailScreen instead.
-    Widget? tracksStatusFor(List<FocusableAction> actions, double maxWidth) {
-      if (isTv || !maxWidth.isFinite) return null;
-      final remaining = maxWidth - estimatedRowWidth(actions) - gap;
-      if (remaining < 160) return null;
-      return _buildPlaybackTracksStatus(context, metadata, isTv: false, tvScale: tvScale, maxWidth: remaining);
     }
 
     return LayoutBuilder(
@@ -573,7 +502,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                     debugLabel: 'detail_play',
                     focusNode: _playButtonFocusNode,
                     autofocus: isKeyboardMode,
-                    onPressed: onPlayPressed,
+                    onPressed: _playLaunchPending ? null : onPlayPressed,
                     builder: (context, state) =>
                         SizedBox(key: const ValueKey('detail_primary_play'), width: maxWidth, child: playButton(state)),
                   ),
@@ -588,34 +517,24 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                 ),
                 child: Center(
                   child: FocusableActionBar(
-                    actions: [?favoriteAction, watchedAction],
-                    spacing: 30,
+                    actions: [?downloadAction, ?favoriteAction, watchedAction, ?moreActionsAction],
+                    spacing: maxWidth < 350 ? 8 : 16,
                     onNavigateDown: _focusBelowActionRow,
                     onNavigateUp: () => _playButtonFocusNode.requestFocus(),
                   ),
                 ),
               ),
+              if (_canEditDetailRating(metadata))
+                Padding(padding: const EdgeInsets.only(top: 8), child: _buildUserRatingChip(metadata)),
             ],
           );
         }
         // TV screens are wide and D-pad focus should see every direct action.
         // On smaller online screens, hidden actions remain available from ⋮.
-        final actions = isTv || !maxWidth.isFinite || estimatedRowWidth(allActions) <= maxWidth
+        final actions = !maxWidth.isFinite || estimatedRowWidth(allActions) <= maxWidth
             ? allActions
             : compactActionsFor(maxWidth);
-        final status = tracksStatusFor(actions, maxWidth);
-        if (status == null) return actionBar(actions);
-        return SizedBox(
-          height: actionSize,
-          child: Row(
-            children: [
-              actionBar(actions),
-              Expanded(
-                child: Align(alignment: .centerRight, child: status),
-              ),
-            ],
-          ),
-        );
+        return actionBar(actions);
       },
     );
   }
@@ -698,12 +617,15 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     double tvScale, {
     bool showFocus = false,
   }) {
-    return IconButton.filledTonal(
-      onPressed: () => unawaited(_handleWatchedTogglePressed(metadata)),
-      icon: DetailActionIcon(DetailActionGlyph.watched, selected: metadata.isWatched),
-      tooltip: metadata.isWatched ? t.tooltips.markAsUnwatched : t.tooltips.markAsWatched,
-      iconSize: PlatformDetector.isTV() ? 21 * tvScale : 20,
-      style: actionButtonStyle(showFocus: showFocus),
+    return DetailActionPress(
+      builder: (states) => IconButton.filledTonal(
+        statesController: states,
+        onPressed: () => unawaited(_handleWatchedTogglePressed(metadata)),
+        icon: DetailActionIcon(DetailActionGlyph.watched, selected: metadata.isWatched),
+        tooltip: metadata.isWatched ? t.tooltips.markAsUnwatched : t.tooltips.markAsWatched,
+        iconSize: PlatformDetector.isTV() ? 21 * tvScale : 20,
+        style: actionButtonStyle(showFocus: showFocus),
+      ),
     );
   }
 
@@ -882,12 +804,15 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       builder: (context, downloadProvider, _) {
         final iconSize = PlatformDetector.isTV() ? 21.0 * tvScale : 20.0;
         final spec = _downloadButtonSpec(context, downloadProvider, metadata, iconSize: iconSize);
-        return IconButton.filledTonal(
-          onPressed: spec.interactive ? () => unawaited(_handleDownloadButtonPressed(context, metadata)) : null,
-          icon: spec.icon,
-          tooltip: spec.tooltip,
-          iconSize: iconSize,
-          style: actionButtonStyle(foregroundColor: spec.foregroundColor, showFocus: showFocus),
+        return DetailActionPress(
+          builder: (states) => IconButton.filledTonal(
+            statesController: states,
+            onPressed: spec.interactive ? () => unawaited(_handleDownloadButtonPressed(context, metadata)) : null,
+            icon: spec.icon,
+            tooltip: spec.tooltip,
+            iconSize: iconSize,
+            style: actionButtonStyle(foregroundColor: spec.foregroundColor, showFocus: showFocus),
+          ),
         );
       },
     );
