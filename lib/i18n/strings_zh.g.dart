@@ -92,6 +92,7 @@ class TranslationsZh extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final Translations$addServer$zh addServer = Translations$addServer$zh.internal(_root);
 	@override late final Translations$danmaku$zh danmaku = Translations$danmaku$zh.internal(_root);
 	@override late final Translations$casting$zh casting = Translations$casting$zh.internal(_root);
+	@override late final Translations$detailPlayback$zh detailPlayback = Translations$detailPlayback$zh.internal(_root);
 }
 
 // Path: app
@@ -263,6 +264,15 @@ class Translations$settings$zh extends Translations$settings$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String get ratings => '评分展示';
+	@override String get showRatingBadges => '显示海报评分';
+	@override String get showRatingBadgesDescription => '优先显示你的评分，否则显示首个可用的已启用来源。继续观看不显示评分。';
+	@override String get ratingSources => '评分来源';
+	@override String get ratingSourcesDescription => '启用来源，并上移或下移调整展示顺序。仅展示媒体服务已提供的评分。';
+	@override String get otherRatingSources => '其他评分';
+	@override String get moveRatingUp => '上移';
+	@override String get moveRatingDown => '下移';
+	@override String get ratingSettingsSaveFailed => '无法保存评分偏好，请重试。';
 	@override String get title => '设置';
 	@override String get supportDeveloper => '支持 Velo';
 	@override String get supportDeveloperDescription => '通过 Liberapay 捐赠支持开发';
@@ -2567,6 +2577,18 @@ class Translations$casting$zh extends Translations$casting$en {
 	@override String successWithoutResume({required Object device}) => '已在 ${device} 播放，电视未接受续播位置。可以退出 Velo，使用电视遥控器操作。';
 }
 
+// Path: detailPlayback
+class Translations$detailPlayback$zh extends Translations$detailPlayback$en {
+	Translations$detailPlayback$zh.internal(TranslationsZh root) : this._root = root, super.internal(root);
+
+	final TranslationsZh _root; // ignore: unused_field
+
+	// Translations
+	@override String get version => '版本';
+	@override String get unavailable => '暂无可用选项';
+	@override String get loadFailed => '播放选项加载失败';
+}
+
 // Path: common.ratingSource
 class Translations$common$ratingSource$zh extends Translations$common$ratingSource$en {
 	Translations$common$ratingSource$zh.internal(TranslationsZh root) : this._root = root, super.internal(root);
@@ -3489,6 +3511,15 @@ extension on TranslationsZh {
 			'update.updateFailed' => '无法下载或安装更新，请重试或查看发布详情。',
 			'update.downloadContinues' => '关闭此窗口后，下载仍会继续。',
 			'update.manualUpdateRequired' => '此版本无法自动安装，请查看发布详情中的下载文件。',
+			'settings.ratings' => '评分展示',
+			'settings.showRatingBadges' => '显示海报评分',
+			'settings.showRatingBadgesDescription' => '优先显示你的评分，否则显示首个可用的已启用来源。继续观看不显示评分。',
+			'settings.ratingSources' => '评分来源',
+			'settings.ratingSourcesDescription' => '启用来源，并上移或下移调整展示顺序。仅展示媒体服务已提供的评分。',
+			'settings.otherRatingSources' => '其他评分',
+			'settings.moveRatingUp' => '上移',
+			'settings.moveRatingDown' => '下移',
+			'settings.ratingSettingsSaveFailed' => '无法保存评分偏好，请重试。',
 			'settings.title' => '设置',
 			'settings.supportDeveloper' => '支持 Velo',
 			'settings.supportDeveloperDescription' => '通过 Liberapay 捐赠支持开发',
@@ -3854,6 +3885,8 @@ extension on TranslationsZh {
 			'hotkeys.actions.subtitleTrackNext' => '下一字幕轨',
 			'hotkeys.actions.chapterNext' => '下一章节',
 			'hotkeys.actions.chapterPrevious' => '上一章节',
+			_ => null,
+		} ?? switch (path) {
 			'hotkeys.actions.episodeNext' => '下一集',
 			'hotkeys.actions.episodePrevious' => '上一集',
 			'hotkeys.actions.speedIncrease' => '加速',
@@ -3863,8 +3896,6 @@ extension on TranslationsZh {
 			'hotkeys.actions.zoomOut' => '缩小',
 			'hotkeys.actions.zoomReset' => '重置缩放',
 			'hotkeys.actions.subSeekNext' => '跳转到下一条字幕',
-			_ => null,
-		} ?? switch (path) {
 			'hotkeys.actions.subSeekPrev' => '跳转到上一条字幕',
 			'hotkeys.actions.shaderToggle' => '切换着色器',
 			'hotkeys.actions.skipMarker' => '跳过片头/片尾',
@@ -4368,6 +4399,8 @@ extension on TranslationsZh {
 			'accountPreferences.pickAccount' => '每个账户都保存自己的偏好设置。选择要编辑的账户。',
 			'accountPreferences.storedOnAccount' => '这些选项保存在账户本身，因此所有登录该账户的应用都会使用它们——包括你其他设备上的 Velo。',
 			'accountPreferences.noAccounts' => '没有可配置的账户',
+			_ => null,
+		} ?? switch (path) {
 			'accountPreferences.noAccountsHint' => '登录 Plex，或连接 Jellyfin 或 Emby 服务器，该账户上保存的偏好设置就会显示在这里。',
 			'accountPreferences.unavailable' => '无法访问此账户',
 			'accountPreferences.loadFailed' => '无法加载这些偏好设置',
@@ -4377,8 +4410,6 @@ extension on TranslationsZh {
 			'accountPreferences.groups.libraryDisplay' => '媒体库',
 			'accountPreferences.groups.personalMedia' => '个人媒体',
 			'accountPreferences.preferredAudioLanguage' => '首选音频语言',
-			_ => null,
-		} ?? switch (path) {
 			'accountPreferences.autoSelectAudio' => '按语言选择音频',
 			'accountPreferences.autoSelectAudioDescription' => '关闭后保留文件标记为默认的音轨。',
 			'accountPreferences.preferredSubtitleLanguage' => '首选字幕语言',
@@ -4882,6 +4913,8 @@ extension on TranslationsZh {
 			'liveTv.playbackStartFailed' => ({required Object reason}) => '无法启动该频道：${reason}',
 			'liveTv.channelSwitchFailed' => ({required Object reason}) => '无法切换频道：${reason}',
 			'collections.title' => '合集',
+			_ => null,
+		} ?? switch (path) {
 			'collections.collection' => '合集',
 			'collections.empty' => '合集为空',
 			'collections.deleteCollection' => '删除合集',
@@ -4891,8 +4924,6 @@ extension on TranslationsZh {
 			'collections.deleteFailedWithError' => ({required Object error}) => '删除合集失败：${error}',
 			'collections.selectCollection' => '选择合集',
 			'collections.collectionName' => '合集名称',
-			_ => null,
-		} ?? switch (path) {
 			'collections.enterCollectionName' => '输入合集名称',
 			'collections.addedToCollection' => '已添加到合集',
 			'collections.errorAddingToCollection' => '添加到合集失败',
@@ -5396,6 +5427,8 @@ extension on TranslationsZh {
 			'metadataEdit.episodeSorting' => '剧集排序',
 			'metadataEdit.oldestFirst' => '最旧优先',
 			'metadataEdit.newestFirst' => '最新优先',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.keep' => '保留',
 			'metadataEdit.allEpisodes' => '所有剧集',
 			'metadataEdit.latestEpisodes' => ({required Object count}) => '最新 ${count} 集',
@@ -5405,8 +5438,6 @@ extension on TranslationsZh {
 			'metadataEdit.never' => '从不',
 			'metadataEdit.afterADay' => '一天后',
 			'metadataEdit.afterAWeek' => '一周后',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.afterAMonth' => '一个月后',
 			'metadataEdit.onNextRefresh' => '下次刷新时',
 			'metadataEdit.seasons' => '季',
@@ -5709,6 +5740,9 @@ extension on TranslationsZh {
 			'casting.roomUnavailable' => '请先退出一起看房间，再投送给电视独立播放。',
 			'casting.success' => ({required Object device}) => '已在 ${device} 播放。可以退出 Velo，使用电视遥控器操作。',
 			'casting.successWithoutResume' => ({required Object device}) => '已在 ${device} 播放，电视未接受续播位置。可以退出 Velo，使用电视遥控器操作。',
+			'detailPlayback.version' => '版本',
+			'detailPlayback.unavailable' => '暂无可用选项',
+			'detailPlayback.loadFailed' => '播放选项加载失败',
 			_ => null,
 		};
 	}

@@ -94,6 +94,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$addServer$en addServer = Translations$addServer$en.internal(_root);
 	late final Translations$danmaku$en danmaku = Translations$danmaku$en.internal(_root);
 	late final Translations$casting$en casting = Translations$casting$en.internal(_root);
+	late final Translations$detailPlayback$en detailPlayback = Translations$detailPlayback$en.internal(_root);
 }
 
 // Path: app
@@ -497,6 +498,33 @@ class Translations$settings$en {
 	final Translations _root; // ignore: unused_field
 
 	// Translations
+
+	/// en: 'Ratings'
+	String get ratings => 'Ratings';
+
+	/// en: 'Show ratings on posters'
+	String get showRatingBadges => 'Show ratings on posters';
+
+	/// en: 'Show your score first, or the first available enabled source. Continue Watching stays score-free.'
+	String get showRatingBadgesDescription => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.';
+
+	/// en: 'Rating sources'
+	String get ratingSources => 'Rating sources';
+
+	/// en: 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.'
+	String get ratingSourcesDescription => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.';
+
+	/// en: 'Other ratings'
+	String get otherRatingSources => 'Other ratings';
+
+	/// en: 'Move up'
+	String get moveRatingUp => 'Move up';
+
+	/// en: 'Move down'
+	String get moveRatingDown => 'Move down';
+
+	/// en: 'Could not save rating preferences. Try again.'
+	String get ratingSettingsSaveFailed => 'Could not save rating preferences. Try again.';
 
 	/// en: 'Settings'
 	String get title => 'Settings';
@@ -6475,6 +6503,24 @@ class Translations$casting$en {
 	String successWithoutResume({required Object device}) => 'Playing on ${device}. The TV did not accept the resume position. You can close Velo and use your TV remote.';
 }
 
+// Path: detailPlayback
+class Translations$detailPlayback$en {
+	Translations$detailPlayback$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Version'
+	String get version => 'Version';
+
+	/// en: 'Not available'
+	String get unavailable => 'Not available';
+
+	/// en: 'Could not load playback options'
+	String get loadFailed => 'Could not load playback options';
+}
+
 // Path: common.ratingSource
 class Translations$common$ratingSource$en {
 	Translations$common$ratingSource$en.internal(this._root);
@@ -8223,6 +8269,15 @@ extension on Translations {
 			'update.updateFailed' => 'Could not download or install the update. Retry or view the release for details.',
 			'update.downloadContinues' => 'You can close this dialog while the download continues.',
 			'update.manualUpdateRequired' => 'This release cannot be installed automatically. Open the release to see the available downloads.',
+			'settings.ratings' => 'Ratings',
+			'settings.showRatingBadges' => 'Show ratings on posters',
+			'settings.showRatingBadgesDescription' => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.',
+			'settings.ratingSources' => 'Rating sources',
+			'settings.ratingSourcesDescription' => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.',
+			'settings.otherRatingSources' => 'Other ratings',
+			'settings.moveRatingUp' => 'Move up',
+			'settings.moveRatingDown' => 'Move down',
+			'settings.ratingSettingsSaveFailed' => 'Could not save rating preferences. Try again.',
 			'settings.title' => 'Settings',
 			'settings.supportDeveloper' => 'Support Velo',
 			'settings.supportDeveloperDescription' => 'Donate via Liberapay to fund development',
@@ -8588,6 +8643,8 @@ extension on Translations {
 			'hotkeys.actions.subtitleTrackNext' => 'Next Subtitle Track',
 			'hotkeys.actions.chapterNext' => 'Next Chapter',
 			'hotkeys.actions.chapterPrevious' => 'Previous Chapter',
+			_ => null,
+		} ?? switch (path) {
 			'hotkeys.actions.episodeNext' => 'Next Episode',
 			'hotkeys.actions.episodePrevious' => 'Previous Episode',
 			'hotkeys.actions.speedIncrease' => 'Increase Speed',
@@ -8597,8 +8654,6 @@ extension on Translations {
 			'hotkeys.actions.zoomOut' => 'Zoom Out',
 			'hotkeys.actions.zoomReset' => 'Reset Zoom',
 			'hotkeys.actions.subSeekNext' => 'Seek to Next Subtitle',
-			_ => null,
-		} ?? switch (path) {
 			'hotkeys.actions.subSeekPrev' => 'Seek to Previous Subtitle',
 			'hotkeys.actions.shaderToggle' => 'Toggle Shaders',
 			'hotkeys.actions.skipMarker' => 'Skip Intro/Credits',
@@ -9102,6 +9157,8 @@ extension on Translations {
 			'accountPreferences.pickAccount' => 'Every account stores its own preferences. Pick the one to edit.',
 			'accountPreferences.storedOnAccount' => 'These options are saved on the account itself, so every app signed in to it uses them — including Velo on your other devices.',
 			'accountPreferences.noAccounts' => 'No accounts to configure',
+			_ => null,
+		} ?? switch (path) {
 			'accountPreferences.noAccountsHint' => 'Sign in to Plex, or connect a Jellyfin or Emby server, and the preferences stored on that account show up here.',
 			'accountPreferences.unavailable' => 'Can\'t reach this account',
 			'accountPreferences.loadFailed' => 'Couldn\'t load these preferences',
@@ -9111,8 +9168,6 @@ extension on Translations {
 			'accountPreferences.groups.libraryDisplay' => 'Library',
 			'accountPreferences.groups.personalMedia' => 'Personal media',
 			'accountPreferences.preferredAudioLanguage' => 'Preferred audio language',
-			_ => null,
-		} ?? switch (path) {
 			'accountPreferences.autoSelectAudio' => 'Choose audio by language',
 			'accountPreferences.autoSelectAudioDescription' => 'Off keeps whatever audio track the file marks as default.',
 			'accountPreferences.preferredSubtitleLanguage' => 'Preferred subtitle language',
@@ -9616,6 +9671,8 @@ extension on Translations {
 			'liveTv.playbackStartFailed' => ({required Object reason}) => 'Couldn\'t start the channel: ${reason}',
 			'liveTv.channelSwitchFailed' => ({required Object reason}) => 'Couldn\'t switch channel: ${reason}',
 			'collections.title' => 'Collections',
+			_ => null,
+		} ?? switch (path) {
 			'collections.collection' => 'Collection',
 			'collections.empty' => 'Collection is empty',
 			'collections.deleteCollection' => 'Delete Collection',
@@ -9625,8 +9682,6 @@ extension on Translations {
 			'collections.deleteFailedWithError' => ({required Object error}) => 'Failed to delete collection: ${error}',
 			'collections.selectCollection' => 'Select Collection',
 			'collections.collectionName' => 'Collection Name',
-			_ => null,
-		} ?? switch (path) {
 			'collections.enterCollectionName' => 'Enter collection name',
 			'collections.addedToCollection' => 'Added to collection',
 			'collections.errorAddingToCollection' => 'Failed to add to collection',
@@ -10130,6 +10185,8 @@ extension on Translations {
 			'metadataEdit.episodeSorting' => 'Episode Sorting',
 			'metadataEdit.oldestFirst' => 'Oldest first',
 			'metadataEdit.newestFirst' => 'Newest first',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.keep' => 'Keep',
 			'metadataEdit.allEpisodes' => 'All episodes',
 			'metadataEdit.latestEpisodes' => ({required Object count}) => '${count} latest episodes',
@@ -10139,8 +10196,6 @@ extension on Translations {
 			'metadataEdit.never' => 'Never',
 			'metadataEdit.afterADay' => 'After a day',
 			'metadataEdit.afterAWeek' => 'After a week',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.afterAMonth' => 'After a month',
 			'metadataEdit.onNextRefresh' => 'On next refresh',
 			'metadataEdit.seasons' => 'Seasons',
@@ -10443,6 +10498,9 @@ extension on Translations {
 			'casting.roomUnavailable' => 'Leave Watch Together before casting independently to a TV.',
 			'casting.success' => ({required Object device}) => 'Playing on ${device}. You can close Velo and use your TV remote.',
 			'casting.successWithoutResume' => ({required Object device}) => 'Playing on ${device}. The TV did not accept the resume position. You can close Velo and use your TV remote.',
+			'detailPlayback.version' => 'Version',
+			'detailPlayback.unavailable' => 'Not available',
+			'detailPlayback.loadFailed' => 'Could not load playback options',
 			_ => null,
 		};
 	}

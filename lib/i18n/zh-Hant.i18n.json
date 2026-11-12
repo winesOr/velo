@@ -152,6 +152,15 @@
     "manualUpdateRequired": "此版本無法自動安裝，請查看版本詳情中的下載檔案。"
   },
   "settings": {
+    "ratings": "評分顯示",
+    "showRatingBadges": "顯示海報評分",
+    "showRatingBadgesDescription": "優先顯示你的評分，否則顯示首個可用的已啟用來源。繼續觀看不顯示評分。",
+    "ratingSources": "評分來源",
+    "ratingSourcesDescription": "啟用來源，並上移或下移調整顯示順序。僅顯示媒體服務已提供的評分。",
+    "otherRatingSources": "其他評分",
+    "moveRatingUp": "上移",
+    "moveRatingDown": "下移",
+    "ratingSettingsSaveFailed": "無法儲存評分偏好，請重試。",
     "title": "設定",
     "supportDeveloper": "贊助 Velo",
     "supportDeveloperDescription": "透過 Liberapay 捐款支持開發者",
@@ -2557,5 +2566,10 @@
     "roomUnavailable": "",
     "success": "",
     "successWithoutResume": ""
+  },
+  "detailPlayback": {
+    "version": "版本",
+    "unavailable": "暫無可用選項",
+    "loadFailed": "播放選項載入失敗"
   }
 }

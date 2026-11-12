@@ -152,6 +152,15 @@
     "manualUpdateRequired": ""
   },
   "settings": {
+    "ratings": "Ratings",
+    "showRatingBadges": "Show ratings on posters",
+    "showRatingBadgesDescription": "Show your score first, or the first available enabled source. Continue Watching stays score-free.",
+    "ratingSources": "Rating sources",
+    "ratingSourcesDescription": "Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.",
+    "otherRatingSources": "Other ratings",
+    "moveRatingUp": "Move up",
+    "moveRatingDown": "Move down",
+    "ratingSettingsSaveFailed": "Could not save rating preferences. Try again.",
     "title": "Configuración",
     "supportDeveloper": "Apoya Velo",
     "supportDeveloperDescription": "Dona vía Liberapay para financiar el desarrollo",
@@ -2568,5 +2577,10 @@
     "roomUnavailable": "",
     "success": "",
     "successWithoutResume": ""
+  },
+  "detailPlayback": {
+    "version": "Version",
+    "unavailable": "Not available",
+    "loadFailed": "Could not load playback options"
   }
 }

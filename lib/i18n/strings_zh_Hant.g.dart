@@ -92,6 +92,7 @@ class TranslationsZhHant extends TranslationsZh with BaseTranslations<AppLocale,
 	@override late final _Translations$services$zh_Hant services = _Translations$services$zh_Hant._(_root);
 	@override late final _Translations$addServer$zh_Hant addServer = _Translations$addServer$zh_Hant._(_root);
 	@override late final _Translations$danmaku$zh_Hant danmaku = _Translations$danmaku$zh_Hant._(_root);
+	@override late final _Translations$detailPlayback$zh_Hant detailPlayback = _Translations$detailPlayback$zh_Hant._(_root);
 }
 
 // Path: app
@@ -263,6 +264,15 @@ class _Translations$settings$zh_Hant extends Translations$settings$zh {
 	final TranslationsZhHant _root; // ignore: unused_field
 
 	// Translations
+	@override String get ratings => '評分顯示';
+	@override String get showRatingBadges => '顯示海報評分';
+	@override String get showRatingBadgesDescription => '優先顯示你的評分，否則顯示首個可用的已啟用來源。繼續觀看不顯示評分。';
+	@override String get ratingSources => '評分來源';
+	@override String get ratingSourcesDescription => '啟用來源，並上移或下移調整顯示順序。僅顯示媒體服務已提供的評分。';
+	@override String get otherRatingSources => '其他評分';
+	@override String get moveRatingUp => '上移';
+	@override String get moveRatingDown => '下移';
+	@override String get ratingSettingsSaveFailed => '無法儲存評分偏好，請重試。';
 	@override String get title => '設定';
 	@override String get supportDeveloper => '贊助 Velo';
 	@override String get supportDeveloperDescription => '透過 Liberapay 捐款支持開發者';
@@ -2542,6 +2552,18 @@ class _Translations$danmaku$zh_Hant extends Translations$danmaku$zh {
 	@override String get styleAndFilters => '速度、密度與屏蔽';
 }
 
+// Path: detailPlayback
+class _Translations$detailPlayback$zh_Hant extends Translations$detailPlayback$zh {
+	_Translations$detailPlayback$zh_Hant._(TranslationsZhHant root) : this._root = root, super.internal(root);
+
+	final TranslationsZhHant _root; // ignore: unused_field
+
+	// Translations
+	@override String get version => '版本';
+	@override String get unavailable => '暫無可用選項';
+	@override String get loadFailed => '播放選項載入失敗';
+}
+
 // Path: common.ratingSource
 class _Translations$common$ratingSource$zh_Hant extends Translations$common$ratingSource$zh {
 	_Translations$common$ratingSource$zh_Hant._(TranslationsZhHant root) : this._root = root, super.internal(root);
@@ -3464,6 +3486,15 @@ extension on TranslationsZhHant {
 			'update.updateFailed' => '無法下載或安裝更新，請重試或查看版本詳情。',
 			'update.downloadContinues' => '關閉此視窗後，下載仍會繼續。',
 			'update.manualUpdateRequired' => '此版本無法自動安裝，請查看版本詳情中的下載檔案。',
+			'settings.ratings' => '評分顯示',
+			'settings.showRatingBadges' => '顯示海報評分',
+			'settings.showRatingBadgesDescription' => '優先顯示你的評分，否則顯示首個可用的已啟用來源。繼續觀看不顯示評分。',
+			'settings.ratingSources' => '評分來源',
+			'settings.ratingSourcesDescription' => '啟用來源，並上移或下移調整顯示順序。僅顯示媒體服務已提供的評分。',
+			'settings.otherRatingSources' => '其他評分',
+			'settings.moveRatingUp' => '上移',
+			'settings.moveRatingDown' => '下移',
+			'settings.ratingSettingsSaveFailed' => '無法儲存評分偏好，請重試。',
 			'settings.title' => '設定',
 			'settings.supportDeveloper' => '贊助 Velo',
 			'settings.supportDeveloperDescription' => '透過 Liberapay 捐款支持開發者',
@@ -3829,6 +3860,8 @@ extension on TranslationsZhHant {
 			'hotkeys.actions.subtitleTrackNext' => '下一個字幕軌',
 			'hotkeys.actions.chapterNext' => '下一個章節',
 			'hotkeys.actions.chapterPrevious' => '上一個章節',
+			_ => null,
+		} ?? switch (path) {
 			'hotkeys.actions.episodeNext' => '下一集',
 			'hotkeys.actions.episodePrevious' => '上一集',
 			'hotkeys.actions.speedIncrease' => '加速播放',
@@ -3838,8 +3871,6 @@ extension on TranslationsZhHant {
 			'hotkeys.actions.zoomOut' => '縮小',
 			'hotkeys.actions.zoomReset' => '重設縮放',
 			'hotkeys.actions.subSeekNext' => '跳轉至下一句字幕',
-			_ => null,
-		} ?? switch (path) {
 			'hotkeys.actions.subSeekPrev' => '跳轉至上一句字幕',
 			'hotkeys.actions.shaderToggle' => '切換著色器',
 			'hotkeys.actions.skipMarker' => '跳過片頭/片尾',
@@ -4343,6 +4374,8 @@ extension on TranslationsZhHant {
 			'accountPreferences.pickAccount' => '每個帳戶都會儲存各自的偏好設定。請選擇要編輯的帳戶。',
 			'accountPreferences.storedOnAccount' => '這些選項會儲存在帳戶本身，因此登入該帳戶的所有應用程式都會使用它們，包括您其他裝置上的 Velo。',
 			'accountPreferences.noAccounts' => '沒有可設定的帳戶',
+			_ => null,
+		} ?? switch (path) {
 			'accountPreferences.noAccountsHint' => '登入 Plex，或連線至 Jellyfin 或 Emby 伺服器，儲存在該帳戶上的偏好設定便會顯示在此處。',
 			'accountPreferences.unavailable' => '無法連線至此帳戶',
 			'accountPreferences.loadFailed' => '無法載入這些偏好設定',
@@ -4352,8 +4385,6 @@ extension on TranslationsZhHant {
 			'accountPreferences.groups.libraryDisplay' => '媒體庫',
 			'accountPreferences.groups.personalMedia' => '個人媒體',
 			'accountPreferences.preferredAudioLanguage' => '偏好音訊語言',
-			_ => null,
-		} ?? switch (path) {
 			'accountPreferences.autoSelectAudio' => '依語言選擇音訊',
 			'accountPreferences.autoSelectAudioDescription' => '關閉時會使用檔案標記為預設的音訊軌。',
 			'accountPreferences.preferredSubtitleLanguage' => '偏好字幕語言',
@@ -4857,6 +4888,8 @@ extension on TranslationsZhHant {
 			'liveTv.playbackStartFailed' => ({required Object reason}) => '無法開始播放此頻道：${reason}',
 			'liveTv.channelSwitchFailed' => ({required Object reason}) => '無法切換頻道：${reason}',
 			'collections.title' => '收藏集',
+			_ => null,
+		} ?? switch (path) {
 			'collections.collection' => '收藏集',
 			'collections.empty' => '收藏集為空',
 			'collections.deleteCollection' => '刪除收藏集',
@@ -4866,8 +4899,6 @@ extension on TranslationsZhHant {
 			'collections.deleteFailedWithError' => ({required Object error}) => '刪除收藏集失敗：${error}',
 			'collections.selectCollection' => '選擇收藏集',
 			'collections.collectionName' => '收藏集名稱',
-			_ => null,
-		} ?? switch (path) {
 			'collections.enterCollectionName' => '輸入收藏集名稱',
 			'collections.addedToCollection' => '已新增至收藏集',
 			'collections.errorAddingToCollection' => '新增至收藏集失敗',
@@ -5371,6 +5402,8 @@ extension on TranslationsZhHant {
 			'metadataEdit.episodeSorting' => '單集排序方式',
 			'metadataEdit.oldestFirst' => '由舊到新',
 			'metadataEdit.newestFirst' => '由新到舊',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.keep' => '保留集數',
 			'metadataEdit.allEpisodes' => '所有單集',
 			'metadataEdit.latestEpisodes' => ({required Object count}) => '最新 ${count} 集',
@@ -5380,8 +5413,6 @@ extension on TranslationsZhHant {
 			'metadataEdit.never' => '從不',
 			'metadataEdit.afterADay' => '一天後',
 			'metadataEdit.afterAWeek' => '一週後',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.afterAMonth' => '一個月後',
 			'metadataEdit.onNextRefresh' => '下次重新整理時',
 			'metadataEdit.seasons' => '季',
@@ -5668,6 +5699,9 @@ extension on TranslationsZhHant {
 			'danmaku.displayAreaDescription' => '滾動彈幕只出現在畫面頂部的指定行數內。行數設為 0 可關閉該類型，底部會保留字幕空間。',
 			'danmaku.topRows' => ({required Object n}) => '頂部 ${n} 行',
 			'danmaku.styleAndFilters' => '速度、密度與屏蔽',
+			'detailPlayback.version' => '版本',
+			'detailPlayback.unavailable' => '暫無可用選項',
+			'detailPlayback.loadFailed' => '播放選項載入失敗',
 			_ => null,
 		};
 	}

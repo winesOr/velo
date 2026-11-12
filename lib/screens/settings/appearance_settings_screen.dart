@@ -18,6 +18,7 @@ import '../../widgets/settings_page.dart';
 import '../../widgets/settings_builder.dart';
 import '../../widgets/settings_section.dart';
 import 'settings_utils.dart';
+import 'rating_settings_screen.dart';
 
 class AppearanceSettingsScreen extends StatelessWidget {
   const AppearanceSettingsScreen({super.key});
@@ -46,6 +47,12 @@ class AppearanceSettingsScreen extends StatelessWidget {
             _densitySelector(),
             _gridSpacingSelector(),
             _episodePosterModeSelector(),
+            SettingNavigationTile(
+              icon: Symbols.star_rounded,
+              title: t.settings.ratings,
+              subtitle: t.settings.ratingSourcesDescription,
+              destinationBuilder: (_) => const RatingSettingsScreen(),
+            ),
             SettingSwitchTile(
               pref: SettingsService.showEpisodeNumberOnCards,
               icon: Symbols.tag_rounded,
