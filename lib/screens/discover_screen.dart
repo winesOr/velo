@@ -11,6 +11,7 @@ import '../widgets/server_activities_button.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import '../focus/focusable_action_bar.dart';
+import '../focus/focusable_button.dart';
 import '../focus/hub_vertical_navigation.dart';
 import '../focus/locked_hub_controller.dart';
 import '../focus/input_mode_tracker.dart';
@@ -26,6 +27,8 @@ import '../widgets/cycling_media_backdrop.dart';
 import '../widgets/vidhub_ambient_backdrop.dart';
 import '../utils/ambient_palette_extractor.dart';
 import '../widgets/fusion_home_hero.dart';
+import '../widgets/press_feedback.dart';
+import '../theme/interaction_tokens.dart';
 import '../widgets/hero_metadata_badges.dart';
 import '../widgets/backend_badge.dart';
 import '../navigation/home_theme.dart';
@@ -62,6 +65,7 @@ import '../utils/hub_icons.dart';
 import '../utils/media_navigation_helper.dart';
 import '../utils/provider_extensions.dart';
 import '../utils/snackbar_helper.dart';
+import '../utils/error_message_utils.dart';
 import '../utils/video_player_navigation.dart';
 import '../utils/layout_constants.dart';
 import '../utils/platform_detector.dart';
@@ -592,7 +596,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       onSelect: () {
         final heroIndex = _heroIndex.value;
         if (_heroItems.isNotEmpty && heroIndex < _heroItems.length) {
-          navigateToMediaItem(context, _heroItems[heroIndex]);
+          _openHero(_heroItems[heroIndex]);
         }
       },
     )(node, event);
@@ -1532,6 +1536,25 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     );
   }
 
+  bool _heroNavigationPending = false;
+
+  Future<void> _openHero(MediaItem item, {bool play = false}) async {
+    if (_heroNavigationPending) return;
+    setState(() => _heroNavigationPending = true);
+    try {
+      if (play && canPlayHomeHeroDirectly(item)) {
+        await navigateToVideoPlayer(context, metadata: item);
+      } else {
+        await navigateToMediaItemDetails(context, item);
+      }
+    } catch (error, stackTrace) {
+      appLogger.w('Failed to open the home hero', error: error, stackTrace: stackTrace);
+      if (mounted) showErrorSnackBar(context, t.messages.errorLoading(error: localizedErrorReason(error)));
+    } finally {
+      if (mounted) setState(() => _heroNavigationPending = false);
+    }
+  }
+
   Widget _buildHeroItem(MediaItem heroItem, double heroHeight) {
     final heroClient = _getMediaClientForItem(heroItem);
     final isEpisode = heroItem.isEpisode;
@@ -1547,7 +1570,43 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         item: heroItem,
         client: heroClient,
         compact: heroHeight < 450,
-        onPlay: () => navigateToMediaItem(context, heroItem),
+        onPlay: () => _openHero(heroItem),
+        playButton: _buildSmartPlayButton(heroItem),
+        detailsButton: canPlayHomeHeroDirectly(heroItem)
+            ? PressFeedbackBuilder(
+                pressedScale: InteractionTokens.secondaryPressedScale,
+                enabled: !_heroNavigationPending,
+                borderRadius: BorderRadius.circular(24),
+                builder: (context, setPressed, confirm) => FocusableButton(
+                  onPressed: _heroNavigationPending
+                      ? null
+                      : () {
+                          confirm();
+                          _openHero(heroItem);
+                        },
+                  dimWhenUnfocused: false,
+                  child: Material(
+                    color: Colors.transparent,
+                    shape: StadiumBorder(
+                      side: BorderSide(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .4)),
+                    ),
+                    child: InkWell(
+                      onTap: _heroNavigationPending ? null : () => _openHero(heroItem),
+                      onHighlightChanged: setPressed,
+                      canRequestFocus: false,
+                      borderRadius: BorderRadius.circular(24),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                          child: Text(t.mediaMenu.viewDetails),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            : null,
         backdrop: CyclingMediaBackdrop(
           mediaKey: heroItem.globalKey,
           imagePaths: heroArtPaths.take(1).toList(),
@@ -1591,7 +1650,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         child: GestureDetector(
           onTap: () {
             appLogger.d('Activating hero item: ${heroItem.title}');
-            navigateToMediaItem(context, heroItem, playDirectly: true);
+            _openHero(heroItem, play: true);
           },
           child: Stack(
             fit: StackFit.expand,
@@ -1786,87 +1845,18 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   Widget _buildSmartPlayButton(MediaItem rawHeroItem) {
     return Builder(
       builder: (context) {
-        // The on-deck snapshot refetches shortly after a watch event; the store
-        // patch bridges the gap so "minutes left" never lags.
-        final heroItem = context.withFreshWatchState(rawHeroItem);
-        final hasProgress = heroItem.hasActiveProgress;
+        final item = context.withFreshWatchState(rawHeroItem);
         final isTv = PlatformDetector.isTV();
-
-        final minutesLeft = hasProgress ? ((heroItem.durationMs! - heroItem.viewOffsetMs!) / 60_000).round() : 0;
-
-        final progress = hasProgress ? heroItem.viewOffsetMs! / heroItem.durationMs! : 0.0;
-
         return ListenableBuilder(
           listenable: _heroFocusNode,
-          builder: (context, _) {
-            final showFocus = isTv && _heroFocusNode.hasFocus && InputModeTracker.isKeyboardMode(context);
-            const backgroundColor = Colors.white;
-            const foregroundColor = Colors.black;
-            return InkWell(
-              onTap: () {
-                appLogger.d('Playing: ${heroItem.title}');
-                navigateToVideoPlayer(context, metadata: heroItem);
-              },
-              borderRadius: BorderRadius.all(Radius.circular(isTv ? 32 : 24)),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                curve: Curves.easeOutCubic,
-                padding: .symmetric(horizontal: isTv ? 34 : 24, vertical: isTv ? 16 : 12),
-                decoration: BoxDecoration(
-                  color: backgroundColor,
-                  borderRadius: BorderRadius.all(Radius.circular(isTv ? 32 : 24)),
-                  boxShadow: showFocus
-                      ? [BoxShadow(color: Colors.white.withValues(alpha: 0.35), blurRadius: 28, spreadRadius: 4)]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisSize: .min,
-                  children: [
-                    AppIcon(Symbols.play_arrow_rounded, fill: 1, size: isTv ? 28 : 20, color: foregroundColor),
-                    SizedBox(width: isTv ? 12 : 8),
-                    if (hasProgress) ...[
-                      // Progress bar
-                      Container(
-                        width: isTv ? 56 : 40,
-                        height: isTv ? 8 : 6,
-                        decoration: BoxDecoration(
-                          color: foregroundColor.withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.all(Radius.circular(isTv ? 4 : 3)),
-                        ),
-                        child: FractionallySizedBox(
-                          alignment: .centerLeft,
-                          widthFactor: progress,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: foregroundColor,
-                              borderRadius: BorderRadius.all(Radius.circular(isTv ? 3 : 2)),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: isTv ? 12 : 8),
-                      Text(
-                        t.discover.minutesLeft(minutes: minutesLeft),
-                        style: TextStyle(
-                          color: foregroundColor,
-                          fontSize: isTv ? 18 : 14,
-                          fontWeight: isTv ? FontWeight.w700 : FontWeight.w600,
-                        ),
-                      ),
-                    ] else
-                      Text(
-                        t.common.play,
-                        style: TextStyle(
-                          color: foregroundColor,
-                          fontSize: isTv ? 18 : 14,
-                          fontWeight: isTv ? FontWeight.w700 : FontWeight.w600,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            );
-          },
+          builder: (context, _) => HomeHeroPrimaryButton(
+            item: item,
+            busy: _heroNavigationPending,
+            isTv: isTv,
+            showFocus: isTv && _heroFocusNode.hasFocus && InputModeTracker.isKeyboardMode(context),
+            onPlay: () => _openHero(item, play: true),
+            onDetails: () => _openHero(item),
+          ),
         );
       },
     );

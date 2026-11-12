@@ -1,4 +1,5 @@
 import '../models.dart';
+import 'player_playback_activity.dart';
 
 /// Immutable snapshot of the current player state.
 /// For reactive updates, use [PlayerStreams].
@@ -6,6 +7,9 @@ class PlayerState {
   final bool playing;
   final bool completed;
   final bool buffering;
+
+  /// Null for backends that retain the legacy playing/completed contract.
+  final PlayerPlaybackActivity? playbackActivity;
   final Duration position;
   final Duration duration;
   final bool seekable;
@@ -37,6 +41,7 @@ class PlayerState {
     this.playing = false,
     this.completed = false,
     this.buffering = false,
+    this.playbackActivity,
     this.position = Duration.zero,
     this.duration = Duration.zero,
     this.seekable = false,
@@ -56,6 +61,8 @@ class PlayerState {
     bool? playing,
     bool? completed,
     bool? buffering,
+    PlayerPlaybackActivity? playbackActivity,
+    bool clearPlaybackActivity = false,
     Duration? position,
     Duration? duration,
     bool? seekable,
@@ -74,6 +81,7 @@ class PlayerState {
       playing: playing ?? this.playing,
       completed: completed ?? this.completed,
       buffering: buffering ?? this.buffering,
+      playbackActivity: clearPlaybackActivity ? null : playbackActivity ?? this.playbackActivity,
       position: position ?? this.position,
       duration: duration ?? this.duration,
       seekable: seekable ?? this.seekable,

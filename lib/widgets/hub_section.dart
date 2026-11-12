@@ -119,7 +119,7 @@ class HubSection extends StatefulWidget {
     bool? usesContinueWatchingAction,
     this.showServerName = false,
     this.showWatchProgress = true,
-    this.showRatingBadge = false,
+    this.showRatingBadge = true,
     this.loadMoreItems,
     this.totalResults,
     this.onFocusedItemChanged,

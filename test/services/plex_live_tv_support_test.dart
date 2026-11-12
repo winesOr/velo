@@ -52,6 +52,134 @@ void main() {
     );
   }
 
+  group('live TV hubs provider outcomes', () {
+    const providers = [
+      (identifier: 'provider-a', gridEndpoint: '/provider-a/grid', id: '2'),
+      (identifier: 'provider-b', gridEndpoint: '/provider-b/grid', id: '3'),
+    ];
+
+    test('no providers returns empty without an HTTP request', () async {
+      var requests = 0;
+      final client = makeClient((_) async {
+        requests++;
+        return http.Response('unavailable', 503);
+      }, epgProviders: const []);
+      addTearDown(client.close);
+
+      expect(await client.getLiveTvHubs(), isEmpty);
+      expect(requests, 0);
+    });
+
+    for (final firstStatus in [401, 403, 404, 503]) {
+      test('all providers failing preserves the first HTTP $firstStatus classification', () async {
+        final paths = <String>[];
+        final client = makeClient((request) async {
+          paths.add(request.url.path);
+          return http.Response('provider unavailable', paths.length == 1 ? firstStatus : 502);
+        }, epgProviders: providers);
+        addTearDown(client.close);
+
+        await expectLater(
+          client.getLiveTvHubs(),
+          throwsA(isA<MediaServerHttpException>().having((error) => error.statusCode, 'statusCode', firstStatus)),
+        );
+        expect(paths, ['/provider-a/hubs/discover', '/provider-b/hubs/discover']);
+      });
+    }
+
+    test('all transport failures preserve the original first exception', () async {
+      final first = MediaServerHttpException(type: MediaServerHttpErrorType.connectionTimeout, message: 'first');
+      final second = MediaServerHttpException(type: MediaServerHttpErrorType.connectionError, message: 'second');
+      final client = makeClient((request) async {
+        throw request.url.path.startsWith('/provider-a/') ? first : second;
+      }, epgProviders: providers);
+      addTearDown(client.close);
+
+      await expectLater(client.getLiveTvHubs(), throwsA(same(first)));
+    });
+
+    for (final emptyBody in <Map<String, dynamic>>[
+      {},
+      {'MediaContainer': <String, dynamic>{}},
+      {
+        'MediaContainer': {'Hub': <dynamic>[]},
+      },
+    ]) {
+      test('successful empty shape $emptyBody plus a failed provider is normal empty', () async {
+        final client = makeClient((request) async {
+          if (request.url.path.startsWith('/provider-a/')) return http.Response('unavailable', 503);
+          return jsonResponse(emptyBody);
+        }, epgProviders: providers);
+        addTearDown(client.close);
+
+        expect(await client.getLiveTvHubs(), isEmpty);
+      });
+    }
+
+    test('successful hubs survive another provider failing and preserve request count', () async {
+      final client = makeClient((request) async {
+        expect(request.url.queryParameters['count'], '7');
+        if (request.url.path.startsWith('/provider-b/')) return http.Response('forbidden', 403);
+        return jsonResponse({
+          'MediaContainer': {
+            'Hub': [
+              {
+                'key': '/provider-a/hubs/now',
+                'title': 'On Now',
+                'Metadata': [
+                  {
+                    'ratingKey': 'program-1',
+                    'type': 'movie',
+                    'title': 'Example Program',
+                    'Media': [
+                      {'beginsAt': 100, 'endsAt': 200, 'channelIdentifier': '1'},
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        });
+      }, epgProviders: providers);
+      addTearDown(client.close);
+
+      final hubs = await client.getLiveTvHubs(count: 7);
+      expect(hubs.single.hubKey, '/provider-a/hubs/now');
+      expect(hubs.single.entries.single.program.title, 'Example Program');
+      expect(hubs.single.entries.single.program.providerIdentifier, 'provider-a');
+    });
+
+    test('invalid outer Hub shape is a failed provider response', () async {
+      final client = makeClient(
+        (_) async => jsonResponse({
+          'MediaContainer': {'Hub': 'invalid'},
+        }),
+      );
+      addTearDown(client.close);
+
+      await expectLater(client.getLiveTvHubs(), throwsA(isA<TypeError>()));
+    });
+
+    test('per-item parse skips remain an empty successful response', () async {
+      final client = makeClient((request) async {
+        if (request.url.path.startsWith('/provider-a/')) return http.Response('unavailable', 503);
+        return jsonResponse({
+          'MediaContainer': {
+            'Hub': [
+              {'Metadata': <dynamic>[]},
+              {
+                'Metadata': [123],
+              },
+            ],
+          },
+        });
+      }, epgProviders: providers);
+      addTearDown(client.close);
+
+      expect(await client.getLiveTvHubs(), isEmpty);
+    });
+  });
+
   test('favorite source follows requested lineup provider', () async {
     final client = makeClient(
       (_) async => http.Response('{}', 200),

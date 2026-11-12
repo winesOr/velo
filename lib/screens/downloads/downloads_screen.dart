@@ -258,11 +258,14 @@ class DownloadsScreenState extends State<DownloadsScreen>
                   child: TabBarView(
                     controller: tabController,
                     children: [
-                      Consumer<DownloadProvider>(
-                        builder: (context, downloadProvider, _) {
+                      Selector<DownloadProvider, int>(
+                        selector: (_, provider) => provider.downloadsStructureRevision,
+                        builder: (context, _, _) {
+                          final downloadProvider = context.read<DownloadProvider>();
                           return DownloadTreeView(
                             downloads: downloadProvider.downloads,
                             metadata: downloadProvider.metadata,
+                            observeProgress: true,
                             onPause: downloadProvider.pauseDownload,
                             onResume: (globalKey) {
                               final client = _clientForDownload(globalKey);
@@ -394,8 +397,10 @@ class _DownloadsGridContentState extends State<_DownloadsGridContent>
   Widget build(BuildContext context) {
     super.build(context);
     if (!widget.isActive) return const SizedBox.shrink();
-    return Consumer<DownloadProvider>(
-      builder: (context, downloadProvider, _) {
+    return Selector<DownloadProvider, int>(
+      selector: (_, provider) => provider.downloadsStructureRevision,
+      builder: (context, _, _) {
+        final downloadProvider = context.read<DownloadProvider>();
         final items = _items(downloadProvider);
         final sections = selectedGrouping == browseGroupingLibrary
             ? bucketDownloadsByLibrary(
@@ -710,11 +715,13 @@ class _DownloadedMusicContentState extends State<_DownloadedMusicContent>
   Widget build(BuildContext context) {
     super.build(context);
     if (!widget.isActive) return const SizedBox.shrink();
-    return Consumer<DownloadProvider>(
-      builder: (context, downloadProvider, _) {
-        // Keep the last rows reachable above the floating mini-player.
-        final bottomInset = context.watch<MiniPlayerInsetController?>()?.overlayHeight ?? 0;
-
+    // Keep this dependency outside the cached download selector so changes
+    // to the mini-player still relayout the last music rows immediately.
+    final bottomInset = context.watch<MiniPlayerInsetController?>()?.overlayHeight ?? 0;
+    return Selector<DownloadProvider, int>(
+      selector: (_, provider) => provider.downloadsStructureRevision,
+      builder: (context, _, _) {
+        final downloadProvider = context.read<DownloadProvider>();
         return SettingsBuilder(
           prefs: const [SettingsService.viewMode, SettingsService.libraryDensity, SettingsService.tvFullCardLayout],
           builder: (context) {

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import '../media/ids.dart';
 import 'package:flutter/foundation.dart';
 import '../i18n/strings.g.dart';
@@ -37,6 +38,7 @@ import '../utils/watch_state_notifier.dart';
 import '../mixins/disposable_change_notifier_mixin.dart';
 
 part 'download_metadata_store.dart';
+part 'download_mutation_collections.dart';
 
 typedef _QueueOwnership = ({String profileId, int generation});
 
@@ -74,10 +76,21 @@ class DownloadProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   StreamSubscription<DeletionProgress>? _deletionProgressSubscription;
   late final Future<void> _initFuture;
 
+  // TODO(VELO-P5-01): Tune the injectable interval with device profiling.
+  static const defaultProgressNotifyInterval = Duration(milliseconds: 300);
+  final Duration progressNotifyInterval;
+  Timer? _progressNotifyTimer;
+  Map<String, DownloadProgress>? _downloadsSnapshot;
+  int _downloadsStructureRevision = 0;
+
+  /// Changes which can affect grouping, sorting, actions, or offline metadata.
+  /// Numeric progress alone is observed by the affected tree rows instead.
+  int get downloadsStructureRevision => _downloadsStructureRevision;
+
   // Track download progress by public globalKey (serverId:ratingKey).
   // Downloads are shared across profiles/users; scoped Jellyfin state lives in
   // watch actions, cache namespaces, and sync-rule ownership.
-  final Map<String, DownloadProgress> _downloads = {};
+  late final Map<String, DownloadProgress> _downloads = _DownloadMutationMap(_invalidateDownloadsSnapshot);
 
   // Metadata and artwork cache lifecycle is isolated from queue ownership.
   late final _DownloadMetadataStore _metadataStore;
@@ -89,7 +102,7 @@ class DownloadProvider extends ChangeNotifier with DisposableChangeNotifierMixin
 
   // Public download keys owned by the active profile. Physical download rows
   // stay app-wide; this set controls profile-visible state.
-  final Set<String> _ownedDownloadKeys = {};
+  late final Set<String> _ownedDownloadKeys = _DownloadMutationSet(_invalidateDownloadsSnapshot);
 
   /// Library identity stamped on each `downloaded_media` row at enqueue time,
   /// keyed by globalKey. Hydrated items merge it in when their own fields are
@@ -131,8 +144,12 @@ class DownloadProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   OfflineModeSource? _offlineSource;
   int _networkStateGeneration = 0;
 
-  DownloadProvider({required this._downloadManager, required this._database})
-    : _syncRuleExecutor = SyncRuleExecutor(database: _database) {
+  DownloadProvider({
+    required this._downloadManager,
+    required this._database,
+    this.progressNotifyInterval = defaultProgressNotifyInterval,
+  }) : assert(!progressNotifyInterval.isNegative),
+       _syncRuleExecutor = SyncRuleExecutor(database: _database) {
     _metadataStore = _DownloadMetadataStore(_downloadManager, _database)..addListener(_onMetadataStoreChanged);
     _progressSubscription = _downloadManager.progressStream.listen(_onProgressUpdate);
 
@@ -155,7 +172,9 @@ class DownloadProvider extends ChangeNotifier with DisposableChangeNotifierMixin
     required this._downloadManager,
     required this._database,
     this._activeProfileId = 'test-profile',
-  }) : _syncRuleExecutor = SyncRuleExecutor(database: _database) {
+    this.progressNotifyInterval = defaultProgressNotifyInterval,
+  }) : assert(!progressNotifyInterval.isNegative),
+       _syncRuleExecutor = SyncRuleExecutor(database: _database) {
     _metadataStore = _DownloadMetadataStore(_downloadManager, _database, activeProfileId: _activeProfileId)
       ..addListener(_onMetadataStoreChanged);
     _progressSubscription = _downloadManager.progressStream.listen(_onProgressUpdate);
@@ -588,9 +607,12 @@ class DownloadProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   }
 
   void _onProgressUpdate(DownloadProgress progress) {
-    appLogger.d('Progress update received: ${progress.globalKey} - ${progress.status} - ${progress.progress}%');
+    if (isDisposed) return;
     final ownedByActiveProfile = _ownsDownloadKey(progress.globalKey);
     final previous = _downloads[progress.globalKey];
+    if (previous?.status != progress.status) {
+      appLogger.d('Download status changed: ${progress.globalKey} - ${progress.status}');
+    }
     final terminalUpdateOmittedBytes =
         previous != null &&
         progress.downloadedBytes == 0 &&
@@ -619,20 +641,52 @@ class DownloadProvider extends ChangeNotifier with DisposableChangeNotifierMixin
         (merged.status == DownloadStatus.completed && previous?.status != DownloadStatus.completed
             ? DateTime.now().millisecondsSinceEpoch
             : previous?.downloadedAt);
-    _downloads[progress.globalKey] = downloadedAt == merged.downloadedAt
-        ? merged
-        : merged.copyWith(downloadedAt: downloadedAt);
+    final current = downloadedAt == merged.downloadedAt ? merged : merged.copyWith(downloadedAt: downloadedAt);
+    _downloads[progress.globalKey] = current;
 
     // Sync artwork paths when they are available.
     if (merged.hasArtworkPaths) {
       _artworkPaths[merged.globalKey] = DownloadedArtwork(thumbPath: merged.thumbPath);
     }
 
-    if (ownedByActiveProfile) safeNotifyListeners();
+    if (!ownedByActiveProfile || previous == current) return;
+
+    final numericProgressOnly =
+        previous != null &&
+        previous.status == DownloadStatus.downloading &&
+        current.status == DownloadStatus.downloading &&
+        previous.errorMessage == current.errorMessage &&
+        previous.currentFile == current.currentFile &&
+        previous.thumbPath == current.thumbPath &&
+        previous.totalBytes == current.totalBytes &&
+        previous.downloadedAt == current.downloadedAt;
+    if (numericProgressOnly && progressNotifyInterval > Duration.zero) {
+      // One shared trailing flush publishes the newest value for every key;
+      // a busy download cannot keep postponing another download's update.
+      _progressNotifyTimer ??= Timer(progressNotifyInterval, () {
+        _progressNotifyTimer = null;
+        super.safeNotifyListeners();
+      });
+    } else {
+      safeNotifyListeners();
+    }
+  }
+
+  void _invalidateDownloadsSnapshot() => _downloadsSnapshot = null;
+
+  @override
+  bool safeNotifyListeners() {
+    if (isDisposed) return false;
+    _progressNotifyTimer?.cancel();
+    _progressNotifyTimer = null;
+    _downloadsStructureRevision++;
+    return super.safeNotifyListeners();
   }
 
   @override
   void dispose() {
+    _progressNotifyTimer?.cancel();
+    _progressNotifyTimer = null;
     BackgroundWorkDiagnosticsService.instance.unbindActivitySource(downloadActivitySnapshot);
     _offlineSource?.removeListener(_onOfflineSourceChanged);
     _progressSubscription?.cancel();
@@ -651,7 +705,7 @@ class DownloadProvider extends ChangeNotifier with DisposableChangeNotifierMixin
       metadata.serverId != null ? metadata : metadata.copyWith(serverId: fallbackServerId);
 
   Map<String, DownloadProgress> get downloads =>
-      Map.unmodifiable(Map.fromEntries(_downloads.entries.where(_ownsProgressEntry)));
+      _downloadsSnapshot ??= UnmodifiableMapView(Map.fromEntries(_downloads.entries.where(_ownsProgressEntry)));
 
   /// Whether the active profile owns a failed download.
   bool get hasFailedDownloads => _downloads.entries.any(_isOwnedFailure);

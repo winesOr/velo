@@ -81,12 +81,15 @@ class PlayerAndroid extends PlayerBase {
 
   @override
   void handlePlayerEvent(String name, Map? data) {
+    // A queued Exo snapshot must not override the fallback's mpv semantics.
+    if (_usingMpvFallback && name == 'playback-activity') return;
     if (name == 'backend-switched') {
       // Native player switched from ExoPlayer to MPV due to unsupported format.
       // Clear stale ExoPlayer tracks so applyTrackSelectionWhenReady waits for
       // mpv's track-list instead of immediately applying with ExoPlayer IDs.
       final wasUsingMpvFallback = _usingMpvFallback;
       _usingMpvFallback = true;
+      setPlaybackActivity(null);
       if (!wasUsingMpvFallback) {
         clearTracks();
       }

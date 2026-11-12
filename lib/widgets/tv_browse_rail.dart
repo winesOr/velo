@@ -387,7 +387,7 @@ class TvBrowseRail extends StatefulWidget {
     required this.iconForHub,
     this.showServerName = false,
     this.showWatchProgressForHub,
-    this.showRatingBadges = false,
+    this.showRatingBadges = true,
     this.onFocusedItemChanged,
     this.onFocusedHubItemChanged,
     this.onRefresh,

@@ -1,10 +1,7 @@
 part of '../media_detail_screen.dart';
 
-/// The action row's trailing status: what Play will do with this item's
-/// picture, audio, and subtitles, computed by the player's own selection
-/// ladder ([previewPlaybackTracks]). Read-only — it describes the episode the
-/// hero shows, and on TV that changes with rail focus, so there is no per-
-/// episode target for a control here to act on.
+/// Resolves the exact version/source advertised by the detail selectors.
+/// TV focus changes the target episode without reusing another item's tracks.
 extension _MediaDetailPlaybackTracksStatus on _MediaDetailScreenState {
   /// The item Play would start: the hero's episode for a show, the first
   /// episode for a season, the item itself otherwise. Null while a show has
@@ -37,6 +34,7 @@ extension _MediaDetailPlaybackTracksStatus on _MediaDetailScreenState {
     _playbackProbeGeneration++;
     _playbackProbeTimer?.cancel();
     _playbackProbeRequests.clear();
+    _playbackProbeErrors.clear();
     _playbackSources.clear();
     if (refreshItems) _probedPlaybackItems.clear();
     _playbackStatusRevision.value++;
@@ -48,10 +46,14 @@ extension _MediaDetailPlaybackTracksStatus on _MediaDetailScreenState {
   void _scheduleTargetProbe(BuildContext context, MediaItem target) {
     if (!_canUseDetail) return;
     final key = target.globalKey;
-    if (_playbackSources.containsKey(key) || _playbackProbeRequests.containsKey(key)) return;
+    if (_playbackSources.containsKey(key) ||
+        _playbackProbeRequests.containsKey(key) ||
+        _playbackProbeErrors.contains(key)) {
+      return;
+    }
     final client = widget.isOffline ? null : _getMediaClientForMetadata(context);
     if (!widget.isOffline && client == null) return;
-    final downloads = widget.isOffline ? context.read<DownloadProvider>() : null;
+    final downloads = context.read<DownloadProvider?>();
     _playbackProbeTimer?.cancel();
     final generation = _playbackProbeGeneration;
     _playbackProbeTimer = Timer(const Duration(milliseconds: 350), () {
@@ -71,56 +73,76 @@ extension _MediaDetailPlaybackTracksStatus on _MediaDetailScreenState {
     _playbackProbeRequests[key] = request;
     bool current() => _canUseDetail && generation == _playbackProbeGeneration && _playbackProbeRequests[key] == request;
     try {
-      MediaItem item;
+      final offline = widget.isOffline;
+      final fetched = offline ? target : _probedPlaybackItems[key] ?? await client!.fetchItem(target.id);
+      if (!current()) return;
+      if (fetched == null) throw StateError('Playback metadata is unavailable');
+      final item = fetched.copyWith(
+        serverId: target.serverId ?? fetched.serverId,
+        serverName: target.serverName ?? fetched.serverName,
+      );
+      _probedPlaybackItems[key] = item;
+      _recordProbedRatings(key, item.ratings);
+      final choice = _detailPlaybackSelections.putIfAbsent(key, DetailPlaybackSelection.new);
+      final explicitIndex = choice.versionIndex(item.mediaVersions);
+      final downloaded = await downloads?.getCompletedDownload(key);
+      if (!current()) return;
+      final saved = await resolveSavedMediaVersionFor(item);
+      if (!current()) return;
+      final versions = item.mediaVersions ?? const <MediaVersion>[];
+      final downloadedById = downloaded?.mediaSourceId == null
+          ? -1
+          : versions.indexWhere((version) => version.id == downloaded!.mediaSourceId);
+      final downloadedIndex = downloaded == null
+          ? null
+          : (downloadedById >= 0 ? downloadedById : downloaded.mediaIndex);
+      final selectedIndex = explicitIndex ?? downloadedIndex ?? saved?.index ?? 0;
+      final selectedId = explicitIndex != null
+          ? versions[explicitIndex].id
+          : downloaded != null
+          ? downloaded.mediaSourceId
+          : saved?.sourceId;
+      final signature = explicitIndex != null
+          ? versions[explicitIndex].signature
+          : downloaded != null
+          ? null
+          : saved?.signature;
+      final useDownloaded = downloaded != null && (explicitIndex == null || explicitIndex == downloadedIndex);
       MediaSourceInfo? source;
-      int? mediaIndex;
-      if (downloads != null) {
-        final downloaded = await downloads.getCompletedDownload(key);
-        if (!current()) return;
-        item = target;
-        if (downloaded != null) {
-          final versions = item.mediaVersions;
-          final byId = downloaded.mediaSourceId == null
-              ? -1
-              : versions?.indexWhere((version) => version.id == downloaded.mediaSourceId) ?? -1;
-          mediaIndex = byId >= 0 ? byId : downloaded.mediaIndex;
-          if (versions == null || mediaIndex < 0 || mediaIndex >= versions.length) mediaIndex = null;
-        }
-      } else {
-        final fetched = _probedPlaybackItems[key] ?? await client!.fetchItem(target.id);
-        if (!current() || fetched == null) return;
-        item = fetched.copyWith(
-          serverId: target.serverId ?? fetched.serverId,
-          serverName: target.serverName ?? fetched.serverName,
-        );
-        _probedPlaybackItems[key] = item;
-        _recordProbedRatings(key, item.ratings);
-        final selection = await resolveSavedMediaVersionFor(item);
-        if (!current()) return;
-        source = await client!.fetchCachedMediaSourceInfo(
-          item.id,
-          mediaIndex: selection?.index ?? 0,
-          mediaSourceId: selection?.sourceId,
-          preferredVersionSignature: selection?.signature,
-        );
-        if (!current()) return;
-        mediaIndex = source?.mediaIndex ?? selection?.index ?? 0;
-        // Only backends with safe preparation expose this optional hook.
-        // The player still resolves its
-        // quality and download preference independently when Play is pressed.
-        if (client case final PlaybackPreparationSupport preparer) {
-          unawaited(
-            preparer.preparePlaybackInitialization(
-              PlaybackInitializationOptions(
-                metadata: target,
-                selectedMediaIndex: selection?.index ?? 0,
-                selectedMediaSourceId: selection?.sourceId,
-                preferredVersionSignature: selection?.signature,
-                startPosition: target.viewOffsetMs == null ? null : Duration(milliseconds: target.viewOffsetMs!),
-              ),
-            ),
+      if (offline || useDownloaded) {
+        final scope = downloaded?.clientScopeId ?? client?.cacheServerId ?? item.serverId;
+        if (scope != null) {
+          source = await CachedPlaybackMetadataService.fetchMediaSourceInfo(
+            backend: item.backend,
+            cacheServerId: scope,
+            itemId: item.id,
+            mediaIndex: selectedIndex,
+            position: item.viewOffsetMs == null ? null : Duration(milliseconds: item.viewOffsetMs!),
           );
         }
+      } else {
+        source = await client!.fetchCachedMediaSourceInfo(
+          item.id,
+          mediaIndex: selectedIndex,
+          mediaSourceId: selectedId,
+          preferredVersionSignature: signature,
+        );
+      }
+      if (!current()) return;
+      final mediaIndex = source?.mediaIndex ?? selectedIndex;
+      choice.bindSource(source);
+      if (client case final PlaybackPreparationSupport preparer when !offline && !useDownloaded) {
+        unawaited(
+          preparer.preparePlaybackInitialization(
+            PlaybackInitializationOptions(
+              metadata: item,
+              selectedMediaIndex: mediaIndex,
+              selectedMediaSourceId: source?.mediaSourceId ?? selectedId,
+              preferredVersionSignature: signature,
+              startPosition: item.viewOffsetMs == null ? null : Duration(milliseconds: item.viewOffsetMs!),
+            ),
+          ),
+        );
       }
       if (!current()) return;
       _playbackSources[key] = (item: item, source: source, mediaIndex: mediaIndex);
@@ -128,6 +150,10 @@ extension _MediaDetailPlaybackTracksStatus on _MediaDetailScreenState {
       // focused item with a cached probe snapshot.
       _playbackStatusRevision.value++;
     } catch (e, stackTrace) {
+      if (current()) {
+        _playbackProbeErrors.add(key);
+        _playbackStatusRevision.value++;
+      }
       appLogger.d('Playback track probe failed for ${target.id}', error: e, stackTrace: stackTrace);
     } finally {
       if (_playbackProbeRequests[key] == request) _playbackProbeRequests.remove(key);
@@ -143,107 +169,33 @@ extension _MediaDetailPlaybackTracksStatus on _MediaDetailScreenState {
     if (isNew && _tvDetailFocusedEpisode.value?.globalKey == key) _focusedEpisodeRatingsRevision.value++;
   }
 
-  /// The listener stays mounted while a source is resolving, without adding
-  /// a semantic or focus target when there is nothing to predict.
-  Widget _buildPlaybackTracksStatus(
-    BuildContext context,
-    MediaItem metadata, {
-    required bool isTv,
-    required double tvScale,
-    required double maxWidth,
-  }) {
-    return ValueListenableBuilder<int>(
-      valueListenable: _playbackStatusRevision,
-      builder: (context, _, _) =>
-          _playbackTracksStatus(context, metadata, isTv: isTv, tvScale: tvScale, maxWidth: maxWidth) ??
-          const SizedBox.shrink(),
-    );
-  }
-
-  Widget? _playbackTracksStatus(
-    BuildContext context,
-    MediaItem metadata, {
-    required bool isTv,
-    required double tvScale,
-    required double maxWidth,
-  }) {
+  String? _playbackSummaryLabel(MediaItem metadata) {
     final target = _playbackTargetItem(metadata);
-    if (target == null) return null;
-    if (_playbackStatusTarget != target.globalKey) {
-      _playbackStatusTarget = target.globalKey;
-      final cached = _playbackSources[target.globalKey]?.source;
-      if (!widget.isOffline && cached != null && !mediaSourceHasTrackRows(cached)) {
-        _playbackSources.remove(target.globalKey);
-      }
-    }
-
-    // Profile-scoped in the app; nullable so a bare detail screen (widget
-    // tests) still previews with the ladder's non-profile tiers.
-    final probed = _playbackSources[target.globalKey];
-    final source = probed?.source;
+    final probed = target == null ? null : _playbackSources[target.globalKey];
+    if (probed == null) return null;
+    final source = probed.source;
     final preview = source == null
         ? null
         : previewPlaybackTracks(
-            probed!.item,
+            probed.item,
             source,
             profile: context.watch<AccountPreferencesController?>()?.activePreferences,
           );
-    final videoLabels = probed?.mediaIndex == null
+    final choice = _detailPlaybackSelections[target!.globalKey];
+    final audio = source?.audioTracks.where((track) => track.id == choice?.audioId).firstOrNull ?? preview?.audio;
+    final subtitle = choice?.subtitlesOff == true
+        ? null
+        : source?.subtitleTracks.where((track) => track.id == choice?.subtitleId).firstOrNull ?? preview?.subtitle;
+    final videoLabels = probed.mediaIndex == null
         ? const <String>[]
-        : buildMediaVideoLabels(probed!.item, versionIndex: probed.mediaIndex!, partIndex: source?.partIndex);
-    if (probed == null) _scheduleTargetProbe(context, target);
+        : buildMediaVideoLabels(probed.item, versionIndex: probed.mediaIndex!, partIndex: source?.partIndex);
     if (preview == null && videoLabels.isEmpty) return null;
-
-    final audioLabel = preview?.audio?.label;
-    final subtitleLabel = preview?.subtitle?.label;
-    final parts = <MetadataLinePart>[
-      // Shed order on a tight row: the long codec details first (subtitle's,
-      // then audio's — the details sheet has them in full), then the short
-      // picture labels, then the audio track; the subtitle decision always
-      // stays.
-      for (final label in videoLabels) MetadataLineText(label, dropPriority: 2),
-      if (audioLabel != null)
-        MetadataLineIconText(
-          Symbols.volume_up_rounded,
-          audioLabel.primary,
-          detail: audioLabel.secondary,
-          dropPriority: 1,
-          detailDropPriority: 3,
-        ),
+    final parts = [
+      ...videoLabels,
+      if (audio != null) [audio.label.primary, ?audio.label.secondary].join(' · '),
       if (preview != null)
-        MetadataLineIconText(
-          Symbols.subtitles_rounded,
-          subtitleLabel?.primary ?? t.common.off,
-          detail: subtitleLabel?.secondary,
-          dropPriority: 0,
-          detailDropPriority: 3,
-        ),
+        subtitle == null ? t.common.off : [subtitle.label.primary, ?subtitle.label.secondary].join(' · '),
     ];
-    final semanticsLabel =
-        '${t.videoControls.tracksButton}: ${[for (final part in parts) switch (part) {
-            MetadataLineText(:final text) => text,
-            MetadataLineIconText(:final text, :final detail) => detail == null ? text : '$text${MetadataLineIconText.detailSeparator}$detail',
-            MetadataLineRatings() => '',
-          }].join(', ')}';
-
-    // Same ink as the hero's metadata line, one step lighter in weight and
-    // size so it reads as a footnote to the buttons rather than a sixth one.
-    final textStyle = TextStyle(
-      color: isTv ? _tvDetailForegroundColor(context) : Theme.of(context).colorScheme.onSurface,
-      fontSize: isTv ? 15 * tvScale : 12.5,
-      fontWeight: .w600,
-      letterSpacing: 0.1,
-      height: 1.2,
-    );
-
-    return Semantics(
-      key: const ValueKey('detail_playback_tracks'),
-      label: semanticsLabel,
-      excludeSemantics: true,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        child: FittedMetadataLine(textStyle: textStyle, parts: parts, ratingIconSize: textStyle.fontSize! * 1.15),
-      ),
-    );
+    return '${t.videoControls.tracksButton}: ${parts.join(', ')}';
   }
 }

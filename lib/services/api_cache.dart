@@ -138,18 +138,33 @@ abstract class ApiCache {
     return await tryIsolateRun(() => jsonDecode(result.data) as Map<String, dynamic>);
   }
 
-  Future<void> put(ServerId serverId, String endpoint, Map<String, dynamic> data) async {
+  Future<void> put(ServerId serverId, String endpoint, Map<String, dynamic> data, {bool Function()? isCurrent}) async {
     final key = _buildKey(serverId, endpoint);
     final encoded = await tryIsolateRun(() => jsonEncode(data));
+    // Encoding may yield to logout or a profile switch. Enqueue the write
+    // only after the caller's captured authentication epoch is revalidated.
+    if (isCurrent != null && !isCurrent()) return;
     // The explicit stamp matters: on conflict the upsert only updates the
     // companion's columns, so relying on the column default would leave a
     // refreshed row carrying its original write time and [getIfFresh] would
     // treat just-refetched data as stale.
-    await _db
-        .into(_db.apiCache)
-        .insertOnConflictUpdate(
-          ApiCacheCompanion(cacheKey: Value(key), data: Value(encoded), cachedAt: Value(DateTime.now())),
-        );
+    Future<void> write() async {
+      if (isCurrent != null && !isCurrent()) return;
+      await _db
+          .into(_db.apiCache)
+          .insertOnConflictUpdate(
+            ApiCacheCompanion(cacheKey: Value(key), data: Value(encoded), cachedAt: Value(DateTime.now())),
+          );
+    }
+
+    if (isCurrent == null) {
+      await write();
+    } else {
+      // The transaction may itself wait for database opening/other writes.
+      // Recheck inside it. A logout clear queued after this write then runs
+      // after its commit, so an old snapshot cannot reappear after the clear.
+      await _db.transaction(write);
+    }
   }
 
   Future<void> deleteForServer(ServerId serverId) async {

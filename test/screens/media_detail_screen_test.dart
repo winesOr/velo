@@ -2,12 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:cached_network_image_ce/cached_network_image.dart' show CachedNetworkImageProvider;
 import 'package:crypto/crypto.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plezy/media/ids.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +27,7 @@ import 'package:plezy/media/media_item.dart';
 import 'package:plezy/media/media_kind.dart';
 import 'package:plezy/media/media_part.dart';
 import 'package:plezy/media/media_rating.dart';
+import 'package:plezy/widgets/media_ratings_strip.dart';
 import 'package:plezy/media/media_role.dart';
 import 'package:plezy/media/media_stream.dart';
 import 'package:plezy/media/media_version.dart';
@@ -36,6 +39,7 @@ import 'package:plezy/providers/download_provider.dart';
 import 'package:plezy/providers/multi_server_provider.dart';
 import 'package:plezy/providers/watch_state_store.dart';
 import 'package:plezy/screens/media_detail_screen.dart';
+import 'package:plezy/screens/media_detail/playback_selection.dart';
 import 'package:plezy/screens/media_detail_loading_skeleton.dart';
 import 'package:plezy/models/download_models.dart';
 import 'package:plezy/navigation/profile_navigation_scope.dart';
@@ -69,15 +73,20 @@ import 'package:plezy/widgets/episode_card.dart';
 import 'package:plezy/widgets/detail_action_icon.dart';
 import 'package:plezy/utils/episode_titles.dart';
 import 'package:plezy/widgets/fitted_metadata_line.dart';
-import 'package:plezy/widgets/fitting_title_text.dart';
+import 'package:plezy/widgets/app_select_field.dart';
+import 'package:plezy/widgets/app_glass_surface.dart';
+import 'package:plezy/screens/video_player_screen.dart';
 import 'package:plezy/widgets/focusable_tab_chip.dart';
 import 'package:plezy/widgets/tv_browse_rail.dart';
 import 'package:plezy/widgets/media_card.dart';
 import 'package:plezy/widgets/media_details_sheet.dart';
+import 'package:plezy/widgets/media_detail_technical_info.dart';
+import 'package:plezy/widgets/media_context_menu.dart';
 import 'package:provider/provider.dart';
 
 import '../test_helpers/prefs.dart';
 import '../test_helpers/tablet_screenshots.dart';
+import '../test_helpers/preview_fonts.dart';
 import '../test_helpers/profile_navigation.dart';
 import '../test_helpers/media_items.dart';
 import '../test_helpers/multi_server_fixtures.dart';
@@ -96,7 +105,7 @@ void main() {
     TvDetectionService.debugSetAppleTVOverride(null);
   });
 
-  testWidgets('TV detail scales fallback title to fit logo bounds', (tester) async {
+  testWidgets('TV detail keeps natural title size and wraps within a scrollable foreground', (tester) async {
     await SettingsService.getInstance();
     tester.view.physicalSize = const Size(800, 480);
     tester.view.devicePixelRatio = 1;
@@ -109,7 +118,7 @@ void main() {
       backend: MediaBackend.jellyfin,
       kind: MediaKind.movie,
       title: title,
-      summary: 'A compact viewport should make the fallback title shrink before it can overlap the detail text.',
+      summary: 'A compact viewport scrolls natural title and information instead of shrinking the text.',
     );
 
     await tester.pumpWidget(
@@ -125,9 +134,12 @@ void main() {
     await tester.pump();
 
     final titleText = tester.widget<Text>(find.text(title));
-    final baseFontSize = 56 * TvLayoutConstants.scaleForSize(const Size(800, 480));
-    expect(titleText.style?.fontSize, isNotNull);
-    expect(titleText.style!.fontSize!, lessThan(baseFontSize));
+    final baseFontSize = 64 * TvLayoutConstants.scaleForSize(const Size(800, 480));
+    expect(titleText.style?.fontSize, baseFontSize);
+    expect(titleText.maxLines, isNull);
+    expect(find.byKey(const ValueKey('tv_detail_content_scroll')), findsOneWidget);
+    expect(tester.getRect(find.text(title)).right, lessThanOrEqualTo(800));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('TV detail exposes hero information as one semantic node', (tester) async {
@@ -219,6 +231,18 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
+    // No connected server means unavailable options, never a perpetual
+    // background spinner while the details sheet is open.
+    expect(tester.widget<AppSelectField<String>>(find.byKey(const ValueKey('detail_source_version'))).busy, isFalse);
+    expect(
+      tester.widget<AppSelectField<DetailTrackOption>>(find.byKey(const ValueKey('detail_audio_selector'))).busy,
+      isFalse,
+    );
+    expect(
+      tester.widget<AppSelectField<DetailTrackOption>>(find.byKey(const ValueKey('detail_subtitle_selector'))).busy,
+      isFalse,
+    );
+
     // The reveal autofocuses the play button for movies; UP from the action
     // row lands on the hero information block.
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
@@ -281,7 +305,7 @@ void main() {
     expect(tester.widget<AnimatedOpacity>(revealGate).opacity, 1);
   });
 
-  testWidgets('TV detail metadata line shows every rating source the item carries', (tester) async {
+  testWidgets('TV detail shows independent source-labeled ratings', (tester) async {
     await SettingsService.getInstance();
     tester.view.physicalSize = const Size(1280, 720);
     tester.view.devicePixelRatio = 1;
@@ -317,16 +341,16 @@ void main() {
     expect(find.text('62%'), findsOneWidget);
     expect(find.text('87%'), findsOneWidget);
     expect(find.text('7.4'), findsOneWidget);
-    expect(
-      find.byWidgetPredicate((widget) => widget is SvgPicture && widget.bytesLoader is SvgAssetLoader),
-      findsNWidgets(3),
-    );
+    expect(find.byType(MediaRatingsStrip), findsOneWidget);
+    expect(find.text(t.common.ratingSource.rottenTomatoesCritic), findsOneWidget);
+    expect(find.text(t.common.ratingSource.rottenTomatoesAudience), findsOneWidget);
+    expect(find.text(t.common.ratingSource.imdb), findsOneWidget);
     expect(find.textContaining('★ 6.2', findRichText: true), findsNothing);
     // The redundant type label no longer opens the line.
     expect(find.text('Movie'), findsNothing);
   });
 
-  testWidgets('TV detail metadata line still renders a single available rating', (tester) async {
+  testWidgets('TV detail independent ratings still render a single available score', (tester) async {
     await SettingsService.getInstance();
     tester.view.physicalSize = const Size(1280, 720);
     tester.view.devicePixelRatio = 1;
@@ -356,10 +380,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('87%'), findsOneWidget);
-    expect(
-      find.byWidgetPredicate((widget) => widget is SvgPicture && widget.bytesLoader is SvgAssetLoader),
-      findsOneWidget,
-    );
+    expect(find.byType(MediaRatingsStrip), findsOneWidget);
+    expect(find.text(t.common.ratingSource.rottenTomatoesAudience), findsOneWidget);
   });
 
   testWidgets('TV detail metadata line keeps quality labels for the sheet and every field on screen', (tester) async {
@@ -430,7 +452,7 @@ void main() {
     final information = find.byKey(const ValueKey('tv_detail_information_semantics'));
     expect(find.descendant(of: information, matching: find.text('1080p')), findsNothing);
     expect(
-      find.descendant(of: find.byKey(const ValueKey('detail_playback_tracks')), matching: find.text('1080p')),
+      find.descendant(of: find.byKey(const ValueKey('detail_source_version')), matching: find.textContaining('1080p')),
       findsOneWidget,
     );
 
@@ -449,6 +471,13 @@ void main() {
       expect(tester.getBottomRight(find.byWidget(rating.widget)).dx, lessThanOrEqualTo(1280));
     }
 
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pump();
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'rating_chip');
+    expect(
+      tester.getSize(find.byKey(const ValueKey('detail_personal_rating_target'))).height,
+      greaterThanOrEqualTo(48),
+    );
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pump();
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'tv_detail_info');
@@ -743,7 +772,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
   });
 
-  testWidgets('TV detail summary keeps white ink in light appearance', (tester) async {
+  testWidgets('TV detail summary uses the accessible page foreground in light appearance', (tester) async {
     await SettingsService.getInstance();
     tester.view.physicalSize = const Size(1280, 720);
     tester.view.devicePixelRatio = 1;
@@ -774,7 +803,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     final summaryText = tester.widget<Text>(find.text(summary));
-    expect(summaryText.style?.color, Colors.white.withValues(alpha: 0.78));
+    final summaryContext = tester.element(find.text(summary));
+    final foreground = Theme.of(summaryContext).colorScheme.onSurface;
+    expect(summaryText.style?.color, foreground);
+    final ink = foreground.computeLuminance();
+    final surface = HomeThemeScope.colorOf(summaryContext).computeLuminance();
+    final contrast = ink > surface ? (ink + .05) / (surface + .05) : (surface + .05) / (ink + .05);
+    expect(contrast, greaterThanOrEqualTo(4.5));
   });
 
   testWidgets('TV detail shows every season tab and prefetches adjacent first page', (tester) async {
@@ -1295,11 +1330,8 @@ void main() {
     // the episode's IMDb score.
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump();
-    expect(announced(), contains('TMDB 77%, IMDb 7.8'));
-    expect(
-      find.descendant(of: find.byKey(const ValueKey('tv_detail_information_semantics')), matching: find.text('7.8')),
-      findsOneWidget,
-    );
+    expect(announced(), contains('IMDb 7.8, TMDB 77%'));
+    expect(find.descendant(of: find.byType(MediaRatingsStrip), matching: find.text('7.8')), findsOneWidget);
 
     // The scores belong to that episode alone.
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
@@ -1408,17 +1440,11 @@ void main() {
     final audioText = find.textContaining('English');
     expect(audioText, findsOneWidget);
 
-    // At the screen's right edge — outside the hero's 60% text column, not
-    // right-aligned within it — sitting on the action row's baseline, in the
-    // hero's own ink rather than the muted chip colour.
-    final bar = tester.getRect(find.byType(FocusableActionBar));
-    final statusRect = tester.getRect(status);
-    expect(statusRect.right, closeTo(1920 - 24, 1)); // spotlightLeft at this scale
-    expect(statusRect.left, greaterThan(1920 * 0.60));
-    expect(statusRect.bottom, closeTo(bar.bottom, 1));
-    expect(statusRect.center.dy, greaterThan(bar.center.dy));
-    final ink = tester.widget<Text>(audioText).style!.color!;
-    expect(ink.a, 1.0);
+    final selectors = find.byKey(const ValueKey('detail_playback_selectors'));
+    expect(selectors, findsOneWidget);
+    expect(find.byKey(const ValueKey('detail_audio_selector')), findsOneWidget);
+    expect(find.byKey(const ValueKey('detail_subtitle_selector')), findsOneWidget);
+    expect(tester.takeException(), isNull);
 
     // It is information, not a sixth button: RIGHT past the last action stays
     // on the last action.
@@ -2028,6 +2054,749 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
     }
 
+    testWidgets('detail selectors pass source descriptors and explicit Off through the existing player route', (
+      tester,
+    ) async {
+      final raw = _previewItem('selected-tracks');
+      final streams = (((raw['Media'] as List).first as Map)['Part'] as List).first['Stream'] as List;
+      streams.addAll(<Map<String, Object>>[
+        {'id': 101, 'streamType': 2, 'index': 2, 'codec': 'aac', 'languageCode': 'jpn'},
+        {'id': 120, 'streamType': 3, 'index': 3, 'codec': 'srt', 'languageCode': 'zho', 'selected': true},
+      ]);
+      final movie = PlexMappers.mediaItemFromCacheJson(raw, serverId: ServerId('server_1'));
+      final client = _FakeMediaServerClient(show: movie, childrenByParent: {}, rawItems: {movie.id: raw});
+      final observer = _RecordingNavigatorObserver(popVideoPlayerImmediately: true);
+      await pumpPhoneDetail(tester, client, movie, observer: observer);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+      final audio = tester.widget<AppSelectField<DetailTrackOption>>(
+        find.byKey(const ValueKey('detail_audio_selector')),
+      );
+      final subtitles = tester.widget<AppSelectField<DetailTrackOption>>(
+        find.byKey(const ValueKey('detail_subtitle_selector')),
+      );
+      audio.onChanged!(audio.options.singleWhere((option) => option.value.streamId == 101).value);
+      subtitles.onChanged!(subtitles.options.singleWhere((option) => option.value.streamId == null).value);
+      await tester.pump();
+      final play = find
+          .descendant(of: find.byType(FocusableActionBar).first, matching: find.byType(FilledButton))
+          .first;
+      final activate = tester.widget<FilledButton>(play).onPressed!;
+      activate();
+      activate(); // Same-frame repeat must not push a second player.
+      await tester.pumpAndSettle();
+      expect(observer.players, hasLength(1));
+      expect(observer.players.single.preferredAudioTrack?.id, 'source:101');
+      expect(observer.players.single.preferredSubtitleTrack?.id, 'no');
+      expect(observer.players.single.selectedMediaSourceId, '100');
+      expect(tester.widget<FilledButton>(play).onPressed, isNotNull);
+      expect(tester.takeException(), isNull);
+    });
+
+    for (final dark in [false, true]) {
+      testWidgets('detail selector surfaces and open state preserve ${dark ? 'dark' : 'light'} contrast', (
+        tester,
+      ) async {
+        final raw = _previewItem('selector-contrast');
+        final movie = PlexMappers.mediaItemFromCacheJson(raw, serverId: ServerId('server_1'));
+        final client = _FakeMediaServerClient(show: movie, childrenByParent: {}, rawItems: {movie.id: raw});
+        final base = monoTheme(dark: dark);
+        await pumpPhoneDetail(tester, client, movie, theme: base);
+        await tester.pump(const Duration(milliseconds: 450));
+        await tester.pump();
+
+        double contrast(Color ink, Color background) {
+          final a = Color.alphaBlend(ink, background).computeLuminance();
+          final b = background.computeLuminance();
+          return a > b ? (a + .05) / (b + .05) : (b + .05) / (a + .05);
+        }
+
+        void expectFieldContrast(Finder field) {
+          final theme = Theme.of(tester.element(field));
+          final material = tester.widget<Material>(find.descendant(of: field, matching: find.byType(Material)).first);
+          final background = material.color!;
+          expect(theme.brightness, base.brightness);
+          expect(contrast(theme.colorScheme.onSurface, background), greaterThanOrEqualTo(4.5));
+          expect(contrast(theme.colorScheme.onSurfaceVariant, background), greaterThanOrEqualTo(4.5));
+          expect(contrast(IconTheme.of(tester.element(field)).color!, background), greaterThanOrEqualTo(3));
+        }
+
+        for (final key in ['detail_source_version', 'detail_audio_selector', 'detail_subtitle_selector']) {
+          expectFieldContrast(find.byKey(ValueKey(key)));
+        }
+        final version = find.byKey(const ValueKey('detail_source_version'));
+        final option = tester.widget<AppSelectField<String>>(version).options.last;
+        await tester.ensureVisible(version);
+        await tester.tap(version);
+        await tester.pumpAndSettle();
+        expectFieldContrast(version);
+        final menuLabel = find.descendant(of: find.byType(AppGlassSurface), matching: find.text(option.label));
+        expect(menuLabel, findsOneWidget);
+        final menuTheme = Theme.of(tester.element(menuLabel));
+        expect(menuTheme.brightness, base.brightness);
+        expect(contrast(menuTheme.colorScheme.onSurface, menuTheme.colorScheme.surface), greaterThanOrEqualTo(4.5));
+        Navigator.of(tester.element(menuLabel)).pop();
+        await tester.pumpAndSettle();
+        expectFieldContrast(version);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('TV 200 percent stacked selectors follow every Up and Down row', (tester) async {
+      final raw = _previewItem('tv-stacked-selectors');
+      final movie = PlexMappers.mediaItemFromCacheJson(raw, serverId: ServerId('server_1'));
+      final client = _FakeMediaServerClient(show: movie, childrenByParent: {}, rawItems: {movie.id: raw});
+      await pumpPhoneDetail(tester, client, movie, viewport: const Size(1280, 720), textScale: 2, tv: true);
+      await tester.pump(const Duration(milliseconds: 450));
+      await tester.pump();
+      final versionFinder = find.byKey(const ValueKey('detail_source_version'));
+      final audioFinder = find.byKey(const ValueKey('detail_audio_selector'));
+      final subtitleFinder = find.byKey(const ValueKey('detail_subtitle_selector'));
+      final version = tester.widget<AppSelectField<String>>(versionFinder).focusNode!;
+      final audio = tester.widget<AppSelectField<DetailTrackOption>>(audioFinder).focusNode!;
+      final subtitle = tester.widget<AppSelectField<DetailTrackOption>>(subtitleFinder).focusNode!;
+      expect(tester.getTopLeft(audioFinder).dy, greaterThan(tester.getTopLeft(versionFinder).dy));
+      expect(tester.getTopLeft(subtitleFinder).dy, greaterThan(tester.getTopLeft(audioFinder).dy));
+      version.requestFocus();
+      await tester.pump();
+      expect(version.hasFocus, isTrue);
+      for (final node in [audio, subtitle]) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pump();
+        expect(node.hasFocus, isTrue);
+      }
+      for (final node in [audio, version]) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+        await tester.pump();
+        expect(node.hasFocus, isTrue);
+      }
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('TV 200 percent focus scrolls foreground controls above an existing rail', (tester) async {
+      await tester.runAsync(loadPreviewFonts);
+      final raw = _previewItem('tv-with-rail');
+      final movie = PlexMappers.mediaItemFromCacheJson(raw, serverId: ServerId('server_1')).copyWith(
+        title: 'Movie',
+        summary: 'A focused overview keeps the selected film and its playback choices together.',
+        userRating: 8,
+        ratings: const [
+          MediaRatingSource(source: 'rottenTomatoesCritic', value: 9.2),
+          MediaRatingSource(source: 'rottenTomatoesAudience', value: 9.5),
+          MediaRatingSource(source: 'imdb', value: 8.5),
+          MediaRatingSource(source: 'tmdb', value: 8.2),
+        ],
+      );
+      final recommendation = testMediaItem(
+        id: 'related-film',
+        backend: MediaBackend.plex,
+        kind: MediaKind.movie,
+        title: 'Related film',
+        serverId: 'server_1',
+      );
+      final client =
+          _FakeMediaServerClient(
+              show: movie,
+              childrenByParent: {},
+              serverBackend: MediaBackend.plex,
+              rawItems: {movie.id: raw},
+            )
+            ..pendingRelated = Future.value([
+              MediaHub(id: 'related', title: 'Related', type: 'movie', items: [recommendation]),
+            ]);
+      await pumpPhoneDetail(
+        tester,
+        client,
+        movie,
+        viewport: const Size(1280, 720),
+        textScale: 2,
+        tv: true,
+        theme: previewFontTheme(monoTheme(dark: true)),
+      );
+      await tester.pump(const Duration(milliseconds: 450));
+      await tester.pump(const Duration(milliseconds: 300));
+      final rail = find.byType(TvBrowseRail);
+      expect(rail, findsOneWidget);
+      final foreground = find.byKey(const ValueKey('tv_detail_content_scroll'));
+      final scrollable = find.descendant(of: foreground, matching: find.byType(Scrollable)).first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      FocusNode focus(String label) => tester
+          .widget<Focus>(find.byWidgetPredicate((widget) => widget is Focus && widget.focusNode?.debugLabel == label))
+          .focusNode!;
+      void expectVisibleAboveRail(Finder control) {
+        final rect = tester.getRect(control);
+        final viewport = tester.getRect(foreground);
+        expect(rect.top, greaterThanOrEqualTo(viewport.top));
+        expect(rect.bottom, lessThanOrEqualTo(viewport.bottom));
+        expect(
+          rect.bottom,
+          lessThanOrEqualTo(tester.getRect(rail).top),
+          reason: 'focused foreground controls must not overlap the recommendation rail',
+        );
+      }
+
+      focus('tv_detail_info').requestFocus();
+      await tester.pump();
+      await tester.pumpAndSettle(const Duration(milliseconds: 50));
+      final initialOffset = position.pixels;
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      await tester.pumpAndSettle(const Duration(milliseconds: 50));
+      expect(focus('rating_chip').hasFocus, isTrue);
+      expectVisibleAboveRail(find.byKey(const ValueKey('detail_personal_rating_target')));
+      expectVisibleAboveRail(find.byType(MediaRatingsStrip));
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      await tester.pumpAndSettle(const Duration(milliseconds: 50));
+      expect(focus('play_button').hasFocus, isTrue);
+      final play = find
+          .descendant(of: find.byType(FocusableActionBar).first, matching: find.byType(FilledButton))
+          .first;
+      expectVisibleAboveRail(play);
+      expect(
+        position.pixels,
+        greaterThan(initialOffset),
+        reason: 'real focus changes must drive the foreground scroll',
+      );
+      for (final key in ['detail_source_version', 'detail_audio_selector', 'detail_subtitle_selector']) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pump();
+        await tester.pumpAndSettle(const Duration(milliseconds: 50));
+        final field = find.byKey(ValueKey(key));
+        final node = key == 'detail_source_version'
+            ? tester.widget<AppSelectField<String>>(field).focusNode
+            : tester.widget<AppSelectField<DetailTrackOption>>(field).focusNode;
+        expect(node!.hasFocus, isTrue);
+        expectVisibleAboveRail(field);
+      }
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      await tester.pumpAndSettle(const Duration(milliseconds: 50));
+      expect(FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<TvBrowseRail>(), isNotNull);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pump();
+      await tester.pumpAndSettle(const Duration(milliseconds: 50));
+      expect(focus('play_button').hasFocus, isTrue);
+      expectVisibleAboveRail(play);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('TV rail removal releases the old stable reserve in the same detail state', (tester) async {
+      final raw = _previewItem('tv-rail-removal');
+      final movie = PlexMappers.mediaItemFromCacheJson(raw, serverId: ServerId('server_1')).copyWith(
+        title: 'Movie',
+        roles: const [MediaRole(id: 'actor-one', tag: 'Actor One')],
+      );
+      final client = _FakeMediaServerClient(
+        show: movie,
+        childrenByParent: {},
+        serverBackend: MediaBackend.plex,
+        rawItems: {movie.id: raw},
+      );
+      await pumpPhoneDetail(tester, client, movie, viewport: const Size(1280, 720), textScale: 2, tv: true);
+      await tester.pump(const Duration(milliseconds: 450));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(TvBrowseRail), findsOneWidget);
+      final detailState = tester.state(find.byType(MediaDetailScreen));
+      final foreground = find.byKey(const ValueKey('tv_detail_content_scroll'));
+      final before = tester.getRect(foreground);
+      final oldRailTop = tester.getRect(find.byType(TvBrowseRail)).top;
+      final itemReads = client.itemReads;
+      // The root's normal context-menu refresh fetches the same item, now
+      // without cast in the server response. Keep the route/state alive so
+      // its revealed stable rail measurement cannot be reset by remounting.
+      final menu = tester.widget<MediaContextMenu>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is MediaContextMenu && widget.item is MediaItem && (widget.item as MediaItem).id == movie.id,
+        ),
+      );
+      menu.onRefresh!(movie);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(client.itemReads, greaterThan(itemReads));
+      expect(tester.state(find.byType(MediaDetailScreen)), same(detailState));
+      expect(find.byType(TvBrowseRail), findsNothing);
+      final after = tester.getRect(foreground);
+      expect(after.height, greaterThan(before.height));
+      expect(after.bottom, greaterThan(oldRailTop));
+      expect(
+        after.bottom,
+        greaterThan(720 * .9),
+        reason: 'the vanished rail must not leave a stable-height empty band',
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('open audio menu cannot apply a reused stream id after its source changes', (tester) async {
+      final raw = _previewItem('menu-source-race');
+      final versions = raw['Media'] as List;
+      for (final (index, version) in versions.indexed) {
+        final streams = ((version as Map)['Part'] as List).first['Stream'] as List;
+        streams.add(<String, Object>{
+          'id': 7,
+          'streamType': 2,
+          'index': 2,
+          'codec': 'aac',
+          'languageCode': 'fra',
+          'title': index == 0 ? 'Source A alternate' : 'Source B alternate',
+        });
+      }
+      final movie = PlexMappers.mediaItemFromCacheJson(raw, serverId: ServerId('server_1'));
+      final client = _FakeMediaServerClient(show: movie, childrenByParent: {}, rawItems: {movie.id: raw});
+      await pumpPhoneDetail(tester, client, movie);
+      await tester.pump(const Duration(milliseconds: 450));
+      await tester.pump();
+      final audioFinder = find.byKey(const ValueKey('detail_audio_selector'));
+      final before = tester.widget<AppSelectField<DetailTrackOption>>(audioFinder);
+      final oldOption = before.options.singleWhere((option) => option.value.streamId == 7);
+      await tester.ensureVisible(audioFinder);
+      await tester.tap(audioFinder);
+      await tester.pumpAndSettle();
+      expect(find.text(oldOption.label), findsOneWidget);
+
+      await saveMediaVersionPreferenceFor(movie, index: 1, versions: movie.mediaVersions!);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 450));
+      await tester.pump();
+      final after = tester.widget<AppSelectField<DetailTrackOption>>(audioFinder);
+      final newOption = after.options.singleWhere((option) => option.value.streamId == 7);
+      expect(newOption.value.streamId, oldOption.value.streamId);
+      expect(newOption.value.scope.sourceId, '101');
+      expect(newOption.value, isNot(oldOption.value));
+      await tester.tap(find.text(oldOption.label));
+      await tester.pumpAndSettle();
+      expect(tester.widget<AppSelectField<DetailTrackOption>>(audioFinder).value?.streamId, 200);
+      // Also guard a late result delivered after a rebuild, independent of the
+      // shared field's menu lifecycle. The latest detail callback rejects A.
+      after.onChanged!(oldOption.value);
+      await tester.pump();
+      expect(tester.widget<AppSelectField<DetailTrackOption>>(audioFinder).value?.streamId, 200);
+      await tester.tap(audioFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(newOption.label));
+      await tester.pumpAndSettle();
+      expect(tester.widget<AppSelectField<DetailTrackOption>>(audioFinder).value, newOption.value);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('failed playback probe stays failed until explicit retry and then restores choices', (tester) async {
+      final raw = _previewItem('retry-source');
+      final movie = PlexMappers.mediaItemFromCacheJson(raw, serverId: ServerId('server_1'));
+      final client = _FakeMediaServerClient(show: movie, childrenByParent: {}, rawItems: {movie.id: raw})
+        ..sourceError = StateError('fixture probe failed');
+      await pumpPhoneDetail(tester, client, movie);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+      final reads = client.sourceReads;
+      final retry = find.byKey(const ValueKey('detail_playback_retry'));
+      expect(retry, findsOneWidget);
+      await tester.pump(const Duration(seconds: 2));
+      expect(client.sourceReads, reads);
+      client.sourceError = null;
+      await tester.ensureVisible(retry);
+      await tester.tap(retry);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+      expect(retry, findsNothing);
+      expect(client.sourceReads, reads + 1);
+      expect(
+        tester.widget<AppSelectField<DetailTrackOption>>(find.byKey(const ValueKey('detail_audio_selector'))).options,
+        isNotEmpty,
+      );
+    });
+
+    for (final backend in [MediaBackend.plex, MediaBackend.jellyfin]) {
+      testWidgets('supplemental request start respects $backend metadata ordering', (tester) async {
+        final movie = testMediaItem(
+          id: 'loading-order',
+          backend: backend,
+          kind: MediaKind.movie,
+          title: 'Visible primary content',
+          serverId: 'server_1',
+        );
+        final gate = Completer<void>();
+        final client = _FakeMediaServerClient(show: movie, childrenByParent: {}, serverBackend: backend)
+          ..metadataGate = gate;
+        await pumpPhoneDetail(tester, client, movie);
+        expect(client.onDeckReads, 1);
+        expect(client.extrasReads, backend == MediaBackend.plex ? 1 : 0);
+        expect(client.relatedReads, backend == MediaBackend.plex ? 1 : 0);
+        if (backend == MediaBackend.plex) expect(find.byKey(const ValueKey('detail_natural_title')), findsOneWidget);
+        gate.complete();
+        await tester.pump();
+        await tester.pump();
+        expect(client.extrasReads, 1);
+        expect(client.relatedReads, 1);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('Plex metadata failure keeps the route item while independent sections complete', (tester) async {
+      final movie = testMediaItem(
+        id: 'plex-failure',
+        backend: MediaBackend.plex,
+        kind: MediaKind.movie,
+        title: 'Available route metadata',
+        serverId: 'server_1',
+      );
+      final related = Completer<List<MediaHub>>();
+      final client = _FakeMediaServerClient(show: movie, childrenByParent: {}, serverBackend: MediaBackend.plex)
+        ..onDeckError = StateError('fixture metadata failure')
+        ..pendingRelated = related.future;
+      await pumpPhoneDetail(tester, client, movie);
+      final title = find.byKey(const ValueKey('detail_natural_title'));
+      expect(tester.widget<Text>(title).data, 'Available route metadata');
+      expect(client.relatedReads, 1);
+      related.complete([
+        MediaHub(id: 'independent', title: 'Independent related result', type: 'movie', items: [movie]),
+      ]);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Independent related result'), findsOneWidget);
+      expect(tester.widget<Text>(title).data, 'Available route metadata');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Plex supplemental completion after leaving detail cannot mutate its successor', (tester) async {
+      final movie = testMediaItem(
+        id: 'old-target',
+        backend: MediaBackend.plex,
+        kind: MediaKind.movie,
+        title: 'Old target',
+        serverId: 'server_1',
+      );
+      final related = Completer<List<MediaHub>>();
+      final client = _FakeMediaServerClient(show: movie, childrenByParent: {}, serverBackend: MediaBackend.plex)
+        ..pendingRelated = related.future;
+      await pumpPhoneDetail(tester, client, movie);
+      await tester.pumpWidget(const MaterialApp(home: Scaffold(body: Text('New target'))));
+      related.complete([
+        MediaHub(id: 'late', title: 'Old late related', type: 'movie', items: [movie]),
+      ]);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('New target'), findsOneWidget);
+      expect(find.text('Old late related'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    Future<void> waitForFixtureArtwork(WidgetTester tester) async {
+      final backdrop = find.byType(CyclingMediaBackdrop).first;
+      expect(tester.widget<CyclingMediaBackdrop>(backdrop).imagePaths, contains(artworkUrl));
+      final images = tester.widgetList<Image>(find.descendant(of: backdrop, matching: find.byType(Image))).toList();
+      expect(images, isNotEmpty, reason: 'the real detail backdrop must request the controlled local fixture');
+      final diskKey = 'plex_optimized_${sha1.convert(utf8.encode(artworkUrl))}';
+      final cached = await tester.runAsync(() => PlexImageCacheManager.instance.getFileFromCache(diskKey));
+      expect(cached?.file.existsSync(), isTrue);
+      expect(cached?.file.lengthSync(), greaterThan(0));
+      final context = tester.element(backdrop);
+      final config = createLocalImageConfiguration(context);
+      final palette = HomeThemeScope.read(context)!;
+      final errors = <Object>[];
+      var decoded = 0;
+      final listeners = <(ImageStream, ImageStreamListener)>[];
+      for (final image in images) {
+        expect(image.image, isA<ResizeImage>());
+        final provider = (image.image as ResizeImage).imageProvider;
+        expect(provider, isA<CachedNetworkImageProvider>());
+        final serverProvider = provider as CachedNetworkImageProvider;
+        expect(serverProvider.url, artworkUrl);
+        expect(serverProvider.cacheKey, diskKey);
+        final stream = image.image.resolve(config);
+        final listener = ImageStreamListener((info, _) {
+          if (info.image.width > 1 && info.image.height > 1) decoded++;
+          info.dispose();
+        }, onError: (error, _) => errors.add(error));
+        stream.addListener(listener);
+        listeners.add((stream, listener));
+      }
+      try {
+        // The product starts these streams while pumping its frame. Awaiting
+        // the same pending stream only inside runAsync prevents its fake-zone
+        // continuations from progressing. Alternate real file/codec work with
+        // fake frames until both the image and its real palette have arrived.
+        // The finite budget is below the former five-second real wait; it is
+        // not extended when a provider fails or never produces an image.
+        for (
+          var turn = 0;
+          turn < 100 && errors.isEmpty && (decoded == 0 || palette.color == AmbientPaletteExtractor.defaultFallback);
+          turn++
+        ) {
+          await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 10)));
+          await tester.pump(const Duration(milliseconds: 25));
+        }
+      } finally {
+        for (final (stream, listener) in listeners) {
+          stream.removeListener(listener);
+        }
+      }
+      expect(errors, isEmpty, reason: 'a failed fixture image must fail instead of producing a dark screenshot');
+      expect(decoded, greaterThan(0));
+      expect(
+        palette.color,
+        isNot(AmbientPaletteExtractor.defaultFallback),
+        reason: 'the actual artwork palette must settle too',
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      final frames = tester.widgetList<RawImage>(find.descendant(of: backdrop, matching: find.byType(RawImage)));
+      expect(
+        frames.any((frame) => frame.image != null && frame.image!.width > 1 && frame.image!.height > 1),
+        isTrue,
+        reason: 'at least one actual decoded artwork frame must be painted before export',
+      );
+    }
+
+    for (final initial in [
+      (rail: false, scale: 1.0, size: const Size(1920, 1080)),
+      (rail: true, scale: 1.0, size: const Size(1920, 1080)),
+      (rail: false, scale: 2.0, size: const Size(1280, 720)),
+      (rail: true, scale: 2.0, size: const Size(1280, 720)),
+    ]) {
+      final name = 'tv-initial-${initial.rail ? 'rail' : 'no-rail'}-${(initial.scale * 100).round()}';
+      testWidgets('$name preserves visible content during automatic Play focus', (tester) async {
+        await tester.runAsync(loadPreviewFonts);
+        final raw = _previewItem(name);
+        final movie = PlexMappers.mediaItemFromCacheJson(raw, serverId: ServerId('server_1')).copyWith(
+          title: 'Movie',
+          year: 2024,
+          durationMs: 9960000,
+          summary: 'An overview of this movie.',
+          thumbPath: artworkUrl,
+          artPath: artworkUrl,
+          userRating: 8,
+          roles: initial.rail ? const [MediaRole(id: 'actor-one', tag: 'Actor One')] : const [],
+          ratings: const [
+            MediaRatingSource(source: 'rottenTomatoesCritic', value: 9.2),
+            MediaRatingSource(source: 'rottenTomatoesAudience', value: 9.5),
+            MediaRatingSource(source: 'imdb', value: 8.5),
+            MediaRatingSource(source: 'tmdb', value: 8.2),
+          ],
+        );
+        final related = Completer<List<MediaHub>>();
+        final client = _FakeMediaServerClient(
+          show: movie,
+          childrenByParent: {},
+          serverBackend: MediaBackend.plex,
+          rawItems: {movie.id: raw},
+          artworkUrl: artworkUrl,
+        )..pendingRelated = related.future;
+        final boundary = GlobalKey();
+        await pumpPhoneDetail(
+          tester,
+          client,
+          movie,
+          viewport: initial.size,
+          textScale: initial.scale,
+          tv: true,
+          screenshotKey: boundary,
+          theme: previewFontTheme(monoTheme(dark: true).copyWith(platform: TargetPlatform.android)),
+        );
+        await tester.pump(const Duration(milliseconds: 450));
+        await waitForFixtureArtwork(tester);
+        final foreground = find.byKey(const ValueKey('tv_detail_content_scroll'));
+        final scrollable = find.descendant(of: foreground, matching: find.byType(Scrollable)).first;
+        final position = tester.state<ScrollableState>(scrollable).position;
+        final actions = find.byType(FocusableActionBar).first;
+        final viewport = tester.getRect(foreground);
+        expect(
+          tester.getRect(scrollable),
+          viewport,
+          reason: 'the scroll helper must use the clipped foreground viewport, not the full screen',
+        );
+        expect(find.byType(TvBrowseRail), initial.rail ? findsOneWidget : findsNothing);
+        final before = tester.getRect(actions);
+        final wasFullyVisible = before.top >= viewport.top && before.bottom <= viewport.bottom;
+        expect(position.pixels, 0, reason: 'capture the unscrolled layout before the real reveal autofocus');
+        expect(FocusManager.instance.primaryFocus?.debugLabel, isNot('play_button'));
+        expect(wasFullyVisible, !initial.rail || initial.scale == 1);
+        expect(tester.widget<AnimatedOpacity>(find.byKey(tvDetailRevealGateKey)).opacity, 0);
+        related.complete(const []);
+        await tester.pump();
+        await tester.pump();
+        await tester.pumpAndSettle(const Duration(milliseconds: 50));
+        expect(tester.widget<AnimatedOpacity>(find.byKey(tvDetailRevealGateKey)).opacity, 1);
+        expect(FocusManager.instance.primaryFocus?.debugLabel, 'play_button');
+        // The actor rail is present before this gate; the supplemental result
+        // is empty, so the comparison never uses a pending empty-rail viewport.
+        expect(tester.getRect(foreground), viewport);
+        final after = tester.getRect(actions);
+        expect(after.top, greaterThanOrEqualTo(viewport.top));
+        expect(after.bottom, lessThanOrEqualTo(viewport.bottom));
+        if (wasFullyVisible) {
+          expect(position.pixels, 0, reason: 'already visible Play must not recenter the initial screen');
+          for (final visible in [
+            find.byKey(const ValueKey('detail_natural_title')),
+            find.byType(MediaRatingsStrip),
+            find.byKey(const ValueKey('detail_personal_rating_target')),
+          ]) {
+            final rect = tester.getRect(visible);
+            expect(rect.top, greaterThanOrEqualTo(viewport.top));
+            expect(rect.bottom, lessThanOrEqualTo(viewport.bottom));
+          }
+        } else {
+          expect(position.pixels, greaterThan(0), reason: 'initially clipped controls still require a real reveal');
+          expect(after.bottom, lessThanOrEqualTo(tester.getRect(find.byType(TvBrowseRail)).top));
+        }
+        expect(tester.takeException(), isNull);
+        if (const bool.fromEnvironment('EXPORT_DETAIL_COMPLETE_FIXTURES')) {
+          await tester.runAsync(() async {
+            final render = boundary.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+            final image = await render.toImage(pixelRatio: 1);
+            final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+            final output = File('build/detail-fixtures/phase2/$name.png');
+            await output.parent.create(recursive: true);
+            await output.writeAsBytes(bytes!.buffer.asUint8List());
+            image.dispose();
+          });
+        }
+      });
+    }
+
+    for (final fixture in [
+      (name: 'phone-dark', size: const Size(390, 844), scale: 1.0, dark: true, oled: false, tv: false),
+      (name: 'phone-light', size: const Size(390, 844), scale: 1.0, dark: false, oled: false, tv: false),
+      (name: 'phone-oled', size: const Size(390, 844), scale: 1.0, dark: true, oled: true, tv: false),
+      (name: 'narrow-200', size: const Size(320, 844), scale: 2.0, dark: true, oled: false, tv: false),
+      (name: 'tablet-portrait', size: const Size(768, 1024), scale: 1.0, dark: true, oled: false, tv: false),
+      (name: 'tablet-landscape', size: const Size(1024, 768), scale: 1.0, dark: true, oled: false, tv: false),
+      (name: 'desktop', size: const Size(1440, 900), scale: 1.0, dark: true, oled: false, tv: false),
+      (name: 'tv', size: const Size(1920, 1080), scale: 1.0, dark: true, oled: false, tv: true),
+      (name: 'tv-200', size: const Size(1280, 720), scale: 2.0, dark: true, oled: false, tv: true),
+      (name: 'phone-no-art', size: const Size(390, 844), scale: 1.0, dark: true, oled: false, tv: false),
+    ]) {
+      testWidgets('complete detail matrix ${fixture.name}', (tester) async {
+        await tester.runAsync(loadPreviewFonts);
+        final previousPlatform = debugDefaultTargetPlatformOverride;
+        try {
+          debugDefaultTargetPlatformOverride = fixture.name == 'desktop'
+              ? TargetPlatform.windows
+              : TargetPlatform.android;
+          TvDetectionService.debugSetAppleTVOverride(fixture.tv);
+          final hasArtwork = fixture.name != 'phone-no-art';
+          final raw = _previewItem('fixture-movie');
+          final movie = PlexMappers.mediaItemFromCacheJson(raw, serverId: ServerId('server_1')).copyWith(
+            title: '沙丘：第二部',
+            year: 2024,
+            durationMs: 9960000,
+            thumbPath: hasArtwork ? artworkUrl : null,
+            artPath: hasArtwork ? artworkUrl : null,
+            summary: '保罗与契妮及弗雷曼人共同面对命运的选择。这个简介用于检验详情内容、文字缩放与滚动布局。',
+            ratings: const [
+              MediaRatingSource(source: 'rottenTomatoesCritic', value: 9.2),
+              MediaRatingSource(source: 'rottenTomatoesAudience', value: 9.5),
+              MediaRatingSource(source: 'imdb', value: 8.5),
+              MediaRatingSource(source: 'tmdb', value: 8.2),
+            ],
+            userRating: 8,
+          );
+          final client = _FakeMediaServerClient(
+            show: movie,
+            childrenByParent: {},
+            serverBackend: MediaBackend.plex,
+            rawItems: {movie.id: raw},
+            artworkUrl: hasArtwork ? artworkUrl : null,
+          );
+          final boundary = GlobalKey();
+          final base = previewFontTheme(monoTheme(dark: fixture.dark, oled: fixture.oled));
+          await pumpPhoneDetail(
+            tester,
+            client,
+            movie,
+            viewport: fixture.size,
+            textScale: fixture.scale,
+            screenshotKey: boundary,
+            tv: fixture.tv,
+            theme: base,
+          );
+          await tester.pump(const Duration(seconds: 1));
+          if (hasArtwork) {
+            await waitForFixtureArtwork(tester);
+          } else {
+            expect(find.byType(CyclingMediaBackdrop), findsNothing);
+          }
+          expect(find.byKey(const ValueKey('detail_natural_title')), findsOneWidget);
+          expect(find.byType(MediaRatingsStrip), findsOneWidget);
+          expect(
+            find.byType(MediaContextMenu),
+            findsOneWidget,
+            reason: 'one detail More action owns one menu lifecycle',
+          );
+          expect(tester.takeException(), isNull);
+          if (fixture.name == 'desktop') {
+            final pageScroll = find
+                .descendant(of: find.byType(CustomScrollView), matching: find.byType(Scrollable))
+                .first;
+            expect(tester.state<ScrollableState>(pageScroll).position.pixels, 0);
+            final play = find
+                .descendant(of: find.byType(FocusableActionBar).first, matching: find.byType(FilledButton))
+                .first;
+            for (final visible in [
+              find.byKey(const ValueKey('detail_natural_title')),
+              find.byType(MediaRatingsStrip),
+              play,
+            ]) {
+              final rect = tester.getRect(visible);
+              expect(rect.top, greaterThanOrEqualTo(0));
+              expect(
+                rect.bottom,
+                lessThanOrEqualTo(fixture.size.height),
+                reason: 'desktop hero essentials must be visible before scrolling',
+              );
+            }
+          }
+          if (fixture.name == 'tv-200') {
+            expect(find.byType(TvBrowseRail), findsNothing);
+            final viewport = tester.getRect(find.byKey(const ValueKey('tv_detail_content_scroll')));
+            final ratings = tester.getRect(find.byType(MediaRatingsStrip));
+            expect(ratings.top, greaterThanOrEqualTo(viewport.top));
+            expect(
+              ratings.bottom,
+              lessThanOrEqualTo(viewport.bottom),
+              reason: 'absent rails must not reserve space that clips the large-text score strip',
+            );
+          }
+          Future<void> capture(String suffix) async {
+            if (!const bool.fromEnvironment('EXPORT_DETAIL_COMPLETE_FIXTURES')) return;
+            await tester.runAsync(() async {
+              final render = boundary.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+              final image = await render.toImage(pixelRatio: 1);
+              final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+              final output = File('build/detail-fixtures/phase2/${fixture.name}-$suffix.png');
+              await output.parent.create(recursive: true);
+              await output.writeAsBytes(bytes!.buffer.asUint8List());
+              image.dispose();
+            });
+          }
+
+          await capture('hero');
+          final selectors = find.byKey(const ValueKey('detail_playback_selectors'));
+          if (fixture.tv) {
+            await tester.ensureVisible(selectors);
+          } else {
+            // A natural-height hero can extend past the viewport/cache area.
+            // Scroll the actual page until the section is built and reached;
+            // ensureVisible alone requires the element to already exist.
+            await tester.scrollUntilVisible(
+              selectors,
+              fixture.size.height * .4,
+              scrollable: find.descendant(of: find.byType(CustomScrollView), matching: find.byType(Scrollable)).first,
+              maxScrolls: 20,
+            );
+          }
+          await tester.pumpAndSettle();
+          for (final key in ['detail_source_version', 'detail_audio_selector', 'detail_subtitle_selector']) {
+            expect(tester.getSize(find.byKey(ValueKey(key))).height, greaterThanOrEqualTo(48));
+          }
+          expect(tester.takeException(), isNull);
+          await capture('selectors');
+        } finally {
+          debugDefaultTargetPlatformOverride = previousPlatform;
+        }
+      });
+    }
+
     Finder episodeCardFor(String title) => find.ancestor(of: find.text(title), matching: find.byType(EpisodeCard));
 
     bool episodeRowWatched(WidgetTester tester, String title) {
@@ -2084,7 +2853,7 @@ void main() {
         );
         expect(find.byKey(const ValueKey('detail_primary_play')), findsOneWidget);
         final hero = tester.getRect(find.byKey(const ValueKey('detail_hero')));
-        expect(hero.height, lessThan(size.height * .75));
+        expect(hero.height, greaterThan(0)); // Natural content may exceed the art height.
         expect(tester.takeException(), isNull);
         await captureTablet(tester, find.byKey(boundary), 'detail-${size.width.toInt()}');
         await tester.drag(find.byType(CustomScrollView).first, const Offset(0, -350));
@@ -2270,8 +3039,20 @@ void main() {
       expect(find.byKey(const ValueKey('detail_primary_play')), findsOneWidget);
       expect(find.text(t.common.viewAll), findsOneWidget);
       expect(find.text('First Actor'), findsOneWidget);
-      expect(find.text('1080p · H.264 · 227.0 MB'), findsOneWidget);
-      expect(find.text(t.fileInfo.versionCounter(index: 1, count: 2)), findsOneWidget);
+      final pageScroll = find.descendant(of: find.byType(CustomScrollView), matching: find.byType(Scrollable)).first;
+      final sourceField = find.byKey(const ValueKey('detail_source_version'));
+      await tester.scrollUntilVisible(sourceField, 250, scrollable: pageScroll);
+      final source = tester.widget<AppSelectField<String>>(sourceField);
+      expect(source.value, 'source-1080');
+      expect(source.options, hasLength(2));
+      expect(
+        find.descendant(of: sourceField, matching: find.text(phoneMediaVersions.first.displayLabel)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: sourceField, matching: find.text(t.fileInfo.versionCounter(index: 1, count: 2))),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
       if (const bool.fromEnvironment('UPDATE_FUSION_SCREENSHOTS')) {
         await tester.runAsync(() async {
@@ -2285,27 +3066,72 @@ void main() {
         });
       }
 
-      await tester.tap(find.byKey(const ValueKey('detail_episode_season_1_episode_2')));
-      await tester.pump();
-      expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 2)}'), findsOneWidget);
-      await tester.ensureVisible(find.text('11–12'));
+      Future<void> selectEpisodeAndVerifyPlay(int number) async {
+        final card = find.byKey(ValueKey('detail_episode_season_1_episode_$number'));
+        await tester.scrollUntilVisible(card, 250, scrollable: pageScroll);
+        await tester.tap(card);
+        await tester.pump();
+        // The visible outline proves the tap changed the actual selected
+        // episode before scrolling back to the separately laid-out hero.
+        expect(
+          find.descendant(
+            of: card,
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Container &&
+                  widget.decoration is BoxDecoration &&
+                  (widget.decoration as BoxDecoration).border != null,
+            ),
+          ),
+          findsOneWidget,
+        );
+        final primaryPlay = find.byKey(const ValueKey('detail_primary_play'));
+        await tester.scrollUntilVisible(primaryPlay, -250, scrollable: pageScroll, maxScrolls: 20);
+        await tester.pump();
+        expect(
+          find.descendant(
+            of: primaryPlay,
+            matching: find.text('${t.common.play} ${t.common.episodeNumber(number: number)}'),
+          ),
+          findsOneWidget,
+        );
+      }
+
+      await selectEpisodeAndVerifyPlay(2);
+      await tester.scrollUntilVisible(find.text('11–12'), 250, scrollable: pageScroll);
       await tester.tap(find.text('11–12'));
       await tester.pump();
-      await tester.tap(find.byKey(const ValueKey('detail_episode_season_1_episode_12')));
-      await tester.pump();
-      expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 12)}'), findsOneWidget);
+      await selectEpisodeAndVerifyPlay(12);
+      await tester.scrollUntilVisible(find.text('1–10'), 250, scrollable: pageScroll);
       await tester.tap(find.text('1–10'));
       await tester.pump();
-      await tester.tap(find.byKey(const ValueKey('detail_episode_season_1_episode_1')));
+      await selectEpisodeAndVerifyPlay(1);
       await tester.pump(const Duration(seconds: 1));
 
-      await tester.drag(
-        find.byWidgetPredicate((widget) => widget is Scrollable && widget.axisDirection == AxisDirection.down).first,
-        const Offset(0, -950),
-      );
+      await tester.scrollUntilVisible(find.byKey(const ValueKey('detail_technical_info')), 250, scrollable: pageScroll);
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byKey(const ValueKey('detail_technical_info')), findsOneWidget);
       expect(find.textContaining('/media/shows/the-show/S01E01-1080p.mkv'), findsOneWidget);
+      final filePart = phoneFileInfo.versions.first.parts.first;
+      expect(filePart.fileSize, 238_000_000);
+      expect(filePart.fileSizeFormatted, '226.97 MB', reason: 'existing binary MB formatter keeps two decimal places');
+      final technical = tester.widget<MediaDetailTechnicalInfo>(find.byType(MediaDetailTechnicalInfo));
+      expect(technical.targetKey, buildEpisode(show, buildSeason(show, 1), 1).globalKey);
+      expect(technical.versionIndex, 0);
+      if (technical.sourceId != null) {
+        expect(technical.sourceId, phoneFileInfo.versions.first.id);
+      }
+      final pathRow = find.descendant(
+        of: find.byKey(const ValueKey('detail_technical_info')),
+        matching: find.text('${t.fileInfo.file}: ${filePart.filePath}'),
+      );
+      expect(pathRow, findsOneWidget);
+      final fileCard = find.ancestor(of: pathRow, matching: find.byType(Container)).first;
+      expect(
+        find.descendant(of: fileCard, matching: find.text('${t.fileInfo.size}: ${filePart.fileSizeFormatted}')),
+        findsOneWidget,
+        reason: 'the exact localized size row belongs to the same file card as the selected source path',
+      );
       expect(tester.takeException(), isNull);
       if (const bool.fromEnvironment('UPDATE_FUSION_SCREENSHOTS')) {
         await tester.runAsync(() async {
@@ -2320,6 +3146,23 @@ void main() {
       }
     });
 
+    testWidgets('personal rating target remains at least 48px and grows at 200 percent text', (tester) async {
+      final show = buildShow();
+      await pumpPhoneDetail(
+        tester,
+        singleSeasonClient(show, mediaVersions: phoneMediaVersions, fileInfo: phoneFileInfo),
+        show,
+        viewport: const Size(320, 844),
+        textScale: 2,
+      );
+      final target = find.byKey(const ValueKey('detail_personal_rating_target'));
+      expect(target, findsOneWidget);
+      final size = tester.getSize(target);
+      expect(size.width, greaterThanOrEqualTo(48));
+      expect(size.height, greaterThan(48));
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('narrow large-text source card keeps the version label inside the row', (tester) async {
       final show = buildShow();
       await pumpPhoneDetail(
@@ -2332,10 +3175,12 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       final sourceCard = find.byKey(const ValueKey('detail_source_version'));
-      final versionLabel = find.byKey(const ValueKey('detail_source_version_label'));
       expect(sourceCard, findsOneWidget);
-      expect(versionLabel, findsOneWidget);
-      expect(tester.getRect(versionLabel).right, lessThanOrEqualTo(tester.getRect(sourceCard).right));
+      final field = tester.widget<AppSelectField<String>>(sourceCard);
+      expect(field.options, hasLength(2));
+      for (final text in find.descendant(of: sourceCard, matching: find.byType(Text)).evaluate()) {
+        expect(tester.getRect(find.byWidget(text.widget)).right, lessThanOrEqualTo(tester.getRect(sourceCard).right));
+      }
       expect(tester.takeException(), isNull);
     });
 
@@ -2451,7 +3296,7 @@ void main() {
           );
         }
         expect(
-          tester.widget<FittingTitleText>(find.byType(FittingTitleText).first).style!.color,
+          tester.widget<Text>(find.byKey(const ValueKey('detail_natural_title'))).style!.color,
           theme.colorScheme.onSurface,
         );
         expect(
@@ -2489,16 +3334,14 @@ void main() {
       });
     }
 
-    testWidgets('phone hero title fallback without artwork keeps white text', (tester) async {
+    testWidgets('phone hero title fallback follows its accessible page foreground', (tester) async {
       final show = buildShow();
       final theme = monoTheme(dark: false);
       await pumpPhoneDetail(tester, singleSeasonClient(show), show, theme: theme);
 
-      final heroTitle = tester.widget<FittingTitleText>(find.byType(FittingTitleText).first);
-      expect(heroTitle.style?.color, Colors.white);
-      final shadow = heroTitle.style?.shadows?.single;
-      expect(shadow, isNotNull);
-      expect(shadow!.color.computeLuminance(), lessThan(0.5), reason: 'white text keeps a dark shadow');
+      final heroTitle = tester.widget<Text>(find.byKey(const ValueKey('detail_natural_title')));
+      final context = tester.element(find.byKey(const ValueKey('detail_natural_title')));
+      expect(heroTitle.style?.color, Theme.of(context).colorScheme.onSurface);
     });
 
     testWidgets('paints the item before the on-deck lookup settles', (tester) async {
@@ -2586,9 +3429,20 @@ void main() {
       for (var i = 0; i < 8; i++) {
         await tester.pump();
         expect(
-          find.byType(CircularProgressIndicator),
+          find.byType(MediaDetailLoadingSkeleton),
           findsNothing,
           reason: 'playback return must not raise the full-screen loader',
+        );
+        expect(
+          find.byType(CircularProgressIndicator).evaluate().length,
+          find
+              .descendant(
+                of: find.byKey(const ValueKey('detail_playback_selectors')),
+                matching: find.byType(CircularProgressIndicator),
+              )
+              .evaluate()
+              .length,
+          reason: 'only the source selectors may show a local probe indicator while loaded content remains',
         );
         expect(
           find.text('1. Episode S1E1'),
@@ -2702,7 +3556,7 @@ void main() {
       expect(find.text('Director'), findsNothing);
     });
 
-    testWidgets('movie with multiple versions gets a split segment that plays the picked version', (tester) async {
+    testWidgets('movie version selector saves intent and primary Play uses the chosen source', (tester) async {
       // Issue #1881: the split Play chevron makes multiple versions visible
       // on the detail screen and runs the existing Play Version flow.
       final versions = [MediaVersion(id: 'v1', videoResolution: '1080'), MediaVersion(id: 'v2', videoResolution: '4k')];
@@ -2720,36 +3574,23 @@ void main() {
 
       await pumpPhoneDetail(tester, client, movie, observer: observer);
 
-      final chevron = find.descendant(
-        of: find.byType(FocusableActionBar),
-        matching: find.byIcon(Symbols.keyboard_arrow_down_rounded),
-      );
-      expect(chevron, findsOneWidget);
-
-      await tester.tap(chevron);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // The existing version picker, listing every version. Scoped to the
-      // dialog: the hero's quality chip also renders the resolution label.
-      Finder inDialog(String text) => find.descendant(of: find.byType(Dialog), matching: find.text(text));
-      expect(inDialog(t.mediaMenu.playVersion), findsOneWidget);
-      expect(inDialog(versions[0].displayLabel), findsOneWidget);
-      expect(inDialog(versions[1].displayLabel), findsOneWidget);
-
-      await tester.tap(inDialog(versions[1].displayLabel));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Jellyfin can transcode, so the quality picker follows; keep Original.
-      await tester.tap(inDialog(t.videoControls.qualityOriginal));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(observer.pushedRouteNames, contains(kVideoPlayerRouteName));
-      // The pick is remembered so Continue Watching / plain Play resume it.
+      await tester.pump(const Duration(milliseconds: 400));
+      final field = find.byKey(const ValueKey('detail_source_version'));
+      await tester.ensureVisible(field);
+      await tester.tap(field);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(versions[1].displayLabel).last);
+      await tester.pumpAndSettle();
+      expect(observer.pushedRouteNames, isNot(contains(kVideoPlayerRouteName)));
       final saved = await savedMediaVersionPreferenceFor(movie);
       expect(saved?.index, 1);
+      final play = find
+          .descendant(of: find.byType(FocusableActionBar).first, matching: find.byType(FilledButton))
+          .first;
+      tester.widget<FilledButton>(play).onPressed!();
+      await tester.pumpAndSettle();
+      expect(observer.pushedRouteNames, contains(kVideoPlayerRouteName));
+      expect(observer.players.single.selectedMediaSourceId, 'v2');
     });
 
     for (final fixture in [
@@ -2857,14 +3698,9 @@ void main() {
       );
     });
 
-    testWidgets('hero chip strip sheds chips by usefulness instead of wrapping', (tester) async {
-      // The hero metadata strip is a single run: when it cannot fit, chips
-      // drop by usefulness — rating badges from the end first, then the
-      // quality label, certification, and runtime — never by wrapping onto a
-      // second run the height clip would hide. The interactive Rate chip and
-      // the year go last and first, respectively. Phone widths take the
-      // scores off the strip onto a row of their own, where the strip's
-      // shedding can no longer hide every one of them (#2569).
+    testWidgets('independent scores survive narrow hero metadata fitting', (tester) async {
+      // External scores occupy their own region. Metadata can shed fields
+      // when the viewport shrinks without hiding a valid score.
       final movie =
           testMediaItem(
             id: 'chip_movie',
@@ -2897,34 +3733,18 @@ void main() {
       }
 
       final rate = t.mediaMenu.rate;
-      void expectChips({required List<String> present, required List<String> absent}) {
-        // The info rows below the hero repeat some values (e.g. the content
-        // rating), so scope every lookup to the strip: the Wrap carrying the
-        // always-present Rate chip.
-        final strip = find.ancestor(of: find.text(rate), matching: find.byType(Wrap)).first;
-        Finder chip(String text) => find.descendant(of: strip, matching: find.text(text));
-        for (final text in present) {
-          expect(chip(text), findsOneWidget, reason: '"$text" should be on the strip');
+      for (final width in [1100.0, 660.0]) {
+        await resizeTo(width);
+        final metadata = tester.widget<Text>(find.byKey(const ValueKey('detail_plain_metadata')));
+        for (final label in ['2017', 'PG-13', '1h 46min', '1080p']) {
+          expect(metadata.data, contains(label));
         }
-        for (final text in absent) {
-          expect(chip(text), findsNothing, reason: '"$text" should have been dropped');
-        }
-        // Single run: every survivor sits on the same line as the always-kept
-        // Rate chip.
-        final rateDy = tester.getCenter(find.text(rate)).dy;
-        for (final text in present) {
-          expect(tester.getCenter(chip(text)).dy, moreOrLessEquals(rateDy, epsilon: 4));
+        expect(find.text(rate), findsOneWidget);
+        for (final score in ['9.2', '7.4', '6.4']) {
+          expect(find.text(score), findsOneWidget);
         }
         expect(tester.takeException(), isNull);
       }
-
-      // 1100 wide: everything fits (test font ~13px/char puts the full strip
-      // near 740px against ~1068px of hero width).
-      expectChips(present: ['2017', 'PG-13', '1h 46min', '1080p', '9.2', '7.4', '6.4', rate], absent: []);
-
-      // The scores pill sheds badges from the end before anything else.
-      await resizeTo(660);
-      expectChips(present: ['2017', 'PG-13', '1h 46min', '1080p', '9.2', rate], absent: ['7.4', '6.4']);
 
       // Compact phones use a wrapping metadata line, keeping the source's
       // useful values readable without the old interactive chip strip.
@@ -2939,6 +3759,9 @@ void main() {
         expect(text.data, contains('1h 46min'));
         expect(text.textAlign, TextAlign.center);
         expect(tester.getRect(metadata).width, lessThanOrEqualTo(width - 32));
+        for (final score in ['9.2', '7.4', '6.4']) {
+          expect(find.text(score), findsOneWidget);
+        }
         expect(tester.takeException(), isNull);
       }
     });
@@ -2961,34 +3784,20 @@ void main() {
 
       await pumpPhoneDetail(tester, client, movie);
 
-      final rate = t.mediaMenu.rate;
-      Finder strip() => find.ancestor(of: find.text(rate), matching: find.byType(Wrap)).first;
-      Finder genres() => find.ancestor(of: find.text('Drama'), matching: find.byType(Wrap)).first;
-      Finder title() => find.byType(FittingTitleText).first;
-      Finder actions() => find.byType(FocusableActionBar).first;
-      double centerX(Finder finder) => tester.getCenter(finder).dx;
-
-      // 1100 wide: everything hugs the 16px hero inset.
-      for (final finder in [strip(), genres(), actions()]) {
-        expect(tester.getTopLeft(finder).dx, moreOrLessEquals(16, epsilon: 1));
-      }
-      expect(tester.widget<FittingTitleText>(title()).textAlign, isNull);
-
+      final title = find.byKey(const ValueKey('detail_natural_title'));
+      expect(tester.widget<Text>(title).textAlign, TextAlign.start);
       tester.view.physicalSize = const Size(420, 2400);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
-
-      // Compact phones center the title and full-width primary play action;
-      // genres are below the hero in the normal content flow.
-      expect(centerX(title()), moreOrLessEquals(210, epsilon: 1));
+      expect(tester.getCenter(title).dx, moreOrLessEquals(210, epsilon: 1));
       final play = find.byKey(const ValueKey('detail_primary_play'));
       expect(play, findsOneWidget);
-      expect(centerX(play), moreOrLessEquals(210, epsilon: 1));
-      expect(tester.widget<FittingTitleText>(title()).textAlign, TextAlign.center);
+      expect(tester.getCenter(play).dx, moreOrLessEquals(210, epsilon: 1));
+      expect(tester.widget<Text>(title).textAlign, TextAlign.center);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('logo-less title gets a wider slot than the logo and shrinks to fit it', (tester) async {
+    testWidgets('logo-less title wraps naturally without shrinking its requested text size', (tester) async {
       // #1796: the fallback title used to be laid out in the 400px logo slot
       // and ellipsized on its second line with most of a desktop hero still
       // empty beside it. It gets twice the logo slot — not the whole hero,
@@ -3008,22 +3817,14 @@ void main() {
 
       await pumpPhoneDetail(tester, client, movie);
 
-      final titleFinder = find.descendant(of: find.byType(FittingTitleText), matching: find.text(title));
+      final titleFinder = find.byKey(const ValueKey('detail_natural_title'));
       final paragraph = tester.renderObject<RenderParagraph>(titleFinder);
-      // Twice the 400px logo slot inside the 1068px hero column.
-      expect(paragraph.constraints.maxWidth, moreOrLessEquals(800, epsilon: 1));
-
-      // 47 glyphs at the 40px base need 1880px, more than two 800px lines:
-      // the size drops until the title fits without an ellipsis.
-      final style = tester.widget<Text>(titleFinder).style!;
-      expect(style.fontSize, lessThan(40));
-      final painter = TextPainter(
-        text: TextSpan(text: title, style: style),
-        maxLines: 2,
-        textDirection: TextDirection.ltr,
-      )..layout(maxWidth: paragraph.constraints.maxWidth);
-      expect(painter.didExceedMaxLines, isFalse);
-      painter.dispose();
+      expect(paragraph.constraints.maxWidth, lessThanOrEqualTo(720));
+      final text = tester.widget<Text>(titleFinder);
+      expect(text.style!.fontSize, 48);
+      expect(text.maxLines, isNull);
+      expect(text.overflow, isNull);
+      expect(paragraph.size.height, greaterThan(48));
     });
 
     testWidgets('portrait phone hero shows square art instead of the cropped backdrop', (tester) async {
@@ -3039,14 +3840,25 @@ void main() {
       );
       final client = _FakeMediaServerClient(show: movie, childrenByParent: const {});
 
-      await pumpPhoneDetail(tester, client, movie);
+      await pumpPhoneDetail(
+        tester,
+        client,
+        movie,
+        viewport: const Size(390, 844),
+        theme: monoTheme(dark: true).copyWith(platform: TargetPlatform.android),
+      );
 
       final backdrop = find.byType(CyclingMediaBackdrop);
       expect(backdrop, findsOneWidget);
+      final backdropContext = tester.element(backdrop);
+      expect(MediaQuery.sizeOf(backdropContext), const Size(390, 844));
+      expect(Theme.of(backdropContext).platform, TargetPlatform.android);
       // A fallback is reached only once every rotating path has failed, so the
       // square background has to be in the rotation set. Listed behind a
       // servable wide backdrop it would never be shown at all.
       final widget = tester.widget<CyclingMediaBackdrop>(backdrop);
+      expect(widget.width, 390);
+      expect(widget.height, greaterThan(widget.width));
       expect(widget.imagePaths, ['/library/metadata/square_hero/squareBg']);
       expect(widget.fallbackImagePaths, contains('/library/metadata/square_hero/art'));
       expect(client.thumbnailPaths.first, '/library/metadata/square_hero/squareBg');
@@ -3063,10 +3875,10 @@ void main() {
 
     testWidgets('overflowing overview DOWN reaches the first real section', (tester) async {
       const summary =
-          'A deliberately extensive overview repeats enough concrete detail to exceed the collapsed line limit. '
-          'It describes the setting, the characters, the central conflict, and the consequences in full. '
-          'A second passage adds more background, more context, and more narrative detail for the viewer. '
-          'A third passage ensures the overview remains overflowing even across a wide phone test viewport. '
+          'A deliberately extensive overview repeats enough concrete detail to exceed the collapsed line limit.\n'
+          'It describes the setting, the characters, the central conflict, and the consequences in full.\n'
+          'A second passage adds more background, more context, and more narrative detail for the viewer.\n'
+          'A third passage ensures the overview remains overflowing even across a wide phone test viewport.\n'
           'Finally, another complete passage keeps the text beyond four generous lines without relying on font timing.';
       final show = buildShow(summary: summary);
 
@@ -4001,6 +4813,12 @@ Map<String, dynamic> _previewItem(
 
 class _FakeMediaServerClient implements MediaServerClient {
   final MediaItem show;
+  final MediaBackend serverBackend;
+  int extrasReads = 0;
+  int relatedReads = 0;
+  Object? sourceError;
+  Future<List<MediaItem>>? pendingExtras;
+  Future<List<MediaHub>>? pendingRelated;
   final Map<String, List<MediaItem>> childrenByParent;
   final Map<String, Future<List<MediaItem>>> childrenPageFutures;
 
@@ -4037,6 +4855,7 @@ class _FakeMediaServerClient implements MediaServerClient {
   _FakeMediaServerClient({
     required this.show,
     required this.childrenByParent,
+    this.serverBackend = MediaBackend.jellyfin,
     this.artworkUrl,
     this.childrenPageFutures = const {},
     Map<String, Future<List<MediaItem>>>? childrenPageFuturesByStart,
@@ -4056,10 +4875,11 @@ class _FakeMediaServerClient implements MediaServerClient {
   String? get serverName => 'Server';
 
   @override
-  MediaBackend get backend => MediaBackend.jellyfin;
+  MediaBackend get backend => serverBackend;
 
   @override
-  ServerCapabilities get capabilities => ServerCapabilities.jellyfin;
+  ServerCapabilities get capabilities =>
+      serverBackend == MediaBackend.plex ? ServerCapabilities.plex : ServerCapabilities.jellyfin;
 
   @override
   Future<({MediaItem? item, MediaItem? onDeckEpisode})> fetchItemWithOnDeck(
@@ -4076,7 +4896,7 @@ class _FakeMediaServerClient implements MediaServerClient {
         : childrenByParent.values.expand((items) => items).where((item) => item.id == id).firstOrNull ?? show;
     // Mirrors the Jellyfin shape: the item is known first, on-deck needs a
     // second round trip.
-    if (onItemReady != null) {
+    if (onItemReady != null && backend != MediaBackend.plex) {
       earlyPaints.add(item);
       onItemReady(item);
     }
@@ -4107,6 +4927,8 @@ class _FakeMediaServerClient implements MediaServerClient {
     String? preferredVersionSignature,
   }) async {
     sourceReads++;
+    final error = sourceError;
+    if (error != null) throw error;
     final raw = rawItems[itemId];
     final source = raw == null
         ? mediaSourcesById[itemId]
@@ -4155,7 +4977,16 @@ class _FakeMediaServerClient implements MediaServerClient {
   }
 
   @override
-  Future<List<MediaHub>> fetchRelatedHubs(String id, {int count = 10}) async => const [];
+  Future<List<MediaHub>> fetchRelatedHubs(String id, {int count = 10}) async {
+    relatedReads++;
+    return await (pendingRelated ?? Future.value(const <MediaHub>[]));
+  }
+
+  @override
+  Future<List<MediaItem>> fetchExtras(String id) async {
+    extrasReads++;
+    return await (pendingExtras ?? Future.value(const <MediaItem>[]));
+  }
 
   @override
   Future<MediaFileInfo?> getFileInfo(MediaItem item) async => fileInfo;
@@ -4181,11 +5012,18 @@ class _RecordingNavigatorObserver extends NavigatorObserver {
 
   final bool popVideoPlayerImmediately;
   final pushedRouteNames = <String?>[];
+  final players = <VideoPlayerScreen>[];
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     super.didPush(route, previousRoute);
     pushedRouteNames.add(route.settings.name);
+    if (route is VideoPlayerRoute) {
+      players.add(
+        route.pageBuilder(navigator!.context, const AlwaysStoppedAnimation(1), const AlwaysStoppedAnimation(1))
+            as VideoPlayerScreen,
+      );
+    }
     if (popVideoPlayerImmediately && route.settings.name == kVideoPlayerRouteName) {
       scheduleMicrotask(() => navigator?.pop());
     }

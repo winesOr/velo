@@ -21,6 +21,7 @@ import '../models/mpv_config_models.dart';
 import '../models/player_setting_scope.dart';
 import '../models/external_player_models.dart';
 import '../utils/language_codes.dart';
+import '../utils/rating_display_policy.dart';
 import 'base_shared_preferences_service.dart';
 import 'sensitive_prefs.dart';
 import 'device_performance.dart';
@@ -818,6 +819,12 @@ class SettingsService extends BaseSharedPreferencesService {
   /// The corner checkmark on watched posters/thumbnails (#1998). Progress bars
   /// and unwatched counts are unaffected.
   static const showWatchedIndicators = BoolPref('show_watched_indicators', defaultValue: true);
+  static const showRatingBadges = BoolPref('show_rating_badges', defaultValue: true);
+  static const ratingSourceOrder = StringListPref(
+    'rating_source_order',
+    defaultValue: RatingDisplayPolicy.defaultSourceOrder,
+  );
+  static const disabledRatingSources = StringListPref('disabled_rating_sources');
   static const showEpisodeNumberOnCards = BoolPref('show_episode_number_on_cards', defaultValue: true);
   static const showSeasonPostersOnTabs = BoolPref('show_season_posters_on_tabs');
   static const hideSpoilers = BoolPref('hide_spoilers');
@@ -1449,6 +1456,9 @@ class SettingsService extends BaseSharedPreferencesService {
     librariesSectionExpanded,
     showUnwatchedCount,
     showWatchedIndicators,
+    showRatingBadges,
+    ratingSourceOrder,
+    disabledRatingSources,
     showEpisodeNumberOnCards,
     showSeasonPostersOnTabs,
     hideSpoilers,

@@ -7,8 +7,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/theme/home_typography.dart';
 import 'package:plezy/theme/mono_theme.dart';
 import 'package:plezy/widgets/fusion_home_hero.dart';
+import 'package:plezy/services/settings_service.dart';
 
 import '../test_helpers/media_items.dart';
+import '../test_helpers/prefs.dart';
 
 Future<ByteData> _paintHero(
   WidgetTester tester, {
@@ -57,6 +59,11 @@ Future<ByteData> _paintHero(
 List<int> _pixel(ByteData bytes, int y) => [for (var c = 0; c < 3; c++) bytes.getUint8((y * 390 + 4) * 4 + c)];
 
 void main() {
+  setUp(() async {
+    resetSharedPreferencesForTest();
+    SettingsService.resetForTesting();
+    await SettingsService.getInstance();
+  });
   for (final fixture in [
     (surface: const Color(0xffd9bfb4), dark: false),
     (surface: const Color(0xff796254), dark: true),

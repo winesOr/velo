@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../utils/ambient_palette_extractor.dart';
+import 'app_glass_surface.dart';
 
 /// VidHub 风格的全景动态流光毛玻璃背景组件
 ///
@@ -88,29 +89,30 @@ class _VidHubAmbientBackdropState extends State<VidHubAmbientBackdrop> {
   Widget build(BuildContext context) {
     final bgColor = widget.backgroundColor ?? Theme.of(context).scaffoldBackgroundColor;
     final clearLightArtwork = widget.preserveArtwork && Theme.of(context).brightness == Brightness.light;
+    final reduced = AppGlassSurface.reduceEffects(context);
 
     return Stack(
       fit: StackFit.expand,
       children: [
         // 1. 底层：海报大图 + 硬件加速高斯模糊
         Positioned.fill(
-          child: ImageFiltered(
-            imageFilter: ui.ImageFilter.blur(
-              sigmaX: widget.blurSigma,
-              sigmaY: widget.blurSigma,
-              tileMode: TileMode.clamp,
-            ),
-            child: widget.backdropChild,
-          ),
+          child: reduced || widget.blurSigma <= 0
+              ? widget.backdropChild
+              : ImageFiltered(
+                  imageFilter: ui.ImageFilter.blur(
+                    sigmaX: widget.blurSigma,
+                    sigmaY: widget.blurSigma,
+                    tileMode: TileMode.clamp,
+                  ),
+                  child: widget.backdropChild,
+                ),
         ),
 
         // 2. 动态氛围流光层 (VidHub Ambient Radial Glow)
         Positioned.fill(
           child: TweenAnimationBuilder<Color?>(
             tween: ColorTween(begin: _resolvedAccent, end: _resolvedAccent),
-            duration: !widget.animateColor || MediaQuery.disableAnimationsOf(context)
-                ? Duration.zero
-                : const Duration(milliseconds: 380),
+            duration: !widget.animateColor || reduced ? Duration.zero : const Duration(milliseconds: 380),
             curve: Curves.easeOutCubic,
             builder: (context, animatedColor, _) {
               final activeColor = animatedColor ?? _resolvedAccent;

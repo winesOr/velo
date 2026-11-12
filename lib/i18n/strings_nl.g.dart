@@ -90,6 +90,7 @@ class TranslationsNl extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$seerr$nl seerr = _Translations$seerr$nl._(_root);
 	@override late final _Translations$services$nl services = _Translations$services$nl._(_root);
 	@override late final _Translations$addServer$nl addServer = _Translations$addServer$nl._(_root);
+	@override late final _Translations$detailPlayback$nl detailPlayback = _Translations$detailPlayback$nl._(_root);
 }
 
 // Path: app
@@ -225,6 +226,15 @@ class _Translations$settings$nl extends Translations$settings$en {
 	final TranslationsNl _root; // ignore: unused_field
 
 	// Translations
+	@override String get ratings => 'Ratings';
+	@override String get showRatingBadges => 'Show ratings on posters';
+	@override String get showRatingBadgesDescription => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.';
+	@override String get ratingSources => 'Rating sources';
+	@override String get ratingSourcesDescription => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.';
+	@override String get otherRatingSources => 'Other ratings';
+	@override String get moveRatingUp => 'Move up';
+	@override String get moveRatingDown => 'Move down';
+	@override String get ratingSettingsSaveFailed => 'Could not save rating preferences. Try again.';
 	@override String get title => 'Instellingen';
 	@override String get supportDeveloper => 'Steun Velo';
 	@override String get supportDeveloperDescription => 'Doneer via Liberapay om de ontwikkeling te steunen';
@@ -2297,6 +2307,18 @@ class _Translations$addServer$nl extends Translations$addServer$en {
 	@override String redirectUnsupportedEnterFinal({required Object product}) => 'De server heeft doorgestuurd naar een niet-ondersteunde URL. Voer de uiteindelijke ${product}-URL rechtstreeks in.';
 }
 
+// Path: detailPlayback
+class _Translations$detailPlayback$nl extends Translations$detailPlayback$en {
+	_Translations$detailPlayback$nl._(TranslationsNl root) : this._root = root, super.internal(root);
+
+	final TranslationsNl _root; // ignore: unused_field
+
+	// Translations
+	@override String get version => 'Version';
+	@override String get unavailable => 'Not available';
+	@override String get loadFailed => 'Could not load playback options';
+}
+
 // Path: common.ratingSource
 class _Translations$common$ratingSource$nl extends Translations$common$ratingSource$en {
 	_Translations$common$ratingSource$nl._(TranslationsNl root) : this._root = root, super.internal(root);
@@ -3136,6 +3158,15 @@ extension on TranslationsNl {
 			'update.viewRelease' => 'Bekijk release',
 			'update.latestVersion' => 'Je hebt de nieuwste versie',
 			'update.checkFailed' => 'Kon niet controleren op updates',
+			'settings.ratings' => 'Ratings',
+			'settings.showRatingBadges' => 'Show ratings on posters',
+			'settings.showRatingBadgesDescription' => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.',
+			'settings.ratingSources' => 'Rating sources',
+			'settings.ratingSourcesDescription' => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.',
+			'settings.otherRatingSources' => 'Other ratings',
+			'settings.moveRatingUp' => 'Move up',
+			'settings.moveRatingDown' => 'Move down',
+			'settings.ratingSettingsSaveFailed' => 'Could not save rating preferences. Try again.',
 			'settings.title' => 'Instellingen',
 			'settings.supportDeveloper' => 'Steun Velo',
 			'settings.supportDeveloperDescription' => 'Doneer via Liberapay om de ontwikkeling te steunen',
@@ -3537,6 +3568,8 @@ extension on TranslationsNl {
 			'fileInfo.dolbyVisionLayers' => 'Dolby Vision-lagen',
 			'fileInfo.baseLayerCompatibility' => 'Compatibiliteit basislaag',
 			'fileInfo.avcBitstream' => 'AVC-bitstroom',
+			_ => null,
+		} ?? switch (path) {
 			'fileInfo.nalLengthSize' => 'NAL-lengte',
 			'fileInfo.scalingMatrix' => 'Aangepaste schalingsmatrix',
 			'fileInfo.streamIdentifier' => 'Stream-id',
@@ -3546,8 +3579,6 @@ extension on TranslationsNl {
 			'fileInfo.languageCode' => 'Taalcode',
 			'fileInfo.streamTitle' => 'Tracktitel',
 			'fileInfo.channels' => 'Kanalen',
-			_ => null,
-		} ?? switch (path) {
 			'fileInfo.sampleRate' => 'Samplingsnelheid',
 			'fileInfo.spatialAudio' => 'Ruimtelijke audio',
 			'fileInfo.textBased' => 'Op tekst gebaseerd',
@@ -4051,6 +4082,8 @@ extension on TranslationsNl {
 			'libraries.title' => 'Bibliotheken',
 			'libraries.fallbackTitle' => 'Bibliotheek',
 			'libraries.scanLibraryFiles' => 'Bibliotheekbestanden scannen',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.scanLibrary' => 'Bibliotheek scannen',
 			'libraries.analyze' => 'Analyseren',
 			'libraries.analyzeLibrary' => 'Bibliotheek analyseren',
@@ -4060,8 +4093,6 @@ extension on TranslationsNl {
 			'libraries.trashEmptied' => ({required Object title}) => 'Prullenbak geleegd voor "${title}"',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Kon prullenbak niet legen: ${error}',
 			'libraries.analyzing' => ({required Object title}) => 'Analyseren "${title}"...',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => 'Analyse gestart voor "${title}"',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Kon bibliotheek niet analyseren: ${error}',
 			'libraries.noLibrariesFound' => 'Geen bibliotheken gevonden',
@@ -4565,6 +4596,8 @@ extension on TranslationsNl {
 			'watchTogether.participantNeedsUpdate' => ({required Object name}) => '${name} gebruikt een oudere appversie — synchronisatie niet beschikbaar',
 			'watchTogether.resumingWithout' => ({required Object name}) => 'Hervatten zonder ${name}',
 			'watchTogether.waitingForParticipants' => 'Wachten tot anderen klaar zijn met laden...',
+			_ => null,
+		} ?? switch (path) {
 			'watchTogether.waitingForName' => ({required Object name}) => 'Wachten op ${name}...',
 			'watchTogether.recentRooms' => 'Recente kamers',
 			'watchTogether.renameRoom' => 'Kamer hernoemen',
@@ -4574,8 +4607,6 @@ extension on TranslationsNl {
 			'watchTogether.defaultDisplayName' => 'Gebruiker',
 			'watchTogether.errors.timedOut' => 'De relayserver heeft niet op tijd gereageerd',
 			'watchTogether.errors.connectionLost' => 'De verbinding is verbroken voordat de sessie gereed was',
-			_ => null,
-		} ?? switch (path) {
 			'watchTogether.errors.invalidRelayResponse' => 'De relayserver heeft een onverwacht antwoord verzonden',
 			'watchTogether.errors.sessionEnded' => 'De host heeft de sessie beëindigd',
 			'watchTogether.errors.sessionUnavailable' => 'Kan deze sessie niet hervatten. Neem deel aan of maak een kamer om door te gaan.',
@@ -5079,6 +5110,8 @@ extension on TranslationsNl {
 			'addServer.signInWithPlexCardSubtitle' => 'Autoriseer dit apparaat. Gedeelde servers worden toegevoegd.',
 			'addServer.signInWithPlexCardSubtitleScoped' => 'Autoriseer een Plex-account. Home-gebruikers worden profielen.',
 			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Verbinding maken met ${product}',
+			_ => null,
+		} ?? switch (path) {
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Voer je server-URL, gebruikersnaam en wachtwoord in.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => 'Meld je aan bij je ${product}-server. Wordt gekoppeld aan ${name}.',
 			'addServer.borrowFromAnotherProfile' => 'Van een ander profiel lenen',
@@ -5088,8 +5121,6 @@ extension on TranslationsNl {
 			'addServer.authResponseIncomplete' => 'Het aanmeldingsantwoord van de server was onvolledig',
 			'addServer.quickConnectRejected' => 'Quick Connect is door de server geweigerd',
 			'addServer.quickConnectNotJson' => 'Het Quick Connect-antwoord was geen geldige JSON',
-			_ => null,
-		} ?? switch (path) {
 			'addServer.quickConnectMissingFields' => 'In het Quick Connect-antwoord ontbreekt een code of geheim',
 			'addServer.quickConnectPollRejected' => 'Quick Connect-polling is door de server geweigerd',
 			'addServer.serverTimedOut' => 'De server heeft niet op tijd gereageerd',
@@ -5104,6 +5135,9 @@ extension on TranslationsNl {
 			'addServer.redirectDifferentHost' => ({required Object product}) => 'De server heeft doorgestuurd naar een andere host. Voer de uiteindelijke ${product}-URL rechtstreeks in.',
 			'addServer.redirectInsecure' => 'De server heeft van HTTPS doorgestuurd naar een onbeveiligde URL',
 			'addServer.redirectUnsupportedEnterFinal' => ({required Object product}) => 'De server heeft doorgestuurd naar een niet-ondersteunde URL. Voer de uiteindelijke ${product}-URL rechtstreeks in.',
+			'detailPlayback.version' => 'Version',
+			'detailPlayback.unavailable' => 'Not available',
+			'detailPlayback.loadFailed' => 'Could not load playback options',
 			_ => null,
 		};
 	}

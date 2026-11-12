@@ -152,6 +152,15 @@
     "manualUpdateRequired": "此版本无法自动安装，请查看发布详情中的下载文件。"
   },
   "settings": {
+    "ratings": "评分展示",
+    "showRatingBadges": "显示海报评分",
+    "showRatingBadgesDescription": "优先显示你的评分，否则显示首个可用的已启用来源。继续观看不显示评分。",
+    "ratingSources": "评分来源",
+    "ratingSourcesDescription": "启用来源，并上移或下移调整展示顺序。仅展示媒体服务已提供的评分。",
+    "otherRatingSources": "其他评分",
+    "moveRatingUp": "上移",
+    "moveRatingDown": "下移",
+    "ratingSettingsSaveFailed": "无法保存评分偏好，请重试。",
     "title": "设置",
     "supportDeveloper": "支持 Velo",
     "supportDeveloperDescription": "通过 Liberapay 捐赠支持开发",
@@ -2557,5 +2566,10 @@
     "roomUnavailable": "请先退出一起看房间，再投送给电视独立播放。",
     "success": "已在 ${device} 播放。可以退出 Velo，使用电视遥控器操作。",
     "successWithoutResume": "已在 ${device} 播放，电视未接受续播位置。可以退出 Velo，使用电视遥控器操作。"
+  },
+  "detailPlayback": {
+    "version": "版本",
+    "unavailable": "暂无可用选项",
+    "loadFailed": "播放选项加载失败"
   }
 }

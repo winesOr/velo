@@ -119,6 +119,7 @@ class ActiveProfileBinder {
   // re-runs, e.g. after a borrow upserts a new join row.
   bool _pendingSameIdRebind = false;
   int _bindGeneration = 0;
+  int _bindingIdentityGeneration = 0;
 
   /// True after the binder has successfully bound at least one profile in
   /// this session. Once set, subsequent rebinds bypass the user-token
@@ -286,6 +287,9 @@ class ActiveProfileBinder {
   Future<bool> _runRebindOnce() async {
     _bindingProfileId = activeProfile.activeId;
     final generation = ++_bindGeneration;
+    _bindingIdentityGeneration = activeProfile.committedIdentityGeneration;
+    activeProfile.resetStartupIdentity();
+    StreamSubscription<({String serverId, bool online})>? startupProgress;
     final stopwatch = Stopwatch()..start();
     var success = false;
     _lastBindFailureConnectivityOnly = false;
@@ -336,6 +340,55 @@ class ActiveProfileBinder {
       );
       multiServerProvider.setExpectedVisibleServerIds(expectedServerIds);
       final localProfileHasJoinRows = profile.isLocal && joinRows.isNotEmpty;
+      // A connect wave must not briefly expose a previous profile's clients.
+      // Only clients registered for this pass's identity can be promoted.
+      final jellyfinConnectionIdsForPass = <String>{
+        for (final pc in joinRows)
+          if (connectionsById[pc.connectionId] case JellyfinConnection(:final id)) id,
+      };
+      final startupMembership = <String, Set<String>>{
+        for (final row in joinRows)
+          if (connectionsById[row.connectionId] case JellyfinConnection(:final serverMachineId))
+            row.connectionId: {serverMachineId},
+      };
+      void publishAuthorizedClients() {
+        if (!_isCurrentBind(profile.id, generation)) return;
+        final allowed = {for (final ids in startupMembership.values) ...ids};
+        multiServerProvider.setExpectedVisibleServerIds(allowed);
+        multiServerProvider.setVisibleServerIds({
+          for (final id in serverManager.onlineServerIds)
+            if (allowed.contains(id) &&
+                !serverManager.isRegisteredForOtherProfile(
+                  ServerId(id),
+                  profileId: profile.id,
+                  jellyfinConnectionIds: jellyfinConnectionIdsForPass,
+                ))
+              id,
+        });
+      }
+
+      final pendingAuthorizations = <String>{
+        if (profile.isPlexHome) profile.parentConnectionId ?? '@missing-parent',
+        for (final row in joinRows)
+          if (row.connectionId != profile.parentConnectionId &&
+              connectionsById[row.connectionId] is! JellyfinConnection)
+            row.connectionId,
+      };
+      void authorizationReady(String connectionId, Set<String> serverIds) {
+        if (!_isCurrentBind(profile.id, generation)) return;
+        if (connectionId.isNotEmpty) startupMembership[connectionId] = serverIds;
+        pendingAuthorizations.remove(connectionId);
+        publishAuthorizedClients();
+        if (pendingAuthorizations.isNotEmpty) return;
+        activeProfile.markStartupIdentityReady(profileId: profile.id);
+      }
+
+      // Local profile selection/PIN is already committed before this pass.
+      // Jellyfin connections have no interactive authorization during bind;
+      // their data remains invisible until a scope-matched client is online.
+      publishAuthorizedClients();
+      startupProgress = serverManager.connectProgressStream.listen((_) => publishAuthorizedClients());
+      if (pendingAuthorizations.isEmpty) authorizationReady('', const {});
 
       // Bind the implicit Plex Home parent and borrowed/extra join rows in
       // parallel. A slow/offline Plex parent should not add its timeout budget
@@ -348,6 +401,7 @@ class ActiveProfileBinder {
             connectionsById: connectionsById,
             allowPinPrompt: allowPinPrompt,
             generation: generation,
+            onAuthorized: (ids) => authorizationReady(profile.parentConnectionId ?? '@missing-parent', ids),
           ),
         // Both kinds also bind borrowed/extra connections via the join table.
         // For plex_home this handles a MediaBrowser server (or extra Plex
@@ -360,6 +414,7 @@ class ActiveProfileBinder {
           connectionsById: connectionsById,
           allowPinPrompt: allowPinPrompt,
           generation: generation,
+          onAuthorized: authorizationReady,
         ),
       ]);
       if (!_isCurrentBind(profile.id, generation)) return false;
@@ -434,6 +489,7 @@ class ActiveProfileBinder {
       appLogger.e('ActiveProfileBinder: rebind failed', error: e, stackTrace: st);
       success = false;
     } finally {
+      await startupProgress?.cancel();
       if (success) {
         _lastBoundProfileId = attemptedProfileId;
         _lastFailedProfileId = null;
@@ -496,6 +552,7 @@ class ActiveProfileBinder {
     required Map<String, Connection> connectionsById,
     required bool allowPinPrompt,
     required int generation,
+    required void Function(Set<String> serverIds) onAuthorized,
   }) async {
     final parentId = profile.parentConnectionId;
     final homeUuid = profile.plexHomeUserUuid;
@@ -545,6 +602,7 @@ class ActiveProfileBinder {
       profileLabel: profile.displayName,
       generation: generation,
       cachedToken: cachedToken,
+      onAuthorized: onAuthorized,
       invalidateCachedToken: () => profileConnections.recordToken(profile.id, parentId, ''),
       mintToken: () async {
         if (!allowPin && profile.plexProtected) {
@@ -601,6 +659,7 @@ class ActiveProfileBinder {
     required Map<String, Connection> connectionsById,
     required bool allowPinPrompt,
     required int generation,
+    required void Function(String connectionId, Set<String> serverIds) onAuthorized,
   }) async {
     if (joinRows.isEmpty) {
       if (profile.isLocal) {
@@ -631,6 +690,7 @@ class ActiveProfileBinder {
               pc: pc,
               allowPinPrompt: allowPinPrompt,
               generation: generation,
+              onAuthorized: (ids) => onAuthorized(conn.id, ids),
             ),
           );
         case JellyfinConnection():
@@ -654,6 +714,7 @@ class ActiveProfileBinder {
     required ProfileConnection pc,
     required bool allowPinPrompt,
     required int generation,
+    required void Function(Set<String> serverIds) onAuthorized,
   }) async {
     final auth = await _ensureAuth();
     if (!_isCurrentBind(profile.id, generation)) return const _ProfileBindResult.empty();
@@ -664,6 +725,7 @@ class ActiveProfileBinder {
       profileLabel: profile.displayName,
       generation: generation,
       cachedToken: pc.userToken,
+      onAuthorized: onAuthorized,
       invalidateCachedToken: () => profileConnections.recordToken(profile.id, conn.id, ''),
       mintToken: () =>
           _mintLocalPlexToken(auth: auth, profile: profile, conn: conn, pc: pc, allowPinPrompt: allowPinPrompt),
@@ -709,6 +771,7 @@ class ActiveProfileBinder {
     required String profileLabel,
     required int generation,
     required String? cachedToken,
+    required void Function(Set<String> serverIds) onAuthorized,
     required Future<void> Function() invalidateCachedToken,
     required Future<String?> Function() mintToken,
     required Future<void> Function(String token) persistMintedToken,
@@ -746,6 +809,7 @@ class ActiveProfileBinder {
         if (!_isCurrentBind(profileId, generation)) return const _ProfileBindResult.empty();
         final cachedServerIds = account.servers.map((server) => server.clientIdentifier).toSet();
         if (optimistic != null && setEquals(optimistic.visibleServerIds, cachedServerIds)) {
+          onAuthorized(optimistic.visibleServerIds);
           _reconcileWhenFetchLands(
             fetchOutcome: fetchOutcome,
             account: account,
@@ -765,6 +829,7 @@ class ActiveProfileBinder {
       switch (fetched.status) {
         case _ServerFetchStatus.success:
           final servers = fetched.servers;
+          onAuthorized(servers.map((server) => server.clientIdentifier).toSet());
           appLogger.i(
             'ActiveProfileBinder: using ${usingCachedToken ? "cached" : "fresh"} token for '
             '$profileLabel (${servers.length} servers)',
@@ -788,6 +853,7 @@ class ActiveProfileBinder {
             usingCachedToken = false;
             continue;
           }
+          onAuthorized(const {});
           final result = await _connectFromServers(
             account,
             token,
@@ -826,6 +892,7 @@ class ActiveProfileBinder {
           // safe for this profile. Preserve any compatible servers that
           // connected when plex.tv itself is temporarily unavailable.
           if (optimistic != null) {
+            if (optimistic.visibleServerIds.isNotEmpty) onAuthorized(optimistic.visibleServerIds);
             if (optimistic.visibleServerIds.isNotEmpty) await markUsed?.call();
             return optimistic;
           }
@@ -839,6 +906,7 @@ class ActiveProfileBinder {
           );
           if (!_isCurrentBind(profileId, generation)) return const _ProfileBindResult.empty();
           if (result.visibleServerIds.isNotEmpty) await markUsed?.call();
+          if (result.visibleServerIds.isNotEmpty) onAuthorized(result.visibleServerIds);
           return result;
         case _ServerFetchStatus.cancelled:
           appLogger.d('ActiveProfileBinder: resource refresh cancelled for $profileLabel');
@@ -1122,7 +1190,9 @@ class ActiveProfileBinder {
   }
 
   bool _isCurrentBind(String profileId, int generation) {
-    return _bindGeneration == generation && activeProfile.activeId == profileId;
+    return _bindGeneration == generation &&
+        activeProfile.activeId == profileId &&
+        activeProfile.committedIdentityGeneration == _bindingIdentityGeneration;
   }
 
   Future<PlexAuthService> _ensureAuth() async {

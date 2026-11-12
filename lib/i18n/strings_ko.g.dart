@@ -90,6 +90,7 @@ class TranslationsKo extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$seerr$ko seerr = _Translations$seerr$ko._(_root);
 	@override late final _Translations$services$ko services = _Translations$services$ko._(_root);
 	@override late final _Translations$addServer$ko addServer = _Translations$addServer$ko._(_root);
+	@override late final _Translations$detailPlayback$ko detailPlayback = _Translations$detailPlayback$ko._(_root);
 }
 
 // Path: app
@@ -225,6 +226,15 @@ class _Translations$settings$ko extends Translations$settings$en {
 	final TranslationsKo _root; // ignore: unused_field
 
 	// Translations
+	@override String get ratings => 'Ratings';
+	@override String get showRatingBadges => 'Show ratings on posters';
+	@override String get showRatingBadgesDescription => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.';
+	@override String get ratingSources => 'Rating sources';
+	@override String get ratingSourcesDescription => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.';
+	@override String get otherRatingSources => 'Other ratings';
+	@override String get moveRatingUp => 'Move up';
+	@override String get moveRatingDown => 'Move down';
+	@override String get ratingSettingsSaveFailed => 'Could not save rating preferences. Try again.';
 	@override String get title => '설정';
 	@override String get supportDeveloper => 'Velo 후원하기';
 	@override String get supportDeveloperDescription => 'Liberapay로 후원하여 개발 지원';
@@ -2288,6 +2298,18 @@ class _Translations$addServer$ko extends Translations$addServer$en {
 	@override String redirectUnsupportedEnterFinal({required Object product}) => '서버가 지원되지 않는 URL로 리디렉션했습니다. 최종 ${product} URL을 직접 입력하세요.';
 }
 
+// Path: detailPlayback
+class _Translations$detailPlayback$ko extends Translations$detailPlayback$en {
+	_Translations$detailPlayback$ko._(TranslationsKo root) : this._root = root, super.internal(root);
+
+	final TranslationsKo _root; // ignore: unused_field
+
+	// Translations
+	@override String get version => 'Version';
+	@override String get unavailable => 'Not available';
+	@override String get loadFailed => 'Could not load playback options';
+}
+
 // Path: common.ratingSource
 class _Translations$common$ratingSource$ko extends Translations$common$ratingSource$en {
 	_Translations$common$ratingSource$ko._(TranslationsKo root) : this._root = root, super.internal(root);
@@ -3125,6 +3147,15 @@ extension on TranslationsKo {
 			'update.viewRelease' => '릴리스 정보 보기',
 			'update.latestVersion' => '최신 버전을 사용 중입니다',
 			'update.checkFailed' => '업데이트 확인 실패',
+			'settings.ratings' => 'Ratings',
+			'settings.showRatingBadges' => 'Show ratings on posters',
+			'settings.showRatingBadgesDescription' => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.',
+			'settings.ratingSources' => 'Rating sources',
+			'settings.ratingSourcesDescription' => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.',
+			'settings.otherRatingSources' => 'Other ratings',
+			'settings.moveRatingUp' => 'Move up',
+			'settings.moveRatingDown' => 'Move down',
+			'settings.ratingSettingsSaveFailed' => 'Could not save rating preferences. Try again.',
 			'settings.title' => '설정',
 			'settings.supportDeveloper' => 'Velo 후원하기',
 			'settings.supportDeveloperDescription' => 'Liberapay로 후원하여 개발 지원',
@@ -3526,6 +3557,8 @@ extension on TranslationsKo {
 			'fileInfo.dolbyVisionLayers' => 'Dolby Vision 레이어',
 			'fileInfo.baseLayerCompatibility' => '베이스 레이어 호환성',
 			'fileInfo.avcBitstream' => 'AVC 비트스트림',
+			_ => null,
+		} ?? switch (path) {
 			'fileInfo.nalLengthSize' => 'NAL 길이 크기',
 			'fileInfo.scalingMatrix' => '사용자 지정 스케일링 매트릭스',
 			'fileInfo.streamIdentifier' => '스트림 식별자',
@@ -3535,8 +3568,6 @@ extension on TranslationsKo {
 			'fileInfo.languageCode' => '언어 코드',
 			'fileInfo.streamTitle' => '트랙 제목',
 			'fileInfo.channels' => '채널',
-			_ => null,
-		} ?? switch (path) {
 			'fileInfo.sampleRate' => '샘플 레이트',
 			'fileInfo.spatialAudio' => '공간 오디오',
 			'fileInfo.textBased' => '텍스트 기반',
@@ -4040,6 +4071,8 @@ extension on TranslationsKo {
 			'libraries.title' => '미디어 라이브러리',
 			'libraries.fallbackTitle' => '라이브러리',
 			'libraries.scanLibraryFiles' => '미디어 라이브러리 파일 스캔',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.scanLibrary' => '미디어 라이브러리 스캔',
 			'libraries.analyze' => '분석',
 			'libraries.analyzeLibrary' => '미디어 라이브러리 분석',
@@ -4049,8 +4082,6 @@ extension on TranslationsKo {
 			'libraries.trashEmptied' => ({required Object title}) => '「${title}」의 휴지통을 비웠습니다',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => '휴지통 비우기 실패: ${error}',
 			'libraries.analyzing' => ({required Object title}) => '"${title}" 분석 중...',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => '"${title}" 분석 시작됨',
 			'libraries.failedToAnalyze' => ({required Object error}) => '미디어 라이브러리 분석 실패: ${error}',
 			'libraries.noLibrariesFound' => '미디어 라이브러리 없음',
@@ -4554,6 +4585,8 @@ extension on TranslationsKo {
 			'watchTogether.participantNeedsUpdate' => ({required Object name}) => '${name}님이 이전 버전의 앱을 사용 중입니다 — 동기화를 사용할 수 없습니다',
 			'watchTogether.resumingWithout' => ({required Object name}) => '${name}님 없이 재생을 재개합니다',
 			'watchTogether.waitingForParticipants' => '다른 참가자의 로딩을 기다리는 중...',
+			_ => null,
+		} ?? switch (path) {
 			'watchTogether.waitingForName' => ({required Object name}) => '${name}님을 기다리는 중...',
 			'watchTogether.recentRooms' => '최근 참여한 방',
 			'watchTogether.renameRoom' => '방 이름 변경',
@@ -4563,8 +4596,6 @@ extension on TranslationsKo {
 			'watchTogether.defaultDisplayName' => '사용자',
 			'watchTogether.errors.timedOut' => '릴레이 서버가 제시간에 응답하지 않았습니다',
 			'watchTogether.errors.connectionLost' => '세션이 준비되기 전에 연결이 종료되었습니다',
-			_ => null,
-		} ?? switch (path) {
 			'watchTogether.errors.invalidRelayResponse' => '릴레이 서버가 예기치 않은 응답을 보냈습니다',
 			'watchTogether.errors.sessionEnded' => '호스트가 세션을 종료했습니다',
 			'watchTogether.errors.sessionUnavailable' => '이 세션을 재개할 수 없습니다. 방에 참여하거나 만들어 계속하세요.',
@@ -5068,6 +5099,8 @@ extension on TranslationsKo {
 			'addServer.signInWithPlexCardSubtitle' => '이 기기를 승인합니다. 공유 서버가 추가됩니다.',
 			'addServer.signInWithPlexCardSubtitleScoped' => 'Plex 계정을 승인합니다. Home 사용자는 프로필이 됩니다.',
 			'addServer.connectToMediaBrowserCard' => ({required Object product}) => '${product}에 연결',
+			_ => null,
+		} ?? switch (path) {
 			'addServer.connectToMediaBrowserCardSubtitle' => '서버 URL, 사용자 이름, 비밀번호를 입력하세요.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => '${product} 서버에 로그인하세요. ${name}에 연결됩니다.',
 			'addServer.borrowFromAnotherProfile' => '다른 프로필에서 빌리기',
@@ -5077,8 +5110,6 @@ extension on TranslationsKo {
 			'addServer.authResponseIncomplete' => '서버의 로그인 응답이 불완전합니다',
 			'addServer.quickConnectRejected' => '서버에서 Quick Connect를 거부했습니다',
 			'addServer.quickConnectNotJson' => 'Quick Connect 응답이 유효한 JSON이 아닙니다',
-			_ => null,
-		} ?? switch (path) {
 			'addServer.quickConnectMissingFields' => 'Quick Connect 응답에 코드 또는 비밀 키가 없습니다',
 			'addServer.quickConnectPollRejected' => '서버에서 Quick Connect 폴링을 거부했습니다',
 			'addServer.serverTimedOut' => '서버가 제시간에 응답하지 않았습니다',
@@ -5093,6 +5124,9 @@ extension on TranslationsKo {
 			'addServer.redirectDifferentHost' => ({required Object product}) => '서버가 다른 호스트로 리디렉션했습니다. 최종 ${product} URL을 직접 입력하세요.',
 			'addServer.redirectInsecure' => '서버가 HTTPS에서 안전하지 않은 URL로 리디렉션했습니다',
 			'addServer.redirectUnsupportedEnterFinal' => ({required Object product}) => '서버가 지원되지 않는 URL로 리디렉션했습니다. 최종 ${product} URL을 직접 입력하세요.',
+			'detailPlayback.version' => 'Version',
+			'detailPlayback.unavailable' => 'Not available',
+			'detailPlayback.loadFailed' => 'Could not load playback options',
 			_ => null,
 		};
 	}

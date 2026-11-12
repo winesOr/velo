@@ -60,6 +60,10 @@ class ActiveProfileProvider extends ChangeNotifier with DisposableChangeNotifier
   bool _isBinding = false;
   bool _lastBindingSucceeded = true;
   final List<Completer<bool>> _bindingSettleWaiters = [];
+  final List<Completer<bool>> _startupIdentityWaiters = [];
+  String? _startupReadyProfileId;
+  int? _startupReadyIdentityGeneration;
+  Stopwatch? _startupContentClock;
   Future<void>? _identityMutationQueue;
   int _identityMutationGeneration = 0;
   int _committedIdentityGeneration = 0;
@@ -101,6 +105,49 @@ class ActiveProfileProvider extends ChangeNotifier with DisposableChangeNotifier
   /// behind any PIN dialog the binder pops) until binding settles.
   bool get isBinding => _isBinding;
 
+  /// The selected identity has passed every interactive authorization gate.
+  /// Connections may still be in flight; this never replaces picker settle.
+  bool get isStartupIdentityReady =>
+      _startupReadyProfileId != null &&
+      _startupReadyProfileId == activeId &&
+      _startupReadyIdentityGeneration == committedIdentityGeneration;
+
+  Duration get startupContentWaitElapsed => _startupContentClock?.elapsed ?? Duration.zero;
+
+  void resetStartupIdentity() {
+    if (_startupReadyProfileId == null) return;
+    _startupReadyProfileId = null;
+    _startupReadyIdentityGeneration = null;
+    _startupContentClock = null;
+    safeNotifyListeners();
+  }
+
+  void markStartupIdentityReady({required String profileId}) {
+    if (isDisposed || !_isBinding || activeId != profileId) return;
+    if (isStartupIdentityReady) return;
+    _startupReadyProfileId = profileId;
+    _startupReadyIdentityGeneration = committedIdentityGeneration;
+    _startupContentClock = Stopwatch()..start();
+    safeNotifyListeners();
+  }
+
+  Future<bool> awaitStartupIdentityReady() {
+    if (isStartupIdentityReady) return Future.value(true);
+    if (!_isBinding || isDisposed) return Future.value(false);
+    final completer = Completer<bool>();
+    _startupIdentityWaiters.add(completer);
+    void listener() {
+      if (!isStartupIdentityReady && _isBinding) return;
+      removeListener(listener);
+      if (_startupIdentityWaiters.remove(completer) && !completer.isCompleted) {
+        completer.complete(isStartupIdentityReady);
+      }
+    }
+
+    addListener(listener);
+    return completer.future;
+  }
+
   /// Outcome of the most recent settled bind. False after a PIN cancel,
   /// failed `/home/users/{uuid}/switch`, or any error inside the binder.
   bool get lastBindingSucceeded => _lastBindingSucceeded;
@@ -109,6 +156,9 @@ class ActiveProfileProvider extends ChangeNotifier with DisposableChangeNotifier
   /// Re-entrant — no-ops if already in [isBinding].
   void markBindingStarted() {
     if (_isBinding) return;
+    _startupReadyProfileId = null;
+    _startupReadyIdentityGeneration = null;
+    _startupContentClock = null;
     _isBinding = true;
     _lastBindingSucceeded = true;
     safeNotifyListeners();
@@ -122,6 +172,13 @@ class ActiveProfileProvider extends ChangeNotifier with DisposableChangeNotifier
     if (!_isBinding && _lastBindingSucceeded == success) return;
     _isBinding = false;
     _lastBindingSucceeded = success;
+    _startupReadyProfileId = success ? activeId : null;
+    _startupReadyIdentityGeneration = success ? committedIdentityGeneration : null;
+    if (!success || activeId == null) {
+      _startupContentClock = null;
+    } else {
+      _startupContentClock ??= Stopwatch()..start();
+    }
     safeNotifyListeners();
   }
 
@@ -590,6 +647,12 @@ class ActiveProfileProvider extends ChangeNotifier with DisposableChangeNotifier
     _initialized = false;
     _isBinding = false;
     _lastBindingSucceeded = true;
+    _startupReadyProfileId = null;
+    _startupReadyIdentityGeneration = null;
+    for (final c in _startupIdentityWaiters) {
+      if (!c.isCompleted) c.complete(false);
+    }
+    _startupIdentityWaiters.clear();
     for (final c in _bindingSettleWaiters) {
       if (!c.isCompleted) c.complete(_lastBindingSucceeded);
     }
@@ -602,6 +665,10 @@ class ActiveProfileProvider extends ChangeNotifier with DisposableChangeNotifier
 
   @override
   void dispose() {
+    for (final c in _startupIdentityWaiters) {
+      if (!c.isCompleted) c.complete(false);
+    }
+    _startupIdentityWaiters.clear();
     // Settle anyone awaiting binding before the listeners go away — leaving
     // them pending traps callers in a forever-await on app teardown.
     for (final c in _bindingSettleWaiters) {

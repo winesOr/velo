@@ -90,6 +90,7 @@ class TranslationsPl extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$seerr$pl seerr = _Translations$seerr$pl._(_root);
 	@override late final _Translations$services$pl services = _Translations$services$pl._(_root);
 	@override late final _Translations$addServer$pl addServer = _Translations$addServer$pl._(_root);
+	@override late final _Translations$detailPlayback$pl detailPlayback = _Translations$detailPlayback$pl._(_root);
 }
 
 // Path: app
@@ -225,6 +226,15 @@ class _Translations$settings$pl extends Translations$settings$en {
 	final TranslationsPl _root; // ignore: unused_field
 
 	// Translations
+	@override String get ratings => 'Ratings';
+	@override String get showRatingBadges => 'Show ratings on posters';
+	@override String get showRatingBadgesDescription => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.';
+	@override String get ratingSources => 'Rating sources';
+	@override String get ratingSourcesDescription => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.';
+	@override String get otherRatingSources => 'Other ratings';
+	@override String get moveRatingUp => 'Move up';
+	@override String get moveRatingDown => 'Move down';
+	@override String get ratingSettingsSaveFailed => 'Could not save rating preferences. Try again.';
 	@override String get title => 'Ustawienia';
 	@override String get supportDeveloper => 'Wesprzyj Velo';
 	@override String get supportDeveloperDescription => 'Wspomóż rozwój darowizną na Liberapay';
@@ -2315,6 +2325,18 @@ class _Translations$addServer$pl extends Translations$addServer$en {
 	@override String redirectUnsupportedEnterFinal({required Object product}) => 'Serwer przekierował do nieobsługiwanego adresu URL. Wprowadź bezpośrednio docelowy adres URL serwera ${product}.';
 }
 
+// Path: detailPlayback
+class _Translations$detailPlayback$pl extends Translations$detailPlayback$en {
+	_Translations$detailPlayback$pl._(TranslationsPl root) : this._root = root, super.internal(root);
+
+	final TranslationsPl _root; // ignore: unused_field
+
+	// Translations
+	@override String get version => 'Version';
+	@override String get unavailable => 'Not available';
+	@override String get loadFailed => 'Could not load playback options';
+}
+
 // Path: common.ratingSource
 class _Translations$common$ratingSource$pl extends Translations$common$ratingSource$en {
 	_Translations$common$ratingSource$pl._(TranslationsPl root) : this._root = root, super.internal(root);
@@ -3158,6 +3180,15 @@ extension on TranslationsPl {
 			'update.viewRelease' => 'Zobacz wydanie',
 			'update.latestVersion' => 'Masz najnowszą wersję',
 			'update.checkFailed' => 'Nie udało się sprawdzić aktualizacji',
+			'settings.ratings' => 'Ratings',
+			'settings.showRatingBadges' => 'Show ratings on posters',
+			'settings.showRatingBadgesDescription' => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.',
+			'settings.ratingSources' => 'Rating sources',
+			'settings.ratingSourcesDescription' => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.',
+			'settings.otherRatingSources' => 'Other ratings',
+			'settings.moveRatingUp' => 'Move up',
+			'settings.moveRatingDown' => 'Move down',
+			'settings.ratingSettingsSaveFailed' => 'Could not save rating preferences. Try again.',
 			'settings.title' => 'Ustawienia',
 			'settings.supportDeveloper' => 'Wesprzyj Velo',
 			'settings.supportDeveloperDescription' => 'Wspomóż rozwój darowizną na Liberapay',
@@ -3559,6 +3590,8 @@ extension on TranslationsPl {
 			'fileInfo.dolbyVisionLayers' => 'Warstwy Dolby Vision',
 			'fileInfo.baseLayerCompatibility' => 'Zgodność warstwy bazowej',
 			'fileInfo.avcBitstream' => 'Strumień bitowy AVC',
+			_ => null,
+		} ?? switch (path) {
 			'fileInfo.nalLengthSize' => 'Rozmiar długości NAL',
 			'fileInfo.scalingMatrix' => 'Własna macierz skalowania',
 			'fileInfo.streamIdentifier' => 'Identyfikator strumienia',
@@ -3568,8 +3601,6 @@ extension on TranslationsPl {
 			'fileInfo.languageCode' => 'Kod języka',
 			'fileInfo.streamTitle' => 'Tytuł ścieżki',
 			'fileInfo.channels' => 'Kanały',
-			_ => null,
-		} ?? switch (path) {
 			'fileInfo.sampleRate' => 'Częstotliwość próbkowania',
 			'fileInfo.spatialAudio' => 'Dźwięk przestrzenny',
 			'fileInfo.textBased' => 'Tekstowy',
@@ -4073,6 +4104,8 @@ extension on TranslationsPl {
 			'libraries.title' => 'Biblioteki',
 			'libraries.fallbackTitle' => 'Biblioteka',
 			'libraries.scanLibraryFiles' => 'Skanuj pliki biblioteki',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.scanLibrary' => 'Skanuj bibliotekę',
 			'libraries.analyze' => 'Analizuj',
 			'libraries.analyzeLibrary' => 'Analizuj bibliotekę',
@@ -4082,8 +4115,6 @@ extension on TranslationsPl {
 			'libraries.trashEmptied' => ({required Object title}) => 'Kosz opróżniony dla "${title}"',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Nie udało się opróżnić kosza: ${error}',
 			'libraries.analyzing' => ({required Object title}) => 'Analizowanie "${title}"...',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => 'Analiza rozpoczęta dla "${title}"',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Nie udało się przeanalizować biblioteki: ${error}',
 			'libraries.noLibrariesFound' => 'Nie znaleziono bibliotek',
@@ -4587,6 +4618,8 @@ extension on TranslationsPl {
 			'watchTogether.participantNeedsUpdate' => ({required Object name}) => '${name} używa starszej wersji aplikacji — synchronizacja jest niedostępna',
 			'watchTogether.resumingWithout' => ({required Object name}) => 'Wznawianie bez ${name}',
 			'watchTogether.waitingForParticipants' => 'Oczekiwanie na załadowanie u innych...',
+			_ => null,
+		} ?? switch (path) {
 			'watchTogether.waitingForName' => ({required Object name}) => 'Oczekiwanie na ${name}...',
 			'watchTogether.recentRooms' => 'Ostatnie pokoje',
 			'watchTogether.renameRoom' => 'Zmień nazwę pokoju',
@@ -4596,8 +4629,6 @@ extension on TranslationsPl {
 			'watchTogether.defaultDisplayName' => 'Użytkownik',
 			'watchTogether.errors.timedOut' => 'Serwer pośredniczący nie odpowiedział w wymaganym czasie',
 			'watchTogether.errors.connectionLost' => 'Połączenie zostało zamknięte, zanim sesja była gotowa',
-			_ => null,
-		} ?? switch (path) {
 			'watchTogether.errors.invalidRelayResponse' => 'Serwer pośredniczący wysłał nieoczekiwaną odpowiedź',
 			'watchTogether.errors.sessionEnded' => 'Gospodarz zakończył sesję',
 			'watchTogether.errors.sessionUnavailable' => 'Nie można wznowić tej sesji. Dołącz do pokoju lub utwórz go, aby kontynuować.',
@@ -5101,6 +5132,8 @@ extension on TranslationsPl {
 			'addServer.signInWithPlexCardSubtitle' => 'Autoryzuj to urządzenie. Serwery udostępnione zostaną dodane.',
 			'addServer.signInWithPlexCardSubtitleScoped' => 'Autoryzuj konto Plex. Użytkownicy Home staną się profilami.',
 			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Połącz z ${product}',
+			_ => null,
+		} ?? switch (path) {
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Podaj adres URL serwera, nazwę użytkownika i hasło.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => 'Zaloguj się do serwera ${product}. Powiązane z ${name}.',
 			'addServer.borrowFromAnotherProfile' => 'Pożycz z innego profilu',
@@ -5110,8 +5143,6 @@ extension on TranslationsPl {
 			'addServer.authResponseIncomplete' => 'Odpowiedź logowania z serwera była niekompletna',
 			'addServer.quickConnectRejected' => 'Quick Connect został odrzucony przez serwer',
 			'addServer.quickConnectNotJson' => 'Odpowiedź Quick Connect ma nieprawidłowy format JSON',
-			_ => null,
-		} ?? switch (path) {
 			'addServer.quickConnectMissingFields' => 'W odpowiedzi Quick Connect brakuje kodu lub sekretu',
 			'addServer.quickConnectPollRejected' => 'Odpytywanie Quick Connect zostało odrzucone przez serwer',
 			'addServer.serverTimedOut' => 'Serwer nie odpowiedział w wymaganym czasie',
@@ -5126,6 +5157,9 @@ extension on TranslationsPl {
 			'addServer.redirectDifferentHost' => ({required Object product}) => 'Serwer przekierował do innego hosta. Wprowadź bezpośrednio docelowy adres URL serwera ${product}.',
 			'addServer.redirectInsecure' => 'Serwer przekierował z HTTPS do niezabezpieczonego adresu URL',
 			'addServer.redirectUnsupportedEnterFinal' => ({required Object product}) => 'Serwer przekierował do nieobsługiwanego adresu URL. Wprowadź bezpośrednio docelowy adres URL serwera ${product}.',
+			'detailPlayback.version' => 'Version',
+			'detailPlayback.unavailable' => 'Not available',
+			'detailPlayback.loadFailed' => 'Could not load playback options',
 			_ => null,
 		};
 	}

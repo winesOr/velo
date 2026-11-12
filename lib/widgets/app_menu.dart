@@ -40,6 +40,9 @@ class AppMenuItem<T> extends AppMenuEntry<T> {
   final Color? foregroundColor;
   final Color? stateLayerColor;
   final String? semanticLabel;
+  final bool autofocus;
+  final bool wrapLines;
+  final double? minHeight;
 
   const AppMenuItem({
     required this.value,
@@ -56,6 +59,9 @@ class AppMenuItem<T> extends AppMenuEntry<T> {
     this.foregroundColor,
     this.stateLayerColor,
     this.semanticLabel,
+    this.autofocus = false,
+    this.wrapLines = false,
+    this.minHeight,
   }) : assert(label != null || child != null, 'AppMenuItem requires either label or child'),
        assert(subtitle == null || subtitleWidget == null, 'Provide subtitle or subtitleWidget, not both'),
        assert(icon == null || leading == null, 'Provide icon or leading, not both');
@@ -80,6 +86,7 @@ Future<T?> showAppMenu<T>(
   Rect? anchorRect,
   AppMenuAnchorAlignment anchorAlignment = AppMenuAnchorAlignment.start,
   bool focusFirstItem = false,
+  Duration selectionDelay = Duration.zero,
 }) {
   assert(position != null || anchorRect != null, 'showAppMenu requires a position or anchorRect');
 
@@ -95,6 +102,7 @@ Future<T?> showAppMenu<T>(
       anchorRect: anchorRect,
       anchorAlignment: anchorAlignment,
       focusFirstItem: focusFirstItem,
+      selectionDelay: selectionDelay,
     ),
     transitionBuilder: (dialogContext, animation, _, child) {
       final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
@@ -251,6 +259,7 @@ Future<T?> showAdaptiveAppMenu<T>(
   AppMenuAnchorAlignment anchorAlignment = AppMenuAnchorAlignment.start,
   bool focusFirstItem = false,
   bool isScrollControlled = false,
+  Duration selectionDelay = Duration.zero,
 }) {
   // Menus stay attached to their trigger on touch, mouse and TV alike.
   // Legacy callers without an explicit anchor use their triggering widget.
@@ -270,6 +279,7 @@ Future<T?> showAdaptiveAppMenu<T>(
     anchorRect: anchorRect,
     anchorAlignment: anchorAlignment,
     focusFirstItem: focusFirstItem,
+    selectionDelay: selectionDelay,
   );
 }
 
@@ -421,6 +431,7 @@ class AppMenuList<T> extends StatefulWidget {
   final bool focusFirstItem;
   final ValueChanged<T> onSelected;
   final EdgeInsetsGeometry padding;
+  final Duration selectionDelay;
 
   const AppMenuList({
     super.key,
@@ -428,6 +439,7 @@ class AppMenuList<T> extends StatefulWidget {
     required this.onSelected,
     this.focusFirstItem = false,
     this.padding = const EdgeInsets.symmetric(vertical: 5),
+    this.selectionDelay = Duration.zero,
   });
 
   @override
@@ -436,6 +448,9 @@ class AppMenuList<T> extends StatefulWidget {
 
 class _AppMenuListState<T> extends State<AppMenuList<T>> {
   late final FocusNode _initialFocusNode;
+  Timer? _selectionTimer;
+  bool _selectionPending = false;
+  T? _pendingValue;
 
   @override
   void initState() {
@@ -448,6 +463,7 @@ class _AppMenuListState<T> extends State<AppMenuList<T>> {
 
   @override
   void dispose() {
+    _selectionTimer?.cancel();
     _initialFocusNode.dispose();
     super.dispose();
   }
@@ -455,6 +471,10 @@ class _AppMenuListState<T> extends State<AppMenuList<T>> {
   @override
   Widget build(BuildContext context) {
     var initialFocusAssigned = false;
+    final preferredFocus = widget.entries
+        .whereType<AppMenuItem<T>>()
+        .where((entry) => entry.enabled && entry.autofocus)
+        .firstOrNull;
     return Padding(
       padding: widget.padding,
       child: Column(
@@ -466,7 +486,9 @@ class _AppMenuListState<T> extends State<AppMenuList<T>> {
               AppMenuItem<T>() => _buildItem(
                 entry,
                 initialFocusAssigned: () {
-                  if (initialFocusAssigned || !entry.enabled) return false;
+                  if (initialFocusAssigned || !entry.enabled || (preferredFocus != null && entry != preferredFocus)) {
+                    return false;
+                  }
                   initialFocusAssigned = true;
                   return widget.focusFirstItem;
                 }(),
@@ -484,8 +506,25 @@ class _AppMenuListState<T> extends State<AppMenuList<T>> {
     return AppMenuItemTile<T>(
       item: item,
       focusNode: initialFocusAssigned ? _initialFocusNode : null,
-      onPressed: item.enabled ? () => widget.onSelected(item.value) : null,
+      selectionOverride: _selectionPending ? _pendingValue == item.value : null,
+      onPressed: item.enabled && !_selectionPending ? () => _select(item.value) : null,
     );
+  }
+
+  void _select(T value) {
+    if (_selectionPending) return;
+    if (widget.selectionDelay == Duration.zero) {
+      widget.onSelected(value);
+      return;
+    }
+    setState(() {
+      _selectionPending = true;
+      _pendingValue = value;
+    });
+    _selectionTimer = Timer(widget.selectionDelay, () {
+      if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? true)) return;
+      widget.onSelected(value);
+    });
   }
 }
 
@@ -493,8 +532,9 @@ class AppMenuItemTile<T> extends StatefulWidget {
   final AppMenuItem<T> item;
   final VoidCallback? onPressed;
   final FocusNode? focusNode;
+  final bool? selectionOverride;
 
-  const AppMenuItemTile({super.key, required this.item, this.onPressed, this.focusNode});
+  const AppMenuItemTile({super.key, required this.item, this.onPressed, this.focusNode, this.selectionOverride});
 
   @override
   State<AppMenuItemTile<T>> createState() => _AppMenuItemTileState<T>();
@@ -503,6 +543,7 @@ class AppMenuItemTile<T> extends StatefulWidget {
 class _AppMenuItemTileState<T> extends State<AppMenuItemTile<T>> with FocusableTileStateMixin<AppMenuItemTile<T>> {
   bool _isHovered = false;
   bool _isFocused = false;
+  bool get _selected => widget.selectionOverride ?? widget.item.selected;
 
   @override
   FocusNode? get widgetFocusNode => widget.focusNode;
@@ -547,13 +588,13 @@ class _AppMenuItemTileState<T> extends State<AppMenuItemTile<T>> with FocusableT
     final background = _backgroundColor(context, active: active);
 
     final leading = item.leading ?? (item.icon != null ? AppIcon(item.icon!, size: 20) : null);
-    final trailing = item.trailing ?? (item.selected ? AppIcon(Symbols.check_rounded, size: 18) : null);
+    final trailing = item.trailing ?? (_selected ? AppIcon(Symbols.check_rounded, size: 18) : null);
     final subtitle = item.subtitleWidget ?? (item.subtitle != null ? Text(item.subtitle!) : null);
 
     return Semantics(
       button: true,
       enabled: enabled,
-      selected: item.selected,
+      selected: _selected,
       label: item.semanticLabel,
       child: Focus(
         focusNode: effectiveFocusNode,
@@ -579,7 +620,7 @@ class _AppMenuItemTileState<T> extends State<AppMenuItemTile<T>> with FocusableT
                     color: background,
                     borderRadius: BorderRadius.circular(tokens(context).radiusSm),
                   ),
-                  constraints: BoxConstraints(minHeight: subtitle == null ? 40 : 52),
+                  constraints: BoxConstraints(minHeight: item.minHeight ?? (subtitle == null ? 40 : 52)),
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   child: Row(
                     children: [
@@ -599,22 +640,22 @@ class _AppMenuItemTileState<T> extends State<AppMenuItemTile<T>> with FocusableT
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            DefaultTextStyle.merge(
-                              style: textTheme.bodyMedium?.copyWith(
+                            DefaultTextStyle(
+                              style: (textTheme.bodyMedium ?? const TextStyle()).copyWith(
                                 color: enabled ? foreground : colorScheme.onSurface.withValues(alpha: 0.38),
-                                fontWeight: item.selected ? FontWeight.w600 : null,
+                                fontWeight: _selected ? FontWeight.w600 : null,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              maxLines: item.wrapLines ? null : 1,
+                              overflow: item.wrapLines ? TextOverflow.visible : TextOverflow.ellipsis,
                               child: item.child ?? Text(item.label!),
                             ),
                             if (subtitle != null)
-                              DefaultTextStyle.merge(
-                                style: textTheme.labelSmall?.copyWith(
+                              DefaultTextStyle(
+                                style: (textTheme.labelSmall ?? const TextStyle()).copyWith(
                                   color: enabled ? subtitleColor : colorScheme.onSurface.withValues(alpha: 0.38),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                maxLines: item.wrapLines ? null : 1,
+                                overflow: item.wrapLines ? TextOverflow.visible : TextOverflow.ellipsis,
                                 child: subtitle,
                               ),
                           ],
@@ -644,7 +685,7 @@ class _AppMenuItemTileState<T> extends State<AppMenuItemTile<T>> with FocusableT
     if (active && item.stateLayerColor != null) return colorScheme.onError;
     if (item.foregroundColor != null) return item.foregroundColor!;
     if (item.destructive) return _destructiveMenuForeground(context);
-    if (item.selected) return colorScheme.primary;
+    if (_selected) return colorScheme.primary;
     return colorScheme.onSurface;
   }
 
@@ -653,7 +694,7 @@ class _AppMenuItemTileState<T> extends State<AppMenuItemTile<T>> with FocusableT
     final colorScheme = Theme.of(context).colorScheme;
     if (active && item.stateLayerColor != null) return item.stateLayerColor!;
     if (active) return colorScheme.onSurface.withValues(alpha: 0.08);
-    if (item.selected) return colorScheme.primary.withValues(alpha: 0.12);
+    if (_selected) return colorScheme.primary.withValues(alpha: 0.12);
     return Colors.transparent;
   }
 }
@@ -688,6 +729,7 @@ class _AppMenuPopup<T> extends StatefulWidget {
   final Rect? anchorRect;
   final AppMenuAnchorAlignment anchorAlignment;
   final bool focusFirstItem;
+  final Duration selectionDelay;
 
   const _AppMenuPopup({
     required this.entries,
@@ -695,6 +737,7 @@ class _AppMenuPopup<T> extends StatefulWidget {
     required this.anchorRect,
     required this.anchorAlignment,
     required this.focusFirstItem,
+    required this.selectionDelay,
   });
 
   @override
@@ -741,6 +784,7 @@ class _AppMenuPopupState<T> extends State<_AppMenuPopup<T>> {
                   maxHeight: menuHeight,
                   entries: widget.entries,
                   focusFirstItem: widget.focusFirstItem,
+                  selectionDelay: widget.selectionDelay,
                 ),
               ),
             ],
@@ -806,12 +850,14 @@ class _AppMenuSurface<T> extends StatelessWidget {
   final double maxHeight;
   final List<AppMenuEntry<T>> entries;
   final bool focusFirstItem;
+  final Duration selectionDelay;
 
   const _AppMenuSurface({
     required this.width,
     required this.maxHeight,
     required this.entries,
     required this.focusFirstItem,
+    required this.selectionDelay,
   });
 
   @override
@@ -825,6 +871,7 @@ class _AppMenuSurface<T> extends StatelessWidget {
             child: AppMenuList<T>(
               entries: entries,
               focusFirstItem: focusFirstItem,
+              selectionDelay: selectionDelay,
               onSelected: (value) => Navigator.pop(context, value),
             ),
           ),

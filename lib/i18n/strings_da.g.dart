@@ -90,6 +90,7 @@ class TranslationsDa extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$seerr$da seerr = _Translations$seerr$da._(_root);
 	@override late final _Translations$services$da services = _Translations$services$da._(_root);
 	@override late final _Translations$addServer$da addServer = _Translations$addServer$da._(_root);
+	@override late final _Translations$detailPlayback$da detailPlayback = _Translations$detailPlayback$da._(_root);
 }
 
 // Path: app
@@ -225,6 +226,15 @@ class _Translations$settings$da extends Translations$settings$en {
 	final TranslationsDa _root; // ignore: unused_field
 
 	// Translations
+	@override String get ratings => 'Ratings';
+	@override String get showRatingBadges => 'Show ratings on posters';
+	@override String get showRatingBadgesDescription => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.';
+	@override String get ratingSources => 'Rating sources';
+	@override String get ratingSourcesDescription => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.';
+	@override String get otherRatingSources => 'Other ratings';
+	@override String get moveRatingUp => 'Move up';
+	@override String get moveRatingDown => 'Move down';
+	@override String get ratingSettingsSaveFailed => 'Could not save rating preferences. Try again.';
 	@override String get title => 'Indstillinger';
 	@override String get supportDeveloper => 'Støt Velo';
 	@override String get supportDeveloperDescription => 'Doner via Liberapay for at finansiere udviklingen';
@@ -2297,6 +2307,18 @@ class _Translations$addServer$da extends Translations$addServer$en {
 	@override String redirectUnsupportedEnterFinal({required Object product}) => 'Serveren videresendte til en URL, der ikke understøttes. Indtast den endelige ${product}-URL direkte.';
 }
 
+// Path: detailPlayback
+class _Translations$detailPlayback$da extends Translations$detailPlayback$en {
+	_Translations$detailPlayback$da._(TranslationsDa root) : this._root = root, super.internal(root);
+
+	final TranslationsDa _root; // ignore: unused_field
+
+	// Translations
+	@override String get version => 'Version';
+	@override String get unavailable => 'Not available';
+	@override String get loadFailed => 'Could not load playback options';
+}
+
 // Path: common.ratingSource
 class _Translations$common$ratingSource$da extends Translations$common$ratingSource$en {
 	_Translations$common$ratingSource$da._(TranslationsDa root) : this._root = root, super.internal(root);
@@ -3136,6 +3158,15 @@ extension on TranslationsDa {
 			'update.viewRelease' => 'Vis udgivelse',
 			'update.latestVersion' => 'Du har den nyeste version',
 			'update.checkFailed' => 'Kunne ikke søge efter opdateringer',
+			'settings.ratings' => 'Ratings',
+			'settings.showRatingBadges' => 'Show ratings on posters',
+			'settings.showRatingBadgesDescription' => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.',
+			'settings.ratingSources' => 'Rating sources',
+			'settings.ratingSourcesDescription' => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.',
+			'settings.otherRatingSources' => 'Other ratings',
+			'settings.moveRatingUp' => 'Move up',
+			'settings.moveRatingDown' => 'Move down',
+			'settings.ratingSettingsSaveFailed' => 'Could not save rating preferences. Try again.',
 			'settings.title' => 'Indstillinger',
 			'settings.supportDeveloper' => 'Støt Velo',
 			'settings.supportDeveloperDescription' => 'Doner via Liberapay for at finansiere udviklingen',
@@ -3537,6 +3568,8 @@ extension on TranslationsDa {
 			'fileInfo.dolbyVisionLayers' => 'Dolby Vision-lag',
 			'fileInfo.baseLayerCompatibility' => 'Basislagskompatibilitet',
 			'fileInfo.avcBitstream' => 'AVC-bitstrøm',
+			_ => null,
+		} ?? switch (path) {
 			'fileInfo.nalLengthSize' => 'NAL-længdestørrelse',
 			'fileInfo.scalingMatrix' => 'Brugerdefineret skaleringsmatrix',
 			'fileInfo.streamIdentifier' => 'Strømidentifikator',
@@ -3546,8 +3579,6 @@ extension on TranslationsDa {
 			'fileInfo.languageCode' => 'Sprogkode',
 			'fileInfo.streamTitle' => 'Sportitel',
 			'fileInfo.channels' => 'Kanaler',
-			_ => null,
-		} ?? switch (path) {
 			'fileInfo.sampleRate' => 'Samplingshastighed',
 			'fileInfo.spatialAudio' => 'Rumlig lyd',
 			'fileInfo.textBased' => 'Tekstbaseret',
@@ -4051,6 +4082,8 @@ extension on TranslationsDa {
 			'libraries.title' => 'Biblioteker',
 			'libraries.fallbackTitle' => 'Bibliotek',
 			'libraries.scanLibraryFiles' => 'Scan biblioteksfiler',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.scanLibrary' => 'Scan bibliotek',
 			'libraries.analyze' => 'Analysér',
 			'libraries.analyzeLibrary' => 'Analysér bibliotek',
@@ -4060,8 +4093,6 @@ extension on TranslationsDa {
 			'libraries.trashEmptied' => ({required Object title}) => 'Papirkurv tømt for "${title}"',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Kunne ikke tømme papirkurv: ${error}',
 			'libraries.analyzing' => ({required Object title}) => 'Analyserer "${title}"...',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => 'Analyse startet for "${title}"',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Kunne ikke analysere bibliotek: ${error}',
 			'libraries.noLibrariesFound' => 'Ingen biblioteker fundet',
@@ -4565,6 +4596,8 @@ extension on TranslationsDa {
 			'watchTogether.participantNeedsUpdate' => ({required Object name}) => '${name} bruger en ældre appversion — synkronisering er ikke tilgængelig',
 			'watchTogether.resumingWithout' => ({required Object name}) => 'Fortsætter uden ${name}',
 			'watchTogether.waitingForParticipants' => 'Venter på, at de andre bliver klar...',
+			_ => null,
+		} ?? switch (path) {
 			'watchTogether.waitingForName' => ({required Object name}) => 'Venter på ${name}...',
 			'watchTogether.recentRooms' => 'Seneste rum',
 			'watchTogether.renameRoom' => 'Omdøb rum',
@@ -4574,8 +4607,6 @@ extension on TranslationsDa {
 			'watchTogether.defaultDisplayName' => 'Bruger',
 			'watchTogether.errors.timedOut' => 'Relayserveren svarede ikke i tide',
 			'watchTogether.errors.connectionLost' => 'Forbindelsen blev lukket, før sessionen var klar',
-			_ => null,
-		} ?? switch (path) {
 			'watchTogether.errors.invalidRelayResponse' => 'Relayserveren sendte et uventet svar',
 			'watchTogether.errors.sessionEnded' => 'Værten afsluttede sessionen',
 			'watchTogether.errors.sessionUnavailable' => 'Kan ikke genoptage denne session. Deltag i eller opret et rum for at fortsætte.',
@@ -5079,6 +5110,8 @@ extension on TranslationsDa {
 			'addServer.signInWithPlexCardSubtitle' => 'Godkend denne enhed. Delte servere tilføjes.',
 			'addServer.signInWithPlexCardSubtitleScoped' => 'Godkend en Plex-konto. Plex Home-brugere bliver til profiler.',
 			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Opret forbindelse til ${product}',
+			_ => null,
+		} ?? switch (path) {
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Indtast din server-URL, brugernavn og adgangskode.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => 'Log ind på din ${product}-server. Tilknyttes til ${name}.',
 			'addServer.borrowFromAnotherProfile' => 'Lån fra en anden profil',
@@ -5088,8 +5121,6 @@ extension on TranslationsDa {
 			'addServer.authResponseIncomplete' => 'Loginsvaret fra serveren var ufuldstændigt',
 			'addServer.quickConnectRejected' => 'Quick Connect blev afvist af serveren',
 			'addServer.quickConnectNotJson' => 'Quick Connect-svaret var ikke gyldig JSON',
-			_ => null,
-		} ?? switch (path) {
 			'addServer.quickConnectMissingFields' => 'Quick Connect-svaret mangler en kode eller hemmelighed',
 			'addServer.quickConnectPollRejected' => 'Quick Connect-polling blev afvist af serveren',
 			'addServer.serverTimedOut' => 'Serveren svarede ikke i tide',
@@ -5104,6 +5135,9 @@ extension on TranslationsDa {
 			'addServer.redirectDifferentHost' => ({required Object product}) => 'Serveren videresendte til en anden vært. Indtast den endelige ${product}-URL direkte.',
 			'addServer.redirectInsecure' => 'Serveren videresendte fra HTTPS til en usikker URL',
 			'addServer.redirectUnsupportedEnterFinal' => ({required Object product}) => 'Serveren videresendte til en URL, der ikke understøttes. Indtast den endelige ${product}-URL direkte.',
+			'detailPlayback.version' => 'Version',
+			'detailPlayback.unavailable' => 'Not available',
+			'detailPlayback.loadFailed' => 'Could not load playback options',
 			_ => null,
 		};
 	}

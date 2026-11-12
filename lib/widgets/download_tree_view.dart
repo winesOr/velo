@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../media/ids.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -8,6 +9,7 @@ import '../media/media_item.dart';
 import '../media/media_item_types.dart';
 import '../media/media_kind.dart';
 import '../models/download_models.dart';
+import '../providers/download_provider.dart';
 import '../utils/dialogs.dart';
 import '../utils/global_key_utils.dart';
 import '../mixins/unsuppress_focus_mixin.dart';
@@ -62,6 +64,10 @@ class DownloadTreeView extends StatefulWidget {
   final VoidCallback? onBack;
   final bool suppressAutoFocus;
 
+  /// Keep the hierarchy stable while only rows containing changed downloads
+  /// observe the provider's coalesced numeric-progress notifications.
+  final bool observeProgress;
+
   const DownloadTreeView({
     super.key,
     required this.downloads,
@@ -75,6 +81,7 @@ class DownloadTreeView extends StatefulWidget {
     this.onNavigateLeft,
     this.onBack,
     this.suppressAutoFocus = false,
+    this.observeProgress = false,
   });
 
   @override
@@ -99,9 +106,14 @@ class _DownloadTreeViewState extends State<DownloadTreeView> with UnsuppressFocu
       return Center(child: Text(t.downloads.noDownloadsTree));
     }
 
+    final childIndices = <Key, int>{
+      for (var i = 0; i < flattenedNodes.length; i++)
+        ValueKey('${widget.observeProgress ? 'download_progress' : 'download_row'}_${flattenedNodes[i].node.key}'): i,
+    };
     return ListView.builder(
       padding: .zero,
       itemCount: flattenedNodes.length,
+      findChildIndexCallback: (key) => childIndices[key],
       itemBuilder: (context, index) {
         final item = flattenedNodes[index];
         return _buildTreeItem(item.node, item.depth, isFirst: index == 0);
@@ -361,7 +373,50 @@ class _DownloadTreeViewState extends State<DownloadTreeView> with UnsuppressFocu
   }
 
   Widget _buildTreeItem(DownloadTreeNode node, int depth, {bool isFirst = false}) {
+    if (widget.observeProgress) {
+      final keys = node.hasChildren ? _leafKeys(node) : [node.key];
+      return Selector<DownloadProvider, List<DownloadProgress?>>(
+        key: ValueKey('download_progress_${node.key}'),
+        selector: (_, provider) => [for (final key in keys) provider.getProgress(key)],
+        builder: (_, progress, _) => _buildRow(
+          _withCurrentProgress(node, {for (var i = 0; i < keys.length; i++) keys[i]: progress[i]}),
+          depth,
+          isFirst: isFirst,
+        ),
+      );
+    }
+    return _buildRow(node, depth, isFirst: isFirst);
+  }
+
+  DownloadTreeNode _withCurrentProgress(DownloadTreeNode node, Map<String, DownloadProgress?> progress) {
+    if (!node.hasChildren) {
+      final current = progress[node.key];
+      if (current == null || current == node.downloadProgress) return node;
+      return DownloadTreeNode(
+        key: node.key,
+        title: node.title,
+        type: node.type,
+        progress: current.progressPercent,
+        status: current.status,
+        metadata: node.metadata,
+        downloadProgress: current,
+      );
+    }
+    final children = [for (final child in node.children) _withCurrentProgress(child, progress)];
+    return DownloadTreeNode(
+      key: node.key,
+      title: node.title,
+      type: node.type,
+      children: children,
+      metadata: node.metadata,
+      progress: children.fold<double>(0, (total, child) => total + child.progress) / children.length,
+      status: determineDownloadAggregateStatus([for (final child in children) child.status]),
+    );
+  }
+
+  Widget _buildRow(DownloadTreeNode node, int depth, {required bool isFirst}) {
     return _DownloadTreeItem(
+      key: ValueKey('download_row_${node.key}'),
       node: node,
       depth: depth,
       isExpanded: _expandedNodes.contains(node.key),
@@ -544,6 +599,7 @@ class _DownloadTreeItem extends StatefulWidget {
   final void Function(DownloadTreeNode) deleteAllChildren;
 
   const _DownloadTreeItem({
+    super.key,
     required this.node,
     required this.depth,
     required this.isExpanded,
@@ -594,6 +650,19 @@ class _DownloadTreeItemState extends State<_DownloadTreeItem> {
   @override
   void didUpdateWidget(_DownloadTreeItem oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final focusOwnerChanged = oldWidget.rowFocusNode != widget.rowFocusNode;
+    final restoreRowFocus = focusOwnerChanged && (oldWidget.rowFocusNode ?? _ownedRowFocusNode)?.hasFocus == true;
+    if (widget.rowFocusNode == null) {
+      _ownedRowFocusNode ??= FocusNode(debugLabel: 'download_row_${widget.node.key}');
+    } else if (oldWidget.rowFocusNode == null) {
+      _ownedRowFocusNode?.dispose();
+      _ownedRowFocusNode = null;
+    }
+    if (restoreRowFocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _rowFocusNode.requestFocus();
+      });
+    }
     // Reinitialize focus nodes if action count changed
     if (_actions().length != _buttonFocusNodes.length) {
       _disposeButtonFocusNodes();

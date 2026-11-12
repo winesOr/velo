@@ -154,6 +154,106 @@ class DataAggregationService {
     };
   }
 
+  /// Opt-in home fan-out. Existing callers retain the settled result API;
+  /// each independent server can publish a cumulative preview without waiting
+  /// for another server's library prefetch or content response.
+  Future<R> _homeProgressively<R>({
+    required Set<String>? serverIds,
+    required Future<R> Function(Set<String>? ids) fetch,
+    required Future<R> Function(List<R> results) merge,
+    required void Function(R result) onProgress,
+  }) async {
+    final ids = _clientsFor(serverIds).keys.toList(growable: false);
+    if (ids.length <= 1) return fetch(serverIds);
+    final completed = <String, R>{};
+    Future<void> publications = Future<void>.value();
+    R? latest;
+    await Future.wait(
+      ids.map((id) async {
+        final result = await fetch({id});
+        completed[id] = result;
+        final snapshot = [
+          for (final candidate in ids)
+            if (completed.containsKey(candidate)) completed[candidate] as R,
+        ];
+        publications = publications.then((_) async {
+          final combined = await merge(snapshot);
+          latest = combined;
+          onProgress(combined);
+        });
+        await publications;
+      }),
+    );
+    await publications;
+    return latest as R;
+  }
+
+  Future<OnDeckAggregationResult> getOnDeckProgressively({
+    int? limit,
+    Set<String>? hiddenLibraryKeys,
+    Set<String>? serverIds,
+    required void Function(OnDeckAggregationResult result) onProgress,
+  }) => _homeProgressively<OnDeckAggregationResult>(
+    serverIds: serverIds,
+    fetch: (ids) => getOnDeckFromAllServers(limit: limit, hiddenLibraryKeys: hiddenLibraryKeys, serverIds: ids),
+    merge: (results) async {
+      // A scoped leg should normally contain only its server's rows, but a
+      // backend/test double can return overlapping rows. Keep one current
+      // value per global key while preserving first-seen ordering; this also
+      // prevents a late duplicate from fan-out legs becoming a second card.
+      final itemsByGlobalKey = <String, MediaItem>{};
+      for (final result in results) {
+        for (final item in result.items) {
+          itemsByGlobalKey[item.globalKey] = item;
+        }
+      }
+      return (
+        items: await mergeContinueWatching(const [], itemsByGlobalKey.values.toList(), limit: limit),
+        observedItems: [for (final result in results) ...result.observedItems],
+        succeededServerIds: {for (final result in results) ...result.succeededServerIds},
+        cancelledServerIds: {for (final result in results) ...result.cancelledServerIds},
+        failedServerIds: {for (final result in results) ...result.failedServerIds},
+      );
+    },
+    onProgress: onProgress,
+  );
+
+  Future<HubAggregationResult> getHubsProgressively({
+    int? limit,
+    Set<String>? hiddenLibraryKeys,
+    bool useGlobalHubs = true,
+    bool includePlaybackHubs = true,
+    Set<String>? serverIds,
+    required void Function(HubAggregationResult result) onProgress,
+  }) => _homeProgressively<HubAggregationResult>(
+    serverIds: serverIds,
+    fetch: (ids) => getHubsFromAllServers(
+      limit: limit,
+      hiddenLibraryKeys: hiddenLibraryKeys,
+      useGlobalHubs: useGlobalHubs,
+      includePlaybackHubs: includePlaybackHubs,
+      serverIds: ids,
+    ),
+    merge: (results) async {
+      final hubsByIdentity = <(String?, String, String?, String?), MediaHub>{};
+      for (final result in results) {
+        for (final hub in result.hubs) {
+          final identity = (hub.serverId, hub.id, hub.identifier, hub.libraryId);
+          hubsByIdentity[identity] = hub;
+        }
+      }
+      final hubs = hubsByIdentity.values.toList(growable: false);
+      return (
+        hubs: limit == null ? hubs : hubs.take(limit).toList(),
+        observedItems: [for (final result in results) ...result.observedItems],
+        succeededServerIds: {for (final result in results) ...result.succeededServerIds},
+        cancelledServerIds: {for (final result in results) ...result.cancelledServerIds},
+        failedServerIds: {for (final result in results) ...result.failedServerIds},
+      );
+    },
+    onProgress: onProgress,
+  );
+
   /// Run [fetch] against every client in [clients] and concatenate the results
   /// in client order. A per-server failure is swallowed — logged with
   /// [failureMessage] and contributing nothing — so one bad server cannot sink

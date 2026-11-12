@@ -13,6 +13,7 @@ import 'package:plezy/services/settings_service.dart';
 import 'package:plezy/theme/mono_theme.dart';
 import 'package:plezy/utils/platform_detector.dart';
 import 'package:plezy/widgets/media_card.dart';
+import 'package:plezy/widgets/media_ratings_strip.dart';
 import 'package:plezy/widgets/hub_section.dart';
 import 'package:plezy/utils/layout_constants.dart';
 import 'package:plezy/widgets/media_grid_delegate.dart';
@@ -33,6 +34,36 @@ void main() {
 
   tearDown(() {
     TvDetectionService.debugSetAppleTVOverride(null);
+  });
+
+  testWidgets('recommended hub score follows preferences and Continue Watching stays unbadged', (tester) async {
+    final item = testMediaItem(
+      id: 'rated',
+      backend: MediaBackend.plex,
+      kind: MediaKind.movie,
+      title: 'Rated',
+      rating: 8.1,
+    );
+    Future<void> pumpHub({bool continuing = false}) => tester.pumpWidget(
+      _TestApp(
+        child: HubSection(
+          hub: _hubWith(item),
+          focusMemory: HubFocusMemory(),
+          icon: Symbols.movie_rounded,
+          isInContinueWatching: continuing,
+        ),
+      ),
+    );
+    await pumpHub();
+    await tester.pump();
+    expect(find.byType(MediaCardRatingBadge), findsOneWidget);
+    await SettingsService.instance.write(SettingsService.showRatingBadges, false);
+    await tester.pump();
+    expect(find.byType(MediaCardRatingBadge), findsNothing);
+    await SettingsService.instance.write(SettingsService.showRatingBadges, true);
+    await pumpHub(continuing: true);
+    await tester.pump();
+    expect(find.byType(MediaCardRatingBadge), findsNothing);
   });
 
   testWidgets('custom item callbacks own pointer actions', (tester) async {

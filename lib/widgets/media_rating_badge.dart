@@ -4,7 +4,9 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../media/media_item.dart';
 import '../media/media_rating.dart';
-import '../utils/formatters.dart';
+import '../i18n/strings.g.dart';
+import '../services/settings_service.dart';
+import '../utils/rating_display_policy.dart';
 import '../utils/rating_utils.dart';
 import '../utils/text_measure_cache.dart';
 import 'app_icon.dart';
@@ -18,18 +20,39 @@ List<MediaRatingSource> mediaRatingsFor(MediaItem item, {MediaItem? fallbackItem
   return _ratingsFor(fallbackItem);
 }
 
+const ratingDisplayPrefs = <Pref<Object?>>[SettingsService.ratingSourceOrder, SettingsService.disabledRatingSources];
+
+RatingDisplayPolicy currentRatingDisplayPolicy() => RatingDisplayPolicy(
+  sourceOrder: SettingsService.instance.read(SettingsService.ratingSourceOrder),
+  disabledSources: SettingsService.instance.read(SettingsService.disabledRatingSources),
+);
+
+List<MediaRatingSource> preferredMediaRatingsFor(MediaItem item, {MediaItem? fallbackItem, int? limit}) =>
+    currentRatingDisplayPolicy().select(mediaRatingsFor(item, fallbackItem: fallbackItem), limit: limit);
+
+MediaRatingSource? mediaCardRatingFor(MediaItem item, {RatingDisplayPolicy? policy}) {
+  if (RatingDisplayPolicy.isValid(item.userRating)) {
+    return MediaRatingSource(source: 'personal', value: item.userRating!);
+  }
+  final ratings = (policy ?? currentRatingDisplayPolicy()).select(mediaRatingsFor(item), limit: 1);
+  return ratings.isEmpty ? null : ratings.first;
+}
+
 /// Formatted value for [rating] — the brand badge's own formatting where the
 /// source has one, otherwise the neutral 0-10 rendering.
 String mediaRatingLabel(MediaRatingSource rating) =>
-    ratingInfoForSource(rating.source, rating.value)?.formattedValue ?? formatRating(rating.value);
+    ratingInfoForSource(rating.source, rating.value)?.formattedValue ?? rating.value.toStringAsFixed(1);
 
 List<MediaRatingSource> _ratingsFor(MediaItem item) {
   final ratings = item.ratings;
-  if (ratings != null && ratings.isNotEmpty) return ratings;
+  if (ratings != null && ratings.isNotEmpty) {
+    final valid = const RatingDisplayPolicy().select(ratings);
+    if (valid.isNotEmpty) return valid;
+  }
   // Backends that report a bare score with no provenance (and cached rows
   // written before the attributed list existed) still get one badge.
   final rating = item.rating;
-  return rating == null ? const [] : [MediaRatingSource(source: '', value: rating)];
+  return !RatingDisplayPolicy.isValid(rating) ? const [] : [MediaRatingSource(source: '', value: rating!)];
 }
 
 /// Every score read out as `<source> <value>`, for merged metadata-line
@@ -38,7 +61,8 @@ String ratingsSemanticLabel(List<MediaRatingSource> ratings) => [
   for (final rating in ratings)
     switch (ratingSourceLabel(rating.source)) {
       final label? => '$label ${mediaRatingLabel(rating)}',
-      null => mediaRatingLabel(rating),
+      null =>
+        '${rating.source == 'personal' ? t.explore.detail.yourRating : t.discover.rating} ${mediaRatingLabel(rating)}/10',
     },
 ].join(', ');
 
@@ -154,7 +178,7 @@ Widget _buildContent({
       else
         AppIcon(fallbackIcon, fill: 1, color: foreground, size: size),
       SizedBox(width: spacing ?? 4),
-      Text(info?.formattedValue ?? formatRating(value), maxLines: 1, overflow: TextOverflow.clip, style: style),
+      Text(info?.formattedValue ?? value.toStringAsFixed(1), maxLines: 1, overflow: TextOverflow.clip, style: style),
     ],
   );
 }

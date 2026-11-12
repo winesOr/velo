@@ -348,11 +348,17 @@ mixin _PlexLiveTvClientMethods on _PlexClientInternals implements LiveTvSupport,
 
   /// Get live TV hubs (What's On Now, etc.) from all EPG providers' discover endpoints.
   /// Returns hubs with both display metadata and EPG timing/channel data per item.
+  /// An empty successful provider remains a valid result. When every provider
+  /// fails, preserve the first error so callers can distinguish failure from
+  /// a guide that currently has no programs.
   Future<List<LiveTvHubResult>> getLiveTvHubs({int count = 12}) async {
     final providers = await _discoverEpgProviders();
     if (providers.isEmpty) return [];
 
     final allHubs = <LiveTvHubResult>[];
+    var successfulProviders = 0;
+    Object? firstError;
+    StackTrace? firstStackTrace;
 
     for (final provider in providers) {
       try {
@@ -368,17 +374,24 @@ mixin _PlexLiveTvClientMethods on _PlexClientInternals implements LiveTvSupport,
         );
 
         final container = _getMediaContainer(response);
-        if (container == null || container['Hub'] == null) continue;
-
-        for (final hubJson in container['Hub'] as List) {
-          final hub = _parseLiveTvHub(hubJson, provider.identifier);
-          if (hub != null) allHubs.add(hub);
+        final hubs = container?['Hub'] as List?;
+        if (hubs != null) {
+          for (final hubJson in hubs) {
+            final hub = _parseLiveTvHub(hubJson, provider.identifier);
+            if (hub != null) allHubs.add(hub);
+          }
         }
-      } catch (e) {
+        successfulProviders++;
+      } catch (e, stackTrace) {
+        firstError ??= e;
+        firstStackTrace ??= stackTrace;
         appLogger.e('Failed to get live TV hubs from provider ${provider.identifier}', error: e);
       }
     }
 
+    if (successfulProviders == 0 && firstError != null) {
+      Error.throwWithStackTrace(firstError, firstStackTrace!);
+    }
     return allHubs;
   }
 

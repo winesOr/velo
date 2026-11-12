@@ -112,6 +112,7 @@ import 'video_player/spurious_eof_recovery.dart';
 import 'video_player/live_stream_retry.dart';
 import 'video_player/live_timeline_report.dart';
 import 'video_player/wakelock_controller.dart';
+import 'video_player/screen_awake_policy.dart';
 import 'video_player/playback_failure_action.dart';
 import 'video_player/playback_transition_gate.dart';
 import 'video_player/open_http_503_watchdog.dart';
@@ -1004,6 +1005,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
     clearWasPlayingBeforeInactive: () => _wasPlayingBeforeInactive = false,
     setWakelock: _setWakelock,
     recordLifecycle: (state, {action}) => _recordLifecycleState(state, action: action),
+    shouldKeepScreenAwake: _shouldKeepPlaybackScreenAwake,
   );
   ({bool canControlPlayback, bool canNavigateMediaItems})? _lastMediaControlAuthority;
   PlaybackProgressTracker? _progressTracker;
@@ -1159,7 +1161,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
     } else {
       _observedLaunchGeneration ??= generation;
     }
-    return _playbackAttempt = _PlaybackAttempt._(
+    final attempt = _PlaybackAttempt._(
       this,
       generation,
       currentPlayer,
@@ -1182,6 +1184,9 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
         }),
       ]).then<void>((_) {}),
     );
+    _playbackAttempt = attempt;
+    _syncPlaybackWakelock();
+    return attempt;
   }
 
   bool _isCurrentPlaybackGeneration(int generation, Player currentPlayer) {
@@ -1264,6 +1269,9 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
   void debugBindWatchTogetherForTesting() {
     _attachToWatchTogetherSession(lease: widget.watchTogetherLease!);
   }
+
+  @visibleForTesting
+  void debugAttachPipStateListenerForTesting() => _attachPipStateListener();
 
   /// The Windows display-switch hold otherwise runs only behind a real
   /// display-mode change on entering fullscreen.
@@ -1596,6 +1604,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (_shuttingDown) return;
+    _syncPlaybackWakelock();
 
     switch (state) {
       case AppLifecycleState.inactive:
@@ -2750,7 +2759,8 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
 
   void _setPlayerState(VoidCallback fn) => setStateIfMounted(fn);
 
-  Future<void> _setWakelock(bool enabled) => _wakelockController.setEnabledForOwner(_wakelockOwner, enabled);
+  Future<void> _setWakelock(bool enabled) =>
+      _wakelockController.setEnabledForOwner(_wakelockOwner, enabled && _shouldKeepPlaybackScreenAwake());
 
   /// Wait briefly for the active user's preferences to load in offline mode.
   /// This prevents default-track fallback when playback starts before

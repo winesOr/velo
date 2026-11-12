@@ -43,10 +43,32 @@ void main() {
       expect(calls, [true, true, true, false]);
     });
 
-    testWidgets('a failed enable neither starts refreshes nor retries automatically', (tester) async {
+    testWidgets('a failed initial enable recovers and resumes normal refreshes', (tester) async {
+      final calls = <bool>[];
+      var attempts = 0;
+      final controller = WakelockController(
+        platformToggle: (enabled) async {
+          calls.add(enabled);
+          if (enabled && attempts++ == 0) throw StateError('enable failed');
+        },
+      );
+
+      await controller.setEnabled(true);
+      await tester.pump(const Duration(milliseconds: 999));
+      expect(calls, [true]);
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(calls, [true, true]);
+      await tester.pump(const Duration(seconds: 5));
+      expect(calls, [true, true, true]);
+
+      await controller.setEnabled(false);
+      await tester.pump(const Duration(seconds: 10));
+      expect(calls, [true, true, true, false]);
+    });
+
+    testWidgets('persistent acquisition failure backs off and caps the delay', (tester) async {
       final calls = <bool>[];
       final controller = WakelockController(
-        refreshInterval: const Duration(seconds: 1),
         platformToggle: (enabled) async {
           calls.add(enabled);
           if (enabled) throw StateError('enable failed');
@@ -54,18 +76,44 @@ void main() {
       );
 
       await controller.setEnabled(true);
-      await tester.pump(const Duration(seconds: 3));
-      expect(calls, [true]);
-
-      await controller.setEnabled(true);
-      await tester.pump(const Duration(seconds: 3));
+      await tester.pump(const Duration(seconds: 1));
       expect(calls, [true, true]);
+      await tester.pump(const Duration(milliseconds: 1999));
+      expect(calls.length, 2);
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(calls.length, 3);
+      await tester.pump(const Duration(milliseconds: 4999));
+      expect(calls.length, 3);
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(calls.length, 4);
+      await tester.pump(const Duration(seconds: 5));
+      expect(calls.length, 5, reason: 'the retry delay stays capped at five seconds');
 
       await controller.setEnabled(false);
-      expect(calls, [true, true, false]);
+      await tester.pump(const Duration(seconds: 10));
+      expect(calls, [true, true, true, true, true, false]);
     });
 
-    testWidgets('releasing one owner does not retry another owner enable failure', (tester) async {
+    testWidgets('a failed periodic reassertion recovers without a playback event', (tester) async {
+      final calls = <bool>[];
+      final controller = WakelockController(
+        platformToggle: (enabled) async {
+          calls.add(enabled);
+          if (calls.length == 2) throw StateError('refresh failed');
+        },
+      );
+
+      await controller.setEnabled(true);
+      await tester.pump(const Duration(seconds: 5));
+      expect(calls, [true, true]);
+      await tester.pump(const Duration(seconds: 1));
+      expect(calls, [true, true, true]);
+      await tester.pump(const Duration(seconds: 5));
+      expect(calls, [true, true, true, true]);
+      await controller.setEnabled(false);
+    });
+
+    testWidgets('releasing one owner preserves the remaining owner scheduled recovery', (tester) async {
       final platform = _ControlledPlatformToggle();
       final controller = WakelockController(platformToggle: platform.call, refreshInterval: const Duration(seconds: 1));
       final first = Object();
@@ -88,15 +136,66 @@ void main() {
       platform.failNext(StateError('second enable failed'));
       await tester.pump();
       await Future.wait([secondEnable, releaseFirst]);
-      await tester.pump(const Duration(seconds: 3));
+      await tester.pump(const Duration(milliseconds: 999));
       expect(platform.calls, [true, true], reason: 'the release must not retry or restart refresh');
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(platform.calls, [true, true, true], reason: 'the remaining owner still needs automatic recovery');
+      platform.succeedNext();
+      await tester.pump();
 
       final releaseSecond = controller.setEnabledForOwner(second, false);
+      await tester.pump();
+      expect(platform.calls, [true, true, true, false]);
+      platform.succeedNext();
+      await tester.pump();
+      await releaseSecond;
+    });
+
+    testWidgets('releasing the last owner cancels a pending acquisition retry', (tester) async {
+      final calls = <bool>[];
+      final owner = Object();
+      final controller = WakelockController(
+        platformToggle: (enabled) async {
+          calls.add(enabled);
+          if (enabled) throw StateError('enable failed');
+        },
+      );
+
+      await controller.setEnabledForOwner(owner, true);
+      await tester.pump(const Duration(milliseconds: 500));
+      await controller.setEnabledForOwner(owner, false);
+      await tester.pump(const Duration(seconds: 10));
+      expect(calls, [true, false]);
+    });
+
+    testWidgets('a slow retry cannot overlap or reacquire after the owner leaves', (tester) async {
+      final platform = _ControlledPlatformToggle();
+      final controller = WakelockController(
+        platformToggle: platform.call,
+        retryDelays: const [Duration(milliseconds: 100)],
+      );
+      final owner = Object();
+      final enable = controller.setEnabledForOwner(owner, true);
+      await tester.pump();
+      platform.failNext(StateError('enable failed'));
+      await tester.pump();
+      await enable;
+
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(seconds: 10));
+      expect(platform.calls, [true, true]);
+      expect(platform.maxConcurrent, 1);
+
+      final release = controller.setEnabledForOwner(owner, false);
+      platform.succeedNext();
       await tester.pump();
       expect(platform.calls, [true, true, false]);
       platform.succeedNext();
       await tester.pump();
-      await releaseSecond;
+      await release;
+      await tester.pump(const Duration(seconds: 10));
+      expect(platform.calls, [true, true, false]);
+      expect(platform.maxConcurrent, 1);
     });
 
     testWidgets('repeated enable immediately reasserts after resume', (tester) async {
@@ -217,26 +316,49 @@ void main() {
       await cleanup;
     });
 
-    test('absorbs acquisition failure and retries only when requested', () async {
-      var calls = 0;
+    testWidgets('an explicit request can recover before the retry deadline', (tester) async {
+      final calls = <bool>[];
       final controller = WakelockController(
         platformToggle: (enabled) async {
-          calls++;
-          expect(enabled, isTrue);
-          if (calls == 1) throw StateError('enable failed');
+          calls.add(enabled);
+          if (calls.length == 1) throw StateError('enable failed');
         },
       );
 
       await expectLater(controller.setEnabled(true), completes);
-      await _flushTasks();
-      expect(calls, 1, reason: 'a failure must not start an automatic retry loop');
+      await tester.pump();
+      expect(calls, [true], reason: 'a failure must not start a busy retry loop');
 
       await expectLater(controller.setEnabled(true), completes);
-      expect(calls, 2, reason: 'the failed state must remain explicitly retryable');
+      expect(calls, [true, true], reason: 'the failed state must remain explicitly retryable');
+      await tester.pump(const Duration(seconds: 1));
+      expect(calls, [true, true], reason: 'success cancels the previously scheduled retry');
 
       await controller.setEnabled(true);
-      expect(calls, 3, reason: 'a repeated enable reasserts the platform flag');
+      expect(calls, [true, true, true], reason: 'a repeated enable reasserts the platform flag');
       await controller.setEnabled(false);
+    });
+
+    testWidgets('a failed late enable still releases after a cached disabled state', (tester) async {
+      final platform = _ControlledPlatformToggle();
+      final controller = WakelockController(platformToggle: platform.call);
+      final initialDisable = controller.setEnabled(false);
+      await tester.pump();
+      platform.succeedNext();
+      await tester.pump();
+      await initialDisable;
+
+      final enable = controller.setEnabled(true);
+      await tester.pump();
+      final disable = controller.setEnabled(false);
+      platform.failNext(StateError('enable applied before channel failed'));
+      await tester.pump();
+      expect(platform.calls, [false, true, false]);
+      platform.succeedNext();
+      await tester.pump();
+      await Future.wait([enable, disable]);
+      await tester.pump(const Duration(seconds: 10));
+      expect(platform.calls, [false, true, false]);
     });
 
     test('applies a newer opposing request after acquisition fails', () async {

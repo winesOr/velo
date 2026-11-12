@@ -90,6 +90,7 @@ class TranslationsJa extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$seerr$ja seerr = _Translations$seerr$ja._(_root);
 	@override late final _Translations$services$ja services = _Translations$services$ja._(_root);
 	@override late final _Translations$addServer$ja addServer = _Translations$addServer$ja._(_root);
+	@override late final _Translations$detailPlayback$ja detailPlayback = _Translations$detailPlayback$ja._(_root);
 }
 
 // Path: app
@@ -225,6 +226,15 @@ class _Translations$settings$ja extends Translations$settings$en {
 	final TranslationsJa _root; // ignore: unused_field
 
 	// Translations
+	@override String get ratings => 'Ratings';
+	@override String get showRatingBadges => 'Show ratings on posters';
+	@override String get showRatingBadgesDescription => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.';
+	@override String get ratingSources => 'Rating sources';
+	@override String get ratingSourcesDescription => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.';
+	@override String get otherRatingSources => 'Other ratings';
+	@override String get moveRatingUp => 'Move up';
+	@override String get moveRatingDown => 'Move down';
+	@override String get ratingSettingsSaveFailed => 'Could not save rating preferences. Try again.';
 	@override String get title => '設定';
 	@override String get supportDeveloper => 'Veloを支援';
 	@override String get supportDeveloperDescription => 'Liberapayで寄付して開発を支援';
@@ -2288,6 +2298,18 @@ class _Translations$addServer$ja extends Translations$addServer$en {
 	@override String redirectUnsupportedEnterFinal({required Object product}) => 'サーバーからサポートされていないURLにリダイレクトされました。最終的な${product}のURLを直接入力してください。';
 }
 
+// Path: detailPlayback
+class _Translations$detailPlayback$ja extends Translations$detailPlayback$en {
+	_Translations$detailPlayback$ja._(TranslationsJa root) : this._root = root, super.internal(root);
+
+	final TranslationsJa _root; // ignore: unused_field
+
+	// Translations
+	@override String get version => 'Version';
+	@override String get unavailable => 'Not available';
+	@override String get loadFailed => 'Could not load playback options';
+}
+
 // Path: common.ratingSource
 class _Translations$common$ratingSource$ja extends Translations$common$ratingSource$en {
 	_Translations$common$ratingSource$ja._(TranslationsJa root) : this._root = root, super.internal(root);
@@ -3125,6 +3147,15 @@ extension on TranslationsJa {
 			'update.viewRelease' => 'リリースを表示',
 			'update.latestVersion' => '最新バージョンです',
 			'update.checkFailed' => 'アップデートの確認に失敗しました',
+			'settings.ratings' => 'Ratings',
+			'settings.showRatingBadges' => 'Show ratings on posters',
+			'settings.showRatingBadgesDescription' => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.',
+			'settings.ratingSources' => 'Rating sources',
+			'settings.ratingSourcesDescription' => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.',
+			'settings.otherRatingSources' => 'Other ratings',
+			'settings.moveRatingUp' => 'Move up',
+			'settings.moveRatingDown' => 'Move down',
+			'settings.ratingSettingsSaveFailed' => 'Could not save rating preferences. Try again.',
 			'settings.title' => '設定',
 			'settings.supportDeveloper' => 'Veloを支援',
 			'settings.supportDeveloperDescription' => 'Liberapayで寄付して開発を支援',
@@ -3526,6 +3557,8 @@ extension on TranslationsJa {
 			'fileInfo.dolbyVisionLayers' => 'Dolby Vision レイヤー',
 			'fileInfo.baseLayerCompatibility' => 'ベースレイヤー互換性',
 			'fileInfo.avcBitstream' => 'AVC ビットストリーム',
+			_ => null,
+		} ?? switch (path) {
 			'fileInfo.nalLengthSize' => 'NAL 長さサイズ',
 			'fileInfo.scalingMatrix' => 'カスタムスケーリングマトリックス',
 			'fileInfo.streamIdentifier' => 'ストリーム識別子',
@@ -3535,8 +3568,6 @@ extension on TranslationsJa {
 			'fileInfo.languageCode' => '言語コード',
 			'fileInfo.streamTitle' => 'トラックタイトル',
 			'fileInfo.channels' => 'チャンネル',
-			_ => null,
-		} ?? switch (path) {
 			'fileInfo.sampleRate' => 'サンプルレート',
 			'fileInfo.spatialAudio' => '空間オーディオ',
 			'fileInfo.textBased' => 'テキストベース',
@@ -4040,6 +4071,8 @@ extension on TranslationsJa {
 			'libraries.title' => 'ライブラリ',
 			'libraries.fallbackTitle' => 'ライブラリ',
 			'libraries.scanLibraryFiles' => 'ライブラリファイルをスキャン',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.scanLibrary' => 'ライブラリをスキャン',
 			'libraries.analyze' => '解析',
 			'libraries.analyzeLibrary' => 'ライブラリを解析',
@@ -4049,8 +4082,6 @@ extension on TranslationsJa {
 			'libraries.trashEmptied' => ({required Object title}) => '「${title}」のゴミ箱を空にしました',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'ゴミ箱を空にできませんでした: ${error}',
 			'libraries.analyzing' => ({required Object title}) => '「${title}」を解析中…',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => '「${title}」の解析を開始しました',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'ライブラリの解析に失敗しました: ${error}',
 			'libraries.noLibrariesFound' => 'ライブラリが見つかりません',
@@ -4554,6 +4585,8 @@ extension on TranslationsJa {
 			'watchTogether.participantNeedsUpdate' => ({required Object name}) => '${name}は古いバージョンのアプリを使用しているため、同期できません',
 			'watchTogether.resumingWithout' => ({required Object name}) => '${name}抜きで再開',
 			'watchTogether.waitingForParticipants' => '他の参加者の読み込みを待っています…',
+			_ => null,
+		} ?? switch (path) {
 			'watchTogether.waitingForName' => ({required Object name}) => '${name}を待っています…',
 			'watchTogether.recentRooms' => '最近のルーム',
 			'watchTogether.renameRoom' => 'ルーム名を変更',
@@ -4563,8 +4596,6 @@ extension on TranslationsJa {
 			'watchTogether.defaultDisplayName' => 'ユーザー',
 			'watchTogether.errors.timedOut' => 'リレーサーバーが時間内に応答しませんでした',
 			'watchTogether.errors.connectionLost' => 'セッションの準備が整う前に接続が閉じられました',
-			_ => null,
-		} ?? switch (path) {
 			'watchTogether.errors.invalidRelayResponse' => 'リレーサーバーから予期しない応答が返されました',
 			'watchTogether.errors.sessionEnded' => 'ホストがセッションを終了しました',
 			'watchTogether.errors.sessionUnavailable' => 'このセッションを再開できません。ルームに参加するか作成して続行してください。',
@@ -5068,6 +5099,8 @@ extension on TranslationsJa {
 			'addServer.signInWithPlexCardSubtitle' => 'このデバイスを承認します。共有サーバーが追加されます。',
 			'addServer.signInWithPlexCardSubtitleScoped' => 'Plexアカウントを承認します。Homeユーザーはプロフィールになります。',
 			'addServer.connectToMediaBrowserCard' => ({required Object product}) => '${product}に接続',
+			_ => null,
+		} ?? switch (path) {
 			'addServer.connectToMediaBrowserCardSubtitle' => 'サーバーのURL、ユーザー名、パスワードを入力してください。',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => '${product}サーバーにサインインします。「${name}」に紐付けられます。',
 			'addServer.borrowFromAnotherProfile' => '別のプロフィールの接続を利用',
@@ -5077,8 +5110,6 @@ extension on TranslationsJa {
 			'addServer.authResponseIncomplete' => 'サーバーからのサインイン応答が不完全です',
 			'addServer.quickConnectRejected' => 'Quick Connectがサーバーに拒否されました',
 			'addServer.quickConnectNotJson' => 'Quick Connectのレスポンスが有効なJSONではありません',
-			_ => null,
-		} ?? switch (path) {
 			'addServer.quickConnectMissingFields' => 'Quick Connectのレスポンスにコードまたはシークレットがありません',
 			'addServer.quickConnectPollRejected' => 'Quick Connectのポーリングがサーバーに拒否されました',
 			'addServer.serverTimedOut' => 'サーバーが時間内に応答しませんでした',
@@ -5093,6 +5124,9 @@ extension on TranslationsJa {
 			'addServer.redirectDifferentHost' => ({required Object product}) => 'サーバーから別のホストにリダイレクトされました。最終的な${product}のURLを直接入力してください。',
 			'addServer.redirectInsecure' => 'サーバーからHTTPSではない安全でないURLにリダイレクトされました',
 			'addServer.redirectUnsupportedEnterFinal' => ({required Object product}) => 'サーバーからサポートされていないURLにリダイレクトされました。最終的な${product}のURLを直接入力してください。',
+			'detailPlayback.version' => 'Version',
+			'detailPlayback.unavailable' => 'Not available',
+			'detailPlayback.loadFailed' => 'Could not load playback options',
 			_ => null,
 		};
 	}

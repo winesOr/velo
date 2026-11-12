@@ -164,6 +164,48 @@ void main() {
   });
 
   group('ActiveProfileProvider', () {
+    test('startup identity readiness does not settle the full connection bind', () async {
+      final profile = Profile.local(id: 'startup-a', displayName: 'A', createdAt: DateTime(2026));
+      await registry.upsert(profile);
+      await storage.setActiveProfileId(profile.id);
+      await provider.initialize();
+      provider.markBindingStarted();
+      var settled = false;
+      unawaited(provider.awaitBindingSettle().then((_) => settled = true));
+      final ready = provider.awaitStartupIdentityReady();
+      provider.markStartupIdentityReady(profileId: 'wrong-profile');
+      expect(provider.isStartupIdentityReady, isFalse);
+      provider.markStartupIdentityReady(profileId: profile.id);
+      expect(await ready, isTrue);
+      expect(provider.isBinding, isTrue);
+      expect(settled, isFalse);
+      provider.markBindingFinished(success: true);
+      await Future<void>.value();
+      expect(settled, isTrue);
+    });
+
+    test('profile changes and failed authorization invalidate the startup gate', () async {
+      final first = Profile.local(id: 'startup-a', displayName: 'A', createdAt: DateTime(2026));
+      final second = Profile.local(id: 'startup-b', displayName: 'B', createdAt: DateTime(2026));
+      await registry.upsert(first);
+      await registry.upsert(second);
+      await storage.setActiveProfileId(first.id);
+      await provider.initialize();
+      provider.markBindingStarted();
+      provider.markStartupIdentityReady(profileId: first.id);
+      await provider.activate(second);
+      expect(provider.isStartupIdentityReady, isFalse);
+      provider.markStartupIdentityReady(profileId: first.id);
+      expect(provider.isStartupIdentityReady, isFalse);
+      final ready = provider.awaitStartupIdentityReady();
+      provider.markBindingFinished(success: false);
+      expect(await ready, isFalse);
+      provider.markBindingStarted();
+      final disposed = provider.awaitStartupIdentityReady();
+      await provider.resetForTesting();
+      expect(await disposed, isFalse);
+    });
+
     test('initialize with no profiles leaves active null', () async {
       await provider.initialize();
       expect(provider.profiles, isEmpty);

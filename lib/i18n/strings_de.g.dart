@@ -90,6 +90,7 @@ class TranslationsDe extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$seerr$de seerr = _Translations$seerr$de._(_root);
 	@override late final _Translations$services$de services = _Translations$services$de._(_root);
 	@override late final _Translations$addServer$de addServer = _Translations$addServer$de._(_root);
+	@override late final _Translations$detailPlayback$de detailPlayback = _Translations$detailPlayback$de._(_root);
 }
 
 // Path: app
@@ -225,6 +226,15 @@ class _Translations$settings$de extends Translations$settings$en {
 	final TranslationsDe _root; // ignore: unused_field
 
 	// Translations
+	@override String get ratings => 'Ratings';
+	@override String get showRatingBadges => 'Show ratings on posters';
+	@override String get showRatingBadgesDescription => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.';
+	@override String get ratingSources => 'Rating sources';
+	@override String get ratingSourcesDescription => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.';
+	@override String get otherRatingSources => 'Other ratings';
+	@override String get moveRatingUp => 'Move up';
+	@override String get moveRatingDown => 'Move down';
+	@override String get ratingSettingsSaveFailed => 'Could not save rating preferences. Try again.';
 	@override String get title => 'Einstellungen';
 	@override String get supportDeveloper => 'Velo unterstützen';
 	@override String get supportDeveloperDescription => 'Per Liberapay spenden, um die Entwicklung zu fördern';
@@ -2297,6 +2307,18 @@ class _Translations$addServer$de extends Translations$addServer$en {
 	@override String redirectUnsupportedEnterFinal({required Object product}) => 'Der Server hat zu einer nicht unterstützten URL weitergeleitet. Gib die endgültige ${product}-URL direkt ein.';
 }
 
+// Path: detailPlayback
+class _Translations$detailPlayback$de extends Translations$detailPlayback$en {
+	_Translations$detailPlayback$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get version => 'Version';
+	@override String get unavailable => 'Not available';
+	@override String get loadFailed => 'Could not load playback options';
+}
+
 // Path: common.ratingSource
 class _Translations$common$ratingSource$de extends Translations$common$ratingSource$en {
 	_Translations$common$ratingSource$de._(TranslationsDe root) : this._root = root, super.internal(root);
@@ -3136,6 +3158,15 @@ extension on TranslationsDe {
 			'update.viewRelease' => 'Versionshinweise anzeigen',
 			'update.latestVersion' => 'Aktuellste Version installiert',
 			'update.checkFailed' => 'Fehler bei der Updateprüfung',
+			'settings.ratings' => 'Ratings',
+			'settings.showRatingBadges' => 'Show ratings on posters',
+			'settings.showRatingBadgesDescription' => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.',
+			'settings.ratingSources' => 'Rating sources',
+			'settings.ratingSourcesDescription' => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.',
+			'settings.otherRatingSources' => 'Other ratings',
+			'settings.moveRatingUp' => 'Move up',
+			'settings.moveRatingDown' => 'Move down',
+			'settings.ratingSettingsSaveFailed' => 'Could not save rating preferences. Try again.',
 			'settings.title' => 'Einstellungen',
 			'settings.supportDeveloper' => 'Velo unterstützen',
 			'settings.supportDeveloperDescription' => 'Per Liberapay spenden, um die Entwicklung zu fördern',
@@ -3537,6 +3568,8 @@ extension on TranslationsDe {
 			'fileInfo.dolbyVisionLayers' => 'Dolby-Vision-Ebenen',
 			'fileInfo.baseLayerCompatibility' => 'Kompatibilität der Basisebene',
 			'fileInfo.avcBitstream' => 'AVC-Bitstream',
+			_ => null,
+		} ?? switch (path) {
 			'fileInfo.nalLengthSize' => 'NAL-Längengröße',
 			'fileInfo.scalingMatrix' => 'Benutzerdefinierte Skalierungsmatrix',
 			'fileInfo.streamIdentifier' => 'Stream-Kennung',
@@ -3546,8 +3579,6 @@ extension on TranslationsDe {
 			'fileInfo.languageCode' => 'Sprachcode',
 			'fileInfo.streamTitle' => 'Track-Titel',
 			'fileInfo.channels' => 'Kanäle',
-			_ => null,
-		} ?? switch (path) {
 			'fileInfo.sampleRate' => 'Abtastrate',
 			'fileInfo.spatialAudio' => 'Räumliches Audio',
 			'fileInfo.textBased' => 'Textbasiert',
@@ -4051,6 +4082,8 @@ extension on TranslationsDe {
 			'libraries.title' => 'Mediatheken',
 			'libraries.fallbackTitle' => 'Mediathek',
 			'libraries.scanLibraryFiles' => 'Mediatheksdateien scannen',
+			_ => null,
+		} ?? switch (path) {
 			'libraries.scanLibrary' => 'Mediathek scannen',
 			'libraries.analyze' => 'Analysieren',
 			'libraries.analyzeLibrary' => 'Mediathek analysieren',
@@ -4060,8 +4093,6 @@ extension on TranslationsDe {
 			'libraries.trashEmptied' => ({required Object title}) => 'Papierkorb für „${title}“ geleert',
 			'libraries.failedToEmptyTrash' => ({required Object error}) => 'Papierkorb konnte nicht geleert werden: ${error}',
 			'libraries.analyzing' => ({required Object title}) => 'Analysiere „${title}“...',
-			_ => null,
-		} ?? switch (path) {
 			'libraries.analysisStarted' => ({required Object title}) => 'Analyse gestartet für „${title}“',
 			'libraries.failedToAnalyze' => ({required Object error}) => 'Analyse der Mediathek fehlgeschlagen: ${error}',
 			'libraries.noLibrariesFound' => 'Keine Mediatheken gefunden',
@@ -4565,6 +4596,8 @@ extension on TranslationsDe {
 			'watchTogether.participantNeedsUpdate' => ({required Object name}) => '${name} verwendet eine ältere Appversion — Synchronisierung nicht verfügbar',
 			'watchTogether.resumingWithout' => ({required Object name}) => 'Fortfahren ohne ${name}',
 			'watchTogether.waitingForParticipants' => 'Warten, bis die anderen bereit sind …',
+			_ => null,
+		} ?? switch (path) {
 			'watchTogether.waitingForName' => ({required Object name}) => 'Warten auf ${name} …',
 			'watchTogether.recentRooms' => 'Zuletzt verwendete Räume',
 			'watchTogether.renameRoom' => 'Raum umbenennen',
@@ -4574,8 +4607,6 @@ extension on TranslationsDe {
 			'watchTogether.defaultDisplayName' => 'Benutzer',
 			'watchTogether.errors.timedOut' => 'Der Relay-Server hat nicht rechtzeitig geantwortet',
 			'watchTogether.errors.connectionLost' => 'Die Verbindung wurde geschlossen, bevor die Sitzung bereit war',
-			_ => null,
-		} ?? switch (path) {
 			'watchTogether.errors.invalidRelayResponse' => 'Der Relay-Server hat eine unerwartete Antwort gesendet',
 			'watchTogether.errors.sessionEnded' => 'Der Host hat die Sitzung beendet',
 			'watchTogether.errors.sessionUnavailable' => 'Diese Sitzung kann nicht fortgesetzt werden. Tritt einem Raum bei oder erstelle einen, um fortzufahren.',
@@ -5079,6 +5110,8 @@ extension on TranslationsDe {
 			'addServer.signInWithPlexCardSubtitle' => 'Dieses Gerät autorisieren. Geteilte Server werden hinzugefügt.',
 			'addServer.signInWithPlexCardSubtitleScoped' => 'Ein Plex-Konto autorisieren. Home-Benutzer werden zu Profilen.',
 			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Mit ${product} verbinden',
+			_ => null,
+		} ?? switch (path) {
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Gib Server-URL, Benutzername und Passwort ein.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => 'Melde dich bei deinem ${product}-Server an. Wird mit ${name} verknüpft.',
 			'addServer.borrowFromAnotherProfile' => 'Von einem anderen Profil ausleihen',
@@ -5088,8 +5121,6 @@ extension on TranslationsDe {
 			'addServer.authResponseIncomplete' => 'Die Anmeldeantwort des Servers war unvollständig',
 			'addServer.quickConnectRejected' => 'Quick Connect wurde vom Server abgelehnt',
 			'addServer.quickConnectNotJson' => 'Die Quick Connect-Antwort war kein gültiges JSON',
-			_ => null,
-		} ?? switch (path) {
 			'addServer.quickConnectMissingFields' => 'In der Quick Connect-Antwort fehlt ein Code oder Geheimnis',
 			'addServer.quickConnectPollRejected' => 'Die Quick Connect-Abfrage wurde vom Server abgelehnt',
 			'addServer.serverTimedOut' => 'Der Server hat nicht rechtzeitig geantwortet',
@@ -5104,6 +5135,9 @@ extension on TranslationsDe {
 			'addServer.redirectDifferentHost' => ({required Object product}) => 'Der Server hat zu einem anderen Host weitergeleitet. Gib die endgültige ${product}-URL direkt ein.',
 			'addServer.redirectInsecure' => 'Der Server hat von HTTPS zu einer unsicheren URL weitergeleitet',
 			'addServer.redirectUnsupportedEnterFinal' => ({required Object product}) => 'Der Server hat zu einer nicht unterstützten URL weitergeleitet. Gib die endgültige ${product}-URL direkt ein.',
+			'detailPlayback.version' => 'Version',
+			'detailPlayback.unavailable' => 'Not available',
+			'detailPlayback.loadFailed' => 'Could not load playback options',
 			_ => null,
 		};
 	}

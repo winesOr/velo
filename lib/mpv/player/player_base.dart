@@ -14,6 +14,7 @@ import '../models.dart';
 import 'mpv_node_decoder.dart';
 import 'audio_rendering_mode.dart';
 import 'player.dart';
+import 'player_playback_activity.dart';
 import 'player_state.dart';
 import 'player_stream_controllers.dart';
 import 'player_streams.dart';
@@ -34,6 +35,13 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
 
   @override
   PlayerState get state => _state;
+
+  @protected
+  void setPlaybackActivity(PlayerPlaybackActivity? activity) {
+    if (_disposed || _state.playbackActivity == activity) return;
+    _state = _state.copyWith(playbackActivity: activity, clearPlaybackActivity: activity == null);
+    playbackActivityController.add(activity);
+  }
 
   @override
   Duration get currentPosition => Duration(milliseconds: _positionMs);
@@ -176,6 +184,11 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
   bool _primaryFileLoaded = false;
   String? _lastErrorLogText;
   int? _activeSourceId;
+  // EOF retires completion events, but seeking within the same MediaItem can
+  // resume its activity without another file-loaded. Keep that identity until
+  // an actual stop/error/replacement, independently of the completion latch.
+  int? _playbackActivitySourceId;
+  int? _rollbackPlaybackActivitySourceId;
   bool _activeSourceReadyEmitted = false;
   final Set<int> _retiredSourceIds = {};
 
@@ -661,6 +674,21 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
     if (_disposed) return;
     final sourceId = _finiteInt(data?['sourceId']);
     switch (name) {
+      case 'playback-activity':
+        // Unlike legacy events, this optional contract always names its source.
+        if (data?['sourceId'] is! int || sourceId == null || sourceId != _playbackActivitySourceId) break;
+        final playWhenReady = data?['playWhenReady'];
+        final phase = switch (data?['phase']) {
+          'idle' => PlayerPlaybackPhase.idle,
+          'buffering' => PlayerPlaybackPhase.buffering,
+          'ready' => PlayerPlaybackPhase.ready,
+          'ended' => PlayerPlaybackPhase.ended,
+          _ => null,
+        };
+        if (phase == null || playWhenReady is! bool) break;
+        setPlaybackActivity(PlayerPlaybackActivity(phase: phase, playWhenReady: playWhenReady));
+        break;
+
       case 'start-file':
         _deferringTrackList = false;
         if (sourceId != null && _retiredSourceIds.contains(sourceId)) {
@@ -668,6 +696,8 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
           break;
         }
         _activeSourceId = sourceId;
+        _playbackActivitySourceId = sourceId;
+        setPlaybackActivity(null);
         _activeSourceReadyEmitted = false;
         _completionEmittedForActiveFile = false;
         _primaryMediaLoadStarted = true;
@@ -732,6 +762,7 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
           );
         }
         final endedSourceId = _activeSourceId ?? sourceId;
+        if (reason != 'eof') _playbackActivitySourceId = null;
         if (endedSourceId != null) _retiredSourceIds.add(endedSourceId);
         _activeSourceId = null;
         _activeSourceReadyEmitted = false;
@@ -748,6 +779,7 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
           }
           if (_activeSourceId != null && sourceId != _activeSourceId) break;
           _activeSourceId = sourceId;
+          _playbackActivitySourceId = sourceId;
         }
         _primaryFileLoaded = true;
         _awaitingFileLoadedAfterOpen = false;
@@ -1316,6 +1348,8 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
     final outgoingSourceId = _activeSourceId;
     if (outgoingSourceId != null) _retiredSourceIds.add(outgoingSourceId);
     _activeSourceId = null;
+    _rollbackPlaybackActivitySourceId = _playbackActivitySourceId;
+    _playbackActivitySourceId = null;
     _activeSourceReadyEmitted = false;
     // A source is being installed at this position; nothing has been reported
     // about it yet, and its predecessor's position says nothing about it.
@@ -1325,6 +1359,7 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
     _lastReportedPositionMs = position.inMilliseconds;
     _state = _state.copyWith(
       completed: false,
+      clearPlaybackActivity: true,
       position: position,
       duration: _timelineDuration ?? Duration.zero,
       buffer: Duration.zero,
@@ -1336,6 +1371,7 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
     _lastPositionWriter = _playheadOperations;
     _activeSeekGroup = null;
     completedController.add(false);
+    playbackActivityController.add(null);
     positionController.add(position);
     announcePlayheadJump(position);
     durationController.add(_timelineDuration ?? Duration.zero);
@@ -1361,8 +1397,11 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
     _positionMs = restoredPosition.inMilliseconds;
     _completionEmittedForActiveFile = snapshot.completed;
     _awaitingFileLoadedAfterOpen = false;
+    _playbackActivitySourceId = _rollbackPlaybackActivitySourceId;
     _state = _state.copyWith(
       completed: snapshot.completed,
+      playbackActivity: snapshot.playbackActivity,
+      clearPlaybackActivity: snapshot.playbackActivity == null,
       position: restoredPosition,
       duration: snapshot.duration,
       buffer: snapshot.buffer,
@@ -1374,6 +1413,7 @@ abstract class PlayerBase with PlayerStreamControllersMixin implements Player {
     _lastPositionWriter = _playheadOperations;
     _activeSeekGroup = null;
     completedController.add(snapshot.completed);
+    playbackActivityController.add(snapshot.playbackActivity);
     positionController.add(restoredPosition);
     announcePlayheadJump(restoredPosition);
     durationController.add(snapshot.duration);

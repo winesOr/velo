@@ -2,11 +2,13 @@ import 'dart:async';
 
 import '../models.dart';
 import 'player_streams.dart';
+import 'player_playback_activity.dart';
 
 mixin PlayerStreamControllersMixin {
   final playingController = StreamController<bool>.broadcast();
   final completedController = StreamController<bool>.broadcast();
   final bufferingController = StreamController<bool>.broadcast();
+  final playbackActivityController = StreamController<PlayerPlaybackActivity?>.broadcast();
   final positionController = StreamController<Duration>.broadcast();
   final playheadJumpController = StreamController<Duration?>.broadcast();
   final durationController = StreamController<Duration>.broadcast();
@@ -39,6 +41,7 @@ mixin PlayerStreamControllersMixin {
       playing: playingController.stream,
       completed: completedController.stream,
       buffering: bufferingController.stream,
+      playbackActivity: playbackActivityController.stream,
       position: positionController.stream,
       playheadJump: playheadJumpController.stream,
       duration: durationController.stream,
@@ -72,6 +75,7 @@ mixin PlayerStreamControllersMixin {
     await playingController.close();
     await completedController.close();
     await bufferingController.close();
+    await playbackActivityController.close();
     await positionController.close();
     await playheadJumpController.close();
     await durationController.close();

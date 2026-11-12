@@ -159,6 +159,8 @@ class PlayerDrawerChoice extends StatelessWidget {
                 padding: EdgeInsets.symmetric(horizontal: tab ? 0 : 12, vertical: 5),
                 child: Text(
                   label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontSize: 12,

@@ -123,6 +123,78 @@ void main() {
     });
   });
 
+  testWidgets('initial schedule failure offers focusable retry and successful retry enters the grid', (tester) async {
+    final harness = _GuideHarness.oneServer();
+    addTearDown(harness.dispose);
+    await harness.pump(tester);
+    harness.serverA.schedule.fail(0);
+    await tester.pumpAndSettle();
+
+    expect(find.text(t.errors.unableToLoad(context: t.liveTv.guide)), findsOneWidget);
+    expect(find.textContaining('private-server'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'guide_retry');
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(harness.serverA.schedule.requests, hasLength(2));
+    harness.serverA.schedule.complete(1, 'Recovered guide');
+    await tester.pumpAndSettle();
+    expect(find.text('Recovered guide'), findsOneWidget);
+    expect(find.text(t.common.retry), findsNothing);
+    expect(_guideTabFocusNode(tester).hasFocus, isTrue);
+  });
+
+  testWidgets('failed same-window refresh retains programs but a failed different window never reuses them', (
+    tester,
+  ) async {
+    final harness = _GuideHarness.oneServer();
+    addTearDown(harness.dispose);
+    await harness.pump(tester);
+    await harness.completeInitial(tester);
+
+    final state = tester.state<GuideTabState>(find.byType(GuideTab));
+    final reload = state.reload();
+    harness.serverA.schedule.fail(1);
+    await reload;
+    await tester.pumpAndSettle();
+    expect(find.text('Initial A'), findsOneWidget);
+    expect(find.byTooltip(t.common.retry), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    await tester.tap(_rightTimeButton());
+    await tester.pump();
+    expect(find.text('Initial A'), findsNothing);
+    harness.serverA.schedule.fail(2);
+    await tester.pumpAndSettle();
+    expect(find.text('Initial A'), findsNothing);
+    expect(find.text(t.errors.unableToLoad(context: t.liveTv.guide)), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('partial schedule failure retains the successful server and allows retry', (tester) async {
+    final harness = _GuideHarness.twoServers();
+    addTearDown(harness.dispose);
+    await harness.pump(tester);
+    harness.serverA.schedule.fail(0);
+    await tester.pump();
+    harness.serverB!.schedule.complete(0, 'Available B');
+    await tester.pumpAndSettle();
+    expect(find.text('Available B'), findsOneWidget);
+    expect(find.byTooltip(t.common.retry), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('a failed response after guide disposal cannot publish an error or leave a timer', (tester) async {
+    final harness = _GuideHarness.oneServer();
+    addTearDown(harness.dispose);
+    await harness.pump(tester);
+    await tester.pumpWidget(const SizedBox.shrink());
+    harness.serverA.schedule.fail(0);
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('superseded guide load keeps one interval and cannot replace current programs', (tester) async {
     final harness = _GuideHarness.twoServers();
     addTearDown(harness.dispose);
@@ -753,6 +825,8 @@ final class _ControllableLiveTvSupport implements LiveTvSupport {
   }
 
   void completeEmpty(int index) => requests[index].completer.complete(const []);
+
+  void fail(int index) => requests[index].completer.completeError(StateError('private-server/secret'));
 
   void completeSlots(int index, int count) {
     final request = requests[index];
