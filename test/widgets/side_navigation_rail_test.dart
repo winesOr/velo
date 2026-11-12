@@ -63,6 +63,17 @@ class _FakeCatalogSourcesProvider extends CatalogSourcesProvider {
   bool get hasAnySource => true;
 }
 
+class _ChangingCatalogSourcesProvider extends CatalogSourcesProvider {
+  bool available = true;
+  @override
+  bool get hasAnySource => available;
+  void notifyUnrelated() => notifyListeners();
+  void setAvailable(bool value) {
+    available = value;
+    notifyListeners();
+  }
+}
+
 MediaLibrary _library({
   required String id,
   required String title,
@@ -84,10 +95,18 @@ Future<void> _press(WidgetTester tester, LogicalKeyboardKey key) async {
   await tester.pumpAndSettle();
 }
 
-BoxDecoration? _railItemDecoration(WidgetTester tester, Finder item) {
-  return tester.widget<Container>(find.descendant(of: item, matching: find.byType(Container)).first).decoration
-      as BoxDecoration?;
-}
+Finder _railIndicator(Finder item) => find.descendant(
+  of: item,
+  matching: find.byWidgetPredicate(
+    (widget) =>
+        widget is Container &&
+        widget.decoration is BoxDecoration &&
+        (widget.decoration! as BoxDecoration).borderRadius == BorderRadius.circular(MonoTokens.radiusFull),
+  ),
+);
+
+BoxDecoration? _railItemDecoration(WidgetTester tester, Finder item) =>
+    tester.widget<Container>(_railIndicator(item)).decoration as BoxDecoration?;
 
 AnimatedOpacity _railSurfaceOpacity(WidgetTester tester) {
   return tester
@@ -174,6 +193,28 @@ void main() {
     LocaleSettings.setLocaleSync(AppLocale.en);
   });
 
+  testWidgets('unrelated source notifications do not rebuild the rail but availability changes do', (tester) async {
+    final sources = _ChangingCatalogSourcesProvider();
+    addTearDown(sources.dispose);
+    await _pumpBasicRail(tester, catalogSources: sources, alwaysExpanded: true);
+    var builds = 0;
+    final previous = debugOnRebuildDirtyWidget;
+    debugOnRebuildDirtyWidget = (element, builtOnce) {
+      previous?.call(element, builtOnce);
+      if (element.widget is SideNavigationRail) builds++;
+    };
+    addTearDown(() => debugOnRebuildDirtyWidget = previous);
+    for (var index = 0; index < 20; index++) {
+      sources.notifyUnrelated();
+      await tester.pump();
+    }
+    expect(builds, 0);
+    sources.setAvailable(false);
+    await tester.pump();
+    expect(builds, 1);
+    expect(find.text(t.navigation.explore), findsNothing);
+  });
+
   testWidgets('closed TV rail is slim and keeps primary icons centered', (tester) async {
     TvDetectionService.debugSetAppleTVOverride(true);
     addTearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
@@ -250,11 +291,13 @@ void main() {
     expect(find.text('Home'), findsNothing);
 
     final homeItem = find.byType(NavigationRailItem).first;
-    final pillFinder = find.descendant(of: homeItem, matching: find.byType(Container)).first;
+    final pillFinder = _railIndicator(homeItem);
     expect(
       tester.getSize(pillFinder),
       const Size(NavigationRailItem.collapsedIndicatorWidth, NavigationRailItem.collapsedIndicatorHeight),
     );
+    final hitRegion = find.descendant(of: homeItem, matching: find.byType(InkWell));
+    expect(tester.getSize(hitRegion).height, greaterThanOrEqualTo(48));
     // Home is the selected tab: the pill carries the active indicator tint.
     expect(_railItemDecoration(tester, homeItem)?.color, testMonoTokens.text.withValues(alpha: 0.1));
 
@@ -270,7 +313,7 @@ void main() {
     await _pumpBasicRail(tester, alwaysExpanded: true);
 
     final homeItem = find.byType(NavigationRailItem).first;
-    final indicator = find.descendant(of: homeItem, matching: find.byType(Container)).first;
+    final indicator = _railIndicator(homeItem);
     expect(tester.getSize(indicator), const Size(SideNavigationRailState.expandedWidth - 24, 48));
     expect(_railItemDecoration(tester, homeItem)?.borderRadius, BorderRadius.circular(MonoTokens.radiusFull));
   });

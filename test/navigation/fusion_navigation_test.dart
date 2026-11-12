@@ -16,18 +16,21 @@ import 'package:plezy/media/media_version.dart';
 import 'package:plezy/theme/mono_presentation.dart';
 import 'package:plezy/theme/mono_theme.dart';
 import 'package:plezy/theme/velo_brand.dart';
+import 'package:plezy/services/settings_service.dart';
 
 import '../test_helpers/media_items.dart';
+import '../test_helpers/prefs.dart';
+import '../test_helpers/preview_fonts.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(() async {
-    await (FontLoader('Go Noto Current')..addFont(rootBundle.load('assets/go-noto-current-regular.ttf'))).load();
-    await (FontLoader(
-      'packages/material_symbols_icons/MaterialSymbolsRounded',
-    )..addFont(rootBundle.load('packages/material_symbols_icons/lib/fonts/MaterialSymbolsRounded.ttf'))).load();
+  setUpAll(loadPreviewFonts);
+  setUp(() async {
+    resetSharedPreferencesForTest();
+    SettingsService.resetForTesting();
+    await SettingsService.getInstance();
+    LocaleSettings.setLocaleSync(AppLocale.en);
   });
-  setUp(() => LocaleSettings.setLocaleSync(AppLocale.en));
 
   test('overflow keeps extra destinations and excludes primary navigation and search', () {
     final tabs = secondaryNavigationTabs(
@@ -42,7 +45,7 @@ void main() {
   testWidgets('home navigation respects light appearance over artwork', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: monoTheme(dark: false),
+        theme: previewFontTheme(monoTheme(dark: false)),
         home: Scaffold(
           bottomNavigationBar: FusionNavigation(
             tabs: NavigationTab.getVisibleTabs(isOffline: false),
@@ -55,43 +58,57 @@ void main() {
     );
     final label = tester.widget<Text>(find.text(t.common.home));
     expect(label.style!.color, VeloBrand.foreground(Brightness.light));
-    final surface = tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+    final surface = tester.widget<AnimatedContainer>(find.byKey(const ValueKey('fusion-navigation-surface')));
     expect((surface.decoration! as BoxDecoration).color!.computeLuminance(), greaterThan(.7));
   });
 
-  for (final dark in [false, true]) {
-    testWidgets('${dark ? 'dark' : 'light'} navigation matches the compact unshadowed surface', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: monoTheme(dark: dark),
-          home: Scaffold(
-            bottomNavigationBar: FusionNavigation(
-              tabs: NavigationTab.getVisibleTabs(isOffline: false),
-              selectedTab: NavigationTabId.libraries,
-              onSelected: (_) {},
-              onSecondary: () {},
+  for (final fixture in [
+    (dark: false, selected: NavigationTabId.libraries),
+    (dark: true, selected: NavigationTabId.libraries),
+    (dark: false, selected: NavigationTabId.together),
+    (dark: true, selected: NavigationTabId.together),
+  ]) {
+    final dark = fixture.dark;
+    testWidgets(
+      '${dark ? 'dark' : 'light'} ${fixture.selected.name} navigation matches the compact unshadowed surface',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: previewFontTheme(monoTheme(dark: dark)),
+            home: Scaffold(
+              bottomNavigationBar: FusionNavigation(
+                tabs: NavigationTab.getVisibleTabs(isOffline: false),
+                selectedTab: fixture.selected,
+                onSelected: (_) {},
+                onSecondary: () {},
+              ),
             ),
           ),
-        ),
-      );
-      final surface = find.byType(AnimatedContainer);
-      expect(tester.getSize(surface).height, MonoPresentation.navigationHeight);
-      expect(tester.getSize(surface).width, MonoPresentation.navigationMaxWidth);
-      final decoration = tester.widget<AnimatedContainer>(surface).decoration! as BoxDecoration;
-      expect(decoration.color, MonoPresentation.navigationSurface(dark ? Brightness.dark : Brightness.light));
-      expect(decoration.boxShadow, isNull);
-      final labels = tester.widgetList<Text>(
-        find.descendant(of: find.byType(FusionNavigation), matching: find.byType(Text)),
-      );
-      expect(labels.every((label) => label.style!.fontSize == 10), isTrue);
-      final boxes = tester.widgetList<Container>(
-        find.descendant(of: find.byType(FusionNavigation), matching: find.byType(Container)),
-      );
-      for (final box in boxes) {
-        if (box.decoration case final BoxDecoration decoration) expect(decoration.boxShadow, isNull);
-      }
-      expect(tester.takeException(), isNull);
-    });
+        );
+        final surface = find.byKey(const ValueKey('fusion-navigation-surface'));
+        expect(tester.getSize(surface).height, MonoPresentation.navigationHeight);
+        expect(tester.getSize(surface).width, MonoPresentation.navigationMaxWidth);
+        final decoration = tester.widget<AnimatedContainer>(surface).decoration! as BoxDecoration;
+        expect(decoration.color, MonoPresentation.navigationSurface(dark ? Brightness.dark : Brightness.light));
+        expect(decoration.boxShadow, isNull);
+        final labels = tester.widgetList<Text>(
+          find.descendant(of: find.byType(FusionNavigation), matching: find.byType(Text)),
+        );
+        expect(labels.every((label) => label.style!.fontSize == 10), isTrue);
+        for (final label in labels) {
+          final target = find.ancestor(of: find.text(label.data!), matching: find.byType(GestureDetector)).first;
+          expect(tester.getSize(target).width, greaterThanOrEqualTo(48));
+          expect(tester.getSize(target).height, greaterThanOrEqualTo(48));
+        }
+        final boxes = tester.widgetList<Container>(
+          find.descendant(of: find.byType(FusionNavigation), matching: find.byType(Container)),
+        );
+        for (final box in boxes) {
+          if (box.decoration case final BoxDecoration decoration) expect(decoration.boxShadow, isNull);
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
   }
 
   test('four primary destinations do not remove legacy online destinations', () {
@@ -243,12 +260,12 @@ void main() {
       expect(find.text(item.displayTitle), findsOneWidget);
       expect(tester.takeException(), isNull);
       if (!fixture.tv) {
-        final surface = find.descendant(of: find.byType(FusionNavigation), matching: find.byType(AnimatedContainer));
+        final surface = find.byKey(const ValueKey('fusion-navigation-surface'));
         final bounds = tester.getRect(surface);
         expect(bounds.width, lessThanOrEqualTo(MonoPresentation.navigationMaxWidth));
         expect(bounds.center.dx, closeTo(fixture.size.width / 2, .01));
         expect(bounds.bottom, closeTo(fixture.size.height - 20, .01));
-        final body = tester.getRect(find.byType(SingleChildScrollView));
+        final body = tester.getRect(find.byType(SingleChildScrollView).first);
         expect(body.left, 0);
         expect(body.width, fixture.size.width);
       }
@@ -256,7 +273,7 @@ void main() {
       expect(selected, NavigationTabId.together);
       await tester.ensureVisible(find.text(t.common.play));
       if (!fixture.tv) {
-        await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -100));
+        await tester.drag(find.byType(SingleChildScrollView).first, const Offset(0, -100));
         await tester.pumpAndSettle();
       }
       await tester.tap(find.text(t.common.play));

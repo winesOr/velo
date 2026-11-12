@@ -33,6 +33,8 @@ import 'music/equalizer_icon.dart';
 import '../providers/multi_server_provider.dart';
 import '../services/fullscreen_state_manager.dart';
 import '../theme/mono_tokens.dart';
+import '../theme/interaction_tokens.dart';
+import 'press_feedback.dart';
 import '../widgets/backend_badge.dart';
 import '../i18n/strings.g.dart';
 
@@ -87,7 +89,7 @@ class NavigationRailItem extends StatelessWidget {
 
   /// Fixed collapsed item height so the collapse morph interpolates between
   /// known extents (32px pill + breathing room).
-  static const double collapsedItemHeight = 40;
+  static const double collapsedItemHeight = 48;
 
   final IconData icon;
   final IconData? selectedIcon;
@@ -364,21 +366,33 @@ class NavigationRailItem extends StatelessWidget {
                 builder: (context, expansion, _) =>
                     _buildMorphingLayouts(context, t, focused: focused, expansion: expansion),
               );
-        return Focus(
-          focusNode: focusNode,
-          autofocus: autofocus,
-          onKeyEvent: (node, event) => _handleRailItemKey(event, onSelect: onTap, onNavigateRight: onNavigateRight),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              canRequestFocus: false,
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(MonoTokens.radiusFull),
-              child: UnconstrainedBox(
-                alignment: .centerLeft,
-                constrainedAxis: Axis.vertical,
-                clipBehavior: Clip.hardEdge,
-                child: content,
+        return PressFeedbackBuilder(
+          pressedScale: InteractionTokens.navigationPressedScale,
+          borderRadius: BorderRadius.circular(MonoTokens.radiusFull),
+          builder: (context, setPressed, confirm) => Focus(
+            focusNode: focusNode,
+            autofocus: autofocus,
+            onKeyEvent: (node, event) => _handleRailItemKey(
+              event,
+              onSelect: () {
+                confirm();
+                onTap();
+              },
+              onNavigateRight: onNavigateRight,
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                canRequestFocus: false,
+                onTap: onTap,
+                onHighlightChanged: setPressed,
+                borderRadius: BorderRadius.circular(MonoTokens.radiusFull),
+                child: UnconstrainedBox(
+                  alignment: .centerLeft,
+                  constrainedAxis: Axis.vertical,
+                  clipBehavior: Clip.hardEdge,
+                  child: content,
+                ),
               ),
             ),
           ),
@@ -887,16 +901,20 @@ class SideNavigationRailState extends State<SideNavigationRail> with MountedSetS
     final isCollapsed = !_shouldExpand;
     final effectiveCollapsedWidth = collapsedWidthForContext(context);
     final horizontalPadding = horizontalPaddingForContext(context, isCollapsed: isCollapsed);
-    final hasLiveTv = context.watch<MultiServerProvider>().hasLiveTv;
+    final hasLiveTv = context.select<MultiServerProvider, bool>((provider) => provider.hasLiveTv);
     // Nullable watch: rail tests (and any host without the profile session
     // scope) simply never show the Explore item.
-    final hasExploreSource = context.watch<CatalogSourcesProvider?>()?.hasAnySource ?? false;
+    final hasExploreSource = context.select<CatalogSourcesProvider?, bool>(
+      (provider) => provider?.hasAnySource ?? false,
+    );
     // Nullable watch: rail tests (and any host without the profile session
     // scope) simply never show the Now Playing item. TV-only — it is the
     // way back into the now-playing screen there; desktop already has the
     // mini-player for that.
-    final musicService = context.watch<MusicPlaybackService?>();
-    final nowPlayingTrack = widget.isOfflineMode || !PlatformDetector.isTV() ? null : musicService?.currentTrack;
+    final musicService = context.read<MusicPlaybackService?>();
+    final nowPlayingTrack = context.select<MusicPlaybackService?, MediaItem?>(
+      (service) => widget.isOfflineMode || !PlatformDetector.isTV() ? null : service?.currentTrack,
+    );
 
     // Listen to fullscreen + the groupLibrariesByServer / showExploreTab
     // settings so the rail rebuilds when they are toggled in Appearance, and to
@@ -1058,7 +1076,7 @@ class SideNavigationRailState extends State<SideNavigationRail> with MountedSetS
                                         isCollapsed: isCollapsed,
                                       ),
                                       const SizedBox(height: _itemGap),
-                                      if (context.watch<MultiServerProvider>().hasLiveTv) ...[
+                                      if (hasLiveTv) ...[
                                         _buildNavItem(
                                           icon: Symbols.live_tv_rounded,
                                           selectedIcon: Symbols.live_tv_rounded,
@@ -1469,46 +1487,57 @@ class SideNavigationRailState extends State<SideNavigationRail> with MountedSetS
     // the hierarchy, matching M3E expanded-rail sections.
     return ListenableBuilder(
       listenable: focusNode,
-      builder: (context, _) => Focus(
-        focusNode: focusNode,
-        onKeyEvent: (node, event) =>
-            _handleRailItemKey(event, onSelect: onToggle, onNavigateRight: widget.onNavigateToContent),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            canRequestFocus: false,
-            onTap: onToggle,
-            borderRadius: radius,
-            child: Container(
-              decoration: BoxDecoration(
-                color: focusNode.hasFocus && InputModeTracker.isKeyboardMode(context)
-                    ? t.text.withValues(alpha: 0.08)
-                    : null,
-                borderRadius: radius,
-              ),
-              clipBehavior: Clip.hardEdge,
-              child: UnconstrainedBox(
-                alignment: .centerLeft,
-                constrainedAxis: Axis.vertical,
+      builder: (context, _) => PressFeedbackBuilder(
+        pressedScale: InteractionTokens.navigationPressedScale,
+        borderRadius: radius,
+        builder: (context, setPressed, confirm) => Focus(
+          focusNode: focusNode,
+          onKeyEvent: (node, event) => _handleRailItemKey(
+            event,
+            onSelect: () {
+              confirm();
+              onToggle();
+            },
+            onNavigateRight: widget.onNavigateToContent,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              canRequestFocus: false,
+              onTap: onToggle,
+              onHighlightChanged: setPressed,
+              borderRadius: radius,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: focusNode.hasFocus && InputModeTracker.isKeyboardMode(context)
+                      ? t.text.withValues(alpha: 0.08)
+                      : null,
+                  borderRadius: radius,
+                ),
                 clipBehavior: Clip.hardEdge,
-                child: SizedBox(
-                  width: expandedWidth - 24,
-                  child: Padding(
-                    padding: .symmetric(vertical: verticalPadding, horizontal: 17),
-                    child: Row(
-                      children: [
-                        leading ?? AppIcon(icon, fill: 1, size: iconSize, color: t.textMuted),
-                        const SizedBox(width: 11),
-                        Expanded(
-                          child: Text(label, style: labelStyle, overflow: .ellipsis),
-                        ),
-                        AppIcon(
-                          isExpanded ? Symbols.expand_less_rounded : Symbols.expand_more_rounded,
-                          fill: 1,
-                          size: 16,
-                          color: t.textMuted,
-                        ),
-                      ],
+                child: UnconstrainedBox(
+                  alignment: .centerLeft,
+                  constrainedAxis: Axis.vertical,
+                  clipBehavior: Clip.hardEdge,
+                  child: SizedBox(
+                    width: expandedWidth - 24,
+                    child: Padding(
+                      padding: .symmetric(vertical: verticalPadding, horizontal: 17),
+                      child: Row(
+                        children: [
+                          leading ?? AppIcon(icon, fill: 1, size: iconSize, color: t.textMuted),
+                          const SizedBox(width: 11),
+                          Expanded(
+                            child: Text(label, style: labelStyle, overflow: .ellipsis),
+                          ),
+                          AppIcon(
+                            isExpanded ? Symbols.expand_less_rounded : Symbols.expand_more_rounded,
+                            fill: 1,
+                            size: 16,
+                            color: t.textMuted,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

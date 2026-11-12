@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../i18n/strings.g.dart';
 import '../navigation/navigation_tabs.dart';
+import '../theme/interaction_tokens.dart';
 import 'app_icon.dart';
+import 'press_feedback.dart';
 
 /// The mobile shell's navigation in landscape: the bottom [NavigationBar]'s
 /// destinations on a leading Material [NavigationRail], so a wide, short
@@ -37,7 +40,7 @@ class MobileNavigationRail extends StatelessWidget {
 
   /// Material 3 rail indicator size; the long-press target matches it so the
   /// hold works anywhere on the visible pill, not only on the glyph.
-  static const Size _indicatorSize = Size(56, 32);
+  static const Size _indicatorSize = Size(56, 48);
 
   /// Material 3 labelled-destination extent (indicator, label, spacing) and
   /// the leading action's extent, used to decide whether labels fit.
@@ -115,6 +118,54 @@ class MobileNavigationRail extends StatelessWidget {
         ),
       );
     }
-    return NavigationRailDestination(icon: icon, label: Text(tab.getLabel()));
+    return NavigationRailDestination(
+      icon: _RailIconFeedback(child: icon),
+      label: Text(tab.getLabel()),
+    );
   }
+}
+
+/// Observes the existing Material rail gesture without competing for its tap
+/// or long-press recognizer. Keyboard feedback remains owned by NavigationRail.
+class _RailIconFeedback extends StatefulWidget {
+  const _RailIconFeedback({required this.child});
+  final Widget child;
+
+  @override
+  State<_RailIconFeedback> createState() => _RailIconFeedbackState();
+}
+
+class _RailIconFeedbackState extends State<_RailIconFeedback> {
+  Offset? _origin;
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (_pressed != value) setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) => Listener(
+    behavior: HitTestBehavior.translucent,
+    onPointerDown: (event) {
+      _origin = event.position;
+      _setPressed(true);
+    },
+    onPointerMove: (event) {
+      if (_origin != null && (event.position - _origin!).distance > kTouchSlop) _setPressed(false);
+    },
+    onPointerUp: (_) {
+      _origin = null;
+      _setPressed(false);
+    },
+    onPointerCancel: (_) {
+      _origin = null;
+      _setPressed(false);
+    },
+    child: PressFeedback(
+      pressed: _pressed,
+      pressedScale: InteractionTokens.navigationPressedScale,
+      borderRadius: BorderRadius.circular(24),
+      child: widget.child,
+    ),
+  );
 }

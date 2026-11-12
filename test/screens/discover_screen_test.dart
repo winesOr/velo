@@ -492,6 +492,39 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  for (final kind in [MediaKind.show, MediaKind.season]) {
+    testWidgets('real home hero $kind exposes one details action and no container playback', (tester) async {
+      final settings = await SettingsService.getInstance();
+      await settings.write(SettingsService.showHeroSection, true);
+      final container = testMediaItem(
+        id: 'container-${kind.name}',
+        kind: kind,
+        title: 'Container hero',
+        serverId: 'server_1',
+      );
+      await _pumpDiscoverShell(
+        tester,
+        isTv: false,
+        size: const Size(390, 844),
+        clients: [
+          _FakeMediaServerClient(hubs: const [], continueWatching: [container]),
+        ],
+      );
+      final hero = tester.widget<FusionHomeHero>(find.byType(FusionHomeHero).first);
+      expect(hero.item.id, container.id);
+      expect(hero.detailsButton, isNull, reason: 'container primary already opens details; do not duplicate it');
+      final action = find.descendant(
+        of: find.byType(FusionHomeHero).first,
+        matching: find.byType(HomeHeroPrimaryButton),
+      );
+      expect(action, findsOneWidget);
+      expect(tester.widget<HomeHeroPrimaryButton>(action).item.kind, kind);
+      expect(find.descendant(of: action, matching: find.text(t.mediaMenu.viewDetails)), findsOneWidget);
+      expect(find.descendant(of: action, matching: find.text(t.common.play)), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('on-deck hero replaces the first-load skeleton before hubs finish', (tester) async {
     final item = testMediaItem(
       id: 'early-hero',
