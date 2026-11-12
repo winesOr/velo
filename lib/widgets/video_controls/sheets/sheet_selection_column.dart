@@ -3,12 +3,18 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../i18n/strings.g.dart';
+import '../../../utils/app_logger.dart';
+import '../../../utils/error_message_utils.dart';
 import '../../../utils/scroll_utils.dart';
+import '../../../utils/snackbar_helper.dart';
 import '../../../widgets/overlay_sheet.dart';
 import 'sheet_column_header.dart';
 
 /// Per-row handle handed to [SheetSelectionColumn.itemBuilder].
 abstract class SheetSelectionColumnScope {
+  bool get isSelecting;
+
   /// Key for the row at [index]. Only the first row is keyed, so the one-time
   /// initial scroll can measure a real item height.
   Key? keyFor(int index);
@@ -30,6 +36,7 @@ class SheetSelectionColumn extends StatefulWidget {
   /// Row to scroll into view on first build; ignored when null or <= 0.
   final int? initialIndex;
   final Widget Function(BuildContext context, int index, SheetSelectionColumnScope scope) itemBuilder;
+  final Widget Function(BuildContext context, SheetSelectionColumnScope scope)? embeddedBuilder;
   final List<Widget> footer;
 
   const SheetSelectionColumn({
@@ -38,6 +45,7 @@ class SheetSelectionColumn extends StatefulWidget {
     required this.itemCount,
     required this.initialIndex,
     required this.itemBuilder,
+    this.embeddedBuilder,
     this.footer = const [],
   });
 
@@ -48,6 +56,9 @@ class SheetSelectionColumn extends StatefulWidget {
 class _SheetSelectionColumnState extends State<SheetSelectionColumn> implements SheetSelectionColumnScope {
   final _initialScroll = InitialItemScrollController();
   bool _selectionPending = false;
+
+  @override
+  bool get isSelecting => _selectionPending;
 
   @override
   void dispose() {
@@ -67,6 +78,9 @@ class _SheetSelectionColumnState extends State<SheetSelectionColumn> implements 
     try {
       await action();
       if (mounted && !BaseVideoControlSheet.embeddedIn(context)) OverlaySheetController.of(context).close();
+    } catch (error, stackTrace) {
+      appLogger.w('Failed to change the playback track', error: error, stackTrace: stackTrace);
+      if (mounted) showErrorSnackBar(context, t.messages.errorLoading(error: localizedErrorReason(error)));
     } finally {
       if (mounted) setState(() => _selectionPending = false);
     }
@@ -78,17 +92,20 @@ class _SheetSelectionColumnState extends State<SheetSelectionColumn> implements 
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
             if (widget.headerLabel != null) SheetColumnHeader(label: widget.headerLabel!),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (var index = 0; index < widget.itemCount; index++) widget.itemBuilder(context, index, this),
-              ],
-            ),
+            if (widget.embeddedBuilder != null)
+              widget.embeddedBuilder!(context, this)
+            else
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (var index = 0; index < widget.itemCount; index++) widget.itemBuilder(context, index, this),
+                ],
+              ),
             if (_selectionPending) const LinearProgressIndicator(minHeight: 2),
             ...widget.footer,
           ],
