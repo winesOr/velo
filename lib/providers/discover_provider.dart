@@ -11,6 +11,7 @@ import '../mixins/disposable_change_notifier_mixin.dart';
 import '../mixins/event_aware.dart';
 import '../services/settings_service.dart';
 import '../services/data_aggregation_service.dart';
+import '../services/home_snapshot_store.dart';
 import '../services/system_shelf_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/coalesced_load_coordinator.dart';
@@ -91,7 +92,8 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
     this._libraries, {
     required this.profileId,
     required this.isProfileBinding,
-    WatchStateStore? watchStateStore,
+    bool Function()? isConnectingServers,
+    this._watchStateStore,
     DateTime Function()? now,
     bool Function()? isRefreshBlocked,
     this.libraryEventDebounce = const Duration(seconds: 3),
@@ -99,11 +101,10 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
     this.libraryEventCooldown = const Duration(minutes: 2),
     Future<void> Function(String profileId, List<MediaItem>)? syncSystemShelf,
     Future<void> Function(String profileId, List<MediaServerClient> clients)? syncServerSources,
-    // A private field cannot be a named initializing formal callers can pass.
-    // ignore: prefer_initializing_formals
-  }) : _watchStateStore = watchStateStore,
-       _now = now ?? DateTime.now,
+    this._homeSnapshotStore = const HomeSnapshotStore(),
+  }) : _now = now ?? DateTime.now,
        _isRefreshBlocked = isRefreshBlocked ?? _neverBlocked,
+       _isConnectingServers = isConnectingServers ?? _neverBlocked,
        _syncSystemShelfOverride = syncSystemShelf,
        _syncServerSourcesOverride = syncServerSources {
     _loadCoordinator = CoalescedLoadCoordinator<String>(onFull: _loadOnce, onDelta: _loadDeltaOnce);
@@ -118,6 +119,8 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
     // discover the same way they refresh libraries. Removed in [dispose] so a
     // profile switch can't leave a stale listener on the app-global provider.
     _multiServer.addOnlineServersListener(syncToOnlineServers);
+    _visibleOnlineIds = _multiServer.onlineServerIds.toSet();
+    _multiServer.addListener(_onVisibleServersChanged);
     _hiddenLibraries.addListener(_onHiddenLibrariesChanged);
     _lastSeenLibraryOrderKeys = _libraryOrderKeys();
     _libraries.addListener(_onLibrariesChanged);
@@ -143,6 +146,72 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   final MultiServerProvider _multiServer;
   final HiddenLibrariesProvider _hiddenLibraries;
   final LibrariesProvider _libraries;
+  final HomeSnapshotStore _homeSnapshotStore;
+  final bool Function() _isConnectingServers;
+  bool _snapshotRestoreAttempted = false;
+  bool _restoredHomeSnapshot = false;
+  bool get restoredHomeSnapshot => _restoredHomeSnapshot;
+  Set<String> _visibleOnlineIds = const {};
+
+  void _onVisibleServersChanged() {
+    final online = _multiServer.onlineServerIds.toSet();
+    if (setEquals(online, _visibleOnlineIds)) return;
+    _visibleOnlineIds = online;
+    unawaited(syncToOnlineServers(online));
+  }
+
+  Map<String, MediaServerClient> _homeClients() => {
+    for (final id in _multiServer.onlineServerIds) id: ?_multiServer.getClientForServer(ServerId(id)),
+  };
+
+  Future<void> _restoreHomeSnapshot() async {
+    if (_snapshotRestoreAttempted || profileId == null || isDisposed || isProfileBinding()) return;
+    final clients = _homeClients();
+    if (clients.isEmpty) return;
+    _snapshotRestoreAttempted = true;
+    await _hiddenLibraries.ensureInitialized();
+    final settings = await SettingsService.getInstance();
+    if (isDisposed || isProfileBinding()) return;
+    final hidden = Set<String>.of(_hiddenLibraries.hiddenLibraryKeys);
+    final revision = _commitRevision;
+    final scope = HomeSnapshotScope.capture(
+      profileId: profileId!,
+      clients: clients,
+      hiddenLibraryKeys: hidden,
+      useGlobalHubs: settings.read(SettingsService.useGlobalHubs),
+    );
+    bool current() =>
+        !isDisposed &&
+        !isProfileBinding() &&
+        _commitRevision == revision &&
+        scope.isCurrent(_homeClients()) &&
+        setEquals(hidden, _hiddenLibraries.hiddenLibraryKeys);
+    final snapshot = await _homeSnapshotStore.read(scope, isCurrent: current);
+    if (snapshot == null || !current() || hasDisplayableContent) return;
+    _applyOnDeck(snapshot.onDeck);
+    final hubs = _filterDiscoverHubs(snapshot.hubs);
+    sortMediaHubsByLibraryOrder(hubs, _libraries.libraries);
+    _replaceHubs(hubs);
+    _restoredHomeSnapshot = true;
+    _onDeckState = DiscoverLoadState.loaded;
+    _hubsState = DiscoverLoadState.loaded;
+    ++_loadGeneration;
+    // Cached rows are never authoritative observations of server watch state.
+    safeNotifyListeners();
+  }
+
+  Future<void> _persistCurrentHomeSnapshot(HomeSnapshotScope scope, {required bool Function() isCurrent}) async {
+    if (!isCurrent()) return;
+    final revision = _commitRevision;
+    // Persist under the request's original authorization scope. Recapturing
+    // here could attribute an old response to a newly authenticated client.
+    await _homeSnapshotStore.write(
+      scope,
+      HomeSnapshot(onDeck: _onDeck, hubs: _hubs),
+      authoritativeServerIds: Set<String>.of(_fullyLoadedServerIds),
+      isCurrent: () => isCurrent() && revision == _commitRevision && scope.isCurrent(_homeClients()),
+    );
+  }
 
   /// Injectable clock for the [staleAfter] check; tests advance it instead of
   /// sleeping — same seam as `ContentRefreshResumeGate`.
@@ -261,6 +330,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
 
   List<MediaItem> get onDeck => _onDeck;
   List<MediaHub> get hubs => _hubs;
+  bool get hasDisplayableContent => _onDeck.isNotEmpty || _hubs.any((hub) => hub.items.isNotEmpty);
   bool get hasMoreContinueWatching => _hasMoreContinueWatching;
 
   /// Raw load failure (unlocalized); the screen wraps it for display.
@@ -289,6 +359,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   /// and merged in; already-loaded servers are not refetched.
   Future<void> syncToOnlineServers(Set<String> onlineServerIds) {
     if (isDisposed || onlineServerIds.isEmpty || isProfileBinding()) return Future<void>.value();
+    if (_loadCoordinator.isBusy) return _loadCoordinator.requestDelta(onlineServerIds);
     if (_onDeckState == DiscoverLoadState.loaded &&
         _hubsState == DiscoverLoadState.loaded &&
         _fullyLoadedServerIds.containsAll(onlineServerIds)) {
@@ -379,6 +450,9 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   }
 
   Future<void> _loadOnce() async {
+    await _restoreHomeSnapshot().catchError((Object error, StackTrace stackTrace) {
+      appLogger.d('Home snapshot hydration skipped', error: error, stackTrace: stackTrace);
+    });
     var outcome = DiscoverRefreshOutcome.cancelled;
     var passClearedExceptionBoundary = false;
     List<MediaItem>? systemShelfPassToken;
@@ -406,6 +480,17 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
     var onDeckFetchCompleted = false;
     var hubFetchCompleted = false;
     var replacedOnDeck = false;
+    var acceptingProgress = true;
+    HomeSnapshotScope? snapshotScope;
+    var passRevision = _contentRevision;
+    Set<String> passHiddenKeys = const {};
+    bool currentPass() =>
+        acceptingProgress &&
+        !isDisposed &&
+        !isProfileBinding() &&
+        passRevision == _contentRevision &&
+        (snapshotScope?.isCurrent(_homeClients(), requireSameServers: false) ?? true) &&
+        setEquals(passHiddenKeys, _hiddenLibraries.hiddenLibraryKeys);
 
     // Shared tail of every settled hub pass: classify the outcome, bump the
     // load generation when a replaced on-deck committed, and mark the pass as
@@ -434,13 +519,17 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
       await null;
       if (isDisposed || isProfileBinding()) return;
       ++_contentRevision;
+      passRevision = _contentRevision;
       appLogger.d('DiscoverProvider: loading content from all servers');
       _onDeckState = DiscoverLoadState.loading;
       _hubsState = DiscoverLoadState.loading;
       _errorMessage = null;
       safeNotifyListeners();
 
-      if (!_multiServer.hasConnectedServers) throw Exception('No servers available');
+      if (!_multiServer.hasConnectedServers) {
+        if (_isConnectingServers()) return;
+        throw Exception('No servers available');
+      }
 
       await _hiddenLibraries.ensureInitialized();
       if (isDisposed) return;
@@ -450,6 +539,15 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
       if (isDisposed) return;
       final useGlobalHubs = settings.read(SettingsService.useGlobalHubs);
       final aggregation = _multiServer.aggregationService;
+      passHiddenKeys = Set<String>.of(_hiddenLibraries.hiddenLibraryKeys);
+      if (profileId != null) {
+        snapshotScope = HomeSnapshotScope.capture(
+          profileId: profileId!,
+          clients: _homeClients(),
+          hiddenLibraryKeys: passHiddenKeys,
+          useGlobalHubs: useGlobalHubs,
+        );
+      }
 
       // On-deck and hubs fetch in parallel; on-deck is published as soon as
       // it lands so the hero renders while hubs are still loading.
@@ -458,14 +556,28 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
       // every preparatory await: a patch recorded later has a higher sequence
       // and must survive this pass's observations.
       observation = _beginObservation();
-      final onDeckFuture = aggregation.getOnDeckFromAllServers(
+      final onDeckFuture = aggregation.getOnDeckProgressively(
         limit: _continueWatchingProbeLimit,
         hiddenLibraryKeys: _hiddenLibraries.hiddenLibraryKeys,
+        onProgress: (partial) {
+          if (!currentPass() || partial.succeededServerIds.isEmpty || _commitRevision != expectedCommitRevision) return;
+          _applyOnDeck(partial.items);
+          ++expectedCommitRevision;
+          safeNotifyListeners();
+        },
       );
-      final hubsFuture = aggregation.getHubsFromAllServers(
+      final hubsFuture = aggregation.getHubsProgressively(
         hiddenLibraryKeys: _hiddenLibraries.hiddenLibraryKeys,
         useGlobalHubs: useGlobalHubs,
         includePlaybackHubs: false,
+        onProgress: (partial) {
+          if (!currentPass() || partial.succeededServerIds.isEmpty || _commitRevision != expectedCommitRevision) return;
+          final hubs = _filterDiscoverHubs(partial.hubs);
+          sortMediaHubsByLibraryOrder(hubs, _libraries.libraries);
+          _replaceHubs(hubs);
+          ++expectedCommitRevision;
+          safeNotifyListeners();
+        },
       );
 
       // A pass in which zero servers succeeded is never authoritative: it
@@ -475,6 +587,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
       // follow-up load is guaranteed (binding-settle prime, or
       // syncToOnlineServers falling through to load() while not loaded).
       final fetchedOnDeck = await onDeckFuture;
+      if (!currentPass()) return;
       onDeckFetchCompleted = true;
       succeededServerIds.addAll(fetchedOnDeck.succeededServerIds);
       failedServerIds.addAll(fetchedOnDeck.failedServerIds);
@@ -514,6 +627,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
       }
 
       final fetchedHubs = await hubsFuture;
+      if (!currentPass()) return;
       hubFetchCompleted = true;
       succeededServerIds.addAll(fetchedHubs.succeededServerIds);
       failedServerIds.addAll(fetchedHubs.failedServerIds);
@@ -608,10 +722,28 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
       _hubsState = DiscoverLoadState.loaded;
       safeNotifyListeners();
     } finally {
+      acceptingProgress = false;
       _lastOutcome = outcome;
       if (passClearedExceptionBoundary && _commitRevision == expectedCommitRevision && !isDisposed) {
         _recordObservations(observation, pendingObservations, observedServerIds);
         if (systemShelfPassToken != null) unawaited(_syncSystemShelf(systemShelfPassToken));
+        final scope = snapshotScope;
+        if (scope != null && profileId != null) {
+          unawaited(
+            _homeSnapshotStore.write(
+              scope,
+              HomeSnapshot(onDeck: _onDeck, hubs: _hubs),
+              authoritativeServerIds: _fullyLoadedServerIds,
+              isCurrent: () =>
+                  !isDisposed &&
+                  !isProfileBinding() &&
+                  passRevision == _contentRevision &&
+                  _commitRevision == expectedCommitRevision &&
+                  scope.isCurrent(_homeClients()) &&
+                  setEquals(passHiddenKeys, _hiddenLibraries.hiddenLibraryKeys),
+            ),
+          );
+        }
       }
     }
   }
@@ -621,35 +753,79 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   /// Failures keep the loaded state and leave the ids un-loaded, so the next
   /// status emission retries them.
   Future<void> _loadDeltaOnce(Set<String> serverIds) async {
-    ++_contentRevision;
+    if (isDisposed || isProfileBinding()) return;
+    if (_onDeckState != DiscoverLoadState.loaded || _hubsState != DiscoverLoadState.loaded) {
+      await _loadOnce();
+      return;
+    }
     // A full pass may have covered these ids while they sat in the queue.
-    final ids = serverIds.difference(_fullyLoadedServerIds);
+    // A removed/hidden server can also have been queued before its revocation.
+    final clients = _homeClients();
+    final ids = serverIds.intersection(clients.keys.toSet()).difference(_fullyLoadedServerIds);
     final onDeckIds = ids.difference(_loadedOnDeckServerIds);
     final hubIds = ids.difference(_loadedHubServerIds);
     if (onDeckIds.isEmpty && hubIds.isEmpty) return;
+    final passRevision = ++_contentRevision;
+    var expectedCommitRevision = _commitRevision;
+    final passHiddenKeys = Set<String>.of(_hiddenLibraries.hiddenLibraryKeys);
+    final clientIdentities = {
+      for (final entry in clients.entries)
+        entry.key: (
+          client: entry.value,
+          authentication: entry.value.authenticationSessionId,
+          scope: entry.value.cacheServerId,
+        ),
+    };
+    bool currentPass() {
+      if (isDisposed ||
+          isProfileBinding() ||
+          passRevision != _contentRevision ||
+          expectedCommitRevision != _commitRevision ||
+          !setEquals(passHiddenKeys, _hiddenLibraries.hiddenLibraryKeys)) {
+        return false;
+      }
+      final currentClients = _homeClients();
+      // Additions can queue another delta without cancelling authorized work.
+      // Removal, replacement, or an in-place auth/scope change invalidates it.
+      return clientIdentities.entries.every((entry) {
+        final current = currentClients[entry.key];
+        return identical(current, entry.value.client) &&
+            identical(current?.authenticationSessionId, entry.value.authentication) &&
+            current?.cacheServerId == entry.value.scope;
+      });
+    }
+
     appLogger.d('DiscoverProvider: merging content from newly-online servers $ids (onDeck=$onDeckIds, hubs=$hubIds)');
 
     try {
       await _hiddenLibraries.ensureInitialized();
-      if (isDisposed) return;
+      if (!currentPass()) return;
 
       final settings = await SettingsService.getInstance();
-      if (isDisposed) return;
+      if (!currentPass()) return;
       final useGlobalHubs = settings.read(SettingsService.useGlobalHubs);
       final aggregation = _multiServer.aggregationService;
+      final snapshotScope = profileId == null
+          ? null
+          : HomeSnapshotScope.capture(
+              profileId: profileId!,
+              clients: clients,
+              hiddenLibraryKeys: passHiddenKeys,
+              useGlobalHubs: useGlobalHubs,
+            );
 
       final observation = _beginObservation();
       final Future<OnDeckAggregationResult?> onDeckFuture = onDeckIds.isEmpty
           ? Future<OnDeckAggregationResult?>.value()
           : aggregation.getOnDeckFromAllServers(
               limit: _continueWatchingProbeLimit,
-              hiddenLibraryKeys: _hiddenLibraries.hiddenLibraryKeys,
+              hiddenLibraryKeys: passHiddenKeys,
               serverIds: onDeckIds,
             );
       final Future<HubAggregationResult?> hubsFuture = hubIds.isEmpty
           ? Future<HubAggregationResult?>.value()
           : aggregation.getHubsFromAllServers(
-              hiddenLibraryKeys: _hiddenLibraries.hiddenLibraryKeys,
+              hiddenLibraryKeys: passHiddenKeys,
               useGlobalHubs: useGlobalHubs,
               includePlaybackHubs: false,
               serverIds: hubIds,
@@ -657,22 +833,38 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
 
       final freshOnDeck = await onDeckFuture;
       final freshHubs = await hubsFuture;
-      if (isDisposed) return;
+      if (!currentPass()) return;
       // Staged, not recorded here: the merge below can still throw, and the
       // catch keeps the previous rows. Suppressing patches against rows that
       // were then discarded would strand an older snapshot on screen.
       final pendingObservations = <({MediaItem item, String? clientScope})>[];
       final observedServerIds = <String>{};
+      final hadMore = _hasMoreContinueWatching;
+      List<MediaItem>? mergedOnDeck;
+      List<MediaHub>? mergedHubs;
 
       if (freshOnDeck != null) {
-        final hadMore = _hasMoreContinueWatching;
-        final mergedOnDeck = await aggregation.mergeContinueWatching(
+        mergedOnDeck = await aggregation.mergeContinueWatching(
           _onDeck,
           freshOnDeck.items,
           limit: _continueWatchingProbeLimit,
         );
-        if (isDisposed) return;
+        if (!currentPass()) return;
+      }
+      if (freshHubs != null) {
+        final succeededHubIds = freshHubs.succeededServerIds;
+        mergedHubs = [
+          ..._hubs.where((hub) => hub.serverId == null || !succeededHubIds.contains(hub.serverId)),
+          ..._filterDiscoverHubs(freshHubs.hubs),
+        ];
+        sortMediaHubsByLibraryOrder(mergedHubs, _libraries.libraries);
+      }
+      // Both surfaces are staged before any mutation or authoritative watch
+      // observation. A scope change during async identity merging drops all.
+      if (!currentPass()) return;
+      if (freshOnDeck != null && mergedOnDeck != null) {
         _applyOnDeck(mergedOnDeck);
+        ++expectedCommitRevision;
         // The stored list is already trimmed, so the merge can't see old items
         // past the cap — a previously-true "more" affordance stays true.
         if (hadMore) _hasMoreContinueWatching = true;
@@ -683,14 +875,10 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
         // Watching refresh (the hero clamps instead of resetting).
       }
 
-      if (freshHubs != null) {
+      if (freshHubs != null && mergedHubs != null) {
         final succeededHubIds = freshHubs.succeededServerIds;
-        final mergedHubs = [
-          ..._hubs.where((hub) => hub.serverId == null || !succeededHubIds.contains(hub.serverId)),
-          ..._filterDiscoverHubs(freshHubs.hubs),
-        ];
-        sortMediaHubsByLibraryOrder(mergedHubs, _libraries.libraries);
         _replaceHubs(mergedHubs);
+        ++expectedCommitRevision;
         _loadedHubServerIds = {..._loadedHubServerIds, ...succeededHubIds}
           ..removeAll(freshHubs.failedServerIds)
           ..removeAll(freshHubs.cancelledServerIds);
@@ -708,11 +896,29 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
 
       appLogger.d('DiscoverProvider: ${_onDeck.length} on-deck items, ${_hubs.length} hubs after merging $ids');
       safeNotifyListeners();
+      if (!currentPass()) return;
       unawaited(_syncSystemShelf(_onDeck));
+      if (snapshotScope != null) {
+        unawaited(
+          _persistCurrentHomeSnapshot(snapshotScope, isCurrent: currentPass).catchError((
+            Object error,
+            StackTrace stackTrace,
+          ) {
+            appLogger.d('Home snapshot refresh skipped', error: error, stackTrace: stackTrace);
+          }),
+        );
+      }
     } catch (e) {
       if (isDisposed) return;
       // Keep the loaded state — stale rows beat an error flash.
       appLogger.w('DiscoverProvider: delta load failed for $ids', error: e);
+    } finally {
+      if (!isDisposed && !currentPass()) {
+        // Invalidated work never earns a loaded marker, including a prior
+        // successful half whose auth changed before the other half retried.
+        _loadedOnDeckServerIds = Set<String>.of(_loadedOnDeckServerIds)..removeAll(ids);
+        _loadedHubServerIds = Set<String>.of(_loadedHubServerIds)..removeAll(ids);
+      }
     }
   }
 
@@ -1119,6 +1325,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   @override
   void dispose() {
     _multiServer.removeOnlineServersListener(syncToOnlineServers);
+    _multiServer.removeListener(_onVisibleServersChanged);
     _hiddenLibraries.removeListener(_onHiddenLibrariesChanged);
     _libraries.removeListener(_onLibrariesChanged);
     _watchStateSubscription?.cancel();

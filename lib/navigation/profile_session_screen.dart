@@ -246,7 +246,8 @@ class _ProfileSessionScreenState extends State<ProfileSessionScreen> {
                     // matches; the proxy reuses `previous`, so the reference
                     // stays valid for as long as this provider does.
                     watchStateStore: context.read<WatchStateStore>(),
-                    isProfileBinding: () => activeProfile.isBinding,
+                    isProfileBinding: () => activeProfile.isBinding && !activeProfile.isStartupIdentityReady,
+                    isConnectingServers: () => activeProfile.isBinding,
                     // Defers push-triggered hub refetches while the player is
                     // up — same playback-quiet policy as the resume gate.
                     isRefreshBlocked: () => VideoPlayerScreenState.activeGlobalKey != null,

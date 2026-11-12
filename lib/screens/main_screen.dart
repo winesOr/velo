@@ -670,7 +670,7 @@ class _MainScreenState extends State<MainScreen>
       // bypass this gate if the binder has somehow not flipped the flag
       // within [_startupSettleFallback]. Logs a warning so the silent
       // path is still surfaced in diagnostics.
-      if (activeProfile.isBinding && !fromTimeout) return;
+      if (activeProfile.isBinding && !activeProfile.isStartupIdentityReady) return;
       if (fromTimeout) {
         appLogger.w(
           'ActiveProfileBinder still binding after ${_startupSettleFallback.inSeconds}s '

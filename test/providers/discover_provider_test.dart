@@ -64,7 +64,9 @@ MediaHub _hub(
 /// refetches, progress zero calls, an order change zero calls, and a hidden-set
 /// change one full pass.
 class _FakeAggregationService extends DataAggregationService {
-  _FakeAggregationService(super.serverManager);
+  _FakeAggregationService(this._serverManager) : super(_serverManager);
+
+  final MultiServerManager _serverManager;
 
   int onDeckCalls = 0;
   int hubCalls = 0;
@@ -83,6 +85,32 @@ class _FakeAggregationService extends DataAggregationService {
   Completer<void>? onDeckStarted;
   Completer<void>? hubStarted;
 
+  // This fixture models one logical whole-result fetch, including its gate
+  // and call count. Real per-server incremental fan-out has separate tests.
+  @override
+  Future<OnDeckAggregationResult> getOnDeckProgressively({
+    int? limit,
+    Set<String>? hiddenLibraryKeys,
+    Set<String>? serverIds,
+    required void Function(OnDeckAggregationResult result) onProgress,
+  }) => getOnDeckFromAllServers(limit: limit, hiddenLibraryKeys: hiddenLibraryKeys, serverIds: serverIds);
+
+  @override
+  Future<HubAggregationResult> getHubsProgressively({
+    int? limit,
+    Set<String>? hiddenLibraryKeys,
+    bool useGlobalHubs = true,
+    bool includePlaybackHubs = true,
+    Set<String>? serverIds,
+    required void Function(HubAggregationResult result) onProgress,
+  }) => getHubsFromAllServers(
+    limit: limit,
+    hiddenLibraryKeys: hiddenLibraryKeys,
+    useGlobalHubs: useGlobalHubs,
+    includePlaybackHubs: includePlaybackHubs,
+    serverIds: serverIds,
+  );
+
   @override
   Future<OnDeckAggregationResult> getOnDeckFromAllServers({
     int? limit,
@@ -91,6 +119,7 @@ class _FakeAggregationService extends DataAggregationService {
   }) async {
     onDeckCalls++;
     lastOnDeckServerIds = serverIds;
+    final requestedServerIds = serverIds ?? _serverManager.visibleOnlineClients.keys.toSet();
     final started = onDeckStarted;
     if (started != null && !started.isCompleted) started.complete();
     final gate = onDeckGate;
@@ -99,7 +128,7 @@ class _FakeAggregationService extends DataAggregationService {
     return (
       items: limit != null && items.length > limit ? items.sublist(0, limit) : items,
       observedItems: [for (final item in items) (item: item, clientScope: null)],
-      succeededServerIds: onDeckSucceededServerIds ?? serverIds ?? const {'server_1'},
+      succeededServerIds: onDeckSucceededServerIds ?? requestedServerIds,
       cancelledServerIds: onDeckCancelledServerIds,
       failedServerIds: onDeckFailedServerIds,
     );
@@ -115,6 +144,7 @@ class _FakeAggregationService extends DataAggregationService {
   }) async {
     hubCalls++;
     lastHubsServerIds = serverIds;
+    final requestedServerIds = serverIds ?? _serverManager.visibleOnlineClients.keys.toSet();
     final started = hubStarted;
     if (started != null && !started.isCompleted) started.complete();
     final gate = hubGate;
@@ -126,7 +156,7 @@ class _FakeAggregationService extends DataAggregationService {
         for (final hub in hubs)
           for (final item in hub.items) (item: item, clientScope: null),
       ],
-      succeededServerIds: hubSucceededServerIds ?? serverIds ?? const {'server_1'},
+      succeededServerIds: hubSucceededServerIds ?? requestedServerIds,
       cancelledServerIds: hubCancelledServerIds,
       failedServerIds: hubFailedServerIds,
     );
@@ -411,6 +441,7 @@ void main() {
     expect(shelfSyncs.map((sync) => sync.$1), ['profile-a']);
 
     shelfSyncs.clear();
+    manager.debugRegisterClientForTesting(_FakeClient(serverIdValue: 'server_2'));
     aggregation.onDeckSucceededServerIds = {'server_2'};
     aggregation.hubSucceededServerIds = {'server_2'};
     aggregation.onDeckResult = () => [_item('delta', serverId: 'server_2')];
@@ -1121,12 +1152,14 @@ void main() {
     expect(aggregation.onDeckCalls, onDeckCallsBefore);
 
     // New server mid-session → one delta fetch scoped to it.
+    manager.debugRegisterClientForTesting(_FakeClient(serverIdValue: 'server_2'));
     await provider.syncToOnlineServers({'server_1', 'server_2'});
     expect(aggregation.onDeckCalls, onDeckCallsBefore + 1);
 
     // During profile binding the startup priming owns loading — waves are
     // ignored so the hub fan-out doesn't run once per wave.
     isBinding = true;
+    manager.debugRegisterClientForTesting(_FakeClient(serverIdValue: 'server_3'));
     await provider.syncToOnlineServers({'server_1', 'server_2', 'server_3'});
     expect(aggregation.onDeckCalls, onDeckCallsBefore + 1);
   });
@@ -1137,6 +1170,7 @@ void main() {
     await provider.load();
     final generationBefore = provider.loadGeneration;
 
+    manager.debugRegisterClientForTesting(_FakeClient(serverIdValue: 'server_2'));
     aggregation.onDeckResult = () => [_item('b', serverId: 'server_2')];
     aggregation.hubsResult = () => [_hub('hub-2', serverId: 'server_2')];
     await provider.syncToOnlineServers({'server_1', 'server_2'});
@@ -1171,8 +1205,10 @@ void main() {
     aggregation.onDeckResult = () => [_item('new', serverId: 'server_2')];
     aggregation.hubsResult = () => [_hub('new-hub', serverId: 'server_2')];
 
+    manager.debugRegisterClientForTesting(_FakeClient(serverIdValue: 'server_2'));
     final firstDelta = provider.syncToOnlineServers({'server_1', 'server_2'});
     await Future.wait([aggregation.onDeckStarted!.future, aggregation.hubStarted!.future]);
+    manager.debugRegisterClientForTesting(_FakeClient(serverIdValue: 'server_3'));
     final trailingDelta = provider.syncToOnlineServers({'server_1', 'server_2', 'server_3'});
 
     gate.complete();
@@ -1207,6 +1243,7 @@ void main() {
     aggregation.hubsResult = () => [_hub('hub-1')];
     await provider.load();
 
+    manager.debugRegisterClientForTesting(_FakeClient(serverIdValue: 'server_2'));
     aggregation.onDeckResult = () => [_item('b', serverId: 'server_2')];
     aggregation.hubsResult = () => const [];
     aggregation.hubSucceededServerIds = const {};
@@ -1231,6 +1268,7 @@ void main() {
     await provider.load();
     final callsBefore = aggregation.onDeckCalls;
 
+    manager.debugRegisterClientForTesting(_FakeClient(serverIdValue: 'server_2'));
     aggregation.onDeckResult = () => throw Exception('flaky connect');
     await provider.syncToOnlineServers({'server_1', 'server_2'});
     expect(provider.onDeck.map((i) => i.id), ['a']);
@@ -1344,6 +1382,7 @@ void main() {
       final gate = Completer<void>();
       aggregation.hubGate = gate.future;
       aggregation.hubStarted = Completer<void>();
+      manager.debugRegisterClientForTesting(_FakeClient(serverIdValue: 'server_2'));
       final delta = provider.syncToOnlineServers(const {'server_1', 'server_2'});
       await aggregation.hubStarted!.future;
 

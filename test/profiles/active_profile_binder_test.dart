@@ -931,6 +931,31 @@ void main() {
       return (profile: profile, account: account);
     }
 
+    test('startup readiness stays closed while Plex authorization is pending or fails', () async {
+      final started = Completer<void>();
+      final release = Completer<void>();
+      await prepareLocalPlex(
+        cachedToken: null,
+        httpClient: MockClient((request) async {
+          if (!started.isCompleted) started.complete();
+          await release.future;
+          return http.Response('{}', 403, headers: {'content-type': 'application/json'});
+        }),
+      );
+      final binding = binder.rebindActive();
+      await started.future;
+      expect(activeProfile.isStartupIdentityReady, isFalse);
+      var ready = false;
+      final readiness = activeProfile.awaitStartupIdentityReady().then((value) => ready = value);
+      await Future<void>.value();
+      expect(ready, isFalse);
+      release.complete();
+      await binding;
+      await readiness;
+      expect(ready, isFalse);
+      expect(activeProfile.lastBindingSucceeded, isFalse);
+    });
+
     test('cached token success connects the fetched servers without minting', () async {
       var switchCalls = 0;
       final capturing = _CapturingMultiServerManager();
@@ -1086,6 +1111,9 @@ void main() {
 
       int? callsAtSettle;
       unawaited(activeProfile.awaitBindingSettle().then((_) => callsAtSettle = gated.calls));
+      expect(activeProfile.isStartupIdentityReady, isTrue);
+      expect(await activeProfile.awaitStartupIdentityReady(), isTrue);
+      expect(callsAtSettle, isNull, reason: 'identity readiness must not release profile picker settle');
       unawaited(binder.rebindActive()); // queues a same-id follow-up pass
       gated.gate.complete();
       await cycle;

@@ -102,6 +102,7 @@ import 'services/base_shared_preferences_service.dart';
 import 'services/prefs_recovery.dart';
 import 'services/sensitive_prefs.dart';
 import 'services/startup_diagnostics.dart';
+import 'services/home_startup_timing.dart';
 import 'utils/dialogs.dart';
 import 'widgets/dialog_action_button.dart';
 import 'widgets/startup_failure_view.dart';
@@ -143,6 +144,7 @@ void _registerTvosPlatformPlugins() {
 }
 
 void main() {
+  HomeStartupTiming.start();
   final binding = PlezyWidgetsBinding.ensureInitialized();
   if (agentControlEnabled) AgentControlService.instance.register();
   AndroidExitDiagnostics.markStartupPhase(AndroidStartupPhase.dartMain);
@@ -1255,6 +1257,58 @@ Future<bool> awaitStartupBindSettle(Future<bool> settle, {required bool hasNetwo
   return settle.timeout(MediaServerTimeouts.noNetworkStartupBind, onTimeout: () => false);
 }
 
+/// Wait for authorization without a content deadline, then for the first
+/// usable connection or the bounded, still-loading home shell.
+@visibleForTesting
+Future<bool> awaitStartupContentReady({
+  required ActiveProfileProvider profile,
+  required MultiServerProvider servers,
+  required bool hasNetwork,
+  Duration connectionBudget = const Duration(seconds: 2),
+}) async {
+  final profileId = profile.activeId;
+  final identityGeneration = profile.committedIdentityGeneration;
+  final authorized = await awaitStartupBindSettle(profile.awaitStartupIdentityReady(), hasNetwork: hasNetwork);
+  if (!authorized ||
+      profile.isDisposed ||
+      profile.activeId != profileId ||
+      profile.committedIdentityGeneration != identityGeneration) {
+    return false;
+  }
+  if (!profile.isBinding) return profile.lastBindingSucceeded;
+  if (servers.onlineServerIds.isNotEmpty) return true;
+
+  final completer = Completer<bool>();
+  // TODO(VELO-P4-01): Tune this injectable post-authorization budget on device.
+  final remaining = connectionBudget - profile.startupContentWaitElapsed;
+  final timer = Timer(remaining.isNegative ? Duration.zero : remaining, () {
+    if (!completer.isCompleted) completer.complete(profile.isStartupIdentityReady);
+  });
+  void check() {
+    if (completer.isCompleted) return;
+    if (profile.activeId != profileId ||
+        profile.committedIdentityGeneration != identityGeneration ||
+        !profile.isStartupIdentityReady) {
+      completer.complete(false);
+    } else if (!profile.isBinding) {
+      completer.complete(profile.lastBindingSucceeded);
+    } else if (servers.onlineServerIds.isNotEmpty) {
+      completer.complete(true);
+    }
+  }
+
+  profile.addListener(check);
+  servers.addListener(check);
+  check();
+  try {
+    return await completer.future;
+  } finally {
+    timer.cancel();
+    profile.removeListener(check);
+    servers.removeListener(check);
+  }
+}
+
 /// Top-level PIN prompt used by [ActiveProfileBinder] when it runs above the
 /// profile-scoped widget tree. Routes through the app-global
 /// [rootNavigatorKey] so the dialog survives profile-session remounts. Returns
@@ -2240,13 +2294,11 @@ class _SetupScreenState extends State<SetupScreen> with MountedSetStateMixin {
       if (!mounted) return;
       bindingSucceeded = activeProfile.active != null && activeProfile.lastBindingSucceeded;
     } else {
-      // Now wait for the binder to settle. This is the media-server client
-      // race: per-server status flips on the splash list as each client comes
-      // online, and we don't push MainScreen until they're all done (success
-      // or fail). Eliminates the "Failed to load discover content: No servers
-      // available" race the old eager-navigate flow caused. Without a network
-      // the wait is capped so airplane mode reaches the offline shell fast.
-      bindingSucceeded = await awaitStartupBindSettle(activeProfile.awaitBindingSettle(), hasNetwork: hasNetwork);
+      bindingSucceeded = await awaitStartupContentReady(
+        profile: activeProfile,
+        servers: context.read<MultiServerProvider>(),
+        hasNetwork: hasNetwork,
+      );
       if (!mounted) return;
     }
     AndroidExitDiagnostics.markStartupPhase(AndroidStartupPhase.bindingSettled);
@@ -2260,15 +2312,20 @@ class _SetupScreenState extends State<SetupScreen> with MountedSetStateMixin {
       return;
     }
 
-    // Repopulate metadata for downloaded items now that per-backend caches
-    // are resolvable (the Connections row + live MediaBrowser client are in
-    // place). Without this the downloads list and sync-rule titles render
-    // empty until something forces a later refresh.
-    await downloadProvider.refreshMetadataFromCache();
-    if (!mounted) return;
-
     AndroidExitDiagnostics.markStartupPhase(AndroidStartupPhase.mainScreen);
     unawaited(Navigator.pushReplacement(context, fadeRoute(ProfileSessionScreen(initialPromptHandled: shouldPrompt))));
+    // Metadata hydration is useful for downloads, but does not gate home.
+    // The provider guards its own async generation; don't start an old
+    // profile's hydration if the first navigation frame switched profiles.
+    final startupProfileId = activeProfile.activeId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (activeProfile.isDisposed || activeProfile.activeId != startupProfileId) return;
+      unawaited(
+        downloadProvider.refreshMetadataFromCache().catchError((Object error, StackTrace stackTrace) {
+          appLogger.w('Post-startup download metadata refresh failed', error: error, stackTrace: stackTrace);
+        }),
+      );
+    });
   }
 
   /// Wire per-server status updates from [MultiServerManager] into the
