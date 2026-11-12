@@ -17,8 +17,10 @@ import '../../../models/livetv_hub_result.dart';
 import '../../../providers/multi_server_provider.dart';
 import '../../../services/settings_service.dart';
 import '../../../utils/app_logger.dart';
+import '../../../utils/error_message_utils.dart';
 import '../../../widgets/hub_section.dart';
 import '../live_tv_actions_mixin.dart';
+import '../live_tv_load_error.dart';
 import '../live_tv_show_schedule_screen.dart';
 import '../live_tv_refresh_mixin.dart';
 import '../live_tv_server_iteration.dart';
@@ -38,6 +40,13 @@ class WhatsOnTabState extends State<WhatsOnTab>
     with LiveTvActionsMixin<WhatsOnTab>, MountedSetStateMixin, WidgetsBindingObserver, LiveTvRefreshMixin<WhatsOnTab> {
   List<_WhatsOnHub> _hubs = [];
   bool _isLoading = true;
+  String? _errorMessage;
+  int _loadGeneration = 0;
+  Future<void>? _loadFuture;
+  bool _loadPending = false;
+  bool _reloadOnResume = false;
+  bool _pendingFocus = false;
+  final _retryFocusNode = FocusNode(debugLabel: 'whats_on_retry');
   final Map<String, GlobalKey<HubSectionState>> _hubKeysById = {};
   List<GlobalKey<HubSectionState>> _hubKeys = [];
   final _hubFocusMemory = HubFocusMemory();
@@ -45,8 +54,8 @@ class WhatsOnTabState extends State<WhatsOnTab>
   @override
   List<LiveTvChannel> get liveTvChannels => widget.channels;
 
-  // Resume just re-arms the tick — unlike RecordingsTab there is no immediate
-  // reload, since nothing done on the other tabs changes hubs.
+  // Normally resume only re-arms the tick. An abandoned in-flight request is
+  // replaced when this tab becomes visible again.
   @override
   Duration get refreshInterval => const Duration(seconds: 60);
 
@@ -54,58 +63,157 @@ class WhatsOnTabState extends State<WhatsOnTab>
   void onRefreshTick() => unawaited(_loadHubs());
 
   @override
-  void initState() {
-    super.initState();
-    _loadHubs();
+  void onRefreshPaused() {
+    if (_loadFuture == null) return;
+    _loadGeneration++;
+    _loadPending = false;
+    _reloadOnResume = true;
   }
 
-  Future<void> _loadHubs() async {
+  @override
+  void onRefreshResumed(LiveTvRefreshResumeReason reason) {
+    if (!_reloadOnResume) return;
+    _reloadOnResume = false;
+    unawaited(_loadHubs());
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadHubs());
+  }
+
+  @override
+  void dispose() {
+    _loadGeneration++;
+    _loadPending = false;
+    _retryFocusNode.dispose();
+    super.dispose();
+  }
+
+  Future<void> reload() => _loadHubs();
+
+  void _retryHubs() {
+    _pendingFocus = _pendingFocus || _retryFocusNode.hasFocus;
+    unawaited(_loadHubs());
+  }
+
+  Future<void> _loadHubs() {
+    if (!mounted) return Future.value();
+    final inFlight = _loadFuture;
+    if (inFlight != null) {
+      _loadPending = true;
+      return inFlight;
+    }
+    final load = _drainLoads().whenComplete(() => _loadFuture = null);
+    _loadFuture = load;
+    return load;
+  }
+
+  Future<void> _drainLoads() async {
+    do {
+      _loadPending = false;
+      await _loadHubsOnce();
+    } while (mounted && _loadPending);
+  }
+
+  Future<void> _loadHubsOnce() async {
     if (!mounted) return;
-    setState(() => _isLoading = _hubs.isEmpty);
+    final generation = ++_loadGeneration;
+    setState(() {
+      _isLoading = _hubs.isEmpty;
+      _errorMessage = null;
+    });
 
     try {
       final multiServer = context.read<MultiServerProvider>();
       final allHubs = <_WhatsOnHub>[];
       final allHubIds = <String>[];
+      var successfulServers = 0;
+      var failedServers = 0;
+      String? loadError;
 
       // Plex-only: Live TV hubs API is Plex-specific.
       await forEachLiveTvServer(
         multiServer,
         resolveClient: multiServer.getPlexClientForServer,
+        isCurrent: () => mounted && generation == _loadGeneration,
         body: (client, serverInfo) async {
           final hubs = await client.getLiveTvHubs();
+          if (!mounted || generation != _loadGeneration) return;
+          successfulServers++;
           for (final hub in hubs) {
             allHubs.add(_WhatsOnHub.fromResult(hub));
             allHubIds.add('${serverInfo.serverId}\u0000${hub.hubKey}');
           }
         },
         onError: (client, serverInfo, error, stackTrace) {
+          if (!mounted || generation != _loadGeneration) return;
+          failedServers++;
+          loadError ??= localizedLoadErrorText(error, context: t.liveTv.whatsOn);
           appLogger.e('Failed to load hubs from server ${serverInfo.serverId}', error: error);
         },
       );
 
-      if (!mounted) return;
+      if (!mounted || generation != _loadGeneration) return;
+      final allFailed = failedServers > 0 && successfulServers == 0;
+      final hasPrevious = _hubs.isNotEmpty;
       final hubIds = allHubIds.toSet();
-      _hubKeysById.removeWhere((id, _) => !hubIds.contains(id));
+      if (!allFailed) {
+        _hubKeysById.removeWhere((id, _) => !hubIds.contains(id));
+      }
       setState(() {
-        _hubs = allHubs;
-        _hubKeys = [for (final hubId in allHubIds) _hubKeysById.putIfAbsent(hubId, () => GlobalKey<HubSectionState>())];
+        if (!allFailed || !hasPrevious) {
+          _hubs = allHubs;
+          _hubKeys = [
+            for (final hubId in allHubIds) _hubKeysById.putIfAbsent(hubId, () => GlobalKey<HubSectionState>()),
+          ];
+        }
         _isLoading = false;
+        _errorMessage = failedServers > 0 ? (loadError ?? t.errors.unableToLoad(context: t.liveTv.whatsOn)) : null;
       });
     } catch (e) {
       appLogger.e('Failed to load live TV hubs', error: e);
-      setStateIfMounted(() => _isLoading = false);
+      if (mounted && generation == _loadGeneration) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = localizedLoadErrorText(e, context: t.liveTv.whatsOn);
+        });
+      }
+    }
+    if (mounted && generation == _loadGeneration && _pendingFocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || generation != _loadGeneration) return;
+        if (_errorMessage != null) {
+          _retryFocusNode.requestFocus();
+        } else {
+          focusFirstHub();
+        }
+        _pendingFocus = false;
+      });
     }
   }
 
   /// Focus the first hub (called from parent when tab bar navigates down)
   void focusFirstHub() {
+    if (_isLoading) {
+      _pendingFocus = true;
+      return;
+    }
+    if (_hubs.isEmpty && _errorMessage != null) {
+      _retryFocusNode.requestFocus();
+      return;
+    }
     if (_hubKeys.isNotEmpty) {
       _hubKeys.first.currentState?.requestFocusFromMemory();
     }
   }
 
   bool _handleVerticalNavigation(int hubIndex, bool isUp) {
+    if (hubIndex == 0 && isUp && _errorMessage != null) {
+      _retryFocusNode.requestFocus();
+      return true;
+    }
     return navigateVerticalHubRows(
       hubCount: _hubKeys.length,
       hubIndex: hubIndex,
@@ -151,11 +259,21 @@ class WhatsOnTabState extends State<WhatsOnTab>
       return const Center(child: CircularProgressIndicator());
     }
 
+    if (_hubs.isEmpty && _errorMessage != null) {
+      return LiveTvLoadError(
+        message: _errorMessage!,
+        onRetry: _retryHubs,
+        focusNode: _retryFocusNode,
+        autofocus: true,
+        onNavigateUp: widget.onNavigateUp,
+        onBack: widget.onBack,
+      );
+    }
     if (_hubs.isEmpty) {
       return Center(child: Text(t.liveTv.noPrograms));
     }
 
-    return ListView.builder(
+    final list = ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
       clipBehavior: Clip.none,
       itemCount: _hubs.length,
@@ -183,6 +301,15 @@ class WhatsOnTabState extends State<WhatsOnTab>
           onBack: widget.onBack,
         );
       },
+    );
+    return LiveTvLoadError(
+      message: _errorMessage,
+      onRetry: _retryHubs,
+      focusNode: _retryFocusNode,
+      onNavigateUp: widget.onNavigateUp,
+      onNavigateDown: focusFirstHub,
+      onBack: widget.onBack,
+      content: list,
     );
   }
 }

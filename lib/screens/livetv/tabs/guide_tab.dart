@@ -23,6 +23,7 @@ import '../../../providers/multi_server_provider.dart';
 import '../../../media/media_server_client.dart';
 import '../../../theme/mono_tokens.dart';
 import '../../../utils/app_logger.dart';
+import '../../../utils/error_message_utils.dart';
 import '../live_tv_actions_mixin.dart';
 import '../live_tv_refresh_mixin.dart';
 import '../live_tv_server_iteration.dart';
@@ -35,6 +36,7 @@ import '../../../widgets/app_icon.dart';
 import '../../../widgets/app_menu.dart';
 import '../../../widgets/clickable_cursor.dart';
 import '../../../widgets/optimized_media_image.dart';
+import '../live_tv_load_error.dart';
 import '../livetv_styles.dart';
 
 class GuideTab extends StatefulWidget {
@@ -142,6 +144,8 @@ class GuideTabState extends State<GuideTab>
   /// a reset would restore the unmount (and D-pad focus loss) this flag fixes.
   bool _hasLoadedOnce = false;
   int _programLoadGeneration = 0;
+  DateTime? _loadedWindowStart;
+  DateTime? _loadedWindowEnd;
 
   late DateTime _gridStart;
   late DateTime _gridEnd;
@@ -178,6 +182,8 @@ class GuideTabState extends State<GuideTab>
   ));
   LiveTvProgram? _focusedProgram;
   bool _pendingFocus = false;
+  String? _errorMessage;
+  final _errorRetryFocusNode = FocusNode(debugLabel: 'guide_retry');
 
   @override
   List<LiveTvChannel> get liveTvChannels => widget.channels;
@@ -189,13 +195,19 @@ class GuideTabState extends State<GuideTab>
 
   /// Focus into the guide content (called from tab bar navigation or initial load).
   void focusContent() {
-    if (!InputModeTracker.isKeyboardMode(context)) return;
+    // Restore focus owned before loading even when Enter activated the retry
+    // without starting a keyboard navigation session.
+    if (!_pendingFocus && !InputModeTracker.isKeyboardMode(context)) return;
     // If still loading programs, defer until the Focus widget is in the tree.
     if (_isLoading) {
       _pendingFocus = true;
       return;
     }
     _pendingFocus = false;
+    if (!_hasLoadedOnce && _errorMessage != null) {
+      _errorRetryFocusNode.requestFocus();
+      return;
+    }
     _guideFocusNode.requestFocus();
     _updateFocus(() {
       if (widget.channels.isNotEmpty) {
@@ -259,8 +271,10 @@ class GuideTabState extends State<GuideTab>
         _gridEnd = start.add(const Duration(hours: 6));
         _nowWasInWindow = _nowInWindow(DateTime.now());
       });
+      _pendingJumpChannel = channel;
+      _pendingJumpProgram = program;
       await _loadPrograms();
-      if (!mounted) return;
+      if (!mounted || _errorMessage != null) return;
     }
 
     // Re-resolve against the loaded list — the search sheet's program objects
@@ -348,6 +362,7 @@ class GuideTabState extends State<GuideTab>
   @override
   void dispose() {
     _programLoadGeneration++;
+    _errorRetryFocusNode.dispose();
     _selectLongPressController.dispose();
     _guideFocusNode.dispose();
     _gridVerticalController.dispose();
@@ -453,6 +468,14 @@ class GuideTabState extends State<GuideTab>
 
   bool _isCurrentProgramLoad(int generation) => mounted && generation == _programLoadGeneration;
 
+  /// Refreshes the visible window without changing the selected day or time.
+  Future<void> reload() => _retryPrograms();
+
+  Future<void> _retryPrograms() {
+    _pendingFocus = _pendingFocus || _errorRetryFocusNode.hasFocus;
+    return _loadPrograms();
+  }
+
   Future<void> _loadPrograms() async {
     if (!mounted) return;
     final loadGeneration = ++_programLoadGeneration;
@@ -462,12 +485,28 @@ class GuideTabState extends State<GuideTab>
     final endEpoch = requestGridEnd.millisecondsSinceEpoch ~/ 1000;
     final from = DateTime.fromMillisecondsSinceEpoch(startEpoch * 1000, isUtc: true);
     final to = DateTime.fromMillisecondsSinceEpoch(endEpoch * 1000, isUtc: true);
-    setState(() => _isLoading = true);
+    final sameWindow = _loadedWindowStart == requestGridStart && _loadedWindowEnd == requestGridEnd;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      if (!sameWindow) {
+        // Keep the grid/focus mounted, but never present a previous date's
+        // programs or recording marks under the newly selected window.
+        _programs = [];
+        _programsByChannelScope = const {};
+        _scheduledRecordingKeys = const {};
+        _recordingOverrides = const {};
+        _focusedProgram = null;
+      }
+    });
 
     try {
       final allPrograms = <LiveTvProgram>[];
       final scheduledRecordingKeys = <String>{};
       final multiServer = context.read<MultiServerProvider>();
+      var successfulServers = 0;
+      var failedServers = 0;
+      String? loadError;
 
       await forEachLiveTvServer(
         multiServer,
@@ -476,6 +515,7 @@ class GuideTabState extends State<GuideTab>
         body: (client, serverInfo) async {
           final programs = await client.liveTv.fetchSchedule(from: from, to: to);
           if (!_isCurrentProgramLoad(loadGeneration)) return;
+          successfulServers++;
           allPrograms.addAll(programs);
           await _addScheduledRecordingKeysForServer(
             client: client,
@@ -486,6 +526,8 @@ class GuideTabState extends State<GuideTab>
         },
         onError: (client, serverInfo, error, stackTrace) {
           if (!_isCurrentProgramLoad(loadGeneration)) return;
+          failedServers++;
+          loadError ??= localizedLoadErrorText(error, context: t.liveTv.guide);
           appLogger.e('Failed to load programs from server ${serverInfo.serverId}', error: error);
         },
       );
@@ -493,18 +535,19 @@ class GuideTabState extends State<GuideTab>
       if (!_isCurrentProgramLoad(loadGeneration)) return;
       final shouldFocus = _pendingFocus;
       final programsByChannelScope = _indexProgramsByChannel(allPrograms, widget.channels);
-      final pendingJumpChannel = _pendingJumpChannel;
-      final pendingJumpProgram = _pendingJumpProgram;
-      _pendingJumpChannel = null;
-      _pendingJumpProgram = null;
-
+      final allFailed = failedServers > 0 && successfulServers == 0;
       setState(() {
-        _programs = allPrograms;
-        _programsByChannelScope = programsByChannelScope;
-        _scheduledRecordingKeys = scheduledRecordingKeys;
-        _recordingOverrides = const {};
+        if (!allFailed) {
+          _programs = allPrograms;
+          _programsByChannelScope = programsByChannelScope;
+          _scheduledRecordingKeys = scheduledRecordingKeys;
+          _loadedWindowStart = requestGridStart;
+          _loadedWindowEnd = requestGridEnd;
+          _recordingOverrides = const {};
+        }
         _isLoading = false;
-        _hasLoadedOnce = true;
+        _hasLoadedOnce = _hasLoadedOnce || !allFailed;
+        _errorMessage = failedServers > 0 ? (loadError ?? t.errors.unableToLoad(context: t.liveTv.guide)) : null;
         // Focus tracking compares by identity, so a reload orphans the
         // focused program — re-resolve it against the fresh list.
         if (_focusZone == _GuideZone.grid && _gridColumn == 1 && _focusedProgram != null) {
@@ -515,6 +558,19 @@ class GuideTabState extends State<GuideTab>
         }
       });
       _publishFocusSnapshot();
+
+      if (allFailed) {
+        if (shouldFocus) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_isCurrentProgramLoad(loadGeneration)) _errorRetryFocusNode.requestFocus();
+          });
+        }
+        return;
+      }
+      final pendingJumpChannel = _pendingJumpChannel;
+      final pendingJumpProgram = _pendingJumpProgram;
+      _pendingJumpChannel = null;
+      _pendingJumpProgram = null;
 
       if (pendingJumpChannel != null) {
         // A stashed search jump wins over the default live-line anchoring and
@@ -538,7 +594,10 @@ class GuideTabState extends State<GuideTab>
     } catch (e) {
       if (!_isCurrentProgramLoad(loadGeneration)) return;
       appLogger.e('Failed to load guide programs', error: e);
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _errorMessage = localizedLoadErrorText(e, context: t.liveTv.guide);
+      });
     }
   }
 
@@ -913,7 +972,11 @@ class GuideTabState extends State<GuideTab>
       return KeyEventResult.handled;
     }
     if (key.isUpKey) {
-      widget.onNavigateUp?.call();
+      if (_errorMessage != null) {
+        _errorRetryFocusNode.requestFocus();
+      } else {
+        widget.onNavigateUp?.call();
+      }
       return KeyEventResult.handled;
     }
     if (key.isSelectKey) {
@@ -1136,8 +1199,18 @@ class GuideTabState extends State<GuideTab>
     if (_isLoading && !_hasLoadedOnce) {
       return const Center(child: CircularProgressIndicator());
     }
+    if (!_isLoading && !_hasLoadedOnce && _errorMessage != null) {
+      return LiveTvLoadError(
+        message: _errorMessage!,
+        onRetry: _retryPrograms,
+        focusNode: _errorRetryFocusNode,
+        autofocus: true,
+        onNavigateUp: widget.onNavigateUp,
+        onBack: widget.onBack,
+      );
+    }
 
-    return Stack(
+    final grid = Stack(
       fit: StackFit.passthrough,
       children: [
         Focus(
@@ -1156,6 +1229,15 @@ class GuideTabState extends State<GuideTab>
             ),
           ),
       ],
+    );
+    return LiveTvLoadError(
+      message: _errorMessage,
+      onRetry: _retryPrograms,
+      focusNode: _errorRetryFocusNode,
+      onNavigateUp: widget.onNavigateUp,
+      onNavigateDown: _guideFocusNode.requestFocus,
+      onBack: widget.onBack,
+      content: grid,
     );
   }
 

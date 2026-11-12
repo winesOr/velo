@@ -16,8 +16,10 @@ import '../../../theme/mono_tokens.dart';
 import '../../../utils/app_logger.dart';
 import '../../../utils/dialogs.dart';
 import '../../../utils/formatters.dart';
+import '../../../utils/error_message_utils.dart';
 import '../../../widgets/app_icon.dart';
 import '../../../widgets/settings_section.dart';
+import '../live_tv_load_error.dart';
 import '../live_tv_refresh_mixin.dart';
 import '../live_tv_server_iteration.dart';
 import '../livetv_recording_actions.dart';
@@ -68,12 +70,15 @@ class RecordingsTabState extends State<RecordingsTab> with WidgetsBindingObserve
   Future<void>? _loadFuture;
   bool _loadPending = false;
   final _firstTileFocusNode = FocusNode(debugLabel: 'recordings_tab_first_tile');
+  final _retryFocusNode = FocusNode(debugLabel: 'recordings_retry');
 
   @override
   Duration get refreshInterval => const Duration(seconds: 30);
 
   @override
-  void onRefreshTick() => unawaited(_load());
+  void onRefreshTick() {
+    if (!_adminBlocked) unawaited(_load());
+  }
 
   // Same three gates as WhatsOnTab, but re-selecting the tab also reloads: a
   // recording scheduled from the guide has to show up on arrival, not on the
@@ -93,6 +98,7 @@ class RecordingsTabState extends State<RecordingsTab> with WidgetsBindingObserve
   void dispose() {
     _loadGeneration++;
     _firstTileFocusNode.dispose();
+    _retryFocusNode.dispose();
     super.dispose();
   }
 
@@ -102,6 +108,10 @@ class RecordingsTabState extends State<RecordingsTab> with WidgetsBindingObserve
       return;
     }
     _pendingFocus = false;
+    if (_error != null && _allGrabs.isEmpty && _allRules.isEmpty) {
+      _retryFocusNode.requestFocus();
+      return;
+    }
     if (_firstTileFocusNode.context != null) {
       _firstTileFocusNode.requestFocus();
     }
@@ -109,6 +119,19 @@ class RecordingsTabState extends State<RecordingsTab> with WidgetsBindingObserve
 
   /// Public reload helper for the parent screen's refresh action.
   Future<void> reload() => _load();
+
+  void _retryLoad() {
+    _pendingFocus = _pendingFocus || _retryFocusNode.hasFocus;
+    unawaited(_load());
+  }
+
+  void _navigateUpFromContent() {
+    if (_error != null) {
+      _retryFocusNode.requestFocus();
+    } else {
+      widget.onNavigateUp?.call();
+    }
+  }
 
   bool _isCurrentLoad(int generation) => mounted && generation == _loadGeneration;
 
@@ -144,6 +167,8 @@ class RecordingsTabState extends State<RecordingsTab> with WidgetsBindingObserve
     final results = <_ServerRecordings>[];
     var anyAdminError = false;
     var anyOtherError = false;
+    var anyAccessError = false;
+    String? loadError;
 
     await forEachLiveTvServer(
       multiServer,
@@ -163,18 +188,30 @@ class RecordingsTabState extends State<RecordingsTab> with WidgetsBindingObserve
         appLogger.e('Failed to load recordings for ${serverInfo.serverId}', error: error);
         if (error is MediaServerHttpException && error.statusCode == 403) {
           anyAdminError = true;
+          anyAccessError = true;
         } else {
           anyOtherError = true;
+          anyAccessError =
+              anyAccessError ||
+              error is MediaServerAuthException ||
+              (error is MediaServerHttpException && error.statusCode == 401);
+          loadError ??= localizedLoadErrorText(error, context: t.liveTv.recordings);
         }
       },
     );
 
     if (!_isCurrentLoad(loadGeneration)) return;
     setState(() {
-      _serverRecordings = results;
+      final allFailed = results.isEmpty && (anyAdminError || anyOtherError);
+      if (!allFailed || anyAccessError || _serverRecordings.isEmpty) {
+        _serverRecordings = results;
+      }
       _isLoading = false;
-      _adminBlocked = results.isEmpty && anyAdminError;
-      _error = (results.isEmpty && anyOtherError && !anyAdminError) ? t.liveTv.recordingFailed : null;
+      _adminBlocked = results.isEmpty && anyAdminError && !anyOtherError;
+      _error = anyOtherError ? loadError : null;
+      if (_error != null && anyAdminError) {
+        _error = '${t.liveTv.dvrAdminRequired}\n$_error';
+      }
     });
     if (_pendingFocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -247,18 +284,24 @@ class RecordingsTabState extends State<RecordingsTab> with WidgetsBindingObserve
     if (_serverRecordings.isEmpty && _adminBlocked) {
       return Center(child: _EmptyMessage(text: t.liveTv.dvrAdminRequired));
     }
-    if (_serverRecordings.isEmpty && _error != null) {
-      return Center(child: _EmptyMessage(text: _error!));
-    }
-
     final grabs = _allGrabs;
     final rules = _allRules;
+    if (grabs.isEmpty && rules.isEmpty && _error != null) {
+      return LiveTvLoadError(
+        message: _error!,
+        onRetry: _retryLoad,
+        focusNode: _retryFocusNode,
+        autofocus: true,
+        onNavigateUp: widget.onNavigateUp,
+        onBack: widget.onBack,
+      );
+    }
 
     if (grabs.isEmpty && rules.isEmpty) {
       return Center(child: _EmptyMessage(text: t.liveTv.noScheduledRecordings));
     }
 
-    return ListView(
+    final content = ListView(
       padding: const EdgeInsets.only(bottom: 8),
       children: [
         if (grabs.isNotEmpty)
@@ -271,7 +314,7 @@ class RecordingsTabState extends State<RecordingsTab> with WidgetsBindingObserve
                   autofocus: i == 0,
                   focusNode: i == 0 ? _firstTileFocusNode : null,
                   onTap: () => _onCancelGrab(grabs[i]),
-                  onNavigateUp: i == 0 ? widget.onNavigateUp : null,
+                  onNavigateUp: i == 0 ? _navigateUpFromContent : null,
                   onBack: widget.onBack,
                 ),
             ],
@@ -286,12 +329,21 @@ class RecordingsTabState extends State<RecordingsTab> with WidgetsBindingObserve
                   autofocus: grabs.isEmpty && i == 0,
                   focusNode: grabs.isEmpty && i == 0 ? _firstTileFocusNode : null,
                   onTap: () => _onRuleTap(rules[i]),
-                  onNavigateUp: grabs.isEmpty && i == 0 ? widget.onNavigateUp : null,
+                  onNavigateUp: grabs.isEmpty && i == 0 ? _navigateUpFromContent : null,
                   onBack: widget.onBack,
                 ),
             ],
           ),
       ],
+    );
+    return LiveTvLoadError(
+      message: _error,
+      onRetry: _retryLoad,
+      focusNode: _retryFocusNode,
+      onNavigateUp: widget.onNavigateUp,
+      onNavigateDown: focusContent,
+      onBack: widget.onBack,
+      content: content,
     );
   }
 }

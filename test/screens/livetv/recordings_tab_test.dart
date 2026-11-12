@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plezy/exceptions/media_server_exceptions.dart';
 import 'package:plezy/focus/input_mode_tracker.dart';
 import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/media/ids.dart';
@@ -85,9 +86,104 @@ void main() {
     expect(find.text(_rule.title!), findsNothing);
     expect(find.text(t.liveTv.noScheduledRecordings), findsOneWidget);
   });
+  testWidgets('non-permission failure exposes retry and recovers into recordings', (tester) async {
+    final harness = await _pumpRecordings(tester);
+    harness.dvr.failGrabs(0);
+    await tester.pumpAndSettle();
+    expect(find.text(t.errors.unableToLoad(context: t.liveTv.recordings)), findsOneWidget);
+    expect(find.textContaining('private-server'), findsNothing);
+    expect(find.text(t.liveTv.recordingFailed), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    await tester.tap(find.text(t.common.retry));
+    await tester.pump();
+    harness.dvr.completeGrabs(1, const []);
+    await tester.pump();
+    harness.dvr.completeRules(0, const [_rule]);
+    await tester.pumpAndSettle();
+    expect(find.text(_rule.title!), findsOneWidget);
+    expect(find.text(t.common.retry), findsNothing);
+  });
+
+  testWidgets('refresh failure keeps existing recordings until a successful empty response', (tester) async {
+    final harness = await _pumpRecordings(tester);
+    harness.dvr.completeGrabs(0, const []);
+    await tester.pump();
+    harness.dvr.completeRules(0, const [_rule]);
+    await tester.pumpAndSettle();
+
+    final reload = harness.key.currentState!.reload();
+    harness.dvr.failGrabs(1);
+    await reload;
+    await tester.pumpAndSettle();
+    expect(find.text(_rule.title!), findsOneWidget);
+    expect(find.byTooltip(t.common.retry), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    await tester.tap(find.byTooltip(t.common.retry));
+    await tester.pump();
+    harness.dvr.completeGrabs(2, const []);
+    await tester.pump();
+    harness.dvr.completeRules(1, const []);
+    await tester.pumpAndSettle();
+    expect(find.text(_rule.title!), findsNothing);
+    expect(find.text(t.liveTv.noScheduledRecordings), findsOneWidget);
+    expect(find.byTooltip(t.common.retry), findsNothing);
+  });
+
+  testWidgets('403 removes old recordings and does not offer or automatically repeat retry', (tester) async {
+    final harness = await _pumpRecordings(tester);
+    harness.dvr.completeGrabs(0, const []);
+    await tester.pump();
+    harness.dvr.completeRules(0, const [_rule]);
+    await tester.pumpAndSettle();
+
+    final reload = harness.key.currentState!.reload();
+    harness.dvr.failGrabs(1, statusCode: 403);
+    await reload;
+    await tester.pumpAndSettle();
+    expect(find.text(_rule.title!), findsNothing);
+    expect(find.text(t.liveTv.dvrAdminRequired), findsOneWidget);
+    expect(find.text(t.common.retry), findsNothing);
+    expect(find.byTooltip(t.common.retry), findsNothing);
+    await tester.pump(const Duration(seconds: 31));
+    expect(harness.dvr.grabRequests, hasLength(2));
+  });
+
+  testWidgets('recordings disposal ignores a late failed response', (tester) async {
+    final harness = await _pumpRecordings(tester);
+    await tester.pumpWidget(const SizedBox.shrink());
+    harness.dvr.failGrabs(0);
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
 }
 
 const _rule = MediaSubscription(key: 'rule-1', type: 2, title: 'Obsolete series rule');
+
+Future<({GlobalKey<RecordingsTabState> key, _ControllableDvr dvr})> _pumpRecordings(WidgetTester tester) async {
+  final dvr = _ControllableDvr();
+  final client = _FakeMediaServerClient(dvr);
+  final manager = MultiServerManager()..debugRegisterClientForTesting(client);
+  final provider = testMultiServerProvider(manager)
+    ..debugSetLiveTvServersForTesting([LiveTvServerInfo(serverId: client.serverId.value, dvrKey: 'dvr')]);
+  addTearDown(provider.dispose);
+  final key = GlobalKey<RecordingsTabState>();
+  await tester.pumpWidget(
+    TranslationProvider(
+      child: InputModeTracker(
+        child: ChangeNotifierProvider<MultiServerProvider>.value(
+          value: provider,
+          child: MaterialApp(
+            theme: monoTheme(dark: true),
+            home: Scaffold(body: RecordingsTab(key: key)),
+          ),
+        ),
+      ),
+    ),
+  );
+  return (key: key, dvr: dvr);
+}
 
 final class _FakeMediaServerClient implements MediaServerClient {
   _FakeMediaServerClient(this.dvr);
@@ -150,6 +246,14 @@ final class _ControllableDvr implements LiveTvDvrSupport {
   void completeGrabs(int index, List<MediaGrabOperation> grabs) => grabRequests[index].complete(grabs);
 
   void completeRules(int index, List<MediaSubscription> rules) => ruleRequests[index].complete(rules);
+
+  void failGrabs(int index, {int statusCode = 500}) => grabRequests[index].completeError(
+    MediaServerHttpException(
+      type: MediaServerHttpErrorType.unknown,
+      statusCode: statusCode,
+      message: 'private-server/secret',
+    ),
+  );
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
