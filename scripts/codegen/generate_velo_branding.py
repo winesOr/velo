@@ -23,6 +23,9 @@ SVG_NS = "{http://www.w3.org/2000/svg}"
 ET.register_namespace("", SVG_NS[1:-1])
 SVG = ET.parse(SOURCE / "velo-icon.svg")
 GLYPH_PATH = SVG.find(f".//{SVG_NS}path[@id='silhouette']").get("d")
+# Launchers crop the 108dp adaptive canvas to about 72dp, so the full-size mark
+# fills most of the visible icon. Scale it around the centre for breathing room.
+LAUNCHER_MARK_SCALE = 0.74
 
 
 def save_square(path: Path, size: int) -> None:
@@ -109,7 +112,10 @@ def android_vectors() -> None:
                     transforms.append(f'android:{op}{axis}="{value}"')
             path = '<group ' + ' '.join(transforms) + '>' + path + '</group>'
         paths.append(path)
-    (RES / "drawable/ic_launcher_foreground.xml").write_text(header + '\n'.join(paths) + '\n</vector>\n')
+    launcher_group = (f'<group android:scaleX="{LAUNCHER_MARK_SCALE}" android:scaleY="{LAUNCHER_MARK_SCALE}" '
+                      'android:pivotX="512" android:pivotY="512">\n')
+    (RES / "drawable/ic_launcher_foreground.xml").write_text(
+        header + launcher_group + '\n'.join(paths) + '\n</group>\n</vector>\n')
     # Android 12 places this drawable in a 288dp system icon area. Halving the
     # artwork yields the same small, unframed glyph as Flutter's 144dp canvas.
     (RES / "drawable/splash_icon.xml").write_text(
@@ -118,7 +124,8 @@ def android_vectors() -> None:
         + '\n</group>\n</vector>\n'
     )
     (RES / "drawable/ic_launcher_monochrome.xml").write_text(
-        header + f'<path android:pathData="{GLYPH_PATH}" android:fillColor="#FFFFFFFF"/>\n</vector>\n')
+        header + launcher_group + f'<path android:pathData="{GLYPH_PATH}" android:fillColor="#FFFFFFFF"/>\n'
+        '</group>\n</vector>\n')
 
 
 def main() -> None:
