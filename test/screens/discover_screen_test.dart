@@ -1256,6 +1256,8 @@ void main() {
 
   for (final size in [const Size(820, 1180), const Size(1180, 820), const Size(600, 960)]) {
     testWidgets('tablet home uses the fusion artwork and readable shelves at $size', (tester) async {
+      var toolbarOpens = 0;
+      var navigationOpens = 0;
       final controller = HomeThemeController();
       addTearDown(controller.dispose);
       final boundary = GlobalKey();
@@ -1276,6 +1278,7 @@ void main() {
         isTv: false,
         size: size,
         fixtureFont: true,
+        onOpenNavigation: () => toolbarOpens++,
         clients: [
           _FakeMediaServerClient(
             continueWatching: [movie],
@@ -1295,7 +1298,7 @@ void main() {
                 tabs: NavigationTab.getVisibleTabs(isOffline: false),
                 selectedTab: NavigationTabId.discover,
                 onSelected: (_) {},
-                onSecondary: () {},
+                onSecondary: () => navigationOpens++,
               ),
             ),
           ),
@@ -1312,7 +1315,26 @@ void main() {
       await tester.pump(const Duration(milliseconds: 700));
       expect(find.byType(FusionHomeHero), findsWidgets);
       expect(tester.getSize(find.byType(FusionHomeHero).first).height, lessThan(size.height * .75));
-      expect(find.byTooltip(t.common.options), findsOneWidget);
+      final homeOptions = find.descendant(of: find.byType(DiscoverScreen), matching: find.byTooltip(t.common.options));
+      final navigationOptions = find.descendant(
+        of: find.byType(FusionNavigation),
+        matching: find.byTooltip(t.common.options),
+      );
+      expect(homeOptions, findsOneWidget);
+      expect(navigationOptions, findsOneWidget);
+      expect(
+        tester.widget<IconButton>(find.ancestor(of: homeOptions, matching: find.byType(IconButton))).onPressed,
+        isNotNull,
+      );
+      expect(
+        tester.widget<InkWell>(find.descendant(of: navigationOptions, matching: find.byType(InkWell))).onTap,
+        isNotNull,
+      );
+      await tester.tap(homeOptions);
+      await tester.tap(navigationOptions);
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(toolbarOpens, 1);
+      expect(navigationOpens, 1);
       expect(tester.takeException(), isNull);
       await captureTablet(tester, find.byKey(boundary), 'home-${size.width.toInt()}');
       await tester.pumpWidget(const SizedBox());
@@ -1451,7 +1473,13 @@ void main() {
         expect(recommendations, isNotEmpty);
         expect(recommendations.every((card) => !card.showWatchProgress), isTrue);
         expect(find.byKey(ValueKey('recommendation-score-${movie.globalKey}')), findsOneWidget);
-        expect(find.text('8.6'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byKey(ValueKey('recommendation-score-${movie.globalKey}')),
+            matching: find.text('8.6'),
+          ),
+          findsOneWidget,
+        );
       }
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
@@ -1723,6 +1751,7 @@ Future<void> _pumpDiscoverShell(
   bool settle = true,
   math.Random? heroRandom,
   bool prepareHomeBeforeMount = false,
+  VoidCallback? onOpenNavigation,
 }) async {
   TvDetectionService.debugSetAppleTVOverride(isTv);
   await SettingsService.getInstance();
@@ -1803,6 +1832,7 @@ Future<void> _pumpDiscoverShell(
                 : monoTheme(dark: dark),
             home: MainScreenFocusScope(
               focusSidebar: () {},
+              openNavigation: onOpenNavigation,
               sideNavigationWidth: SideNavigationRailState.expandedWidth,
               reservedSideNavigationWidth: SideNavigationRailState.tvCollapsedWidth,
               foregroundLeft: 0,
