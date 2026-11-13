@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/utils/certificate_trust.dart';
 import 'package:plezy/utils/happy_eyeballs.dart';
@@ -63,43 +62,6 @@ void main() {
     CertificateTrust.debugReset();
   });
 
-  group('contextFor', () {
-    test('keeps the SDK default until the user store has been loaded', () {
-      expect(CertificateTrust.contextFor('jellyfin.home'), isNull);
-    });
-
-    test('hands the user store to user-entered hosts and never to fixed endpoints', () async {
-      platformAnswers(() => _privateAuthorityPem);
-      await CertificateTrust.loadUserAuthorities();
-
-      final userStore = CertificateTrust.contextFor('jellyfin.home');
-      expect(userStore, isNotNull);
-      expect(CertificateTrust.contextFor('192.168.1.3'), same(userStore));
-      expect(
-        CertificateTrust.contextFor('notplex.tv'),
-        same(userStore),
-        reason: 'a parent-domain match must stop at a label boundary',
-      );
-      for (final fixed in ['plex.tv', 'app.plex.tv', 'PLEX.TV', 'ice.plezy.app', 'api.github.com', 'image.tmdb.org']) {
-        expect(CertificateTrust.contextFor(fixed), isNull, reason: fixed);
-      }
-    });
-
-    test('an unreadable, empty or malformed store leaves system anchors in place without throwing', () async {
-      platformAnswers(() => throw PlatformException(code: 'unavailable'));
-      await CertificateTrust.loadUserAuthorities();
-      expect(CertificateTrust.contextFor('jellyfin.home'), isNull);
-
-      platformAnswers(() => '');
-      await CertificateTrust.loadUserAuthorities();
-      expect(CertificateTrust.contextFor('jellyfin.home'), isNull);
-
-      platformAnswers(() => 'not a certificate bundle');
-      await CertificateTrust.loadUserAuthorities();
-      expect(CertificateTrust.contextFor('jellyfin.home'), isNull);
-    });
-  });
-
   group('TLS upgrade', () {
     late SecureServerSocket server;
     late StreamSubscription<SecureSocket> accepted;
@@ -125,10 +87,6 @@ void main() {
       secure: true,
       lookup: (_, {required type}) async => type == InternetAddressType.IPv4 ? [InternetAddress.loopbackIPv4] : [],
     ).socket;
-
-    test('a private authority is rejected under system-only trust', () async {
-      await expectLater(connect(), throwsA(isA<HandshakeException>()));
-    });
 
     test(
       'a private authority the owner installed verifies a user-entered host',

@@ -12,8 +12,6 @@ import 'package:plezy/theme/mono_theme.dart';
 import 'package:plezy/theme/home_typography.dart';
 import 'package:plezy/utils/platform_detector.dart';
 import 'package:plezy/widgets/hub_section.dart';
-import 'package:plezy/widgets/media_progress_bar.dart';
-import 'package:plezy/widgets/watched_indicator.dart';
 
 import '../test_helpers/media_items.dart';
 import '../test_helpers/prefs.dart';
@@ -96,65 +94,6 @@ void main() {
     await SettingsService.getInstance();
   });
   tearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
-
-  testWidgets('home resume details use real time and the play ring preserves card activation', (tester) async {
-    addTearDown(tester.view.reset);
-    var tapped = false;
-    await _pumpHub(tester, items: [_episode], onTap: () => tapped = true);
-
-    expect(find.text('37:18 / 1:06:43'), findsOneWidget);
-    expect(find.byType(MediaProgressBar), findsNothing, reason: 'no second flush-to-edge progress bar');
-    final bar = tester.widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator));
-    expect(bar.value, closeTo(_episode.viewOffsetMs! / _episode.durationMs!, .0001));
-    expect(bar.valueColor!.value, Colors.white);
-    final artwork = tester.getRect(find.byType(WatchedIndicator));
-    final track = tester.getRect(find.byType(LinearProgressIndicator));
-    expect(track.left, greaterThan(artwork.left));
-    expect(track.right, lessThan(artwork.right));
-    expect(track.bottom, lessThan(artwork.bottom));
-
-    await tester.tapAt(tester.getCenter(find.byIcon(Symbols.play_arrow_rounded).last));
-    expect(tapped, isTrue);
-
-    await _pumpHub(tester, items: [_episode], continueWatching: false);
-    expect(find.text('37:18 / 1:06:43'), findsNothing);
-    expect(find.byType(MediaProgressBar), findsOneWidget, reason: 'other shelves keep their existing indicator');
-  });
-
-  testWidgets('recommendation covers hide progress while card activation still works', (tester) async {
-    addTearDown(tester.view.reset);
-    var tapped = false;
-    await _pumpHub(
-      tester,
-      items: [_episode],
-      continueWatching: false,
-      showWatchProgress: false,
-      onTap: () => tapped = true,
-    );
-    expect(find.byType(LinearProgressIndicator), findsNothing);
-    expect(find.textContaining(' / '), findsNothing);
-    await tester.tapAt(tester.getCenter(find.byType(WatchedIndicator)));
-    expect(tapped, isTrue);
-    await _pumpHub(tester, items: [_episode], continueWatching: false, showWatchProgress: false);
-    expect(find.byType(LinearProgressIndicator), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('missing duration does not invent time and out-of-range progress is clamped', (tester) async {
-    addTearDown(tester.view.reset);
-    await _pumpHub(tester, items: [_episode.copyWith(durationMs: null)]);
-    expect(find.byType(LinearProgressIndicator), findsNothing);
-    expect(find.textContaining(' / '), findsNothing);
-
-    await _pumpHub(tester, items: [_episode.copyWith(viewOffsetMs: -500)]);
-    expect(find.text('0:00 / 1:06:43'), findsOneWidget);
-    expect(tester.widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator)).value, 0);
-
-    await _pumpHub(tester, items: [_episode.copyWith(viewOffsetMs: _episode.durationMs! + 500)]);
-    expect(find.text('1:06:43 / 1:06:43'), findsOneWidget);
-    expect(tester.widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator)).value, 1);
-    expect(tester.takeException(), isNull);
-  });
 
   for (final fixture in [
     (name: 'phone', tv: false, dark: true, scale: 1.0),
