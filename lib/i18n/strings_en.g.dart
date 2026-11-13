@@ -2139,6 +2139,9 @@ class Translations$accessibility$en {
 	/// en: 'Tap to play'
 	String get tapToPlay => 'Tap to play';
 
+	/// en: 'Tap to open details'
+	String get tapToOpenDetails => 'Tap to open details';
+
 	/// en: 'Decrease'
 	String get decrease => 'Decrease';
 
@@ -8821,6 +8824,7 @@ extension on Translations {
 			'accessibility.mediaCardPartiallyWatched' => ({required Object percent}) => '${percent} percent watched',
 			'accessibility.mediaCardUnwatched' => 'unwatched',
 			'accessibility.tapToPlay' => 'Tap to play',
+			'accessibility.tapToOpenDetails' => 'Tap to open details',
 			'accessibility.decrease' => 'Decrease',
 			'accessibility.increase' => 'Increase',
 			'accessibility.decreaseValue' => ({required Object label}) => 'Decrease ${label}',
@@ -9156,9 +9160,9 @@ extension on Translations {
 			'accountPreferences.hubSubtitleMultiple' => ({required Object count}) => 'Audio, subtitle and library options saved on ${count} accounts',
 			'accountPreferences.pickAccount' => 'Every account stores its own preferences. Pick the one to edit.',
 			'accountPreferences.storedOnAccount' => 'These options are saved on the account itself, so every app signed in to it uses them — including Velo on your other devices.',
-			'accountPreferences.noAccounts' => 'No accounts to configure',
 			_ => null,
 		} ?? switch (path) {
+			'accountPreferences.noAccounts' => 'No accounts to configure',
 			'accountPreferences.noAccountsHint' => 'Sign in to Plex, or connect a Jellyfin or Emby server, and the preferences stored on that account show up here.',
 			'accountPreferences.unavailable' => 'Can\'t reach this account',
 			'accountPreferences.loadFailed' => 'Couldn\'t load these preferences',
@@ -9670,9 +9674,9 @@ extension on Translations {
 			'liveTv.failedToBuildStreamUrl' => 'Could not build the stream URL',
 			'liveTv.playbackStartFailed' => ({required Object reason}) => 'Couldn\'t start the channel: ${reason}',
 			'liveTv.channelSwitchFailed' => ({required Object reason}) => 'Couldn\'t switch channel: ${reason}',
-			'collections.title' => 'Collections',
 			_ => null,
 		} ?? switch (path) {
+			'collections.title' => 'Collections',
 			'collections.collection' => 'Collection',
 			'collections.empty' => 'Collection is empty',
 			'collections.deleteCollection' => 'Delete Collection',
@@ -10184,9 +10188,9 @@ extension on Translations {
 			'metadataEdit.seriesDefault' => 'Series default',
 			'metadataEdit.episodeSorting' => 'Episode Sorting',
 			'metadataEdit.oldestFirst' => 'Oldest first',
-			'metadataEdit.newestFirst' => 'Newest first',
 			_ => null,
 		} ?? switch (path) {
+			'metadataEdit.newestFirst' => 'Newest first',
 			'metadataEdit.keep' => 'Keep',
 			'metadataEdit.allEpisodes' => 'All episodes',
 			'metadataEdit.latestEpisodes' => ({required Object count}) => '${count} latest episodes',

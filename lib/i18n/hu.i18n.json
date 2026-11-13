@@ -725,6 +725,7 @@
     "mediaCardPartiallyWatched": "${percent} százalék megtekintve",
     "mediaCardUnwatched": "még nem láttad",
     "tapToPlay": "Koppints a lejátszáshoz",
+    "tapToOpenDetails": "Tap to open details",
     "decrease": "Csökkentés",
     "increase": "Növelés",
     "decreaseValue": "${label} csökkentése",

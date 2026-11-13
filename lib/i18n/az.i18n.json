@@ -725,6 +725,7 @@
     "mediaCardPartiallyWatched": "%${percent} baxılıb",
     "mediaCardUnwatched": "baxılmayıb",
     "tapToPlay": "Oynatmaq üçün toxunun",
+    "tapToOpenDetails": "Tap to open details",
     "decrease": "Azalt",
     "increase": "Artır",
     "decreaseValue": "${label} dəyərini azalt",

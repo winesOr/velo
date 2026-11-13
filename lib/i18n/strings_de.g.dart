@@ -784,6 +784,7 @@ class _Translations$accessibility$de extends Translations$accessibility$en {
 	@override String mediaCardPartiallyWatched({required Object percent}) => 'zu ${percent} Prozent gesehen';
 	@override String get mediaCardUnwatched => 'ungesehen';
 	@override String get tapToPlay => 'Zum Abspielen tippen';
+	@override String get tapToOpenDetails => 'Tap to open details';
 	@override String get decrease => 'Verringern';
 	@override String get increase => 'Erhöhen';
 	@override String decreaseValue({required Object label}) => '${label} verringern';
@@ -3679,6 +3680,7 @@ extension on TranslationsDe {
 			'accessibility.mediaCardPartiallyWatched' => ({required Object percent}) => 'zu ${percent} Prozent gesehen',
 			'accessibility.mediaCardUnwatched' => 'ungesehen',
 			'accessibility.tapToPlay' => 'Zum Abspielen tippen',
+			'accessibility.tapToOpenDetails' => 'Tap to open details',
 			'accessibility.decrease' => 'Verringern',
 			'accessibility.increase' => 'Erhöhen',
 			'accessibility.decreaseValue' => ({required Object label}) => '${label} verringern',
@@ -4081,9 +4083,9 @@ extension on TranslationsDe {
 			'errors.reasonUnexpected' => 'ein unerwarteter Fehler ist aufgetreten',
 			'libraries.title' => 'Mediatheken',
 			'libraries.fallbackTitle' => 'Mediathek',
-			'libraries.scanLibraryFiles' => 'Mediatheksdateien scannen',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.scanLibraryFiles' => 'Mediatheksdateien scannen',
 			'libraries.scanLibrary' => 'Mediathek scannen',
 			'libraries.analyze' => 'Analysieren',
 			'libraries.analyzeLibrary' => 'Mediathek analysieren',
@@ -4595,9 +4597,9 @@ extension on TranslationsDe {
 			'watchTogether.participantBuffering' => ({required Object name}) => '${name} puffert',
 			'watchTogether.participantNeedsUpdate' => ({required Object name}) => '${name} verwendet eine ältere Appversion — Synchronisierung nicht verfügbar',
 			'watchTogether.resumingWithout' => ({required Object name}) => 'Fortfahren ohne ${name}',
-			'watchTogether.waitingForParticipants' => 'Warten, bis die anderen bereit sind …',
 			_ => null,
 		} ?? switch (path) {
+			'watchTogether.waitingForParticipants' => 'Warten, bis die anderen bereit sind …',
 			'watchTogether.waitingForName' => ({required Object name}) => 'Warten auf ${name} …',
 			'watchTogether.recentRooms' => 'Zuletzt verwendete Räume',
 			'watchTogether.renameRoom' => 'Raum umbenennen',
@@ -5109,9 +5111,9 @@ extension on TranslationsDe {
 			'addServer.signInWithPlexCard' => 'Mit Plex anmelden',
 			'addServer.signInWithPlexCardSubtitle' => 'Dieses Gerät autorisieren. Geteilte Server werden hinzugefügt.',
 			'addServer.signInWithPlexCardSubtitleScoped' => 'Ein Plex-Konto autorisieren. Home-Benutzer werden zu Profilen.',
-			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Mit ${product} verbinden',
 			_ => null,
 		} ?? switch (path) {
+			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Mit ${product} verbinden',
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Gib Server-URL, Benutzername und Passwort ein.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => 'Melde dich bei deinem ${product}-Server an. Wird mit ${name} verknüpft.',
 			'addServer.borrowFromAnotherProfile' => 'Von einem anderen Profil ausleihen',

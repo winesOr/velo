@@ -725,6 +725,7 @@
     "mediaCardPartiallyWatched": "zu ${percent} Prozent gesehen",
     "mediaCardUnwatched": "ungesehen",
     "tapToPlay": "Zum Abspielen tippen",
+    "tapToOpenDetails": "Tap to open details",
     "decrease": "Verringern",
     "increase": "Erhöhen",
     "decreaseValue": "${label} verringern",

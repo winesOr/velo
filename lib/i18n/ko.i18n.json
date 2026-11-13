@@ -722,6 +722,7 @@
     "mediaCardPartiallyWatched": "${percent}% 시청 완료",
     "mediaCardUnwatched": "미시청",
     "tapToPlay": "탭하여 재생",
+    "tapToOpenDetails": "Tap to open details",
     "decrease": "낮추기",
     "increase": "높이기",
     "decreaseValue": "${label} 낮추기",

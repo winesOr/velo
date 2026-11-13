@@ -731,6 +731,7 @@
     "mediaCardPartiallyWatched": "просмотрено ${percent} процентов",
     "mediaCardUnwatched": "не просмотрено",
     "tapToPlay": "Нажмите для воспроизведения",
+    "tapToOpenDetails": "Tap to open details",
     "decrease": "Уменьшить",
     "increase": "Увеличить",
     "decreaseValue": "Уменьшить ${label}",

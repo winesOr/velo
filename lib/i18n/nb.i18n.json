@@ -725,6 +725,7 @@
     "mediaCardPartiallyWatched": "${percent} prosent sett",
     "mediaCardUnwatched": "usett",
     "tapToPlay": "Trykk for å spille",
+    "tapToOpenDetails": "Tap to open details",
     "decrease": "Reduser",
     "increase": "Øk",
     "decreaseValue": "Reduser ${label}",

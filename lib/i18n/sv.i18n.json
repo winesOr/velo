@@ -725,6 +725,7 @@
     "mediaCardPartiallyWatched": "sett till ${percent} procent",
     "mediaCardUnwatched": "osedd",
     "tapToPlay": "Tryck för att spela upp",
+    "tapToOpenDetails": "Tap to open details",
     "decrease": "Minska",
     "increase": "Öka",
     "decreaseValue": "Minska ${label}",

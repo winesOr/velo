@@ -781,6 +781,7 @@ class _Translations$accessibility$ja extends Translations$accessibility$en {
 	@override String mediaCardPartiallyWatched({required Object percent}) => '${percent}パーセント視聴済み';
 	@override String get mediaCardUnwatched => '未視聴';
 	@override String get tapToPlay => 'タップして再生';
+	@override String get tapToOpenDetails => 'Tap to open details';
 	@override String get decrease => '下げる';
 	@override String get increase => '上げる';
 	@override String decreaseValue({required Object label}) => '${label}を下げる';
@@ -3668,6 +3669,7 @@ extension on TranslationsJa {
 			'accessibility.mediaCardPartiallyWatched' => ({required Object percent}) => '${percent}パーセント視聴済み',
 			'accessibility.mediaCardUnwatched' => '未視聴',
 			'accessibility.tapToPlay' => 'タップして再生',
+			'accessibility.tapToOpenDetails' => 'Tap to open details',
 			'accessibility.decrease' => '下げる',
 			'accessibility.increase' => '上げる',
 			'accessibility.decreaseValue' => ({required Object label}) => '${label}を下げる',
@@ -4070,9 +4072,9 @@ extension on TranslationsJa {
 			'errors.reasonUnexpected' => '予期しないエラーが発生しました',
 			'libraries.title' => 'ライブラリ',
 			'libraries.fallbackTitle' => 'ライブラリ',
-			'libraries.scanLibraryFiles' => 'ライブラリファイルをスキャン',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.scanLibraryFiles' => 'ライブラリファイルをスキャン',
 			'libraries.scanLibrary' => 'ライブラリをスキャン',
 			'libraries.analyze' => '解析',
 			'libraries.analyzeLibrary' => 'ライブラリを解析',
@@ -4584,9 +4586,9 @@ extension on TranslationsJa {
 			'watchTogether.participantBuffering' => ({required Object name}) => '${name}がバッファリング中',
 			'watchTogether.participantNeedsUpdate' => ({required Object name}) => '${name}は古いバージョンのアプリを使用しているため、同期できません',
 			'watchTogether.resumingWithout' => ({required Object name}) => '${name}抜きで再開',
-			'watchTogether.waitingForParticipants' => '他の参加者の読み込みを待っています…',
 			_ => null,
 		} ?? switch (path) {
+			'watchTogether.waitingForParticipants' => '他の参加者の読み込みを待っています…',
 			'watchTogether.waitingForName' => ({required Object name}) => '${name}を待っています…',
 			'watchTogether.recentRooms' => '最近のルーム',
 			'watchTogether.renameRoom' => 'ルーム名を変更',
@@ -5098,9 +5100,9 @@ extension on TranslationsJa {
 			'addServer.signInWithPlexCard' => 'Plexでサインイン',
 			'addServer.signInWithPlexCardSubtitle' => 'このデバイスを承認します。共有サーバーが追加されます。',
 			'addServer.signInWithPlexCardSubtitleScoped' => 'Plexアカウントを承認します。Homeユーザーはプロフィールになります。',
-			'addServer.connectToMediaBrowserCard' => ({required Object product}) => '${product}に接続',
 			_ => null,
 		} ?? switch (path) {
+			'addServer.connectToMediaBrowserCard' => ({required Object product}) => '${product}に接続',
 			'addServer.connectToMediaBrowserCardSubtitle' => 'サーバーのURL、ユーザー名、パスワードを入力してください。',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => '${product}サーバーにサインインします。「${name}」に紐付けられます。',
 			'addServer.borrowFromAnotherProfile' => '別のプロフィールの接続を利用',

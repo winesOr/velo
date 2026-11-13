@@ -850,6 +850,7 @@ class Translations$accessibility$zh extends Translations$accessibility$en {
 	@override String mediaCardPartiallyWatched({required Object percent}) => '已观看 ${percent}%';
 	@override String get mediaCardUnwatched => '未观看';
 	@override String get tapToPlay => '点击播放';
+	@override String get tapToOpenDetails => '点击查看详情';
 	@override String get decrease => '减小';
 	@override String get increase => '增大';
 	@override String decreaseValue({required Object label}) => '减小${label}';
@@ -4063,6 +4064,7 @@ extension on TranslationsZh {
 			'accessibility.mediaCardPartiallyWatched' => ({required Object percent}) => '已观看 ${percent}%',
 			'accessibility.mediaCardUnwatched' => '未观看',
 			'accessibility.tapToPlay' => '点击播放',
+			'accessibility.tapToOpenDetails' => '点击查看详情',
 			'accessibility.decrease' => '减小',
 			'accessibility.increase' => '增大',
 			'accessibility.decreaseValue' => ({required Object label}) => '减小${label}',
@@ -4398,9 +4400,9 @@ extension on TranslationsZh {
 			'accountPreferences.hubSubtitleMultiple' => ({required Object count}) => '音频、字幕和媒体库选项已保存在 ${count} 个账户上',
 			'accountPreferences.pickAccount' => '每个账户都保存自己的偏好设置。选择要编辑的账户。',
 			'accountPreferences.storedOnAccount' => '这些选项保存在账户本身，因此所有登录该账户的应用都会使用它们——包括你其他设备上的 Velo。',
-			'accountPreferences.noAccounts' => '没有可配置的账户',
 			_ => null,
 		} ?? switch (path) {
+			'accountPreferences.noAccounts' => '没有可配置的账户',
 			'accountPreferences.noAccountsHint' => '登录 Plex，或连接 Jellyfin 或 Emby 服务器，该账户上保存的偏好设置就会显示在这里。',
 			'accountPreferences.unavailable' => '无法访问此账户',
 			'accountPreferences.loadFailed' => '无法加载这些偏好设置',
@@ -4912,9 +4914,9 @@ extension on TranslationsZh {
 			'liveTv.failedToBuildStreamUrl' => '无法生成视频流 URL',
 			'liveTv.playbackStartFailed' => ({required Object reason}) => '无法启动该频道：${reason}',
 			'liveTv.channelSwitchFailed' => ({required Object reason}) => '无法切换频道：${reason}',
-			'collections.title' => '合集',
 			_ => null,
 		} ?? switch (path) {
+			'collections.title' => '合集',
 			'collections.collection' => '合集',
 			'collections.empty' => '合集为空',
 			'collections.deleteCollection' => '删除合集',
@@ -5426,9 +5428,9 @@ extension on TranslationsZh {
 			'metadataEdit.seriesDefault' => '剧集默认',
 			'metadataEdit.episodeSorting' => '剧集排序',
 			'metadataEdit.oldestFirst' => '最旧优先',
-			'metadataEdit.newestFirst' => '最新优先',
 			_ => null,
 		} ?? switch (path) {
+			'metadataEdit.newestFirst' => '最新优先',
 			'metadataEdit.keep' => '保留',
 			'metadataEdit.allEpisodes' => '所有剧集',
 			'metadataEdit.latestEpisodes' => ({required Object count}) => '最新 ${count} 集',

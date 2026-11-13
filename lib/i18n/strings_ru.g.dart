@@ -790,6 +790,7 @@ class _Translations$accessibility$ru extends Translations$accessibility$en {
 	@override String mediaCardPartiallyWatched({required Object percent}) => 'просмотрено ${percent} процентов';
 	@override String get mediaCardUnwatched => 'не просмотрено';
 	@override String get tapToPlay => 'Нажмите для воспроизведения';
+	@override String get tapToOpenDetails => 'Tap to open details';
 	@override String get decrease => 'Уменьшить';
 	@override String get increase => 'Увеличить';
 	@override String decreaseValue({required Object label}) => 'Уменьшить ${label}';
@@ -3701,6 +3702,7 @@ extension on TranslationsRu {
 			'accessibility.mediaCardPartiallyWatched' => ({required Object percent}) => 'просмотрено ${percent} процентов',
 			'accessibility.mediaCardUnwatched' => 'не просмотрено',
 			'accessibility.tapToPlay' => 'Нажмите для воспроизведения',
+			'accessibility.tapToOpenDetails' => 'Tap to open details',
 			'accessibility.decrease' => 'Уменьшить',
 			'accessibility.increase' => 'Увеличить',
 			'accessibility.decreaseValue' => ({required Object label}) => 'Уменьшить ${label}',
@@ -4103,9 +4105,9 @@ extension on TranslationsRu {
 			'errors.reasonUnexpected' => 'произошла непредвиденная ошибка',
 			'libraries.title' => 'Библиотеки',
 			'libraries.fallbackTitle' => 'Библиотека',
-			'libraries.scanLibraryFiles' => 'Сканировать файлы библиотеки',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.scanLibraryFiles' => 'Сканировать файлы библиотеки',
 			'libraries.scanLibrary' => 'Сканировать библиотеку',
 			'libraries.analyze' => 'Анализировать',
 			'libraries.analyzeLibrary' => 'Анализировать библиотеку',
@@ -4617,9 +4619,9 @@ extension on TranslationsRu {
 			'watchTogether.participantBuffering' => ({required Object name}) => 'У ${name} идёт буферизация',
 			'watchTogether.participantNeedsUpdate' => ({required Object name}) => '${name} использует старую версию приложения — синхронизация недоступна',
 			'watchTogether.resumingWithout' => ({required Object name}) => 'Возобновление без ${name}',
-			'watchTogether.waitingForParticipants' => 'Ожидание загрузки у других...',
 			_ => null,
 		} ?? switch (path) {
+			'watchTogether.waitingForParticipants' => 'Ожидание загрузки у других...',
 			'watchTogether.waitingForName' => ({required Object name}) => 'Ожидание ${name}...',
 			'watchTogether.recentRooms' => 'Недавние комнаты',
 			'watchTogether.renameRoom' => 'Переименовать комнату',
@@ -5131,9 +5133,9 @@ extension on TranslationsRu {
 			'addServer.signInWithPlexCard' => 'Войти через Plex',
 			'addServer.signInWithPlexCardSubtitle' => 'Авторизуйте это устройство. Общие серверы будут добавлены.',
 			'addServer.signInWithPlexCardSubtitleScoped' => 'Авторизуйте аккаунт Plex. Пользователи Home станут профилями.',
-			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Подключиться к ${product}',
 			_ => null,
 		} ?? switch (path) {
+			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Подключиться к ${product}',
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Введите URL сервера, имя пользователя и пароль.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => 'Войдите на свой сервер ${product}. Будет привязано к ${name}.',
 			'addServer.borrowFromAnotherProfile' => 'Использовать подключение другого профиля',

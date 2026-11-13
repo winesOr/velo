@@ -725,6 +725,7 @@
     "mediaCardPartiallyWatched": "${percent} procent set",
     "mediaCardUnwatched": "uset",
     "tapToPlay": "Tryk for at afspille",
+    "tapToOpenDetails": "Tap to open details",
     "decrease": "Formindsk",
     "increase": "Forøg",
     "decreaseValue": "Formindsk ${label}",

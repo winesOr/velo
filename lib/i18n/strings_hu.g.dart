@@ -784,6 +784,7 @@ class _Translations$accessibility$hu extends Translations$accessibility$en {
 	@override String mediaCardPartiallyWatched({required Object percent}) => '${percent} százalék megtekintve';
 	@override String get mediaCardUnwatched => 'még nem láttad';
 	@override String get tapToPlay => 'Koppints a lejátszáshoz';
+	@override String get tapToOpenDetails => 'Tap to open details';
 	@override String get decrease => 'Csökkentés';
 	@override String get increase => 'Növelés';
 	@override String decreaseValue({required Object label}) => '${label} csökkentése';
@@ -3679,6 +3680,7 @@ extension on TranslationsHu {
 			'accessibility.mediaCardPartiallyWatched' => ({required Object percent}) => '${percent} százalék megtekintve',
 			'accessibility.mediaCardUnwatched' => 'még nem láttad',
 			'accessibility.tapToPlay' => 'Koppints a lejátszáshoz',
+			'accessibility.tapToOpenDetails' => 'Tap to open details',
 			'accessibility.decrease' => 'Csökkentés',
 			'accessibility.increase' => 'Növelés',
 			'accessibility.decreaseValue' => ({required Object label}) => '${label} csökkentése',
@@ -4081,9 +4083,9 @@ extension on TranslationsHu {
 			'errors.reasonUnexpected' => 'váratlan hiba történt',
 			'libraries.title' => 'Könyvtárak',
 			'libraries.fallbackTitle' => 'Könyvtár',
-			'libraries.scanLibraryFiles' => 'Könyvtárfájlok beolvasása',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.scanLibraryFiles' => 'Könyvtárfájlok beolvasása',
 			'libraries.scanLibrary' => 'Könyvtár beolvasása',
 			'libraries.analyze' => 'Elemzés',
 			'libraries.analyzeLibrary' => 'Könyvtár elemzése',
@@ -4595,9 +4597,9 @@ extension on TranslationsHu {
 			'watchTogether.participantBuffering' => ({required Object name}) => '${name} pufferel',
 			'watchTogether.participantNeedsUpdate' => ({required Object name}) => '${name} régebbi alkalmazásverziót használ — a szinkronizálás nem érhető el',
 			'watchTogether.resumingWithout' => ({required Object name}) => 'Folytatás a következő nélkül: ${name}',
-			'watchTogether.waitingForParticipants' => 'Várakozás, amíg a többieknél betöltődik a tartalom...',
 			_ => null,
 		} ?? switch (path) {
+			'watchTogether.waitingForParticipants' => 'Várakozás, amíg a többieknél betöltődik a tartalom...',
 			'watchTogether.waitingForName' => ({required Object name}) => 'Várakozás: ${name}...',
 			'watchTogether.recentRooms' => 'Legutóbbi szobák',
 			'watchTogether.renameRoom' => 'Szoba átnevezése',
@@ -5109,9 +5111,9 @@ extension on TranslationsHu {
 			'addServer.signInWithPlexCard' => 'Bejelentkezés Plexszel',
 			'addServer.signInWithPlexCardSubtitle' => 'Eszköz engedélyezése. A megosztott szerverek hozzáadásra kerülnek.',
 			'addServer.signInWithPlexCardSubtitleScoped' => 'Plex-fiók engedélyezése. A Plex Home-felhasználókból profilok lesznek.',
-			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Csatlakozás a(z) ${product} szolgáltatáshoz',
 			_ => null,
 		} ?? switch (path) {
+			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Csatlakozás a(z) ${product} szolgáltatáshoz',
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Adja meg a szerver URL-jét, felhasználónevét és jelszavát.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => 'Jelentkezzen be a(z) ${product} szerverére. A(z) ${name} szolgáltatáshoz kötődik.',
 			'addServer.borrowFromAnotherProfile' => 'Kapcsolat használata másik profilból',

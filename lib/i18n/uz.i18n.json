@@ -725,6 +725,7 @@
     "mediaCardPartiallyWatched": "%${percent} koʻrilgan",
     "mediaCardUnwatched": "koʻrilmagan",
     "tapToPlay": "Ijro etish uchun bosing",
+    "tapToOpenDetails": "Tap to open details",
     "decrease": "Kamaytirish",
     "increase": "Oshirish",
     "decreaseValue": "${label} qiymatini kamaytirish",

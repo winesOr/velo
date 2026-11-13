@@ -784,6 +784,7 @@ class _Translations$accessibility$da extends Translations$accessibility$en {
 	@override String mediaCardPartiallyWatched({required Object percent}) => '${percent} procent set';
 	@override String get mediaCardUnwatched => 'uset';
 	@override String get tapToPlay => 'Tryk for at afspille';
+	@override String get tapToOpenDetails => 'Tap to open details';
 	@override String get decrease => 'Formindsk';
 	@override String get increase => 'Forøg';
 	@override String decreaseValue({required Object label}) => 'Formindsk ${label}';
@@ -3679,6 +3680,7 @@ extension on TranslationsDa {
 			'accessibility.mediaCardPartiallyWatched' => ({required Object percent}) => '${percent} procent set',
 			'accessibility.mediaCardUnwatched' => 'uset',
 			'accessibility.tapToPlay' => 'Tryk for at afspille',
+			'accessibility.tapToOpenDetails' => 'Tap to open details',
 			'accessibility.decrease' => 'Formindsk',
 			'accessibility.increase' => 'Forøg',
 			'accessibility.decreaseValue' => ({required Object label}) => 'Formindsk ${label}',
@@ -4081,9 +4083,9 @@ extension on TranslationsDa {
 			'errors.reasonUnexpected' => 'der opstod en uventet fejl',
 			'libraries.title' => 'Biblioteker',
 			'libraries.fallbackTitle' => 'Bibliotek',
-			'libraries.scanLibraryFiles' => 'Scan biblioteksfiler',
 			_ => null,
 		} ?? switch (path) {
+			'libraries.scanLibraryFiles' => 'Scan biblioteksfiler',
 			'libraries.scanLibrary' => 'Scan bibliotek',
 			'libraries.analyze' => 'Analysér',
 			'libraries.analyzeLibrary' => 'Analysér bibliotek',
@@ -4595,9 +4597,9 @@ extension on TranslationsDa {
 			'watchTogether.participantBuffering' => ({required Object name}) => '${name} bufferer',
 			'watchTogether.participantNeedsUpdate' => ({required Object name}) => '${name} bruger en ældre appversion — synkronisering er ikke tilgængelig',
 			'watchTogether.resumingWithout' => ({required Object name}) => 'Fortsætter uden ${name}',
-			'watchTogether.waitingForParticipants' => 'Venter på, at de andre bliver klar...',
 			_ => null,
 		} ?? switch (path) {
+			'watchTogether.waitingForParticipants' => 'Venter på, at de andre bliver klar...',
 			'watchTogether.waitingForName' => ({required Object name}) => 'Venter på ${name}...',
 			'watchTogether.recentRooms' => 'Seneste rum',
 			'watchTogether.renameRoom' => 'Omdøb rum',
@@ -5109,9 +5111,9 @@ extension on TranslationsDa {
 			'addServer.signInWithPlexCard' => 'Log ind med Plex',
 			'addServer.signInWithPlexCardSubtitle' => 'Godkend denne enhed. Delte servere tilføjes.',
 			'addServer.signInWithPlexCardSubtitleScoped' => 'Godkend en Plex-konto. Plex Home-brugere bliver til profiler.',
-			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Opret forbindelse til ${product}',
 			_ => null,
 		} ?? switch (path) {
+			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Opret forbindelse til ${product}',
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Indtast din server-URL, brugernavn og adgangskode.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => 'Log ind på din ${product}-server. Tilknyttes til ${name}.',
 			'addServer.borrowFromAnotherProfile' => 'Lån fra en anden profil',
