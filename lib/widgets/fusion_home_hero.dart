@@ -28,7 +28,7 @@ class FusionHomeHero extends StatelessWidget {
     super.key,
     required this.item,
     required this.backdrop,
-    required this.onPlay,
+    required this.onOpen,
     this.playButton,
     this.detailsButton,
     this.client,
@@ -39,7 +39,7 @@ class FusionHomeHero extends StatelessWidget {
   final MediaItem item;
   final MediaServerClient? client;
   final Widget backdrop;
-  final VoidCallback onPlay;
+  final VoidCallback onOpen;
   final Widget? playButton;
   final Widget? detailsButton;
   final bool compact;
@@ -89,8 +89,9 @@ class FusionHomeHero extends StatelessWidget {
     return Semantics(
       label: title,
       button: true,
+      hint: t.accessibility.tapToOpenDetails,
       child: GestureDetector(
-        onTap: onPlay,
+        onTap: onOpen,
         child: Stack(
           fit: StackFit.expand,
           children: [
