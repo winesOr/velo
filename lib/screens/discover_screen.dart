@@ -30,6 +30,7 @@ import '../widgets/fusion_home_hero.dart';
 import '../widgets/press_feedback.dart';
 import '../theme/interaction_tokens.dart';
 import '../widgets/hero_metadata_badges.dart';
+import '../widgets/hero_text_blocks.dart';
 import '../widgets/backend_badge.dart';
 import '../navigation/home_theme.dart';
 import '../navigation/navigation_tabs.dart';
@@ -1746,6 +1747,16 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                           crossAxisAlignment: alignLeft ? CrossAxisAlignment.start : CrossAxisAlignment.center,
                           mainAxisSize: .min,
                           children: [
+                            if (heroHasOriginalTitle(heroItem, showName)) ...[
+                              HeroOriginalTitle(
+                                item: heroItem,
+                                displayTitle: showName,
+                                color: colorScheme.onSurface,
+                                fontSize: 10,
+                                textAlign: alignLeft ? TextAlign.left : TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                            ],
                             // Show logo, falling back to the name/title. The
                             // logo keeps its slot; the title gets a wider one.
                             LayoutBuilder(
@@ -1784,47 +1795,16 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
                             if (!alignLeft) ...[const SizedBox(height: 20), _buildSmartPlayButton(heroItem)],
 
-                            if (heroItem.summary != null && !shouldHideSpoiler) ...[
+                            if (heroHasSummary(heroItem, shouldHideSpoiler)) ...[
                               const SizedBox(height: 12),
-                              RichText(
-                                maxLines: isTv ? 3 : 2,
-                                overflow: .ellipsis,
+                              HeroSummary(
+                                item: heroItem,
+                                hideSpoiler: shouldHideSpoiler,
+                                maxLines: 3,
+                                fontSize: isTv ? 18 : 14,
+                                height: isTv ? 1.45 : 1.4,
+                                color: colorScheme.onSurface.withValues(alpha: .7),
                                 textAlign: alignLeft ? TextAlign.left : TextAlign.center,
-                                text: TextSpan(
-                                  style: TextStyle(
-                                    color: colorScheme.onSurface.withValues(alpha: 0.7),
-                                    fontSize: isTv ? 18 : 14,
-                                    height: isTv ? 1.45 : 1.4,
-                                  ),
-                                  children: [
-                                    if (isEpisode && heroItem.parentIndex != null && heroItem.index != null)
-                                      TextSpan(
-                                        text: 'S${heroItem.parentIndex}, E${heroItem.index}: ',
-                                        style: TextStyle(fontWeight: .bold, color: colorScheme.onSurface),
-                                      ),
-                                    TextSpan(
-                                      text: heroItem.summary?.isNotEmpty == true
-                                          ? heroItem.summary!
-                                          : t.messages.noDescriptionAvailable,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ] else if (shouldHideSpoiler &&
-                                isEpisode &&
-                                heroItem.parentIndex != null &&
-                                heroItem.index != null) ...[
-                              const SizedBox(height: 12),
-                              Text(
-                                'S${heroItem.parentIndex}, E${heroItem.index}: ${heroItem.title}',
-                                maxLines: 2,
-                                overflow: .ellipsis,
-                                textAlign: alignLeft ? TextAlign.left : TextAlign.center,
-                                style: TextStyle(
-                                  color: colorScheme.onSurface.withValues(alpha: 0.7),
-                                  fontSize: isTv ? 18 : 14,
-                                  height: isTv ? 1.45 : 1.4,
-                                ),
                               ),
                             ],
 
