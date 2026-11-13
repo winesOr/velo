@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../media/media_item.dart';
 import '../utils/content_utils.dart';
+import '../utils/formatters.dart';
 import '../utils/rating_display_policy.dart';
 import 'media_rating_badge.dart';
 import 'settings_builder.dart';
-import '../utils/media_quality_labels.dart';
 
 /// Compact metadata from the already-loaded catalog row; never fetches details.
 class HeroMetadataBadges extends StatelessWidget {
@@ -30,9 +30,9 @@ class HeroMetadataBadges extends StatelessWidget {
     final genres = item.genres?.map((g) => g.trim()).where((g) => g.isNotEmpty).take(2) ?? const <String>[];
     final labels = <String>{
       if (item.year != null) item.year.toString(),
-      if (item.contentRating?.trim().isNotEmpty ?? false) formatContentRating(item.contentRating!),
-      ...buildMediaQualityLabels(item),
+      if (item.durationMs != null && item.durationMs! > 0) formatDurationTextual(item.durationMs!),
       ...genres,
+      if (item.contentRating?.trim().isNotEmpty ?? false) formatContentRating(item.contentRating!),
     };
     return Wrap(
       alignment: alignment,
