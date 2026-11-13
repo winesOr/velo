@@ -34,6 +34,13 @@ USAGE_RES = (
 )
 DOT_WS_RE = re.compile(r"\s*\.\s*")
 PLURAL_CATEGORIES = ("zero", "one", "two", "few", "many", "other")
+# R1 removes the Hero placeholder but explicitly retains its translations for
+# later cleanup. Keep the exception exact and visible in the usage report.
+RETAINED_UNUSED_KEYS = {
+    "messages.noDescriptionAvailable": (
+        "R01-home-hero.md requires retaining this key after removing the Hero placeholder"
+    ),
+}
 
 
 def load_json(path: Path) -> dict:
@@ -241,7 +248,9 @@ def unused_pass(strict: bool) -> int:
                 ambiguous.add(leaf)
                 break
 
-    unused = [l for l in remaining if l not in ambiguous]
+    unreferenced = [l for l in remaining if l not in ambiguous]
+    retained = [leaf for leaf in unreferenced if leaf in RETAINED_UNUSED_KEYS]
+    unused = [leaf for leaf in unreferenced if leaf not in RETAINED_UNUSED_KEYS]
     ambiguous_sorted = sorted(ambiguous)
 
     print()
@@ -255,6 +264,12 @@ def unused_pass(strict: bool) -> int:
     else:
         print("Unused: none")
 
+    if retained:
+        print()
+        print(f"Intentionally retained ({len(retained)}):")
+        for key in sorted(retained):
+            print(f"  {key} — {RETAINED_UNUSED_KEYS[key]}")
+
     print()
     if ambiguous_sorted:
         print(f"Only reachable via parent-branch access — review manually ({len(ambiguous_sorted)}):")
@@ -266,7 +281,7 @@ def unused_pass(strict: bool) -> int:
     print()
     print(
         f"Summary: {len(direct)} used directly, {len(ambiguous_sorted)} ambiguous, "
-        f"{len(unused)} unused (of {len(leaves)} total)"
+        f"{len(retained)} intentionally retained, {len(unused)} unused (of {len(leaves)} total)"
     )
 
     if strict and unused:
