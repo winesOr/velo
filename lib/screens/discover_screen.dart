@@ -11,10 +11,8 @@ import '../widgets/server_activities_button.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import '../focus/focusable_action_bar.dart';
-import '../focus/focusable_button.dart';
 import '../focus/hub_vertical_navigation.dart';
 import '../focus/locked_hub_controller.dart';
-import '../focus/input_mode_tracker.dart';
 import '../focus/key_event_utils.dart';
 
 import '../media/media_item.dart';
@@ -27,8 +25,6 @@ import '../widgets/cycling_media_backdrop.dart';
 import '../widgets/vidhub_ambient_backdrop.dart';
 import '../utils/ambient_palette_extractor.dart';
 import '../widgets/fusion_home_hero.dart';
-import '../widgets/press_feedback.dart';
-import '../theme/interaction_tokens.dart';
 import '../widgets/hero_metadata_badges.dart';
 import '../widgets/hero_text_blocks.dart';
 import '../widgets/backend_badge.dart';
@@ -41,7 +37,6 @@ import '../providers/discover_provider.dart';
 import '../theme/home_typography.dart';
 import '../theme/mono_presentation.dart';
 import '../providers/multi_server_provider.dart';
-import '../providers/watch_state_store.dart';
 import '../widgets/hub_section.dart';
 import '../widgets/app_menu.dart';
 import '../widgets/clickable_cursor.dart';
@@ -67,7 +62,6 @@ import '../utils/media_navigation_helper.dart';
 import '../utils/provider_extensions.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/error_message_utils.dart';
-import '../utils/video_player_navigation.dart';
 import '../utils/layout_constants.dart';
 import '../utils/platform_detector.dart';
 import '../utils/tone_mapped_logo_image.dart';
@@ -1539,15 +1533,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   bool _heroNavigationPending = false;
 
-  Future<void> _openHero(MediaItem item, {bool play = false}) async {
+  Future<void> _openHero(MediaItem item) async {
     if (_heroNavigationPending) return;
     setState(() => _heroNavigationPending = true);
     try {
-      if (play && canPlayHomeHeroDirectly(item)) {
-        await navigateToVideoPlayer(context, metadata: item);
-      } else {
-        await navigateToMediaItemDetails(context, item);
-      }
+      await navigateToMediaItemDetails(context, item);
     } catch (error, stackTrace) {
       appLogger.w('Failed to open the home hero', error: error, stackTrace: stackTrace);
       if (mounted) showErrorSnackBar(context, t.messages.errorLoading(error: localizedErrorReason(error)));
@@ -1571,44 +1561,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         item: heroItem,
         client: heroClient,
         compact: heroHeight < 450,
-        hideSpoiler: SettingsService.instance.read(SettingsService.hideSpoilers) && heroItem.shouldHideSpoiler,
         onOpen: () => _openHero(heroItem),
-        playButton: _buildSmartPlayButton(heroItem),
-        detailsButton: canPlayHomeHeroDirectly(heroItem)
-            ? PressFeedbackBuilder(
-                pressedScale: InteractionTokens.secondaryPressedScale,
-                enabled: !_heroNavigationPending,
-                borderRadius: BorderRadius.circular(24),
-                builder: (context, setPressed, confirm) => FocusableButton(
-                  onPressed: _heroNavigationPending
-                      ? null
-                      : () {
-                          confirm();
-                          _openHero(heroItem);
-                        },
-                  dimWhenUnfocused: false,
-                  child: Material(
-                    color: Colors.transparent,
-                    shape: StadiumBorder(
-                      side: BorderSide(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .4)),
-                    ),
-                    child: InkWell(
-                      onTap: _heroNavigationPending ? null : () => _openHero(heroItem),
-                      onHighlightChanged: setPressed,
-                      canRequestFocus: false,
-                      borderRadius: BorderRadius.circular(24),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                          child: Text(t.mediaMenu.viewDetails),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              )
-            : null,
+        hideSpoiler: SettingsService.instance.read(SettingsService.hideSpoilers) && heroItem.shouldHideSpoiler,
         backdrop: CyclingMediaBackdrop(
           mediaKey: heroItem.globalKey,
           imagePaths: heroArtPaths.take(1).toList(),
@@ -1647,12 +1601,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     return Semantics(
       label: heroLabel,
       button: true,
-      hint: t.accessibility.tapToPlay,
+      hint: t.accessibility.tapToOpenDetails,
       child: ClickableCursor(
         child: GestureDetector(
           onTap: () {
             appLogger.d('Activating hero item: ${heroItem.title}');
-            _openHero(heroItem, play: true);
+            _openHero(heroItem);
           },
           child: Stack(
             fit: StackFit.expand,
@@ -1793,8 +1747,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                               fontSize: isTv ? 16 : 12,
                             ),
 
-                            if (!alignLeft) ...[const SizedBox(height: 20), _buildSmartPlayButton(heroItem)],
-
                             if (heroHasSummary(heroItem, shouldHideSpoiler)) ...[
                               const SizedBox(height: 12),
                               HeroSummary(
@@ -1807,8 +1759,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                                 textAlign: alignLeft ? TextAlign.left : TextAlign.center,
                               ),
                             ],
-
-                            if (alignLeft) ...[SizedBox(height: isTv ? 28 : 20), _buildSmartPlayButton(heroItem)],
                           ],
                         ),
                       ),
@@ -1820,26 +1770,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildSmartPlayButton(MediaItem rawHeroItem) {
-    return Builder(
-      builder: (context) {
-        final item = context.withFreshWatchState(rawHeroItem);
-        final isTv = PlatformDetector.isTV();
-        return ListenableBuilder(
-          listenable: _heroFocusNode,
-          builder: (context, _) => HomeHeroPrimaryButton(
-            item: item,
-            busy: _heroNavigationPending,
-            isTv: isTv,
-            showFocus: isTv && _heroFocusNode.hasFocus && InputModeTracker.isKeyboardMode(context),
-            onPlay: () => _openHero(item, play: true),
-            onDetails: () => _openHero(item),
-          ),
-        );
-      },
     );
   }
 }

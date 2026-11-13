@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'dart:math' as math;
 
 import '../media/media_item.dart';
@@ -8,42 +7,31 @@ import '../media/media_server_client.dart';
 import '../navigation/home_theme.dart';
 import '../theme/home_typography.dart';
 import '../theme/mono_presentation.dart';
-import '../theme/interaction_tokens.dart';
 import '../i18n/strings.g.dart';
 import '../utils/tone_mapped_logo_image.dart';
 import 'optimized_media_image.dart';
 import 'hero_metadata_badges.dart';
 import 'hero_text_blocks.dart';
-import 'app_icon.dart';
-import 'press_feedback.dart';
-
-/// Home recommendations may include containers, which have no playable source.
-/// Their primary action stays on details until an episode is explicitly chosen.
-bool canPlayHomeHeroDirectly(MediaItem item) => item.isMovie || item.isEpisode;
 
 /// Full-bleed artwork gradually joins the same sampled surface as the page.
-/// No bundled demonstration artwork: image failures leave the title playable.
+/// No bundled demonstration artwork: image failures leave the details accessible.
 class FusionHomeHero extends StatelessWidget {
   const FusionHomeHero({
     super.key,
     required this.item,
     required this.backdrop,
     required this.onOpen,
-    this.playButton,
-    this.detailsButton,
+    this.hideSpoiler = false,
     this.client,
     this.compact = false,
-    this.hideSpoiler = false,
   });
 
   final MediaItem item;
   final MediaServerClient? client;
   final Widget backdrop;
   final VoidCallback onOpen;
-  final Widget? playButton;
-  final Widget? detailsButton;
-  final bool compact;
   final bool hideSpoiler;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -178,16 +166,6 @@ class FusionHomeHero extends StatelessWidget {
                               textAlign: textAlign,
                             ),
                           ],
-                          if (playButton != null || detailsButton != null) ...[
-                            const SizedBox(height: 12),
-                            Wrap(
-                              alignment: leftAligned ? WrapAlignment.start : WrapAlignment.center,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              spacing: 10,
-                              runSpacing: 8,
-                              children: [?playButton, ?detailsButton],
-                            ),
-                          ],
                         ],
                       ),
                     ),
@@ -196,114 +174,6 @@ class FusionHomeHero extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The production home action, shared with visual fixtures so resumed playback
-/// always exercises the real progress bar and localized remaining-time label.
-class HomeHeroPrimaryButton extends StatelessWidget {
-  const HomeHeroPrimaryButton({
-    super.key,
-    required this.item,
-    required this.onPlay,
-    required this.onDetails,
-    this.busy = false,
-    this.isTv = false,
-    this.showFocus = false,
-  });
-
-  final MediaItem item;
-  final VoidCallback? onPlay;
-  final VoidCallback? onDetails;
-  final bool busy;
-  final bool isTv;
-  final bool showFocus;
-
-  @override
-  Widget build(BuildContext context) {
-    final playable = canPlayHomeHeroDirectly(item);
-    final hasProgress = playable && item.hasActiveProgress;
-    final minutesLeft = hasProgress ? ((item.durationMs! - item.viewOffsetMs!) / 60000).round() : 0;
-    final progress = hasProgress ? (item.viewOffsetMs! / item.durationMs!).clamp(0.0, 1.0).toDouble() : 0.0;
-    final label = !playable
-        ? t.mediaMenu.viewDetails
-        : hasProgress
-        ? t.discover.minutesLeft(minutes: minutesLeft)
-        : t.common.play;
-    final action = busy
-        ? null
-        : playable
-        ? onPlay
-        : onDetails;
-    final radius = BorderRadius.circular(isTv ? 32 : 24);
-    return PressFeedbackBuilder(
-      pressedScale: InteractionTokens.mainPressedScale,
-      enabled: action != null,
-      borderRadius: radius,
-      builder: (context, setPressed, confirm) => InkWell(
-        onTap: action,
-        onHighlightChanged: setPressed,
-        borderRadius: radius,
-        child: AnimatedContainer(
-          duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : InteractionTokens.releaseDuration,
-          curve: InteractionTokens.pressCurve,
-          constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
-          padding: EdgeInsets.symmetric(horizontal: isTv ? 34 : 24, vertical: isTv ? 16 : 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: radius,
-            boxShadow: showFocus
-                ? [BoxShadow(color: Colors.white.withValues(alpha: .35), blurRadius: 28, spreadRadius: 4)]
-                : null,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (busy)
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                )
-              else
-                AppIcon(
-                  playable ? Symbols.play_arrow_rounded : Symbols.info_rounded,
-                  fill: 1,
-                  size: isTv ? 28 : 20,
-                  color: Colors.black,
-                ),
-              SizedBox(width: isTv ? 12 : 8),
-              if (hasProgress) ...[
-                Container(
-                  key: const ValueKey('home-hero-play-progress'),
-                  width: isTv ? 56 : 40,
-                  height: isTv ? 8 : 6,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: .25),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: progress,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(4)),
-                    ),
-                  ),
-                ),
-                SizedBox(width: isTv ? 12 : 8),
-              ],
-              Flexible(
-                child: Text(
-                  label,
-                  softWrap: true,
-                  style: TextStyle(color: Colors.black, fontSize: isTv ? 18 : 14, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
