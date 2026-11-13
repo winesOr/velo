@@ -4,6 +4,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/focus/dpad_navigator.dart';
+import 'package:plezy/focus/card_focus_scope.dart';
 import 'package:plezy/focus/input_mode_tracker.dart';
 import 'package:plezy/database/app_database.dart';
 import 'package:plezy/i18n/strings.g.dart';
@@ -746,22 +747,30 @@ void main() {
       fullCardLayout: true,
     );
 
-    // The focused card mounts a leader (CompositedTransformTarget); scope to it
-    // so we measure the focused card's in-card border container.
-    final cardFinder = find
-        .descendant(of: find.byType(CompositedTransformTarget), matching: find.byType(AnimatedContainer))
-        .first;
+    // Focus wrappers delegate the stroke to the poster's CardFocusBorder;
+    // the outer animated container only owns scale/glow placement.
+    final borderOwner = find.descendant(
+      of: find.byType(CompositedTransformTarget),
+      matching: find.byType(CardFocusBorder),
+    );
+    expect(borderOwner, findsOneWidget);
+    expect(CardFocusScope.maybeOf(tester.element(borderOwner)), isTrue);
+    final cardFinder = find.descendant(of: borderOwner, matching: find.byType(AnimatedContainer)).first;
     final borderContainer = tester.widget<AnimatedContainer>(cardFinder);
     final border = (borderContainer.foregroundDecoration as BoxDecoration).border as Border;
     final cardSize = tester.getSize(cardFinder);
+    // Press feedback adds its own inner scale; the focus scale wraps the glow
+    // leader and must be asserted independently of an inactive press animation.
     final focusScale = tester.widget<AnimatedScale>(
-      find.ancestor(of: cardFinder, matching: find.byType(AnimatedScale)).first,
+      find.ancestor(of: find.byType(CompositedTransformTarget), matching: find.byType(AnimatedScale)).first,
     );
 
     // The border stays in-card; the glow now renders in an overlay that follows
     // the focused card so it paints above siblings on all sides.
     expect(borderContainer.decoration, isNull);
     expect(border.top.strokeAlign, BorderSide.strokeAlignOutside);
+    expect(border.top.width, 2.5);
+    expect(border.top.color.a, greaterThan(0));
     expect(find.byType(ShaderMask), findsNothing);
     expect(find.byType(CompositedTransformTarget), findsOneWidget);
     expect(find.byType(CompositedTransformFollower), findsOneWidget);
