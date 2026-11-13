@@ -13,6 +13,7 @@ import '../i18n/strings.g.dart';
 import '../utils/tone_mapped_logo_image.dart';
 import 'optimized_media_image.dart';
 import 'hero_metadata_badges.dart';
+import 'hero_text_blocks.dart';
 import 'app_icon.dart';
 import 'press_feedback.dart';
 
@@ -32,6 +33,7 @@ class FusionHomeHero extends StatelessWidget {
     this.detailsButton,
     this.client,
     this.compact = false,
+    this.hideSpoiler = false,
   });
 
   final MediaItem item;
@@ -41,6 +43,7 @@ class FusionHomeHero extends StatelessWidget {
   final Widget? playButton;
   final Widget? detailsButton;
   final bool compact;
+  final bool hideSpoiler;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +56,6 @@ class FusionHomeHero extends StatelessWidget {
     final homeType = Theme.of(context).extension<HomeTypography>();
     final heroForeground = homeType?.heroTitle.color ?? foreground;
     final title = item.isEpisode ? item.grandparentTitle ?? item.displayTitle : item.displayTitle;
-    final originalTitle = item.originalTitle?.trim();
     final metadataStyle = TextStyle(
       color: homeType?.caption.color ?? foreground,
       fontSize: tablet ? 14 : 12,
@@ -134,19 +136,12 @@ class FusionHomeHero extends StatelessWidget {
                         crossAxisAlignment: leftAligned ? CrossAxisAlignment.start : CrossAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (originalTitle != null && originalTitle.isNotEmpty && originalTitle != title) ...[
-                            Text(
-                              originalTitle.toUpperCase(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontFamily: 'Georgia',
-                                fontFamilyFallback: const ['Go Noto Current', 'serif'],
-                                color: metadataStyle.color!.withValues(alpha: .8),
-                                fontSize: 9,
-                                height: 1.2,
-                                letterSpacing: 2.5,
-                              ),
+                          if (heroHasOriginalTitle(item, title)) ...[
+                            HeroOriginalTitle(
+                              item: item,
+                              displayTitle: title,
+                              color: metadataStyle.color!,
+                              textAlign: textAlign,
                             ),
                             const SizedBox(height: 8),
                           ],
@@ -170,6 +165,18 @@ class FusionHomeHero extends StatelessWidget {
                             fontSize: tablet ? 14 : 12,
                             alignment: leftAligned ? WrapAlignment.start : WrapAlignment.center,
                           ),
+                          if (heroHasSummary(item, hideSpoiler)) ...[
+                            const SizedBox(height: 12),
+                            HeroSummary(
+                              item: item,
+                              hideSpoiler: hideSpoiler,
+                              maxLines: 2,
+                              fontSize: tablet ? 14 : 13,
+                              height: 1.4,
+                              color: metadataStyle.color!.withValues(alpha: .8),
+                              textAlign: textAlign,
+                            ),
+                          ],
                           if (playButton != null || detailsButton != null) ...[
                             const SizedBox(height: 12),
                             Wrap(

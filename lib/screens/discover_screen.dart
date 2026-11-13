@@ -1570,6 +1570,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         item: heroItem,
         client: heroClient,
         compact: heroHeight < 450,
+        hideSpoiler: SettingsService.instance.read(SettingsService.hideSpoilers) && heroItem.shouldHideSpoiler,
         onPlay: () => _openHero(heroItem),
         playButton: _buildSmartPlayButton(heroItem),
         detailsButton: canPlayHomeHeroDirectly(heroItem)
