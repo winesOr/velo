@@ -308,7 +308,9 @@ void main() {
       movie('m-2', title: 'Alpha Two', libraryId: 'lib-a', libraryTitle: 'Library A'),
       movie('m-3', title: 'Beta One', libraryId: 'lib-b', libraryTitle: 'Library B'),
     ]);
-    downloadProvider.notifyListeners();
+    final revisionBefore = downloadProvider.downloadsStructureRevision;
+    downloadProvider.safeNotifyListeners();
+    expect(downloadProvider.downloadsStructureRevision, revisionBefore + 1);
     await tester.pumpAndSettle();
     expect(cards(tester).map((card) => (card.item as MediaItem).title), ['Alpha One', 'Alpha Two']);
   });
