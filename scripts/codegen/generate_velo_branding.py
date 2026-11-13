@@ -13,7 +13,7 @@ import re
 import shutil
 import xml.etree.ElementTree as ET
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "design/branding/velo"
@@ -126,6 +126,44 @@ def android_vectors() -> None:
     (RES / "drawable/ic_launcher_monochrome.xml").write_text(
         header + launcher_group + f'<path android:pathData="{GLYPH_PATH}" android:fillColor="#FFFFFFFF"/>\n'
         '</group>\n</vector>\n')
+    tv_banner(paths)
+
+
+def tv_banner(paths: list[str]) -> None:
+    # Android TV banner (320x180dp): light lavender with soft brand-colour light blobs
+    # behind the full-colour mark, no wordmark. Vector drawables cannot blur, so the
+    # frosted look comes from pre-softened radial gradients. Stays sharp on 4K launchers.
+    width, height = 1280, 720
+    mark_x, mark_y, mark_w, mark_h = 310, 261, 421, 502  # silhouette bounds in the SVG
+    scale = height * .5 / mark_h
+
+    def gradient(kind: str, geometry: str, stops: list[tuple[str, float]]) -> str:
+        items = ''.join(f'<item android:color="{c}" android:offset="{o:g}"/>' for c, o in stops)
+        return (f'<aapt:attr name="android:{kind}"><gradient {geometry}>{items}</gradient></aapt:attr>')
+
+    full = f'M0 0H{width}V{height}H0Z'
+    layers = [f'<path android:pathData="{full}">' + gradient(
+        "fillColor", f'android:type="linear" android:startX="0" android:startY="0" '
+        f'android:endX="{width}" android:endY="{height}"',
+        [("#FFF3F0FF", 0), ("#FFE9ECFF", .5), ("#FFDDF1FF", 1)]) + '</path>']
+    for x, y, radius, rgb, alpha in [(430, 250, 330, "8E7BFF", .55), (860, 500, 340, "3FD8F1", .45),
+                                     (760, 180, 260, "5A7BFF", .35), (420, 560, 240, "C08BFF", .30)]:
+        layers.append(f'<path android:pathData="{full}">' + gradient(
+            "fillColor", f'android:type="radial" android:centerX="{x}" android:centerY="{y}" '
+            f'android:gradientRadius="{radius}"',
+            [(f"#{round(alpha * 255):02X}{rgb}", 0), (f"#00{rgb}", 1)]) + '</path>')
+    (RES / "drawable/tv_banner.xml").write_text(
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<vector xmlns:android="http://schemas.android.com/apk/res/android"\n'
+        '    xmlns:aapt="http://schemas.android.com/aapt"\n'
+        '    android:width="320dp" android:height="180dp"\n'
+        f'    android:viewportWidth="{width}" android:viewportHeight="{height}">\n'
+        + '\n'.join(layers) + '\n'
+        # Nudge right: the arrow's visual weight sits left of its bounding box centre.
+        f'<group android:translateX="{(width - mark_w * scale) / 2 - mark_x * scale + 8:.2f}" '
+        f'android:translateY="{(height - mark_h * scale) / 2 - mark_y * scale:.2f}" '
+        f'android:scaleX="{scale:.4f}" android:scaleY="{scale:.4f}">\n'
+        + '\n'.join(paths) + '\n</group>\n</vector>\n')
 
 
 def main() -> None:
@@ -144,14 +182,9 @@ def main() -> None:
         image = Image.new("RGBA", (notification_size, notification_size))
         image.alpha_composite(mark, ((notification_size - mark.width) // 2, (notification_size - mark.height) // 2))
         image.save(RES / f"drawable-{density}/ic_stat_notification.png")
-    for density, width, height in [("xhdpi", 320, 180), ("xxhdpi", 480, 270), ("xxxhdpi", 640, 360)]:
-        image = Image.new("RGBA", (width, height), (14, 15, 18, 255))
-        edge = round(height * .68)
-        image.alpha_composite(ICON.resize((edge, edge), Image.Resampling.LANCZOS), (round(width * .12), (height - edge) // 2))
-        draw = ImageDraw.Draw(image)
-        font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", round(height * .27))
-        draw.text((round(width * .52), height // 2), "Velo", font=font, fill="white", anchor="lm")
-        image.convert("RGB").save(RES / f"drawable-{density}/tv_banner.png")
+    for density in ("xhdpi", "xxhdpi", "xxxhdpi"):
+        # Superseded by the vector drawable/tv_banner.xml written above.
+        (RES / f"drawable-{density}/tv_banner.png").unlink(missing_ok=True)
 
     # Icon Composer supplies the platform background; use only the approved glyph.
     svg = ET.parse(SOURCE / "velo-icon.svg")
