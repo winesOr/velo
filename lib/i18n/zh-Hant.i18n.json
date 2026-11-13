@@ -721,7 +721,6 @@
     "mediaCardWatched": "已觀看",
     "mediaCardPartiallyWatched": "已觀看 ${percent}%",
     "mediaCardUnwatched": "未觀看",
-    "tapToPlay": "輕觸即可播放",
     "tapToOpenDetails": "輕觸即可查看詳情",
     "decrease": "減小",
     "increase": "增大",

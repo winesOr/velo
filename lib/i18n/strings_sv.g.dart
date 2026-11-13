@@ -783,7 +783,6 @@ class _Translations$accessibility$sv extends Translations$accessibility$en {
 	@override String get mediaCardWatched => 'sedd';
 	@override String mediaCardPartiallyWatched({required Object percent}) => 'sett till ${percent} procent';
 	@override String get mediaCardUnwatched => 'osedd';
-	@override String get tapToPlay => 'Tryck för att spela upp';
 	@override String get tapToOpenDetails => 'Tap to open details';
 	@override String get decrease => 'Minska';
 	@override String get increase => 'Öka';
@@ -3679,7 +3678,6 @@ extension on TranslationsSv {
 			'accessibility.mediaCardWatched' => 'sedd',
 			'accessibility.mediaCardPartiallyWatched' => ({required Object percent}) => 'sett till ${percent} procent',
 			'accessibility.mediaCardUnwatched' => 'osedd',
-			'accessibility.tapToPlay' => 'Tryck för att spela upp',
 			'accessibility.tapToOpenDetails' => 'Tap to open details',
 			'accessibility.decrease' => 'Minska',
 			'accessibility.increase' => 'Öka',
@@ -4083,9 +4081,9 @@ extension on TranslationsSv {
 			'errors.reasonUnexpected' => 'ett oväntat fel uppstod',
 			'libraries.title' => 'Bibliotek',
 			'libraries.fallbackTitle' => 'Bibliotek',
+			'libraries.scanLibraryFiles' => 'Skanna biblioteksfiler',
 			_ => null,
 		} ?? switch (path) {
-			'libraries.scanLibraryFiles' => 'Skanna biblioteksfiler',
 			'libraries.scanLibrary' => 'Skanna bibliotek',
 			'libraries.analyze' => 'Analysera',
 			'libraries.analyzeLibrary' => 'Analysera bibliotek',
@@ -4597,9 +4595,9 @@ extension on TranslationsSv {
 			'watchTogether.participantBuffering' => ({required Object name}) => '${name} buffrar',
 			'watchTogether.participantNeedsUpdate' => ({required Object name}) => '${name} använder en äldre appversion — synkronisering är inte tillgänglig',
 			'watchTogether.resumingWithout' => ({required Object name}) => 'Återupptar utan ${name}',
+			'watchTogether.waitingForParticipants' => 'Väntar på att de andra ska ladda klart...',
 			_ => null,
 		} ?? switch (path) {
-			'watchTogether.waitingForParticipants' => 'Väntar på att de andra ska ladda klart...',
 			'watchTogether.waitingForName' => ({required Object name}) => 'Väntar på ${name}...',
 			'watchTogether.recentRooms' => 'Senaste rummen',
 			'watchTogether.renameRoom' => 'Byt namn på rummet',
@@ -5111,9 +5109,9 @@ extension on TranslationsSv {
 			'addServer.signInWithPlexCard' => 'Logga in med Plex',
 			'addServer.signInWithPlexCardSubtitle' => 'Auktorisera den här enheten. Delade servrar läggs till.',
 			'addServer.signInWithPlexCardSubtitleScoped' => 'Auktorisera ett Plex-konto. Home-användare blir profiler.',
+			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Anslut till ${product}',
 			_ => null,
 		} ?? switch (path) {
-			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Anslut till ${product}',
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Ange din server-URL, användarnamn och lösenord.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => 'Logga in på din ${product}-server. Knyts till ${name}.',
 			'addServer.borrowFromAnotherProfile' => 'Låna från en annan profil',

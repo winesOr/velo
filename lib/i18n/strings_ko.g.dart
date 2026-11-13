@@ -780,7 +780,6 @@ class _Translations$accessibility$ko extends Translations$accessibility$en {
 	@override String get mediaCardWatched => '시청 완료';
 	@override String mediaCardPartiallyWatched({required Object percent}) => '${percent}% 시청 완료';
 	@override String get mediaCardUnwatched => '미시청';
-	@override String get tapToPlay => '탭하여 재생';
 	@override String get tapToOpenDetails => 'Tap to open details';
 	@override String get decrease => '낮추기';
 	@override String get increase => '높이기';
@@ -3668,7 +3667,6 @@ extension on TranslationsKo {
 			'accessibility.mediaCardWatched' => '시청 완료',
 			'accessibility.mediaCardPartiallyWatched' => ({required Object percent}) => '${percent}% 시청 완료',
 			'accessibility.mediaCardUnwatched' => '미시청',
-			'accessibility.tapToPlay' => '탭하여 재생',
 			'accessibility.tapToOpenDetails' => 'Tap to open details',
 			'accessibility.decrease' => '낮추기',
 			'accessibility.increase' => '높이기',
@@ -4072,9 +4070,9 @@ extension on TranslationsKo {
 			'errors.reasonUnexpected' => '예기치 않은 오류가 발생했습니다',
 			'libraries.title' => '미디어 라이브러리',
 			'libraries.fallbackTitle' => '라이브러리',
+			'libraries.scanLibraryFiles' => '미디어 라이브러리 파일 스캔',
 			_ => null,
 		} ?? switch (path) {
-			'libraries.scanLibraryFiles' => '미디어 라이브러리 파일 스캔',
 			'libraries.scanLibrary' => '미디어 라이브러리 스캔',
 			'libraries.analyze' => '분석',
 			'libraries.analyzeLibrary' => '미디어 라이브러리 분석',
@@ -4586,9 +4584,9 @@ extension on TranslationsKo {
 			'watchTogether.participantBuffering' => ({required Object name}) => '${name}님이 버퍼링 중입니다',
 			'watchTogether.participantNeedsUpdate' => ({required Object name}) => '${name}님이 이전 버전의 앱을 사용 중입니다 — 동기화를 사용할 수 없습니다',
 			'watchTogether.resumingWithout' => ({required Object name}) => '${name}님 없이 재생을 재개합니다',
+			'watchTogether.waitingForParticipants' => '다른 참가자의 로딩을 기다리는 중...',
 			_ => null,
 		} ?? switch (path) {
-			'watchTogether.waitingForParticipants' => '다른 참가자의 로딩을 기다리는 중...',
 			'watchTogether.waitingForName' => ({required Object name}) => '${name}님을 기다리는 중...',
 			'watchTogether.recentRooms' => '최근 참여한 방',
 			'watchTogether.renameRoom' => '방 이름 변경',
@@ -5100,9 +5098,9 @@ extension on TranslationsKo {
 			'addServer.signInWithPlexCard' => 'Plex로 로그인',
 			'addServer.signInWithPlexCardSubtitle' => '이 기기를 승인합니다. 공유 서버가 추가됩니다.',
 			'addServer.signInWithPlexCardSubtitleScoped' => 'Plex 계정을 승인합니다. Home 사용자는 프로필이 됩니다.',
+			'addServer.connectToMediaBrowserCard' => ({required Object product}) => '${product}에 연결',
 			_ => null,
 		} ?? switch (path) {
-			'addServer.connectToMediaBrowserCard' => ({required Object product}) => '${product}에 연결',
 			'addServer.connectToMediaBrowserCardSubtitle' => '서버 URL, 사용자 이름, 비밀번호를 입력하세요.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => '${product} 서버에 로그인하세요. ${name}에 연결됩니다.',
 			'addServer.borrowFromAnotherProfile' => '다른 프로필에서 빌리기',

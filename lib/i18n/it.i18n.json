@@ -724,7 +724,6 @@
     "mediaCardWatched": "visto",
     "mediaCardPartiallyWatched": "visto al ${percent}%",
     "mediaCardUnwatched": "non visto",
-    "tapToPlay": "Tocca per riprodurre",
     "tapToOpenDetails": "Tap to open details",
     "decrease": "Diminuisci",
     "increase": "Aumenta",

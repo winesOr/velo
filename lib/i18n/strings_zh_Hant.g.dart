@@ -849,7 +849,6 @@ class _Translations$accessibility$zh_Hant extends Translations$accessibility$zh 
 	@override String get mediaCardWatched => '已觀看';
 	@override String mediaCardPartiallyWatched({required Object percent}) => '已觀看 ${percent}%';
 	@override String get mediaCardUnwatched => '未觀看';
-	@override String get tapToPlay => '輕觸即可播放';
 	@override String get tapToOpenDetails => '輕觸即可查看詳情';
 	@override String get decrease => '減小';
 	@override String get increase => '增大';
@@ -4038,7 +4037,6 @@ extension on TranslationsZhHant {
 			'accessibility.mediaCardWatched' => '已觀看',
 			'accessibility.mediaCardPartiallyWatched' => ({required Object percent}) => '已觀看 ${percent}%',
 			'accessibility.mediaCardUnwatched' => '未觀看',
-			'accessibility.tapToPlay' => '輕觸即可播放',
 			'accessibility.tapToOpenDetails' => '輕觸即可查看詳情',
 			'accessibility.decrease' => '減小',
 			'accessibility.increase' => '增大',
@@ -4375,9 +4373,9 @@ extension on TranslationsZhHant {
 			'accountPreferences.hubSubtitleMultiple' => ({required Object count}) => '已在 ${count} 個帳戶上儲存音訊、字幕與媒體庫選項',
 			'accountPreferences.pickAccount' => '每個帳戶都會儲存各自的偏好設定。請選擇要編輯的帳戶。',
 			'accountPreferences.storedOnAccount' => '這些選項會儲存在帳戶本身，因此登入該帳戶的所有應用程式都會使用它們，包括您其他裝置上的 Velo。',
+			'accountPreferences.noAccounts' => '沒有可設定的帳戶',
 			_ => null,
 		} ?? switch (path) {
-			'accountPreferences.noAccounts' => '沒有可設定的帳戶',
 			'accountPreferences.noAccountsHint' => '登入 Plex，或連線至 Jellyfin 或 Emby 伺服器，儲存在該帳戶上的偏好設定便會顯示在此處。',
 			'accountPreferences.unavailable' => '無法連線至此帳戶',
 			'accountPreferences.loadFailed' => '無法載入這些偏好設定',
@@ -4889,9 +4887,9 @@ extension on TranslationsZhHant {
 			'liveTv.failedToBuildStreamUrl' => '無法建立串流 URL',
 			'liveTv.playbackStartFailed' => ({required Object reason}) => '無法開始播放此頻道：${reason}',
 			'liveTv.channelSwitchFailed' => ({required Object reason}) => '無法切換頻道：${reason}',
+			'collections.title' => '收藏集',
 			_ => null,
 		} ?? switch (path) {
-			'collections.title' => '收藏集',
 			'collections.collection' => '收藏集',
 			'collections.empty' => '收藏集為空',
 			'collections.deleteCollection' => '刪除收藏集',
@@ -5403,9 +5401,9 @@ extension on TranslationsZhHant {
 			'metadataEdit.seriesDefault' => '影集預設',
 			'metadataEdit.episodeSorting' => '單集排序方式',
 			'metadataEdit.oldestFirst' => '由舊到新',
+			'metadataEdit.newestFirst' => '由新到舊',
 			_ => null,
 		} ?? switch (path) {
-			'metadataEdit.newestFirst' => '由新到舊',
 			'metadataEdit.keep' => '保留集數',
 			'metadataEdit.allEpisodes' => '所有單集',
 			'metadataEdit.latestEpisodes' => ({required Object count}) => '最新 ${count} 集',

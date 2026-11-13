@@ -730,7 +730,6 @@
     "mediaCardWatched": "obejrzane",
     "mediaCardPartiallyWatched": "obejrzano w ${percent} procentach",
     "mediaCardUnwatched": "nieobejrzane",
-    "tapToPlay": "Dotknij, aby odtworzyć",
     "tapToOpenDetails": "Tap to open details",
     "decrease": "Zmniejsz",
     "increase": "Zwiększ",

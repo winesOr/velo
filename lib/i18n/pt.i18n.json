@@ -724,7 +724,6 @@
     "mediaCardWatched": "assistido",
     "mediaCardPartiallyWatched": "${percent} por cento assistido",
     "mediaCardUnwatched": "não assistido",
-    "tapToPlay": "Toque para reproduzir",
     "tapToOpenDetails": "Tap to open details",
     "decrease": "Diminuir",
     "increase": "Aumentar",

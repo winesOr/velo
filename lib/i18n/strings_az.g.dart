@@ -783,7 +783,6 @@ class _Translations$accessibility$az extends Translations$accessibility$en {
 	@override String get mediaCardWatched => 'baxılıb';
 	@override String mediaCardPartiallyWatched({required Object percent}) => '%${percent} baxılıb';
 	@override String get mediaCardUnwatched => 'baxılmayıb';
-	@override String get tapToPlay => 'Oynatmaq üçün toxunun';
 	@override String get tapToOpenDetails => 'Tap to open details';
 	@override String get decrease => 'Azalt';
 	@override String get increase => 'Artır';
@@ -3679,7 +3678,6 @@ extension on TranslationsAz {
 			'accessibility.mediaCardWatched' => 'baxılıb',
 			'accessibility.mediaCardPartiallyWatched' => ({required Object percent}) => '%${percent} baxılıb',
 			'accessibility.mediaCardUnwatched' => 'baxılmayıb',
-			'accessibility.tapToPlay' => 'Oynatmaq üçün toxunun',
 			'accessibility.tapToOpenDetails' => 'Tap to open details',
 			'accessibility.decrease' => 'Azalt',
 			'accessibility.increase' => 'Artır',
@@ -4083,9 +4081,9 @@ extension on TranslationsAz {
 			'errors.reasonUnexpected' => 'gözlənilməz xəta baş verdi',
 			'libraries.title' => 'Kitabxanalar',
 			'libraries.fallbackTitle' => 'Kitabxana',
+			'libraries.scanLibraryFiles' => 'Kitabxana fayllarını skan et',
 			_ => null,
 		} ?? switch (path) {
-			'libraries.scanLibraryFiles' => 'Kitabxana fayllarını skan et',
 			'libraries.scanLibrary' => 'Kitabxananı skan et',
 			'libraries.analyze' => 'Analiz et',
 			'libraries.analyzeLibrary' => 'Kitabxananı analiz et',
@@ -4597,9 +4595,9 @@ extension on TranslationsAz {
 			'watchTogether.participantBuffering' => ({required Object name}) => '${name} buferləyir',
 			'watchTogether.participantNeedsUpdate' => ({required Object name}) => '${name} köhnə tətbiq versiyasındadır',
 			'watchTogether.resumingWithout' => ({required Object name}) => '${name} olmadan davam edilir',
+			'watchTogether.waitingForParticipants' => 'Digərlərinin yükləməsi gözlənilir...',
 			_ => null,
 		} ?? switch (path) {
-			'watchTogether.waitingForParticipants' => 'Digərlərinin yükləməsi gözlənilir...',
 			'watchTogether.waitingForName' => ({required Object name}) => '${name} gözlənilir...',
 			'watchTogether.recentRooms' => 'Son otaqlar',
 			'watchTogether.renameRoom' => 'Otağın adını dəyişdir',
@@ -5111,9 +5109,9 @@ extension on TranslationsAz {
 			'addServer.signInWithPlexCard' => 'Plex ilə daxil ol',
 			'addServer.signInWithPlexCardSubtitle' => 'Bu cihazı səlahiyyətləndirin. Paylaşılan serverlər əlavə olunur.',
 			'addServer.signInWithPlexCardSubtitleScoped' => 'Plex hesabını səlahiyyətləndirin. Home istifadəçiləri profillərə çevrilir.',
+			'addServer.connectToMediaBrowserCard' => ({required Object product}) => '${product}-a qoşul',
 			_ => null,
 		} ?? switch (path) {
-			'addServer.connectToMediaBrowserCard' => ({required Object product}) => '${product}-a qoşul',
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Server URL-inizi, istifadəçi adınızı və şifrənizi daxil edin.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => '${product} serverinizə daxil olun. ${name} ilə əlaqələndirilir.',
 			'addServer.borrowFromAnotherProfile' => 'Başqa profildən götür',

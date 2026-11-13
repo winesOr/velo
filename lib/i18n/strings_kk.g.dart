@@ -783,7 +783,6 @@ class _Translations$accessibility$kk extends Translations$accessibility$en {
 	@override String get mediaCardWatched => 'көрілген';
 	@override String mediaCardPartiallyWatched({required Object percent}) => '%${percent} көрілген';
 	@override String get mediaCardUnwatched => 'көрілмеген';
-	@override String get tapToPlay => 'Ойнату үшін түртіңіз';
 	@override String get tapToOpenDetails => 'Tap to open details';
 	@override String get decrease => 'Азайту';
 	@override String get increase => 'Арттыру';
@@ -3679,7 +3678,6 @@ extension on TranslationsKk {
 			'accessibility.mediaCardWatched' => 'көрілген',
 			'accessibility.mediaCardPartiallyWatched' => ({required Object percent}) => '%${percent} көрілген',
 			'accessibility.mediaCardUnwatched' => 'көрілмеген',
-			'accessibility.tapToPlay' => 'Ойнату үшін түртіңіз',
 			'accessibility.tapToOpenDetails' => 'Tap to open details',
 			'accessibility.decrease' => 'Азайту',
 			'accessibility.increase' => 'Арттыру',
@@ -4083,9 +4081,9 @@ extension on TranslationsKk {
 			'errors.reasonUnexpected' => 'күтпеген қате орын алды',
 			'libraries.title' => 'Кітапханалар',
 			'libraries.fallbackTitle' => 'Кітапхана',
+			'libraries.scanLibraryFiles' => 'Файлдарды сканерлеу',
 			_ => null,
 		} ?? switch (path) {
-			'libraries.scanLibraryFiles' => 'Файлдарды сканерлеу',
 			'libraries.scanLibrary' => 'Кітапхананы сканерлеу',
 			'libraries.analyze' => 'Талдау жасау',
 			'libraries.analyzeLibrary' => 'Кітапханаға талдау жасау',
@@ -4597,9 +4595,9 @@ extension on TranslationsKk {
 			'watchTogether.participantBuffering' => ({required Object name}) => '${name} буферлеуде',
 			'watchTogether.participantNeedsUpdate' => ({required Object name}) => '${name} ескі нұсқада',
 			'watchTogether.resumingWithout' => ({required Object name}) => '${name} ескерусіз жалғастырылуда',
+			'watchTogether.waitingForParticipants' => 'Басқалардың жүктеуін күтуде...',
 			_ => null,
 		} ?? switch (path) {
-			'watchTogether.waitingForParticipants' => 'Басқалардың жүктеуін күтуде...',
 			'watchTogether.waitingForName' => ({required Object name}) => '${name} күтілуде...',
 			'watchTogether.recentRooms' => 'Соңғы бөлмелер',
 			'watchTogether.renameRoom' => 'Бөлме атын өзгерткіңіз келе ме?',
@@ -5111,9 +5109,9 @@ extension on TranslationsKk {
 			'addServer.signInWithPlexCard' => 'Plex арқылы кіру',
 			'addServer.signInWithPlexCardSubtitle' => 'Осы құрылғыны авторизациялаңыз. Ортақ серверлер қосылады.',
 			'addServer.signInWithPlexCardSubtitleScoped' => 'Plex тіркелгісін авторизациялаңыз. Home пайдаланушылары профильдерге айналады.',
+			'addServer.connectToMediaBrowserCard' => ({required Object product}) => '${product} қосылу',
 			_ => null,
 		} ?? switch (path) {
-			'addServer.connectToMediaBrowserCard' => ({required Object product}) => '${product} қосылу',
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Сервер URL мекенжайын, пайдаланушы атын және құпия сөзді енгізіңіз.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => '${product} серверіне кіріңіз. ${name} тіркелгісіне байланыстырылады.',
 			'addServer.borrowFromAnotherProfile' => 'Басқа профильден алу',

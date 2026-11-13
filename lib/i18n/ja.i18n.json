@@ -721,7 +721,6 @@
     "mediaCardWatched": "視聴済み",
     "mediaCardPartiallyWatched": "${percent}パーセント視聴済み",
     "mediaCardUnwatched": "未視聴",
-    "tapToPlay": "タップして再生",
     "tapToOpenDetails": "Tap to open details",
     "decrease": "下げる",
     "increase": "上げる",

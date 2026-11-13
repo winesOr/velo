@@ -721,7 +721,6 @@
     "mediaCardWatched": "已观看",
     "mediaCardPartiallyWatched": "已观看 ${percent}%",
     "mediaCardUnwatched": "未观看",
-    "tapToPlay": "点击播放",
     "tapToOpenDetails": "点击查看详情",
     "decrease": "减小",
     "increase": "增大",
