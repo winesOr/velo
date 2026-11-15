@@ -85,11 +85,15 @@ class PlayerDrawerChoice extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.onLongPress,
+    this.secondaryLabel,
+    this.trackRow = false,
     this.focusNode,
     this.tab = false,
     this.feedbackOnChange = true,
   });
   final String label;
+  final String? secondaryLabel;
+  final bool trackRow;
   final bool selected;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
@@ -157,22 +161,49 @@ class PlayerDrawerChoice extends StatelessWidget {
               onLongPress: onLongPress,
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: tab ? 0 : 12, vertical: 5),
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: 12,
-                    height: 1.5,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    color: selected
-                        ? accent
-                        : tab
-                        ? glass.muted
-                        : glass.foreground,
-                  ),
-                ),
+                child: trackRow
+                    ? Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodyMedium?.copyWith(color: glass.foreground),
+                                ),
+                                if (secondaryLabel != null && secondaryLabel!.isNotEmpty)
+                                  Text(
+                                    secondaryLabel!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall?.copyWith(color: glass.muted),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          if (selected) AppIcon(Symbols.check_rounded, size: 20, color: accent),
+                        ],
+                      )
+                    : Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 12,
+                          height: 1.5,
+                          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                          color: selected
+                              ? accent
+                              : tab
+                              ? glass.muted
+                              : glass.foreground,
+                        ),
+                      ),
               ),
             ),
           ),

@@ -134,6 +134,7 @@ class TrackLabelBuilder {
     /// mpv's `codec-profile`; see [CodecUtils.formatAudioCodec].
     String? codecProfile,
     int? channels,
+    int? sampleRate,
     String? displayTitle,
     required int index,
   }) {
@@ -141,6 +142,10 @@ class TrackLabelBuilder {
     if (codec != null && codec.isNotEmpty) tech.add(CodecUtils.formatAudioCodec(codec, profile: codecProfile));
     final channelsLabel = CodecUtils.formatAudioChannels(channels);
     if (channelsLabel != null) tech.add(channelsLabel);
+    if (sampleRate != null && sampleRate > 0) {
+      final khz = sampleRate / 1000;
+      tech.add('${khz == khz.roundToDouble() ? khz.toStringAsFixed(0) : khz.toStringAsFixed(1)} kHz');
+    }
 
     return _compose(
       languageDisplay: resolveTrackLanguageDisplay(language: language, languageCode: languageCode),

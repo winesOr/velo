@@ -85,14 +85,18 @@ class TrackSelectionHelper {
     Widget? badge,
   }) {
     if (BaseVideoControlSheet.embeddedIn(context)) {
-      return PlayerDrawerChoice(
+      Widget tile = PlayerDrawerChoice(
         key: key,
         focusNode: focusNode,
         label: label,
+        secondaryLabel: secondaryLabel,
+        trackRow: true,
         selected: isSelected,
         onTap: onTap,
         onLongPress: onLongPress,
       );
+      if (onSecondaryTap != null) tile = GestureDetector(onSecondaryTap: onSecondaryTap, child: tile);
+      return tile;
     }
     final primaryColor = Theme.of(context).colorScheme.primary;
     Widget? trailing;

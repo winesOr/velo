@@ -889,6 +889,8 @@
     "seasonNumber": "Season ${n}",
     "drawerAudioTracks": "Audio tracks",
     "drawerPrimarySubtitle": "Primary subtitle",
+    "noAudioTracks": "No audio tracks available",
+    "noAudioTracksDescription": "This media has no audio tracks to select.",
     "drawerSecondarySubtitle": "Secondary subtitle",
     "drawerAdjustments": "Adjustments"
   },

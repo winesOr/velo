@@ -499,7 +499,17 @@ void main() {
       );
 
       expect(find.text('Primary sidecar'), findsOneWidget);
-      expect(find.text('Secondary sidecar'), findsOneWidget);
+      final secondaryRows = find.text('Secondary sidecar');
+      final heading = find.text(t.videoControls.drawerSecondarySubtitle);
+      expect(secondaryRows, findsNWidgets(2));
+      expect(heading, findsOneWidget);
+      final headingTop = tester.getTopLeft(heading).dy;
+      final rowTops = tester
+          .widgetList<Text>(secondaryRows)
+          .map((row) => tester.getTopLeft(find.byWidget(row)).dy)
+          .toList();
+      expect(rowTops.where((top) => top < headingTop), hasLength(1));
+      expect(rowTops.where((top) => top > headingTop), hasLength(1));
     });
   });
 

@@ -1034,6 +1034,8 @@ class Translations$videoControls$zh extends Translations$videoControls$en {
 	@override String seasonNumber({required Object n}) => '第 ${n} 季';
 	@override String get drawerAudioTracks => '音轨';
 	@override String get drawerPrimarySubtitle => '主字幕';
+	@override String get noAudioTracks => '没有可用音轨';
+	@override String get noAudioTracksDescription => '此媒体没有可选择的音轨';
 	@override String get drawerSecondarySubtitle => '次字幕';
 	@override String get drawerAdjustments => '调整';
 }
@@ -4259,6 +4261,8 @@ extension on TranslationsZh {
 			'videoControls.seasonNumber' => ({required Object n}) => '第 ${n} 季',
 			'videoControls.drawerAudioTracks' => '音轨',
 			'videoControls.drawerPrimarySubtitle' => '主字幕',
+			'videoControls.noAudioTracks' => '没有可用音轨',
+			'videoControls.noAudioTracksDescription' => '此媒体没有可选择的音轨',
 			'videoControls.drawerSecondarySubtitle' => '次字幕',
 			'videoControls.drawerAdjustments' => '调整',
 			'messages.addedToFavorites' => '已收藏',
@@ -4439,10 +4443,10 @@ extension on TranslationsZh {
 			'profiles.continueButton' => '继续',
 			'profiles.pinsDontMatch' => 'PIN 不匹配',
 			'profiles.tokenIdentityMismatch' => 'Plex 用户资料令牌解析到了非预期服务器',
-			'connections.sectionTitle' => '连接',
-			'connections.addConnection' => '添加连接',
 			_ => null,
 		} ?? switch (path) {
+			'connections.sectionTitle' => '连接',
+			'connections.addConnection' => '添加连接',
 			'connections.addConnectionSubtitleNoProfile' => '使用 Plex 登录，或连接 Jellyfin 或 Emby 服务器',
 			'connections.addConnectionSubtitleScoped' => ({required Object displayName}) => '添加到 ${displayName}：Plex、Jellyfin、Emby，或其他用户资料的连接',
 			'connections.sessionExpiredOne' => ({required Object name}) => '${name} 的会话已过期',
@@ -4953,10 +4957,10 @@ extension on TranslationsZh {
 			'liveTv.recordingsCount' => ({required Object count}) => '已安排 ${count} 项录制',
 			'liveTv.editRule' => '编辑规则',
 			'liveTv.editRuleAction' => '编辑',
-			'liveTv.recordingRuleUpdated' => '录制规则已更新',
-			'liveTv.guideReloadRequested' => '已请求更新节目指南',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.recordingRuleUpdated' => '录制规则已更新',
+			'liveTv.guideReloadRequested' => '已请求更新节目指南',
 			'liveTv.guideReloadFailed' => '无法刷新节目指南',
 			'liveTv.rulesProcessRequested' => '已请求重新评估规则',
 			'liveTv.rulesProcessFailed' => '无法重新评估录制规则',
@@ -5467,10 +5471,10 @@ extension on TranslationsZh {
 			'metadataEdit.artwork' => '封面图片',
 			'metadataEdit.advancedSettings' => '高级设置',
 			'metadataEdit.title' => '标题',
-			'metadataEdit.sortTitle' => '排序标题',
-			'metadataEdit.originalTitle' => '原始标题',
 			_ => null,
 		} ?? switch (path) {
+			'metadataEdit.sortTitle' => '排序标题',
+			'metadataEdit.originalTitle' => '原始标题',
 			'metadataEdit.releaseDate' => '上映日期',
 			'metadataEdit.contentRating' => '内容分级',
 			'metadataEdit.studio' => '制片厂',

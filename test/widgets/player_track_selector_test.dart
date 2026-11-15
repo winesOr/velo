@@ -7,19 +7,13 @@ import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/media/media_source_info.dart';
 import 'package:plezy/mpv/mpv.dart';
 import 'package:plezy/services/playback_subtitle_resolver.dart';
-import 'package:plezy/theme/overlay_tokens.dart';
-import 'package:plezy/theme/interaction_tokens.dart';
-import 'package:plezy/widgets/app_menu.dart';
-import 'package:plezy/widgets/app_select_field.dart';
+import 'package:plezy/widgets/video_controls/sheets/player_settings_controls.dart';
 import 'package:plezy/widgets/overlay_sheet.dart';
 import 'package:plezy/widgets/video_controls/models/track_controls_state.dart';
 import 'package:plezy/widgets/video_controls/sheets/base_video_control_sheet.dart';
 import 'package:plezy/widgets/video_controls/sheets/track_sheet.dart';
 
 import '../test_helpers/theme.dart';
-
-Finder _primarySubtitleField() =>
-    find.byWidgetPredicate((widget) => widget is AppSelectField && widget.label == t.videoControls.subtitlesLabel);
 
 Future<void> _pumpDrawer(
   WidgetTester tester,
@@ -72,18 +66,10 @@ void main() {
       ),
       TrackSheetKind.subtitles,
     );
-    await tester.tap(find.byType(AppSelectField<PlaybackSourceSubtitleChoice>));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Stream zero'));
     await tester.pumpAndSettle();
     expect(changes, [const PlaybackSourceSubtitleChoice.source(0)]);
-    await tester.tap(find.byType(AppSelectField<PlaybackSourceSubtitleChoice>));
-    await tester.pumpAndSettle();
-    final off = find.descendant(
-      of: find.byType(AppMenuItemTile<PlaybackSourceSubtitleChoice>),
-      matching: find.text(t.common.off),
-    );
-    await tester.tap(off);
+    await tester.tap(find.text(t.common.off).first);
     await tester.pumpAndSettle();
     expect(changes.last, const PlaybackSourceSubtitleChoice.off());
   });
@@ -110,30 +96,16 @@ void main() {
       ),
       TrackSheetKind.audio,
     );
-    await tester.tap(find.byType(AppSelectField<int>));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Commentary'));
     await tester.pump();
-    await tester.pump(InteractionTokens.menuSelectionDuration + const Duration(milliseconds: 1));
-    // Start the reverse ticker, then advance beyond its duration: Flutter's
-    // interpolation simulation completes only when elapsed > duration, so at
-    // exactly 180ms it can still be reverse with value 0 and retain the route.
-    // pumpAndSettle cannot run while the deliberately pending spinner animates.
-    await tester.pump();
-    await tester.pump(OverlayTokens.motion + const Duration(milliseconds: 1));
+    expect(changes, [42]);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    await tester.tap(find.text('Commentary'));
     await tester.pump();
     expect(changes, [42]);
-    expect(tester.widget<AppSelectField<int>>(find.byType(AppSelectField<int>)).busy, isTrue);
-    expect(find.byType(AppMenuList<int>), findsNothing);
-    await tester.tap(find.byType(AppSelectField<int>));
-    await tester.pump();
-    expect(changes, [42]);
-    expect(find.byType(AppMenuList<int>), findsNothing);
     first.completeError(StateError('test request failure'));
     await tester.pumpAndSettle();
-    expect(tester.widget<AppSelectField<int>>(find.byType(AppSelectField<int>)).busy, isFalse);
-    await tester.tap(find.byType(AppSelectField<int>));
-    await tester.pumpAndSettle();
+    expect(find.byType(LinearProgressIndicator), findsNothing);
     await tester.tap(find.text('Commentary'));
     await tester.pumpAndSettle();
     expect(changes, [42, 42]);
@@ -152,8 +124,6 @@ void main() {
       selection: const TrackSelection(audio: AudioTrack(id: 'native-7')),
     );
     await _pumpDrawer(tester, player, const TrackControlsState(subtitleSearchSupported: false), TrackSheetKind.audio);
-    await tester.tap(find.byType(AppSelectField<String>));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Surround'));
     await tester.pumpAndSettle();
     expect(player.audioChanges, ['native-19']);
@@ -169,8 +139,6 @@ void main() {
       const TrackControlsState(subtitleSearchSupported: false),
       TrackSheetKind.subtitles,
     );
-    await tester.tap(_primarySubtitleField());
-    await tester.pumpAndSettle();
     player.updateTracks(const Tracks(subtitle: [french, english]));
     await tester.pump();
     await tester.tap(find.text('French'));
@@ -189,12 +157,9 @@ void main() {
       const TrackControlsState(subtitleSearchSupported: false),
       TrackSheetKind.subtitles,
     );
-    await tester.tap(_primarySubtitleField());
-    await tester.pumpAndSettle();
     player.updateTracks(const Tracks(subtitle: [english, spanish]));
     await tester.pump();
-    await tester.tap(find.text('French'));
-    await tester.pumpAndSettle();
+    expect(find.text('French'), findsNothing);
     expect(player.subtitleChanges, isEmpty);
   });
 
@@ -213,19 +178,14 @@ void main() {
     final states = ValueNotifier(stateFor([first, second]));
     addTearDown(states.dispose);
     await _pumpDrawer(tester, player, states.value, TrackSheetKind.subtitles, stateUpdates: states);
-    await tester.tap(_primarySubtitleField());
-    await tester.pumpAndSettle();
     states.value = stateFor([second, first]);
     await tester.pump();
     await tester.tap(find.text('Second'));
     await tester.pumpAndSettle();
     expect(changes, [const PlaybackSourceSubtitleChoice.source(42)]);
-    await tester.tap(_primarySubtitleField());
-    await tester.pumpAndSettle();
     states.value = stateFor([first]);
     await tester.pump();
-    await tester.tap(find.text('Second'));
-    await tester.pumpAndSettle();
+    expect(find.text('Second'), findsNothing);
     expect(changes, [const PlaybackSourceSubtitleChoice.source(42)]);
   });
 
@@ -243,15 +203,16 @@ void main() {
       const TrackControlsState(subtitleSearchSupported: false),
       TrackSheetKind.subtitles,
     );
-    final secondaryField = tester.widget<AppSelectField<String>>(find.byType(AppSelectField<String>));
-    expect(secondaryField.options.map((option) => option.value), ['no', 's2']);
-    await tester.tap(_primarySubtitleField());
+    final rows = tester.widgetList<PlayerDrawerChoice>(find.byType(PlayerDrawerChoice)).toList();
+    expect(rows.where((row) => row.label == 'English').length, 1);
+    expect(rows.where((row) => row.label == 'French').length, 2);
+    player.failPrimary = true;
+    await tester.tap(find.text(t.common.off).first);
     await tester.pumpAndSettle();
-    final off = find.descendant(
-      of: find.byWidgetPredicate((widget) => widget is AppMenuItemTile),
-      matching: find.text(t.common.off),
-    );
-    await tester.tap(off);
+    expect(player.subtitleChanges, ['secondary:no', 'primary:no', 'secondary:s2']);
+    player.failPrimary = false;
+    player.subtitleChanges.clear();
+    await tester.tap(find.text(t.common.off).first);
     await tester.pumpAndSettle();
     expect(player.subtitleChanges, ['secondary:no', 'primary:no']);
   });
@@ -264,6 +225,7 @@ class _SelectorPlayer implements Player {
     this.supportsSecondarySubtitles = false,
   }) : state = PlayerState(tracks: tracks, track: selection);
 
+  bool failPrimary = false;
   final List<String> audioChanges = [];
   final List<String> subtitleChanges = [];
   final _trackUpdates = StreamController<Tracks>.broadcast(sync: true);
@@ -300,7 +262,11 @@ class _SelectorPlayer implements Player {
   @override
   Future<void> selectAudioTrack(AudioTrack track) async => audioChanges.add(track.id);
   @override
-  Future<void> selectSubtitleTrack(SubtitleTrack track) async => subtitleChanges.add('primary:${track.id}');
+  Future<void> selectSubtitleTrack(SubtitleTrack track) async {
+    subtitleChanges.add('primary:${track.id}');
+    if (failPrimary) throw StateError('primary failed');
+  }
+
   @override
   Future<void> selectSecondarySubtitleTrack(SubtitleTrack track) async => subtitleChanges.add('secondary:${track.id}');
   @override

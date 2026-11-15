@@ -22,7 +22,7 @@ abstract class SheetSelectionColumnScope {
   /// Runs an async selection: re-entrant taps are ignored while one is in
   /// flight, a progress bar is shown meanwhile, and the sheet is closed once
   /// [action] completes.
-  void runExclusive(Future<void> Function() action);
+  void runExclusive(Future<void> Function() action, {bool closeOnSuccess = true});
 }
 
 /// Shared scaffold for the selectable columns inside the video control sheets:
@@ -70,14 +70,17 @@ class _SheetSelectionColumnState extends State<SheetSelectionColumn> implements 
   Key? keyFor(int index) => index == 0 ? _initialScroll.firstItemKey : null;
 
   @override
-  void runExclusive(Future<void> Function() action) => unawaited(_select(action));
+  void runExclusive(Future<void> Function() action, {bool closeOnSuccess = true}) =>
+      unawaited(_select(action, closeOnSuccess: closeOnSuccess));
 
-  Future<void> _select(Future<void> Function() action) async {
+  Future<void> _select(Future<void> Function() action, {required bool closeOnSuccess}) async {
     if (_selectionPending) return;
     setState(() => _selectionPending = true);
     try {
       await action();
-      if (mounted && !BaseVideoControlSheet.embeddedIn(context)) OverlaySheetController.of(context).close();
+      if (mounted && closeOnSuccess && !BaseVideoControlSheet.embeddedIn(context)) {
+        OverlaySheetController.of(context).close();
+      }
     } catch (error, stackTrace) {
       appLogger.w('Failed to change the playback track', error: error, stackTrace: stackTrace);
       if (mounted) showErrorSnackBar(context, t.messages.errorLoading(error: localizedErrorReason(error)));
@@ -99,9 +102,9 @@ class _SheetSelectionColumnState extends State<SheetSelectionColumn> implements 
             if (widget.embeddedBuilder != null)
               widget.embeddedBuilder!(context, this)
             else
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   for (var index = 0; index < widget.itemCount; index++) widget.itemBuilder(context, index, this),
                 ],

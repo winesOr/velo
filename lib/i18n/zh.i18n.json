@@ -886,6 +886,8 @@
     "seasonNumber": "第 ${n} 季",
     "drawerAudioTracks": "音轨",
     "drawerPrimarySubtitle": "主字幕",
+    "noAudioTracks": "没有可用音轨",
+    "noAudioTracksDescription": "此媒体没有可选择的音轨",
     "drawerSecondarySubtitle": "次字幕",
     "drawerAdjustments": "调整"
   },

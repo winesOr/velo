@@ -8,7 +8,6 @@ import '../../../services/track_selection_service.dart';
 import '../../../i18n/strings.g.dart';
 import '../../../utils/track_label_builder.dart';
 import '../../../widgets/app_icon.dart';
-import '../../../widgets/app_select_field.dart';
 import '../../../widgets/focusable_list_tile.dart';
 import '../../../widgets/overlay_sheet.dart';
 import 'base_video_control_sheet.dart';
@@ -104,6 +103,8 @@ class TrackSheet extends StatelessWidget {
                   trackControlsState: state,
                   selection: sel,
                   showHeader: showHeader,
+                  player: player,
+                  nativeTracks: subtitleTracks,
                 );
               }
               return _SubtitleColumn(
@@ -139,9 +140,33 @@ class TrackSheet extends StatelessWidget {
 
 enum TrackSheetKind { audio, subtitles }
 
-// A source stream and a native track may share the same printed ID. Keep their
-// namespaces separate, and never identify an open menu option by list position.
-typedef _SubtitleMenuValue = ({String? nativeTrackId, int? sourceStreamId});
+// Clear a conflicting secondary only as part of a primary selection. If the
+// primary request fails, restore the actual prior track before reporting failure.
+Future<void> _selectPrimary({
+  required Player player,
+  required SubtitleTrack? secondary,
+  required bool clearSecondary,
+  required Future<void> Function() select,
+  required Function(SubtitleTrack)? onSecondaryChanged,
+}) async {
+  final previous = secondary ?? SubtitleTrack.off;
+  final cleared = clearSecondary && previous.id != SubtitleTrack.off.id;
+  if (cleared) await player.selectSecondarySubtitleTrack(SubtitleTrack.off);
+  try {
+    await select();
+  } catch (_) {
+    if (cleared) {
+      try {
+        await player.selectSecondarySubtitleTrack(previous);
+      } catch (_) {
+        onSecondaryChanged?.call(SubtitleTrack.off);
+        rethrow;
+      }
+    }
+    rethrow;
+  }
+  if (cleared) onSecondaryChanged?.call(SubtitleTrack.off);
+}
 
 class _SourceAudioColumn extends StatelessWidget {
   final List<MediaAudioTrack> tracks;
@@ -173,21 +198,22 @@ class _SourceAudioColumn extends StatelessWidget {
     final selectedId = _effectiveSelectedStreamId();
     final selectedIndex = selectedId == null ? null : tracks.indexWhere((t) => t.id == selectedId);
 
+    if (tracks.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(t.videoControls.noAudioTracks),
+            Text(t.videoControls.noAudioTracksDescription, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+      );
+    }
     return SheetSelectionColumn(
       headerLabel: showHeader ? t.videoControls.audioLabel : null,
       itemCount: tracks.length,
       initialIndex: selectedIndex,
-      embeddedBuilder: (context, scope) => AppSelectField<int>(
-        label: t.videoControls.audioLabel,
-        value: selectedId,
-        compact: true,
-        busy: scope.isSelecting,
-        options: [
-          for (final track in tracks)
-            AppSelectOption(value: track.id, label: track.label.primary, subtitle: track.label.secondary),
-        ],
-        onChanged: (id) => scope.runExclusive(() => onSelected(id)),
-      ),
       itemBuilder: (context, index, scope) {
         final track = tracks[index];
         return TrackSelectionHelper.buildTrackTile(
@@ -231,12 +257,16 @@ class _SourceSubtitleColumn extends StatelessWidget {
   /// against what mpv is actually playing rather than only what was requested.
   final TrackSelection selection;
   final bool showHeader;
+  final Player player;
+  final List<SubtitleTrack> nativeTracks;
 
   const _SourceSubtitleColumn({
     required this.tracks,
     required this.trackControlsState,
     required this.selection,
     required this.showHeader,
+    required this.player,
+    required this.nativeTracks,
   });
 
   @override
@@ -245,36 +275,53 @@ class _SourceSubtitleColumn extends StatelessWidget {
     final selectedId = selectedChoice.sourceStreamId;
     final selectedIndex = selectedChoice.isOff ? 0 : tracks.indexWhere((t) => t.id == selectedId) + 1;
 
+    final primaryCount = tracks.length + 1;
+    final secondaryTracks = nativeTracks.where((track) => track.id != selection.subtitle?.id).toList();
+    final supportsSecondary = player.supportsSecondarySubtitles;
+    Future<void> selectSource(PlaybackSourceSubtitleChoice choice) => _selectPrimary(
+      player: player,
+      secondary: selection.secondarySubtitle,
+      clearSecondary:
+          supportsSecondary &&
+          (choice.isOff || choice.sourceStreamId == trackControlsState.selectedSecondarySubtitleStreamId),
+      select: () => trackControlsState.onSwitchSubtitle!(choice),
+      onSecondaryChanged: trackControlsState.onSecondarySubtitleTrackChanged,
+    );
+
     return SheetSelectionColumn(
       headerLabel: showHeader ? t.videoControls.subtitlesLabel : null,
-      itemCount: tracks.length + 1,
+      itemCount: primaryCount + (supportsSecondary ? secondaryTracks.length + 2 : 0),
       initialIndex: selectedIndex,
       footer: _buildSubtitleSearchFooter(context, trackControlsState),
-      embeddedBuilder: (context, scope) => AppSelectField<PlaybackSourceSubtitleChoice>(
-        label: t.videoControls.subtitlesLabel,
-        value: selectedChoice,
-        compact: true,
-        busy: scope.isSelecting,
-        options: [
-          AppSelectOption(value: const PlaybackSourceSubtitleChoice.off(), label: t.common.off),
-          for (var index = 0; index < tracks.length; index++)
-            AppSelectOption(
-              value: PlaybackSourceSubtitleChoice.source(tracks[index].id),
-              label: tracks[index].labelForIndex(index).primary,
-              subtitle: tracks[index].labelForIndex(index).secondary,
-            ),
-        ],
-        onChanged: (choice) => scope.runExclusive(() => trackControlsState.onSwitchSubtitle!(choice)),
-      ),
       itemBuilder: (context, index, scope) {
+        if (index >= primaryCount) {
+          final secondaryIndex = index - primaryCount;
+          if (secondaryIndex == 0) return PlayerDrawerHeading(t.videoControls.drawerSecondarySubtitle);
+          final track = secondaryIndex == 1 ? SubtitleTrack.off : secondaryTracks[secondaryIndex - 2];
+          return TrackSelectionHelper.buildTrackTile(
+            context: context,
+            label: track.id == SubtitleTrack.off.id
+                ? TrackLabel(t.common.off)
+                : TrackLabelBuilder.subtitleLabel(
+                    title: track.title,
+                    language: track.language,
+                    codec: track.codec,
+                    forced: track.isForced,
+                    index: secondaryIndex - 2,
+                  ),
+            isSelected: (selection.secondarySubtitle?.id ?? SubtitleTrack.off.id) == track.id,
+            onTap: () => scope.runExclusive(() async {
+              await player.selectSecondarySubtitleTrack(track);
+              trackControlsState.onSecondarySubtitleTrackChanged?.call(track);
+            }),
+          );
+        }
         if (index == 0) {
           return TrackSelectionHelper.buildOffTile(
             context: context,
             key: scope.keyFor(index),
             isSelected: selectedChoice.isOff,
-            onTap: () => scope.runExclusive(
-              () => trackControlsState.onSwitchSubtitle!(const PlaybackSourceSubtitleChoice.off()),
-            ),
+            onTap: () => scope.runExclusive(() => selectSource(const PlaybackSourceSubtitleChoice.off())),
           );
         }
 
@@ -283,9 +330,7 @@ class _SourceSubtitleColumn extends StatelessWidget {
           context: context,
           label: track.labelForIndex(index - 1),
           isSelected: track.id == selectedId,
-          onTap: () => scope.runExclusive(
-            () => trackControlsState.onSwitchSubtitle!(PlaybackSourceSubtitleChoice.source(track.id)),
-          ),
+          onTap: () => scope.runExclusive(() => selectSource(PlaybackSourceSubtitleChoice.source(track.id))),
         );
       },
     );
@@ -338,29 +383,27 @@ class _AudioColumn extends StatelessWidget {
           codec: tracks[index].codec,
           codecProfile: tracks[index].codecProfile,
           channels: tracks[index].channelsCount,
+          sampleRate: tracks[index].sampleRate,
           index: index,
         ),
     ];
 
+    if (tracks.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(t.videoControls.noAudioTracks),
+            Text(t.videoControls.noAudioTracksDescription, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+      );
+    }
     return SheetSelectionColumn(
       headerLabel: showHeader ? t.videoControls.audioLabel : null,
       itemCount: tracks.length,
       initialIndex: selectedIndex,
-      embeddedBuilder: (context, scope) => AppSelectField<String>(
-        label: t.videoControls.audioLabel,
-        value: selectedId,
-        compact: true,
-        busy: scope.isSelecting,
-        options: [
-          for (var index = 0; index < tracks.length; index++)
-            AppSelectOption(value: tracks[index].id, label: labels[index].primary, subtitle: labels[index].secondary),
-        ],
-        onChanged: (id) => scope.runExclusive(() async {
-          final track = tracks.firstWhere((track) => track.id == id);
-          await player.selectAudioTrack(track);
-          onTrackChanged?.call(track);
-        }),
-      ),
       itemBuilder: (context, index, scope) {
         final track = tracks[index];
         final label = labels[index];
@@ -369,11 +412,10 @@ class _AudioColumn extends StatelessWidget {
           key: scope.keyFor(index),
           label: label,
           isSelected: track.id == selectedId,
-          onTap: () {
-            player.selectAudioTrack(track);
+          onTap: () => scope.runExclusive(() async {
+            await player.selectAudioTrack(track);
             onTrackChanged?.call(track);
-            if (!BaseVideoControlSheet.embeddedIn(context)) OverlaySheetController.of(context).close();
-          },
+          }),
         );
       },
     );
@@ -427,125 +469,66 @@ class _SubtitleColumn extends StatelessWidget {
 
     // +1 for "Off". Source sidecars represented by native external tracks,
     // plus active source IDs awaiting native discovery, are not appended.
-    final itemCount = tracks.length + unloadedSourceSidecars.length + 1;
+    final primaryCount = tracks.length + unloadedSourceSidecars.length + 1;
+    final secondaryTracks = tracks.where((track) => track.id != selectedSub?.id).toList();
+    final itemCount = primaryCount + (supportsSecondary ? secondaryTracks.length + 2 : 0);
 
     final nativeIndex = isOffSelected ? -1 : tracks.indexWhere((track) => track.id == selectedSub.id);
     final selectedIndex = nativeIndex < 0 ? null : nativeIndex + 1;
-    final labels = [
-      for (var index = 0; index < tracks.length; index++)
-        TrackLabelBuilder.subtitleLabel(
-          title: tracks[index].title,
-          language: tracks[index].language,
-          codec: tracks[index].codec,
-          forced: tracks[index].isForced,
-          index: index,
-        ),
-    ];
-
     final primary = SheetSelectionColumn(
       headerLabel: showHeader ? t.videoControls.subtitlesLabel : null,
       itemCount: itemCount,
       initialIndex: selectedIndex,
       footer: _buildSubtitleSearchFooter(context, trackControlsState),
-      embeddedBuilder: (context, scope) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppSelectField<_SubtitleMenuValue>(
-            label: t.videoControls.subtitlesLabel,
-            value: (nativeTrackId: isOffSelected ? SubtitleTrack.off.id : selectedSub.id, sourceStreamId: null),
-            compact: true,
-            busy: scope.isSelecting,
-            options: [
-              AppSelectOption(value: (nativeTrackId: SubtitleTrack.off.id, sourceStreamId: null), label: t.common.off),
-              for (var index = 0; index < tracks.length; index++)
-                AppSelectOption(
-                  value: (nativeTrackId: tracks[index].id, sourceStreamId: null),
-                  label: labels[index].primary,
-                  subtitle: labels[index].secondary,
-                ),
-              for (var index = 0; index < unloadedSourceSidecars.length; index++)
-                AppSelectOption(
-                  value: (nativeTrackId: null, sourceStreamId: unloadedSourceSidecars[index].id),
-                  label: unloadedSourceSidecars[index].labelForIndex(tracks.length + index).primary,
-                  subtitle: unloadedSourceSidecars[index].labelForIndex(tracks.length + index).secondary,
-                ),
-            ],
-            onChanged: (choice) => scope.runExclusive(() async {
-              final sourceId = choice.sourceStreamId;
-              if (sourceId != null) {
-                if (!unloadedSourceSidecars.any((track) => track.id == sourceId)) return;
-                await trackControlsState.onSwitchSubtitle!(PlaybackSourceSubtitleChoice.source(sourceId));
-                return;
-              }
-              final isOff = choice.nativeTrackId == SubtitleTrack.off.id;
-              final track = isOff
-                  ? SubtitleTrack.off
-                  : tracks.where((track) => track.id == choice.nativeTrackId).firstOrNull;
-              if (track == null) return;
-              if ((isOff && hasSecondary) || track.id == secondarySub?.id) {
-                await player.selectSecondarySubtitleTrack(SubtitleTrack.off);
-                trackControlsState.onSecondarySubtitleTrackChanged?.call(SubtitleTrack.off);
-              }
-              await player.selectSubtitleTrack(track);
-              trackControlsState.onSubtitleTrackChanged?.call(track);
-            }),
-          ),
-          if (supportsSecondary) ...[
-            PlayerDrawerHeading(t.videoControls.drawerSecondarySubtitle),
-            AppSelectField<String>(
-              label: t.videoControls.drawerSecondarySubtitle,
-              value: secondarySub?.id ?? SubtitleTrack.off.id,
-              compact: true,
-              busy: scope.isSelecting,
-              options: [
-                AppSelectOption(value: SubtitleTrack.off.id, label: t.common.off),
-                for (var index = 0; index < tracks.length; index++)
-                  if (tracks[index].id != selectedSub?.id)
-                    AppSelectOption(
-                      value: tracks[index].id,
-                      label: labels[index].primary,
-                      subtitle: labels[index].secondary,
-                    ),
-              ],
-              onChanged: (id) => scope.runExclusive(() async {
-                final track = id == SubtitleTrack.off.id
-                    ? SubtitleTrack.off
-                    : tracks.firstWhere((track) => track.id == id);
-                await player.selectSecondarySubtitleTrack(track);
-                trackControlsState.onSecondarySubtitleTrackChanged?.call(track);
-              }),
-            ),
-          ],
-        ],
-      ),
       itemBuilder: (context, index, scope) {
+        if (index >= primaryCount) {
+          final secondaryIndex = index - primaryCount;
+          if (secondaryIndex == 0) return PlayerDrawerHeading(t.videoControls.drawerSecondarySubtitle);
+          final track = secondaryIndex == 1 ? SubtitleTrack.off : secondaryTracks[secondaryIndex - 2];
+          return TrackSelectionHelper.buildTrackTile(
+            context: context,
+            label: track.id == SubtitleTrack.off.id
+                ? TrackLabel(t.common.off)
+                : TrackLabelBuilder.subtitleLabel(
+                    title: track.title,
+                    language: track.language,
+                    codec: track.codec,
+                    forced: track.isForced,
+                    index: secondaryIndex - 2,
+                  ),
+            isSelected: (secondarySub?.id ?? SubtitleTrack.off.id) == track.id,
+            onTap: () => scope.runExclusive(() async {
+              await player.selectSecondarySubtitleTrack(track);
+              trackControlsState.onSecondarySubtitleTrackChanged?.call(track);
+            }),
+          );
+        }
         if (index == 0) {
           return TrackSelectionHelper.buildOffTile(
             context: context,
             key: scope.keyFor(index),
             isSelected: isOffSelected,
-            onTap: () {
-              // Turning off primary also clears secondary
-              if (hasSecondary) {
-                player.selectSecondarySubtitleTrack(SubtitleTrack.off);
-                trackControlsState.onSecondarySubtitleTrackChanged?.call(SubtitleTrack.off);
-              }
-              player.selectSubtitleTrack(SubtitleTrack.off);
+            onTap: () => scope.runExclusive(() async {
+              await _selectPrimary(
+                player: player,
+                secondary: secondarySub,
+                clearSecondary: hasSecondary,
+                select: () => player.selectSubtitleTrack(SubtitleTrack.off),
+                onSecondaryChanged: trackControlsState.onSecondarySubtitleTrackChanged,
+              );
               trackControlsState.onSubtitleTrackChanged?.call(SubtitleTrack.off);
-              if (!BaseVideoControlSheet.embeddedIn(context)) OverlaySheetController.of(context).close();
-            },
+            }),
             onLongPress: supportsSecondary && hasSecondary
-                ? () {
-                    player.selectSecondarySubtitleTrack(SubtitleTrack.off);
+                ? () => scope.runExclusive(() async {
+                    await player.selectSecondarySubtitleTrack(SubtitleTrack.off);
                     trackControlsState.onSecondarySubtitleTrackChanged?.call(SubtitleTrack.off);
-                  }
+                  }, closeOnSuccess: false)
                 : null,
             onSecondaryTap: supportsSecondary && hasSecondary
-                ? () {
-                    player.selectSecondarySubtitleTrack(SubtitleTrack.off);
+                ? () => scope.runExclusive(() async {
+                    await player.selectSecondarySubtitleTrack(SubtitleTrack.off);
                     trackControlsState.onSecondarySubtitleTrackChanged?.call(SubtitleTrack.off);
-                  }
+                  }, closeOnSuccess: false)
                 : null,
           );
         }
@@ -589,39 +572,29 @@ class _SubtitleColumn extends StatelessWidget {
           label: label,
           isSelected: isPrimary,
           badge: badge,
-          onTap: () {
-            // If tapping a track that is currently the secondary, clear secondary first
-            if (isSecondary) {
-              player.selectSecondarySubtitleTrack(SubtitleTrack.off);
-              trackControlsState.onSecondarySubtitleTrackChanged?.call(SubtitleTrack.off);
-            }
-            player.selectSubtitleTrack(track);
+          onTap: () => scope.runExclusive(() async {
+            await _selectPrimary(
+              player: player,
+              secondary: secondarySub,
+              clearSecondary: isSecondary,
+              select: () => player.selectSubtitleTrack(track),
+              onSecondaryChanged: trackControlsState.onSecondarySubtitleTrackChanged,
+            );
             trackControlsState.onSubtitleTrackChanged?.call(track);
-            if (!BaseVideoControlSheet.embeddedIn(context)) OverlaySheetController.of(context).close();
-          },
-          onLongPress: supportsSecondary
-              ? () {
-                  if (isSecondary) {
-                    // Already secondary — clear it
-                    player.selectSecondarySubtitleTrack(SubtitleTrack.off);
-                    trackControlsState.onSecondarySubtitleTrackChanged?.call(SubtitleTrack.off);
-                  } else if (!isPrimary) {
-                    // Set as secondary (don't close sheet so user sees badge update)
-                    player.selectSecondarySubtitleTrack(track);
-                    trackControlsState.onSecondarySubtitleTrackChanged?.call(track);
-                  }
-                }
+          }),
+          onLongPress: supportsSecondary && !isPrimary
+              ? () => scope.runExclusive(() async {
+                  final target = isSecondary ? SubtitleTrack.off : track;
+                  await player.selectSecondarySubtitleTrack(target);
+                  trackControlsState.onSecondarySubtitleTrackChanged?.call(target);
+                }, closeOnSuccess: false)
               : null,
-          onSecondaryTap: supportsSecondary
-              ? () {
-                  if (isSecondary) {
-                    player.selectSecondarySubtitleTrack(SubtitleTrack.off);
-                    trackControlsState.onSecondarySubtitleTrackChanged?.call(SubtitleTrack.off);
-                  } else if (!isPrimary) {
-                    player.selectSecondarySubtitleTrack(track);
-                    trackControlsState.onSecondarySubtitleTrackChanged?.call(track);
-                  }
-                }
+          onSecondaryTap: supportsSecondary && !isPrimary
+              ? () => scope.runExclusive(() async {
+                  final target = isSecondary ? SubtitleTrack.off : track;
+                  await player.selectSecondarySubtitleTrack(target);
+                  trackControlsState.onSecondarySubtitleTrackChanged?.call(target);
+                }, closeOnSuccess: false)
               : null,
         );
       },

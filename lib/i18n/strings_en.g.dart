@@ -2616,6 +2616,12 @@ class Translations$videoControls$en {
 	/// en: 'Primary subtitle'
 	String get drawerPrimarySubtitle => 'Primary subtitle';
 
+	/// en: 'No audio tracks available'
+	String get noAudioTracks => 'No audio tracks available';
+
+	/// en: 'This media has no audio tracks to select.'
+	String get noAudioTracksDescription => 'This media has no audio tracks to select.';
+
 	/// en: 'Secondary subtitle'
 	String get drawerSecondarySubtitle => 'Secondary subtitle';
 
@@ -9081,6 +9087,8 @@ extension on Translations {
 			'videoControls.seasonNumber' => ({required Object n}) => 'Season ${n}',
 			'videoControls.drawerAudioTracks' => 'Audio tracks',
 			'videoControls.drawerPrimarySubtitle' => 'Primary subtitle',
+			'videoControls.noAudioTracks' => 'No audio tracks available',
+			'videoControls.noAudioTracksDescription' => 'This media has no audio tracks to select.',
 			'videoControls.drawerSecondarySubtitle' => 'Secondary subtitle',
 			'videoControls.drawerAdjustments' => 'Adjustments',
 			'messages.addedToFavorites' => 'Added to favorites',
@@ -9261,10 +9269,10 @@ extension on Translations {
 			'profiles.continueButton' => 'Continue',
 			'profiles.pinsDontMatch' => 'PINs don\'t match',
 			'profiles.tokenIdentityMismatch' => 'The Plex profile token resolved to an unexpected server',
-			'connections.sectionTitle' => 'Connections',
-			'connections.addConnection' => 'Add connection',
 			_ => null,
 		} ?? switch (path) {
+			'connections.sectionTitle' => 'Connections',
+			'connections.addConnection' => 'Add connection',
 			'connections.addConnectionSubtitleNoProfile' => 'Sign in with Plex or connect a Jellyfin or Emby server',
 			'connections.addConnectionSubtitleScoped' => ({required Object displayName}) => 'Add to ${displayName}: Plex, Jellyfin, Emby, or another profile connection',
 			'connections.sessionExpiredOne' => ({required Object name}) => 'Session expired for ${name}',
@@ -9775,10 +9783,10 @@ extension on Translations {
 			'liveTv.recordingsCount' => ({required Object count}) => '${count} scheduled',
 			'liveTv.editRule' => 'Edit rule',
 			'liveTv.editRuleAction' => 'Edit',
-			'liveTv.recordingRuleUpdated' => 'Recording rule updated',
-			'liveTv.guideReloadRequested' => 'Guide refresh requested',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.recordingRuleUpdated' => 'Recording rule updated',
+			'liveTv.guideReloadRequested' => 'Guide refresh requested',
 			'liveTv.guideReloadFailed' => 'Couldn\'t refresh the guide',
 			'liveTv.rulesProcessRequested' => 'Rule re-evaluation requested',
 			'liveTv.rulesProcessFailed' => 'Couldn\'t re-evaluate recording rules',
@@ -10289,10 +10297,10 @@ extension on Translations {
 			'metadataEdit.artwork' => 'Artwork',
 			'metadataEdit.advancedSettings' => 'Advanced Settings',
 			'metadataEdit.title' => 'Title',
-			'metadataEdit.sortTitle' => 'Sort Title',
-			'metadataEdit.originalTitle' => 'Original Title',
 			_ => null,
 		} ?? switch (path) {
+			'metadataEdit.sortTitle' => 'Sort Title',
+			'metadataEdit.originalTitle' => 'Original Title',
 			'metadataEdit.releaseDate' => 'Release Date',
 			'metadataEdit.contentRating' => 'Content Rating',
 			'metadataEdit.studio' => 'Studio',
