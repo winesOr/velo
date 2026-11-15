@@ -1,0 +1,79 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script src="appearance.js?v=20261024velo"></script><title>Velo · 提示条</title><link rel="stylesheet" href="proto.css?v=20261024velo"><link rel="stylesheet" href="ui.css?v=20261024velo"><link rel="stylesheet" href="appearance.css?v=final1"><link rel="stylesheet" href="final-ui.css?v=final2"><link rel="stylesheet" href="toast.css?v=toast1"></head><body class="vt-page">
+<nav class="nav" aria-label="原型页面"></nav>
+<header class="page-intro"><h2>提示条 · 三个方案待选</h2><p>全局统一替换实机底部 SnackBar 的候选方案。三个方案共用同一套行为（单槽位、替换 / 合并不堆叠、按类型停留、可点击或上滑关闭、不抢焦点），只在视觉、位置与形变方式上不同。每个方案的按钮会同时在手机竖屏、横屏播放器、TV 三个画面里触发；用上方“浅色 / 深色”切换外观。选定前，其他原型页面的提示条保持原样，final-ui-spec 不改。</p></header>
+
+<section class="vt-panel" aria-labelledby="why-title"><h3 id="why-title">设计说明 · 现在的提示条为什么难看</h3>
+<div class="vt-why">
+<figure><div class="vt-shot" role="img" aria-label="现有原型顶部提示截图"></div><figcaption>原型 previews/final-v1/shared-toast.png</figcaption></figure>
+<figure><div class="vt-mock" role="img" aria-label="实机底部 SnackBar 示意"><div class="m-rows"><span></span><span></span><span></span><span></span></div><div class="m-snack"><i></i>已加入下载队列，可在下载页查看进度与管理已下载内容</div><div class="m-nav"></div></div><figcaption>实机 lib/utils/snackbar_helper.dart（示意）</figcaption></figure>
+<ol>
+<li><b>位置打架。</b>实机是 <code>SnackBarBehavior.floating</code> + <code>insetPadding 16</code>，落在底部，正好叠在 58px 悬浮胶囊导航上方，两个浮层上下挤在一起；播放器里则压在进度条和底栏上。原型顶部版 <code>top:52px</code> 又正好盖住“设置”大标题和返回行。</li>
+<li><b>体量过重。</b>手机上不限宽（左右各 16），内边距 16×14、图标 22、圆角 18，一句“已收藏”也是一整条通栏卡片，比它反馈的操作更抢眼；最大高度 30% 屏还能内部滚动。</li>
+<li><b>颜色与品牌脱节。</b>成功用 Material 绿 <code>#88D8B0 / #216B4B</code>，错误用 <code>colorScheme.error</code>，提示用 primary；三种颜色只出现在图标上，和 Velo 的中性底 + 紫色焦点没有关系。原型版则完全没有状态图标，成功 / 错误长得一样。</li>
+<li><b>深色下像一块实心按钮。</b><code>#202020f2</code> + 1px 描边，在 #121212 页面上几乎没有层次差，又不够透，看起来像可点的按钮而不是浮层。</li>
+<li><b>连续触发会排队。</b><code>ScaffoldMessenger.showSnackBar</code> 默认排队，连点 3 次要等 3 × 3s 才消失（只有 <code>showMainSnackBar</code> 会先 remove）；原型则每次 remove 再重建，反复闪入场动画。没有“×3”合并。</li>
+<li><b>没有操作和加载态。</b>helper 不支持 action（全仓 <code>SnackBarAction</code> 0 处），撤销 / 重试只能另做；也没有 loading → 完成的衔接，收藏按钮的加载态和提示是两套东西。</li>
+<li><b>交互不一致。</b>只有桌面能点击关闭，手机不能上滑关闭；悬停不暂停；原型版 <code>pointer-events:none</code> 完全不能交互；错误与普通提示在读屏上同一等级。</li>
+</ol></div></section>
+
+<section class="vt-panel" aria-labelledby="param-title"><h3 id="param-title">可调参数</h3>
+<div class="vt-params">
+<label>成功 <input type="number" step="100" min="0" data-param="success"> ms</label>
+<label>提示 <input type="number" step="100" min="0" data-param="info"> ms</label>
+<label>错误 <input type="number" step="100" min="0" data-param="error"> ms</label>
+<label>带操作（撤销 / 重试）<input type="number" step="100" min="0" data-param="action"> ms</label>
+<label>TV 额外 <input type="number" step="100" min="0" data-param="tvExtra"> ms</label>
+<label>加载提示延迟 <input type="number" step="50" min="0" data-param="loadingDelay"> ms</label>
+<label><input type="checkbox" data-reduce> 模拟“减少动态”（仅淡入淡出）</label>
+<label><input type="checkbox" data-hud checked> 播放器顶栏 HUD 可见</label>
+<small>修改后对下一次触发生效。悬停、按住或键盘焦点在提示条内时计时暂停。</small>
+</div></section>
+
+<section class="vt-scheme" data-scheme="a" id="option-a"><header><h3>方案 A · 顶部居中磨砂胶囊</h3><span class="vt-tag">QUIET</span></header>
+<p>与底部悬浮导航同一套语言：44px 高、全圆角、26px 磨砂 + 0.5px 描边，只用 18px 状态图标着色，文字始终中性色。短句时只有内容宽度，两行时自然变成圆角矩形。连续相同提示原地 ×N，不同提示原地换内容；手机上落在顶栏下方，不遮账号 / 搜索等顶栏操作；TV 上放到右上标题安全区、导航下方。</p>
+<div class="vt-demo" role="group" aria-label="方案 A 演示"></div><div class="vt-stage"></div></section>
+
+<section class="vt-scheme" data-scheme="b" id="option-b"><header><h3>方案 B · 贴安全区紧凑卡片 + 左侧状态色条</h3><span class="vt-tag">CLEAR</span></header>
+<p>状态栏下方 4px、左右 10px 的通栏卡片，14px 圆角，左侧 4px 状态色条一眼区分成功 / 提示 / 错误；带操作和错误时底部有一条剩余时间细线。从顶部滑入、向上收回。信息最清楚，操作按钮最好点，但覆盖面积最大，显示期间会盖住页面顶栏操作（与 SHARED-03“不遮关键顶栏操作”有冲突，需页面配合）。</p>
+<div class="vt-demo" role="group" aria-label="方案 B 演示"></div><div class="vt-stage"></div></section>
+
+<section class="vt-scheme" data-scheme="c" id="option-c"><header><h3>方案 C · 灵动岛式从顶部展开</h3><span class="vt-tag">PLAYFUL</span></header>
+<p>近黑胶囊从状态栏中央的“岛”位置长出：加载时是紧凑小岛（转圈 + 短字），完成后原地展开成结果；连续触发时轻弹并计数。形变本身就是反馈，最有记忆点；但浅色模式下是一块黑色，TV 顶部需要让导航暂时淡出，Android 实机也没有对应的硬件岛。</p>
+<div class="vt-demo" role="group" aria-label="方案 C 演示"></div><div class="vt-stage"></div></section>
+
+<section class="vt-panel" aria-labelledby="spec-title"><h3 id="spec-title">共用行为规范（三个方案一致）</h3>
+<div class="vt-spec">
+<div><h4>类型与停留</h4><ul>
+<li><b>成功</b> 2.5s · 对勾 · <code>role=status</code></li>
+<li><b>提示</b> 2.5s · 信息图标 · <code>role=status</code></li>
+<li><b>错误</b> 4s · 感叹号 · <code>role=alert</code>；可带“重试”</li>
+<li><b>带操作</b>（撤销 / 重试）5s，不论类型</li>
+<li><b>加载中</b> 不自动消失；先显示按钮内联忙碌态，超过 300ms 才出提示条，完成后原地变为成功 / 错误（不重新入场）</li>
+<li>TV 上述时长 +1s；悬停 / 按住 / 焦点在内时暂停计时</li>
+<li>文本最多两行，超出省略；完整内容保留在无障碍文本和 title 中</li>
+</ul></div>
+<div><h4>连续触发与动画</h4><ul>
+<li>全局单槽位，永不堆叠。相同文案 + 同类型：原地计数 ×N 并重置计时；不同文案：原地淡出旧内容、淡入新内容（120ms）</li>
+<li>入场 220ms（C 形变 240ms），出场 180ms，均 ≤240ms，缓动 <code>cubic-bezier(.2,.8,.2,1)</code></li>
+<li>减少动态：所有位移 / 缩放 / 形变改为 150ms 淡入、120ms 淡出</li>
+<li>关闭：点击提示条、向上滑 18px 以上、焦点在内时按 Esc；点操作按钮执行后由新结果替换</li>
+</ul></div>
+<div><h4>无障碍与位置</h4><ul>
+<li>页面常驻两个 live 区域（status / alert），提示条插入其中被朗读；触发时<b>不移动焦点</b>，操作按钮可用 Tab 到达</li>
+<li><b>手机竖屏</b>：A 放在页面顶栏下方 8（首页 = 94；无顶栏的页面为状态栏下 8 = 50），不遮顶栏操作；B 贴状态栏下 4（46）、左右 10，会暂时盖住顶栏；C 顶部 4，在状态栏中央展开</li>
+<li><b>横屏播放器</b>：顶栏 HUD 可见时放在 HUD 下方（≈ 60），HUD 隐藏后上移到 8–14；左右避开 44 安全区；始终使用深色材质</li>
+<li><b>TV</b>：1920×1080 坐标，标题安全区 5%（右 96）；正文 28px、图标 34–36px；A / B 放右上、顶部导航下方（上 150），不与导航重叠；C 居中并让导航暂时淡出。不获取焦点，操作改为遥控器菜单键提示</li>
+</ul></div>
+</div></section>
+
+<section class="vt-panel" aria-labelledby="cmp-title"><h3 id="cmp-title">方案对比</h3>
+<table class="vt-table"><thead><tr><th scope="col"></th><th scope="col">视觉</th><th scope="col">信息密度</th><th scope="col">播放器内表现</th><th scope="col">TV 表现</th><th scope="col">实现复杂度（Flutter）</th></tr></thead><tbody>
+<tr class="rec"><th scope="row">A · 磨砂胶囊<span class="rec-badge">推荐</span></th><td>最安静；与底部导航胶囊同一语言，海报透出最多</td><td>中：一行短句 + 图标；两行时变圆角矩形，操作是行内文字按钮</td><td>好：体积小，HUD 下方居中，几乎不挡画面</td><td>好：右上安全区，28px 可读，避开导航</td><td>低：单个 OverlayEntry + AnimatedSwitcher / AnimatedSize，BackdropFilter</td></tr>
+<tr><th scope="row">B · 紧凑卡片</th><td>清晰但更“工具化”；色条略抢眼</td><td>高：长文本、操作按钮、剩余时间线最从容</td><td>中：通栏会盖住更多画面，需限宽 440</td><td>最好：右上卡片，状态色条远距离也易辨认</td><td>低：同 A，多一个计时进度</td></tr>
+<tr><th scope="row">C · 灵动岛</th><td>最有记忆点；浅色模式下黑块突兀</td><td>中：加载紧凑态很好，长文本时岛变得很大</td><td>差：HUD 可见时只能离开“岛”位置，比喻失效</td><td>差：与顶部导航抢位置，需让导航淡出</td><td>高：尺寸测量 + 宽高 / 圆角联动形变，各平台安全区与刘海差异多</td></tr>
+</tbody></table>
+<p class="vt-recommend"><b>推荐 A。</b>它最符合 Velo“安静、海报优先、磨砂浮层”：与底部悬浮导航同材质同圆角，成为一套上下呼应的浮层；体积只取决于文字，海报和播放画面被遮挡最少；横屏和 TV 的位置规则最简单。实现成本最低，可直接替换 <code>snackbar_helper.dart</code> 的入口而保持调用签名。可以从 B 借一条：带操作 / 错误的提示可选显示剩余时间细线。</p>
+</section>
+
+<script src="ui.js?v=final3"></script><script src="toast.js?v=toast1"></script>
+</body></html>
