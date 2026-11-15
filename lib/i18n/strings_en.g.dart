@@ -43,6 +43,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	// Translations
 	late final Translations$app$en app = Translations$app$en.internal(_root);
 	late final Translations$auth$en auth = Translations$auth$en.internal(_root);
+	late final Translations$ratingDetails$en ratingDetails = Translations$ratingDetails$en.internal(_root);
 	late final Translations$common$en common = Translations$common$en.internal(_root);
 	late final Translations$screens$en screens = Translations$screens$en.internal(_root);
 	late final Translations$update$en update = Translations$update$en.internal(_root);
@@ -236,6 +237,45 @@ class Translations$auth$en {
 
 	/// en: 'The Plex PIN check was rejected'
 	String get pinCheckRejected => 'The Plex PIN check was rejected';
+}
+
+// Path: ratingDetails
+class Translations$ratingDetails$en {
+	Translations$ratingDetails$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Ratings and sources'
+	String get title => 'Ratings and sources';
+
+	/// en: 'View rating sources'
+	String get viewSources => 'View rating sources';
+
+	/// en: 'Server rating'
+	String get serverRating => 'Server rating';
+
+	/// en: 'Source unspecified'
+	String get sourceUnspecified => 'Source unspecified';
+
+	/// en: '0–10 scale'
+	String get tenPointScale => '0–10 scale';
+
+	/// en: 'Percentage scale'
+	String get percentageScale => 'Percentage scale';
+
+	/// en: 'Scores keep their own source and scale and are not averaged. A star does not identify a rating provider; a server icon identifies only the media server.'
+	String get explanation => 'Scores keep their own source and scale and are not averaged. A star does not identify a rating provider; a server icon identifies only the media server.';
+
+	/// en: '${source} · ${scale}.'
+	String sourceExplanation({required Object source, required Object scale}) => '${source} · ${scale}.';
+
+	/// en: 'Provided by the media server · ${source} · ${scale}.'
+	String serverExplanation({required Object source, required Object scale}) => 'Provided by the media server · ${source} · ${scale}.';
+
+	/// en: 'Your saved rating · ${scale}.'
+	String personalExplanation({required Object scale}) => 'Your saved rating · ${scale}.';
 }
 
 // Path: common
@@ -8193,6 +8233,16 @@ extension on Translations {
 			'auth.quickConnectExpired' => 'Quick Connect expired. Try again.',
 			'auth.localDataRecoveryRequired' => 'Velo could not safely recover local sign-in and pending playback data. Please sign in again.',
 			'auth.pinCheckRejected' => 'The Plex PIN check was rejected',
+			'ratingDetails.title' => 'Ratings and sources',
+			'ratingDetails.viewSources' => 'View rating sources',
+			'ratingDetails.serverRating' => 'Server rating',
+			'ratingDetails.sourceUnspecified' => 'Source unspecified',
+			'ratingDetails.tenPointScale' => '0–10 scale',
+			'ratingDetails.percentageScale' => 'Percentage scale',
+			'ratingDetails.explanation' => 'Scores keep their own source and scale and are not averaged. A star does not identify a rating provider; a server icon identifies only the media server.',
+			'ratingDetails.sourceExplanation' => ({required Object source, required Object scale}) => '${source} · ${scale}.',
+			'ratingDetails.serverExplanation' => ({required Object source, required Object scale}) => 'Provided by the media server · ${source} · ${scale}.',
+			'ratingDetails.personalExplanation' => ({required Object scale}) => 'Your saved rating · ${scale}.',
 			'common.toastRepeated' => ({required Object count}) => 'Repeated ${count} times',
 			'common.toastMenu' => 'Menu',
 			'common.cancel' => 'Cancel',
@@ -8654,6 +8704,8 @@ extension on Translations {
 			'hotkeys.currentShortcut' => 'Current shortcut:',
 			'hotkeys.pressToRecord' => 'Select to record a shortcut',
 			'hotkeys.recordingShortcut' => 'Press the shortcut now',
+			_ => null,
+		} ?? switch (path) {
 			'hotkeys.actions.playPause' => 'Play/Pause',
 			'hotkeys.actions.volumeUp' => 'Volume Up',
 			'hotkeys.actions.volumeDown' => 'Volume Down',
@@ -8664,8 +8716,6 @@ extension on Translations {
 			'hotkeys.actions.subtitleToggle' => 'Toggle Subtitles',
 			'hotkeys.actions.audioTrackNext' => 'Next Audio Track',
 			'hotkeys.actions.subtitleTrackNext' => 'Next Subtitle Track',
-			_ => null,
-		} ?? switch (path) {
 			'hotkeys.actions.chapterNext' => 'Next Chapter',
 			'hotkeys.actions.chapterPrevious' => 'Previous Chapter',
 			'hotkeys.actions.episodeNext' => 'Next Episode',
@@ -9168,6 +9218,8 @@ extension on Translations {
 			'connections.addConnectionSubtitleNoProfile' => 'Sign in with Plex or connect a Jellyfin or Emby server',
 			'connections.addConnectionSubtitleScoped' => ({required Object displayName}) => 'Add to ${displayName}: Plex, Jellyfin, Emby, or another profile connection',
 			'connections.sessionExpiredOne' => ({required Object name}) => 'Session expired for ${name}',
+			_ => null,
+		} ?? switch (path) {
 			'connections.sessionExpiredMany' => ({required Object count}) => 'Session expired for ${count} servers',
 			'connections.accessDeniedOne' => ({required Object name}) => '${name} refused access for this account',
 			'connections.accessDeniedMany' => ({required Object count}) => '${count} servers refused access for this account',
@@ -9178,8 +9230,6 @@ extension on Translations {
 			'accountPreferences.hubSubtitleSingle' => ({required Object account}) => 'Audio, subtitle and library options saved on ${account}',
 			'accountPreferences.hubSubtitleMultiple' => ({required Object count}) => 'Audio, subtitle and library options saved on ${count} accounts',
 			'accountPreferences.pickAccount' => 'Every account stores its own preferences. Pick the one to edit.',
-			_ => null,
-		} ?? switch (path) {
 			'accountPreferences.storedOnAccount' => 'These options are saved on the account itself, so every app signed in to it uses them — including Velo on your other devices.',
 			'accountPreferences.noAccounts' => 'No accounts to configure',
 			'accountPreferences.noAccountsHint' => 'Sign in to Plex, or connect a Jellyfin or Emby server, and the preferences stored on that account show up here.',
@@ -9682,6 +9732,8 @@ extension on Translations {
 			'liveTv.guideReloadFailed' => 'Couldn\'t refresh the guide',
 			'liveTv.rulesProcessRequested' => 'Rule re-evaluation requested',
 			'liveTv.rulesProcessFailed' => 'Couldn\'t re-evaluate recording rules',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.recordShow' => 'Record show',
 			'liveTv.recordSettings.startEarly' => 'Start early (seconds)',
 			'liveTv.recordSettings.endLate' => 'End late (seconds)',
@@ -9692,8 +9744,6 @@ extension on Translations {
 			'liveTv.recordSettings.keepUpTo' => 'Episodes to keep',
 			'liveTv.recordSettings.keepUpToHint' => '0 keeps every episode',
 			'liveTv.startingInMinutes' => ({required Object minutes}) => 'Starting in ${minutes} min',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.dayAtTime' => ({required Object day, required Object time}) => '${day} at ${time}',
 			'liveTv.invalidPlaybackData' => ({required Object product}) => '${product} returned invalid Live TV playback data',
 			'liveTv.failedToStartChannel' => 'Could not start the live channel',
@@ -10196,6 +10246,8 @@ extension on Translations {
 			'metadataEdit.selectLogo' => 'Select Logo',
 			'metadataEdit.selectSquareArt' => 'Select Square Art',
 			'metadataEdit.fromUrl' => 'From URL',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.uploadFile' => 'Upload File',
 			'metadataEdit.enterImageUrl' => 'Enter image URL',
 			'metadataEdit.imageUrl' => 'Image URL',
@@ -10206,8 +10258,6 @@ extension on Translations {
 			'metadataEdit.noArtworkAvailable' => 'No artwork available',
 			'metadataEdit.artworkOption' => ({required Object index}) => 'Artwork option ${index}',
 			'metadataEdit.selectedArtworkOption' => ({required Object index}) => 'Artwork option ${index}, selected',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.notSet' => 'Not set',
 			'metadataEdit.libraryDefault' => 'Library default',
 			'metadataEdit.accountDefault' => 'Account default',

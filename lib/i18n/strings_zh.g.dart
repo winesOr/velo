@@ -41,6 +41,7 @@ class TranslationsZh extends Translations with BaseTranslations<AppLocale, Trans
 	// Translations
 	@override late final Translations$app$zh app = Translations$app$zh.internal(_root);
 	@override late final Translations$auth$zh auth = Translations$auth$zh.internal(_root);
+	@override late final Translations$ratingDetails$zh ratingDetails = Translations$ratingDetails$zh.internal(_root);
 	@override late final Translations$common$zh common = Translations$common$zh.internal(_root);
 	@override late final Translations$screens$zh screens = Translations$screens$zh.internal(_root);
 	@override late final Translations$update$zh update = Translations$update$zh.internal(_root);
@@ -152,6 +153,25 @@ class Translations$auth$zh extends Translations$auth$en {
 	@override String get quickConnectExpired => 'Quick Connect 已过期。请重试。';
 	@override String get localDataRecoveryRequired => 'Velo 无法安全恢复本地登录状态和待处理的播放数据。请重新登录。';
 	@override String get pinCheckRejected => 'Plex PIN 检查被拒绝';
+}
+
+// Path: ratingDetails
+class Translations$ratingDetails$zh extends Translations$ratingDetails$en {
+	Translations$ratingDetails$zh.internal(TranslationsZh root) : this._root = root, super.internal(root);
+
+	final TranslationsZh _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => '评分与来源';
+	@override String get viewSources => '查看评分来源';
+	@override String get serverRating => '服务器评分';
+	@override String get sourceUnspecified => '来源未标注';
+	@override String get tenPointScale => '10 分制';
+	@override String get percentageScale => '百分比制';
+	@override String get explanation => '各评分保留自己的来源和尺度，不做平均。星形图标不代表某个评分提供方；服务器图标仅代表媒体服务器。';
+	@override String sourceExplanation({required Object source, required Object scale}) => '${source} · ${scale}。';
+	@override String serverExplanation({required Object source, required Object scale}) => '由媒体服务器提供 · ${source} · ${scale}。';
+	@override String personalExplanation({required Object scale}) => '你保存的评分 · ${scale}。';
 }
 
 // Path: common
@@ -3421,6 +3441,16 @@ extension on TranslationsZh {
 			'auth.quickConnectExpired' => 'Quick Connect 已过期。请重试。',
 			'auth.localDataRecoveryRequired' => 'Velo 无法安全恢复本地登录状态和待处理的播放数据。请重新登录。',
 			'auth.pinCheckRejected' => 'Plex PIN 检查被拒绝',
+			'ratingDetails.title' => '评分与来源',
+			'ratingDetails.viewSources' => '查看评分来源',
+			'ratingDetails.serverRating' => '服务器评分',
+			'ratingDetails.sourceUnspecified' => '来源未标注',
+			'ratingDetails.tenPointScale' => '10 分制',
+			'ratingDetails.percentageScale' => '百分比制',
+			'ratingDetails.explanation' => '各评分保留自己的来源和尺度，不做平均。星形图标不代表某个评分提供方；服务器图标仅代表媒体服务器。',
+			'ratingDetails.sourceExplanation' => ({required Object source, required Object scale}) => '${source} · ${scale}。',
+			'ratingDetails.serverExplanation' => ({required Object source, required Object scale}) => '由媒体服务器提供 · ${source} · ${scale}。',
+			'ratingDetails.personalExplanation' => ({required Object scale}) => '你保存的评分 · ${scale}。',
 			'common.toastRepeated' => ({required Object count}) => '重复 ${count} 次',
 			'common.toastMenu' => '菜单',
 			'common.cancel' => '取消',
@@ -3882,6 +3912,8 @@ extension on TranslationsZh {
 			'hotkeys.currentShortcut' => '当前快捷键：',
 			'hotkeys.pressToRecord' => '点击后录入快捷键',
 			'hotkeys.recordingShortcut' => '请按下快捷键',
+			_ => null,
+		} ?? switch (path) {
 			'hotkeys.actions.playPause' => '播放/暂停',
 			'hotkeys.actions.volumeUp' => '增大音量',
 			'hotkeys.actions.volumeDown' => '减小音量',
@@ -3892,8 +3924,6 @@ extension on TranslationsZh {
 			'hotkeys.actions.subtitleToggle' => '切换字幕',
 			'hotkeys.actions.audioTrackNext' => '下一音轨',
 			'hotkeys.actions.subtitleTrackNext' => '下一字幕轨',
-			_ => null,
-		} ?? switch (path) {
 			'hotkeys.actions.chapterNext' => '下一章节',
 			'hotkeys.actions.chapterPrevious' => '上一章节',
 			'hotkeys.actions.episodeNext' => '下一集',
@@ -4396,6 +4426,8 @@ extension on TranslationsZh {
 			'connections.addConnectionSubtitleNoProfile' => '使用 Plex 登录，或连接 Jellyfin 或 Emby 服务器',
 			'connections.addConnectionSubtitleScoped' => ({required Object displayName}) => '添加到 ${displayName}：Plex、Jellyfin、Emby，或其他用户资料的连接',
 			'connections.sessionExpiredOne' => ({required Object name}) => '${name} 的会话已过期',
+			_ => null,
+		} ?? switch (path) {
 			'connections.sessionExpiredMany' => ({required Object count}) => '${count} 个服务器的会话已过期',
 			'connections.accessDeniedOne' => ({required Object name}) => '${name} 拒绝此账户访问',
 			'connections.accessDeniedMany' => ({required Object count}) => '${count} 台服务器拒绝此账户访问',
@@ -4406,8 +4438,6 @@ extension on TranslationsZh {
 			'accountPreferences.hubSubtitleSingle' => ({required Object account}) => '音频、字幕和媒体库选项已保存在 ${account} 上',
 			'accountPreferences.hubSubtitleMultiple' => ({required Object count}) => '音频、字幕和媒体库选项已保存在 ${count} 个账户上',
 			'accountPreferences.pickAccount' => '每个账户都保存自己的偏好设置。选择要编辑的账户。',
-			_ => null,
-		} ?? switch (path) {
 			'accountPreferences.storedOnAccount' => '这些选项保存在账户本身，因此所有登录该账户的应用都会使用它们——包括你其他设备上的 Velo。',
 			'accountPreferences.noAccounts' => '没有可配置的账户',
 			'accountPreferences.noAccountsHint' => '登录 Plex，或连接 Jellyfin 或 Emby 服务器，该账户上保存的偏好设置就会显示在这里。',
@@ -4910,6 +4940,8 @@ extension on TranslationsZh {
 			'liveTv.guideReloadFailed' => '无法刷新节目指南',
 			'liveTv.rulesProcessRequested' => '已请求重新评估规则',
 			'liveTv.rulesProcessFailed' => '无法重新评估录制规则',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.recordShow' => '录制节目',
 			'liveTv.recordSettings.startEarly' => '提前开始（秒）',
 			'liveTv.recordSettings.endLate' => '延后结束（秒）',
@@ -4920,8 +4952,6 @@ extension on TranslationsZh {
 			'liveTv.recordSettings.keepUpTo' => '保留的剧集数',
 			'liveTv.recordSettings.keepUpToHint' => '0 表示保留全部剧集',
 			'liveTv.startingInMinutes' => ({required Object minutes}) => '${minutes} 分钟后开始',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.dayAtTime' => ({required Object day, required Object time}) => '${day} ${time}',
 			'liveTv.invalidPlaybackData' => ({required Object product}) => '${product} 返回了无效的直播电视播放数据',
 			'liveTv.failedToStartChannel' => '无法播放直播频道',
@@ -5424,6 +5454,8 @@ extension on TranslationsZh {
 			'metadataEdit.selectLogo' => '选择标志',
 			'metadataEdit.selectSquareArt' => '选择方形图片',
 			'metadataEdit.fromUrl' => '通过 URL',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.uploadFile' => '上传文件',
 			'metadataEdit.enterImageUrl' => '输入图片 URL',
 			'metadataEdit.imageUrl' => '图片 URL',
@@ -5434,8 +5466,6 @@ extension on TranslationsZh {
 			'metadataEdit.noArtworkAvailable' => '没有可用的封面图片',
 			'metadataEdit.artworkOption' => ({required Object index}) => '封面图片选项 ${index}',
 			'metadataEdit.selectedArtworkOption' => ({required Object index}) => '封面图片选项 ${index}，已选择',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.notSet' => '未设置',
 			'metadataEdit.libraryDefault' => '媒体库默认',
 			'metadataEdit.accountDefault' => '账户默认',

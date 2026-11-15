@@ -44,6 +44,18 @@
     "localDataRecoveryRequired": "Velo 无法安全恢复本地登录状态和待处理的播放数据。请重新登录。",
     "pinCheckRejected": "Plex PIN 检查被拒绝"
   },
+  "ratingDetails": {
+    "title": "评分与来源",
+    "viewSources": "查看评分来源",
+    "serverRating": "服务器评分",
+    "sourceUnspecified": "来源未标注",
+    "tenPointScale": "10 分制",
+    "percentageScale": "百分比制",
+    "explanation": "各评分保留自己的来源和尺度，不做平均。星形图标不代表某个评分提供方；服务器图标仅代表媒体服务器。",
+    "sourceExplanation": "${source} · ${scale}。",
+    "serverExplanation": "由媒体服务器提供 · ${source} · ${scale}。",
+    "personalExplanation": "你保存的评分 · ${scale}。"
+  },
   "common": {
     "toastRepeated": "重复 ${count} 次",
     "toastMenu": "菜单",

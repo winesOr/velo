@@ -44,6 +44,18 @@
     "localDataRecoveryRequired": "Velo could not safely recover local sign-in and pending playback data. Please sign in again.",
     "pinCheckRejected": "The Plex PIN check was rejected"
   },
+  "ratingDetails": {
+    "title": "Ratings and sources",
+    "viewSources": "View rating sources",
+    "serverRating": "Server rating",
+    "sourceUnspecified": "Source unspecified",
+    "tenPointScale": "0–10 scale",
+    "percentageScale": "Percentage scale",
+    "explanation": "Scores keep their own source and scale and are not averaged. A star does not identify a rating provider; a server icon identifies only the media server.",
+    "sourceExplanation": "${source} · ${scale}.",
+    "serverExplanation": "Provided by the media server · ${source} · ${scale}.",
+    "personalExplanation": "Your saved rating · ${scale}."
+  },
   "common": {
     "toastRepeated": "Repeated ${count} times",
     "toastMenu": "Menu",

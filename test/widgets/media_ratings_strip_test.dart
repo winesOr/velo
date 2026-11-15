@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:plezy/focus/focusable_button.dart';
+import 'package:plezy/focus/key_event_utils.dart';
+import 'package:plezy/widgets/rating_source_dialog.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/media/media_item.dart';
@@ -34,6 +38,7 @@ Future<void> _pump(
   await tester.pumpWidget(
     TranslationProvider(
       child: MaterialApp(
+        navigatorObservers: [BackKeySuppressorObserver()],
         theme: ThemeData(brightness: brightness),
         home: MediaQuery(
           data: MediaQueryData(textScaler: TextScaler.linear(scale)),
@@ -49,11 +54,13 @@ Future<void> _pump(
 }
 
 void main() {
+  // Locale is constant for this fixture; initialize before any provider mounts.
+  // Reassigning it per test schedules slang updates on the departing provider.
+  setUpAll(() => LocaleSettings.setLocaleSync(AppLocale.en));
   setUp(() async {
     resetSharedPreferencesForTest();
     SettingsService.resetForTesting();
     await SettingsService.getInstance();
-    LocaleSettings.setLocaleSync(AppLocale.en);
   });
 
   for (final count in [0, 1, 2, 5]) {
@@ -103,6 +110,73 @@ void main() {
     );
     expect(find.text('Other ratings'), findsOneWidget);
     expect(find.textContaining('internal.future'), findsNothing);
+  });
+
+  testWidgets('hero rating sources own clicks, scroll, close one layer and restore focus', (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    var plays = 0;
+    await _pump(
+      tester,
+      GestureDetector(
+        onTap: () => plays++,
+        child: HeroMetadataBadges(item: _item(_scores)),
+      ),
+    );
+    final trigger = find.byKey(const ValueKey('hero-rating-sources'));
+    final button = tester.widget<FocusableButton>(find.descendant(of: trigger, matching: find.byType(FocusableButton)));
+    final returnFocus = button.focusNode!;
+    await tester.tap(find.text('92%'));
+    await tester.pumpAndSettle();
+    expect(plays, 0);
+    expect(find.byType(RatingSourceDialog), findsOneWidget);
+    expect(find.text(t.common.ratingSource.simkl), findsOneWidget);
+    expect(find.text('79%'), findsOneWidget);
+    expect(tester.getBottomLeft(find.text(t.common.close)).dy, lessThanOrEqualTo(568));
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    final scroll = tester.state<ScrollableState>(
+      find.descendant(of: find.byType(RatingSourceDialog), matching: find.byType(Scrollable)),
+    );
+    expect(scroll.position.pixels, greaterThan(0));
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byType(RatingSourceDialog), findsNothing);
+    expect(returnFocus.hasFocus, isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.byType(RatingSourceDialog), findsOneWidget);
+    final nested = showDialog<void>(
+      context: tester.element(find.byType(RatingSourceDialog)),
+      builder: (_) => const AlertDialog(content: Text('Nested dialog')),
+    );
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    await nested;
+    expect(find.byType(RatingSourceDialog), findsOneWidget);
+    await tester.tap(find.text(t.common.close));
+    await tester.pumpAndSettle();
+    expect(returnFocus.hasFocus, isTrue);
+    final unknown = showRatingSourceDialog(tester.element(trigger), const [
+      MediaRatingSource(source: 'internal.future.rating', value: 7.2),
+      MediaRatingSource(source: 'personal', value: 8),
+      MediaRatingSource(source: 'imdb', value: 0),
+    ]);
+    await tester.pumpAndSettle();
+    expect(find.text(t.ratingDetails.serverRating), findsOneWidget);
+    expect(find.text(t.explore.detail.yourRating), findsOneWidget);
+    expect(find.textContaining('internal.future'), findsNothing);
+    expect(find.text('0.0/10'), findsNothing);
+    await tester.tap(find.text(t.common.close));
+    await tester.pumpAndSettle();
+    await unknown;
+    await _pump(tester, HeroMetadataBadges(item: _item(const [])));
+    expect(find.byKey(const ValueKey('hero-rating-sources')), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('homepage shows at most two enabled sources and reacts to ordering', (tester) async {

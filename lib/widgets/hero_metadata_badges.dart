@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../media/media_item.dart';
+import '../media/media_rating.dart';
+import '../focus/focusable_button.dart';
+import '../i18n/strings.g.dart';
+import '../utils/focus_utils.dart';
+import 'rating_source_dialog.dart';
 import '../utils/content_utils.dart';
 import '../utils/rating_display_policy.dart';
 import 'media_rating_badge.dart';
@@ -34,15 +39,20 @@ class HeroMetadataBadges extends StatelessWidget {
       ...buildMediaQualityLabels(item),
       ...genres,
     };
+    final ratings = preferredMediaRatingsFor(item);
+    final visibleRatings = ratings.take(RatingDisplayPolicy.heroLimit).toList(growable: false);
     return Wrap(
       alignment: alignment,
       spacing: 6,
       runSpacing: 6,
       children: [
-        for (final rating in preferredMediaRatingsFor(item, limit: RatingDisplayPolicy.heroLimit))
-          InlineRatingBadges(
-            ratings: [rating],
-            textStyle: TextStyle(color: foreground, fontSize: fontSize),
+        if (visibleRatings.isNotEmpty)
+          _HeroRatingSourcesButton(
+            key: const ValueKey('hero-rating-sources'),
+            ratings: ratings,
+            visibleRatings: visibleRatings,
+            foreground: foreground,
+            fontSize: fontSize,
           ),
         for (final label in labels)
           Container(
@@ -68,4 +78,71 @@ class HeroMetadataBadges extends StatelessWidget {
       ],
     );
   }
+}
+
+class _HeroRatingSourcesButton extends StatefulWidget {
+  const _HeroRatingSourcesButton({
+    super.key,
+    required this.ratings,
+    required this.visibleRatings,
+    required this.foreground,
+    required this.fontSize,
+  });
+  final List<MediaRatingSource> ratings;
+  final List<MediaRatingSource> visibleRatings;
+  final Color foreground;
+  final double fontSize;
+  @override
+  State<_HeroRatingSourcesButton> createState() => _HeroRatingSourcesButtonState();
+}
+
+class _HeroRatingSourcesButtonState extends State<_HeroRatingSourcesButton> {
+  final _focusNode = FocusNode(debugLabel: 'Hero rating sources');
+  bool _opening = false;
+
+  Future<void> _open() async {
+    if (_opening) return;
+    _opening = true;
+    try {
+      await showRatingSourceDialog(context, widget.ratings);
+    } finally {
+      _opening = false;
+      if (mounted) FocusUtils.restoreFocusAfterBuild(this, _focusNode);
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: '${t.ratingDetails.viewSources}. ${ratingsSemanticLabel(widget.visibleRatings)}',
+    onTap: _open,
+    excludeSemantics: true,
+    child: FocusableButton(
+      focusNode: _focusNode,
+      onPressed: _open,
+      dimWhenUnfocused: false,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _open,
+        child: Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final rating in widget.visibleRatings)
+              InlineRatingBadges(
+                ratings: [rating],
+                foregroundColor: widget.foreground,
+                textStyle: TextStyle(color: widget.foreground, fontSize: widget.fontSize),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
