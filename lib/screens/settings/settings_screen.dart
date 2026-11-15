@@ -9,7 +9,6 @@ import 'package:flutter/services.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../focus/focus_memory_tracker.dart';
 import '../../focus/focusable_text_field.dart';
@@ -22,7 +21,7 @@ import '../../providers/account_preferences_controller.dart';
 import '../../providers/hidden_libraries_provider.dart';
 import '../../providers/download_provider.dart';
 import '../../providers/libraries_provider.dart';
-import '../../services/donation_service.dart';
+import '../../services/crash_reporting_config.dart';
 import '../../services/download_storage_service.dart';
 import '../../services/file_picker_service.dart';
 import '../../services/saf_storage_service.dart';
@@ -123,7 +122,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
   final _categoryPaneKey = GlobalKey<SettingsCategoryPaneState>();
 
   // Focus tracking keys
-  static const _kDonate = 'donate';
   static const _kGeneral = 'general';
   static const _kAppearance = 'appearance';
   static const _kPlayback = 'playback';
@@ -289,7 +287,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
                 SettingsGroup(
                   title: t.settings.application,
                   children: [
-                    if (DonationService.isEnabled) _buildDonateTile(),
                     SettingNavigationTile(
                       focusNode: _focusTracker.get(_kAbout),
                       icon: Symbols.info_rounded,
@@ -535,22 +532,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
       title: t.settings.general,
       subtitle: t.settings.generalDescription,
       destinationBuilder: (context) => const GeneralSettingsScreen(),
-    );
-  }
-
-  Widget _buildDonateTile() {
-    return SettingNavigationTile(
-      focusNode: _focusTracker.get(_kDonate),
-      icon: Symbols.favorite_rounded,
-      title: t.settings.supportDeveloper,
-      subtitle: t.settings.supportDeveloperDescription,
-      trailingIcon: Symbols.open_in_new_rounded,
-      onTap: () async {
-        final url = Uri.parse(DonationService.donationUrl);
-        if (await canLaunchUrl(url)) {
-          await launchUrl(url, mode: LaunchMode.externalApplication);
-        }
-      },
     );
   }
 
@@ -832,7 +813,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
     return SettingsGroup(
       title: t.settings.advanced,
       children: [
-        if (const bool.fromEnvironment('ENABLE_SENTRY', defaultValue: false))
+        if (CrashReportingConfig.enabled)
           SettingSwitchTile(
             focusNode: _focusTracker.get(_kCrashReporting),
             pref: settings.SettingsService.crashReporting,

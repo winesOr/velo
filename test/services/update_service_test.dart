@@ -17,9 +17,10 @@ void main() {
 
   setUp(resetSharedPreferencesForTest);
 
-  test('Android self-update and automatic download default off', () {
+  test('automatic download defaults off and update checks honor the build flag', () {
     expect(SettingsService.autoDownloadUpdates.defaultValue, isFalse);
-    expect(UpdateService.debugUpdateCheckBuildEnabled, isFalse);
+    expect(UpdateService.debugUpdateCheckBuildEnabled, const bool.fromEnvironment('ENABLE_UPDATE_CHECK'));
+    expect(UpdateService.useNativeUpdater, isFalse, reason: 'Velo has no default native appcast');
   });
 
   test('an explicit automatic-download preference overrides the safe default', () async {
@@ -106,7 +107,12 @@ void main() {
   });
 
   test('a repository without a public release returns no update', () async {
-    final client = MediaServerHttpClient(client: MockClient((_) async => http.Response('{}', 404)));
+    final client = MediaServerHttpClient(
+      client: MockClient((request) async {
+        expect(request.url.toString(), 'https://api.github.com/repos/winesOr/velo/releases/latest');
+        return http.Response('{}', 404);
+      }),
+    );
     addTearDown(client.close);
 
     expect(

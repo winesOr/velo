@@ -12,17 +12,18 @@ import 'base_shared_preferences_service.dart';
 /// Service to check for new versions on GitHub
 /// Self-update is opt-in through ENABLE_UPDATE_CHECK.
 ///
-/// On macOS (non-Homebrew) and installed Windows: delegates to Sparkle/WinSparkle
-/// via auto_updater for native update dialogs and in-app installs.
+/// On macOS (non-Homebrew) and installed Windows with an explicitly configured
+/// Velo appcast: delegates to Sparkle/WinSparkle for native update dialogs.
 /// Android downloads verified APK releases; other platforms use a browser link.
 class UpdateService {
-  static const String _githubRepo = 'edde746/plezy';
+  static const String _githubRepo = 'winesOr/velo';
   // TODO(VELO-UPDATE-002): Keep the distribution repository configurable for downstream builds.
   static const String _androidGithubRepo = String.fromEnvironment(
     'ANDROID_UPDATE_REPOSITORY',
     defaultValue: 'winesOr/velo',
   );
-  static const String _feedUrl = 'https://cdn.jsdelivr.net/gh/edde746/plezy@appcast/appcast.xml';
+  // TODO(VELO-UPDATE-004): Supply a Velo-owned appcast once native releases are published.
+  static const String _feedUrl = String.fromEnvironment('VELO_UPDATE_FEED_URL');
 
   static const String _keySkippedVersion = 'update_skipped_version';
   static const String _keyLastCheckTime = 'update_last_check_time';
@@ -51,9 +52,9 @@ class UpdateService {
   static bool get isUpdateCheckAvailable => isUpdateCheckEnabled && !PlatformDetector.isPackagedInstall();
 
   /// Whether the native auto_updater (Sparkle/WinSparkle) should be used.
-  /// True on macOS (non-Homebrew) and installed Windows (has uninstaller).
+  /// Requires a Velo appcast, then macOS (non-Homebrew) or installed Windows.
   static bool get useNativeUpdater {
-    if (!isUpdateCheckAvailable) return false;
+    if (!isUpdateCheckAvailable || _feedUrl.isEmpty) return false;
     if (Platform.isMacOS) return !_isHomebrewInstall();
     if (Platform.isWindows) return _isInstalledApp() && !_isWingetInstall();
     return false;
@@ -62,7 +63,7 @@ class UpdateService {
   /// Initialize the native auto_updater (Sparkle/WinSparkle).
   /// Call once at startup if [useNativeUpdater] is true.
   static Future<void> initNativeUpdater() async {
-    if (_nativeUpdaterInitialized) return;
+    if (!useNativeUpdater || _nativeUpdaterInitialized) return;
 
     try {
       await autoUpdater.setFeedURL(_feedUrl);

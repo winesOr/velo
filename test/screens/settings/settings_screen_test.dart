@@ -28,6 +28,8 @@ import 'package:plezy/providers/trackers_provider.dart';
 import 'package:plezy/screens/settings/general_settings_screen.dart';
 import 'package:plezy/screens/settings/settings_screen.dart';
 import 'package:plezy/services/background_work_diagnostics_service.dart';
+import 'package:plezy/services/crash_reporting_config.dart';
+import 'package:plezy/services/donation_service.dart';
 import 'package:plezy/services/download_storage_service.dart';
 import 'package:plezy/services/download_manager_service.dart';
 import 'package:plezy/services/file_picker_service.dart';
@@ -358,6 +360,8 @@ void main() {
     expect(find.text(t.settings.clearImageCache), findsNothing);
     expect(find.text(t.settings.downloadOnWifiOnly), findsNothing);
     expect(find.text(t.settings.exportSettings), findsNothing);
+    expect(DonationService.isEnabled, isFalse);
+    expect(find.text(t.settings.supportDeveloper), findsNothing);
     await tester.tap(find.text(t.watchTogether.title));
     await _pumpUi(tester);
     final relay = tester.widget<ListTile>(
@@ -376,6 +380,9 @@ void main() {
     await _pumpUi(tester);
     expect(_navigationTileFor(t.settings.exportSettings), findsOneWidget);
     expect(_navigationTileFor(t.settings.importSettings), findsOneWidget);
+    if (!CrashReportingConfig.enabled) {
+      expect(find.text(t.settings.crashReporting), findsNothing);
+    }
     final cache = tester.widget<ListTile>(
       find.descendant(of: _focusableTileFor(t.settings.clearImageCache), matching: find.byType(ListTile)),
     );
@@ -657,7 +664,7 @@ void main() {
     await tester.scrollUntilVisible(find.text(t.settings.debugLogging), 300, scrollable: find.byType(Scrollable).first);
     await _pumpUi(tester);
 
-    const reportingAvailable = bool.fromEnvironment('ENABLE_SENTRY', defaultValue: false);
+    const reportingAvailable = CrashReportingConfig.enabled;
     expect(find.text(t.settings.crashReporting), reportingAvailable ? findsOneWidget : findsNothing);
     expect(SettingsService.instance.read(SettingsService.crashReporting), isFalse);
     if (reportingAvailable) {

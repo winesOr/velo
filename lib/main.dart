@@ -103,6 +103,7 @@ import 'services/base_shared_preferences_service.dart';
 import 'services/prefs_recovery.dart';
 import 'services/sensitive_prefs.dart';
 import 'services/startup_diagnostics.dart';
+import 'services/crash_reporting_config.dart';
 import 'services/home_startup_timing.dart';
 import 'utils/dialogs.dart';
 import 'widgets/dialog_action_button.dart';
@@ -110,8 +111,8 @@ import 'widgets/startup_failure_view.dart';
 import 'widgets/startup_loading_view.dart';
 import 'widgets/ambient_skeleton.dart';
 
-const bool _enableSentry = bool.fromEnvironment('ENABLE_SENTRY', defaultValue: false);
-const String _sentryDsn = 'https://6a1a6ef8c72140099b2798973c1bfb2f@bugs.plezy.app/1';
+const bool _enableSentry = CrashReportingConfig.enabled;
+const String _sentryDsn = CrashReportingConfig.dsn;
 const String gitCommit = String.fromEnvironment('GIT_COMMIT');
 const String _sentryEnvironment = String.fromEnvironment('SENTRY_ENVIRONMENT');
 const String _sentryDist = String.fromEnvironment('SENTRY_DIST');
