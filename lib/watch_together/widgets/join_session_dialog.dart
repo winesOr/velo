@@ -14,7 +14,10 @@ import '../../widgets/app_icon.dart';
 import '../services/relay_protocol.g.dart';
 
 class JoinSessionDialog extends StatefulWidget {
-  const JoinSessionDialog({super.key});
+  const JoinSessionDialog({super.key, this.onSubmit});
+
+  /// A failed submission stays open; [error] is shown inline when present.
+  final Future<({bool success, String? error})> Function(BuildContext context, String code)? onSubmit;
 
   @override
   State<JoinSessionDialog> createState() => _JoinSessionDialogState();
@@ -26,6 +29,8 @@ class _JoinSessionDialogState extends State<JoinSessionDialog> with ControllerDi
   final _closeFocusNode = FocusNode(debugLabel: 'JoinSessionClose');
   final _sessionIdFocusNode = FocusNode(debugLabel: 'JoinSessionCode');
   final _joinFocusNode = FocusNode(debugLabel: 'JoinSessionSubmit');
+  bool _isSubmitting = false;
+  String? _submitError;
 
   @override
   void dispose() {
@@ -76,12 +81,16 @@ class _JoinSessionDialogState extends State<JoinSessionDialog> with ControllerDi
                 FocusableTextFormField(
                   controller: _sessionIdController,
                   focusNode: _sessionIdFocusNode,
+                  enabled: !_isSubmitting,
+                  onChanged: (_) {
+                    if (_submitError != null) setState(() => _submitError = null);
+                  },
                   decoration: InputDecoration(
                     labelText: t.watchTogether.sessionCode,
                     hintText: t.watchTogether.enterCodeHint,
                     prefixIcon: const AppIcon(Symbols.tag_rounded),
                     suffixIcon: IconButton(
-                      onPressed: _pasteFromClipboard,
+                      onPressed: _isSubmitting ? null : _pasteFromClipboard,
                       icon: const AppIcon(Symbols.content_paste_rounded),
                       tooltip: t.watchTogether.pasteFromClipboard,
                     ),
@@ -103,6 +112,15 @@ class _JoinSessionDialogState extends State<JoinSessionDialog> with ControllerDi
                   autofocus: true,
                 ),
 
+                if (_submitError case final error?)
+                  Semantics(
+                    liveRegion: true,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(error, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+                    ),
+                  ),
+
                 const SizedBox(height: 16),
 
                 Text(
@@ -114,13 +132,15 @@ class _JoinSessionDialogState extends State<JoinSessionDialog> with ControllerDi
 
                 FocusableButton(
                   focusNode: _joinFocusNode,
-                  onPressed: _join,
+                  onPressed: _isSubmitting ? null : _join,
                   onNavigateUp: _sessionIdFocusNode.requestFocus,
                   useBackgroundFocus: true,
                   child: FilledButton.icon(
-                    onPressed: _join,
-                    icon: const AppIcon(Symbols.group_add_rounded),
-                    label: Text(t.watchTogether.joinSession),
+                    onPressed: _isSubmitting ? null : _join,
+                    icon: _isSubmitting
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const AppIcon(Symbols.group_add_rounded),
+                    label: Text(_isSubmitting ? t.watchTogether.joining : t.watchTogether.joinSession),
                   ),
                 ),
               ],
@@ -133,21 +153,40 @@ class _JoinSessionDialogState extends State<JoinSessionDialog> with ControllerDi
 
   Future<void> _pasteFromClipboard() async {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (data?.text != null) {
+    if (mounted && !_isSubmitting && data?.text != null) {
       // Preserve protocol characters; don't silently turn a different invitation
       // into a valid room by stripping punctuation or truncating it.
       final cleaned = data!.text!.trim().toUpperCase();
       if (cleaned.isNotEmpty) {
         _sessionIdController.text = cleaned;
         _sessionIdController.selection = TextSelection.collapsed(offset: _sessionIdController.text.length);
+        if (_submitError != null) setState(() => _submitError = null);
       }
     }
   }
 
-  void _join() {
-    if (_formKey.currentState!.validate()) {
-      final sessionId = _sessionIdController.text.trim().toUpperCase();
+  Future<void> _join() async {
+    if (_isSubmitting || !_formKey.currentState!.validate()) return;
+    final sessionId = _sessionIdController.text.trim().toUpperCase();
+    final submit = widget.onSubmit;
+    if (submit == null) {
       Navigator.of(context).pop(sessionId);
+      return;
+    }
+    setState(() {
+      _isSubmitting = true;
+      _submitError = null;
+    });
+    try {
+      final result = await submit(context, sessionId);
+      if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? false)) return;
+      if (result.success) {
+        Navigator.of(context).pop(sessionId);
+      } else {
+        setState(() => _submitError = result.error);
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 }
@@ -159,6 +198,12 @@ class UpperCaseTextFormatter extends TextInputFormatter {
   }
 }
 
-Future<String?> showJoinSessionDialog(BuildContext context) {
-  return showScopedDialog<String>(context: context, builder: (context) => const JoinSessionDialog());
+Future<String?> showJoinSessionDialog(
+  BuildContext context, {
+  Future<({bool success, String? error})> Function(BuildContext context, String code)? onSubmit,
+}) {
+  return showScopedDialog<String>(
+    context: context,
+    builder: (context) => JoinSessionDialog(onSubmit: onSubmit),
+  );
 }

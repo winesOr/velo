@@ -36,6 +36,7 @@ import '../../widgets/overlay_sheet.dart';
 import '../models/watch_session.dart';
 import '../providers/watch_together_provider.dart';
 import '../services/recent_rooms_service.dart';
+import '../services/relay_protocol.g.dart';
 import '../services/watch_together_relay_endpoint.dart';
 import '../widgets/join_session_dialog.dart';
 import '../widgets/local_media_match_dialog.dart';
@@ -391,16 +392,54 @@ class _NotInSessionViewState extends State<_NotInSessionView> with MountedSetSta
   }
 
   Future<void> _joinSession() async {
-    final sessionId = await showJoinSessionDialog(context);
-    if (sessionId == null || !mounted) return;
-
-    await _runSessionAction(
-      setBusy: (busy) => _isJoining = busy,
-      logMessage: 'Failed to join session',
-      failureMessage: t.watchTogether.failedToJoin,
-      action: () async {
-        await widget.watchTogether.joinSession(sessionId, relayEndpoint: _relayEndpoint, displayName: _plexDisplayName);
-        await _recordRecentRoom(sessionId);
+    final provider = widget.watchTogether;
+    final profiles = context.read<ActiveProfileProvider>();
+    final settings = SettingsService.instanceOrNull;
+    await showJoinSessionDialog(
+      context,
+      onSubmit: (dialogContext, sessionId) async {
+        final profileId = profiles.activeId;
+        final profileGeneration = profiles.identityMutationGeneration;
+        final endpoint = WatchTogetherRelayEndpoint.resolve(settings?.read(SettingsService.customRelayUrl));
+        final displayName = profiles.active?.displayName;
+        final relayPreference = settings?.listenableOf(SettingsService.customRelayUrl);
+        var relayChanged = false;
+        void onRelayChanged() => relayChanged = true;
+        relayPreference?.addListener(onRelayChanged);
+        if (mounted) setState(() => _isJoining = true);
+        try {
+          await provider.joinSession(sessionId, relayEndpoint: endpoint, displayName: displayName);
+          final scopeIsCurrent =
+              profiles.activeId == profileId &&
+              profiles.identityMutationGeneration == profileGeneration &&
+              !relayChanged &&
+              WatchTogetherRelayEndpoint.resolve(settings?.read(SettingsService.customRelayUrl)) == endpoint &&
+              provider.isConnected &&
+              provider.sessionId == sessionId &&
+              dialogContext.mounted &&
+              (ModalRoute.of(dialogContext)?.isCurrent ?? false);
+          if (!scopeIsCurrent) return (success: false, error: t.watchTogether.failedToJoin);
+          if (profileId != null && profileId.isNotEmpty) {
+            await RecentRoomsService.addOrUpdateRoom(sessionId, profileId: profileId, endpoint: endpoint);
+          }
+          return (success: true, error: null);
+        } catch (error) {
+          appLogger.e('Failed to join session', error: error);
+          if (error is PeerError &&
+              (error.type == PeerErrorType.invalidSession || error.serverCode == RelayProtocol.roomNotFoundCode)) {
+            return (success: false, error: t.watchTogether.roomNotFound);
+          }
+          if (error is PeerError && error.serverCode == RelayProtocol.roomFullCode) {
+            return (success: false, error: t.watchTogether.roomFull);
+          }
+          if (dialogContext.mounted && (ModalRoute.of(dialogContext)?.isCurrent ?? false)) {
+            showErrorSnackBar(dialogContext, '${t.watchTogether.failedToJoin}: ${_sessionActionErrorDetail(error)}');
+          }
+          return (success: false, error: null);
+        } finally {
+          relayPreference?.removeListener(onRelayChanged);
+          if (mounted) setState(() => _isJoining = false);
+        }
       },
     );
   }

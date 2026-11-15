@@ -4685,6 +4685,12 @@ class Translations$watchTogether$en {
 	/// en: 'Please enter a session code'
 	String get pleaseEnterCode => 'Please enter a session code';
 
+	/// en: 'Room not found. Check the code and try again.'
+	String get roomNotFound => 'Room not found. Check the code and try again.';
+
+	/// en: 'This room is full.'
+	String get roomFull => 'This room is full.';
+
 	/// en: 'Enter the host's session code to join.'
 	String get joinInstructions => 'Enter the host\'s session code to join.';
 
@@ -9886,6 +9892,8 @@ extension on Translations {
 			'watchTogether.enterCodeHint' => 'Enter the host’s room code',
 			'watchTogether.pasteFromClipboard' => 'Paste from clipboard',
 			'watchTogether.pleaseEnterCode' => 'Please enter a session code',
+			'watchTogether.roomNotFound' => 'Room not found. Check the code and try again.',
+			'watchTogether.roomFull' => 'This room is full.',
 			'watchTogether.joinInstructions' => 'Enter the host\'s session code to join.',
 			'watchTogether.failedToCreate' => 'Failed to create session',
 			'watchTogether.failedToJoin' => 'Failed to join session',
@@ -10256,10 +10264,10 @@ extension on Translations {
 			'metadataEdit.background' => 'Background',
 			'metadataEdit.logo' => 'Logo',
 			'metadataEdit.squareArt' => 'Square Art',
-			'metadataEdit.selectPoster' => 'Select Poster',
-			'metadataEdit.selectBackground' => 'Select Background',
 			_ => null,
 		} ?? switch (path) {
+			'metadataEdit.selectPoster' => 'Select Poster',
+			'metadataEdit.selectBackground' => 'Select Background',
 			'metadataEdit.selectLogo' => 'Select Logo',
 			'metadataEdit.selectSquareArt' => 'Select Square Art',
 			'metadataEdit.fromUrl' => 'From URL',

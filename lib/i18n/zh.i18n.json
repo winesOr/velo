@@ -1829,6 +1829,8 @@
     "enterCodeHint": "输入房主的房间码",
     "pasteFromClipboard": "从剪贴板粘贴",
     "pleaseEnterCode": "请输入会话代码",
+    "roomNotFound": "未找到房间，请检查邀请码后重试。",
+    "roomFull": "房间人数已满。",
     "joinInstructions": "输入主持人的会话代码以加入。",
     "failedToCreate": "创建会话失败",
     "failedToJoin": "加入会话失败",

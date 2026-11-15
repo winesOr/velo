@@ -1879,6 +1879,8 @@ class Translations$watchTogether$zh extends Translations$watchTogether$en {
 	@override String get enterCodeHint => '输入房主的房间码';
 	@override String get pasteFromClipboard => '从剪贴板粘贴';
 	@override String get pleaseEnterCode => '请输入会话代码';
+	@override String get roomNotFound => '未找到房间，请检查邀请码后重试。';
+	@override String get roomFull => '房间人数已满。';
 	@override String get joinInstructions => '输入主持人的会话代码以加入。';
 	@override String get failedToCreate => '创建会话失败';
 	@override String get failedToJoin => '加入会话失败';
@@ -5086,6 +5088,8 @@ extension on TranslationsZh {
 			'watchTogether.enterCodeHint' => '输入房主的房间码',
 			'watchTogether.pasteFromClipboard' => '从剪贴板粘贴',
 			'watchTogether.pleaseEnterCode' => '请输入会话代码',
+			'watchTogether.roomNotFound' => '未找到房间，请检查邀请码后重试。',
+			'watchTogether.roomFull' => '房间人数已满。',
 			'watchTogether.joinInstructions' => '输入主持人的会话代码以加入。',
 			'watchTogether.failedToCreate' => '创建会话失败',
 			'watchTogether.failedToJoin' => '加入会话失败',
@@ -5456,10 +5460,10 @@ extension on TranslationsZh {
 			'metadataEdit.background' => '背景',
 			'metadataEdit.logo' => '标志',
 			'metadataEdit.squareArt' => '方形图片',
-			'metadataEdit.selectPoster' => '选择海报',
-			'metadataEdit.selectBackground' => '选择背景',
 			_ => null,
 		} ?? switch (path) {
+			'metadataEdit.selectPoster' => '选择海报',
+			'metadataEdit.selectBackground' => '选择背景',
 			'metadataEdit.selectLogo' => '选择标志',
 			'metadataEdit.selectSquareArt' => '选择方形图片',
 			'metadataEdit.fromUrl' => '通过 URL',

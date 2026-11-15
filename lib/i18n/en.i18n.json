@@ -1840,6 +1840,8 @@
     "enterCodeHint": "Enter the host’s room code",
     "pasteFromClipboard": "Paste from clipboard",
     "pleaseEnterCode": "Please enter a session code",
+    "roomNotFound": "Room not found. Check the code and try again.",
+    "roomFull": "This room is full.",
     "joinInstructions": "Enter the host's session code to join.",
     "failedToCreate": "Failed to create session",
     "failedToJoin": "Failed to join session",
