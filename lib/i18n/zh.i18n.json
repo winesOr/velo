@@ -47,6 +47,7 @@
   "ratingDetails": {
     "title": "评分与来源",
     "viewSources": "查看评分来源",
+    "unattributedSource": "来源未标注",
     "serverRating": "服务器评分",
     "sourceUnspecified": "来源未标注",
     "tenPointScale": "10 分制",

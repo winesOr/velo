@@ -306,6 +306,7 @@ void main() {
   });
 
   testWidgets('TV detail shows independent source-labeled ratings', (tester) async {
+    final semantics = tester.ensureSemantics();
     await SettingsService.getInstance();
     tester.view.physicalSize = const Size(1280, 720);
     tester.view.devicePixelRatio = 1;
@@ -342,15 +343,17 @@ void main() {
     expect(find.text('87%'), findsOneWidget);
     expect(find.text('7.4'), findsOneWidget);
     expect(find.byType(MediaRatingsStrip), findsOneWidget);
-    expect(find.text(t.common.ratingSource.rottenTomatoesCritic), findsOneWidget);
-    expect(find.text(t.common.ratingSource.rottenTomatoesAudience), findsOneWidget);
-    expect(find.text(t.common.ratingSource.imdb), findsOneWidget);
+    expect(find.bySemanticsLabel('${t.common.ratingSource.rottenTomatoesCritic} 62%'), findsOneWidget);
+    expect(find.bySemanticsLabel('${t.common.ratingSource.rottenTomatoesAudience} 87%'), findsOneWidget);
+    expect(find.bySemanticsLabel('${t.common.ratingSource.imdb} 7.4'), findsOneWidget);
     expect(find.textContaining('★ 6.2', findRichText: true), findsNothing);
     // The redundant type label no longer opens the line.
     expect(find.text('Movie'), findsNothing);
+    semantics.dispose();
   });
 
   testWidgets('TV detail independent ratings still render a single available score', (tester) async {
+    final semantics = tester.ensureSemantics();
     await SettingsService.getInstance();
     tester.view.physicalSize = const Size(1280, 720);
     tester.view.devicePixelRatio = 1;
@@ -381,7 +384,8 @@ void main() {
 
     expect(find.text('87%'), findsOneWidget);
     expect(find.byType(MediaRatingsStrip), findsOneWidget);
-    expect(find.text(t.common.ratingSource.rottenTomatoesAudience), findsOneWidget);
+    expect(find.bySemanticsLabel('${t.common.ratingSource.rottenTomatoesAudience} 87%'), findsOneWidget);
+    semantics.dispose();
   });
 
   testWidgets('TV detail metadata line keeps quality labels for the sheet and every field on screen', (tester) async {

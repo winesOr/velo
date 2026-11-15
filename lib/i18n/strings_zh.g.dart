@@ -164,6 +164,7 @@ class Translations$ratingDetails$zh extends Translations$ratingDetails$en {
 	// Translations
 	@override String get title => '评分与来源';
 	@override String get viewSources => '查看评分来源';
+	@override String get unattributedSource => '来源未标注';
 	@override String get serverRating => '服务器评分';
 	@override String get sourceUnspecified => '来源未标注';
 	@override String get tenPointScale => '10 分制';
@@ -3445,6 +3446,7 @@ extension on TranslationsZh {
 			'auth.pinCheckRejected' => 'Plex PIN 检查被拒绝',
 			'ratingDetails.title' => '评分与来源',
 			'ratingDetails.viewSources' => '查看评分来源',
+			'ratingDetails.unattributedSource' => '来源未标注',
 			'ratingDetails.serverRating' => '服务器评分',
 			'ratingDetails.sourceUnspecified' => '来源未标注',
 			'ratingDetails.tenPointScale' => '10 分制',
@@ -3913,9 +3915,9 @@ extension on TranslationsZh {
 			'hotkeys.noShortcutSet' => '未设置快捷键',
 			'hotkeys.currentShortcut' => '当前快捷键：',
 			'hotkeys.pressToRecord' => '点击后录入快捷键',
-			'hotkeys.recordingShortcut' => '请按下快捷键',
 			_ => null,
 		} ?? switch (path) {
+			'hotkeys.recordingShortcut' => '请按下快捷键',
 			'hotkeys.actions.playPause' => '播放/暂停',
 			'hotkeys.actions.volumeUp' => '增大音量',
 			'hotkeys.actions.volumeDown' => '减小音量',
@@ -4427,9 +4429,9 @@ extension on TranslationsZh {
 			'profiles.tokenIdentityMismatch' => 'Plex 用户资料令牌解析到了非预期服务器',
 			'connections.sectionTitle' => '连接',
 			'connections.addConnection' => '添加连接',
-			'connections.addConnectionSubtitleNoProfile' => '使用 Plex 登录，或连接 Jellyfin 或 Emby 服务器',
 			_ => null,
 		} ?? switch (path) {
+			'connections.addConnectionSubtitleNoProfile' => '使用 Plex 登录，或连接 Jellyfin 或 Emby 服务器',
 			'connections.addConnectionSubtitleScoped' => ({required Object displayName}) => '添加到 ${displayName}：Plex、Jellyfin、Emby，或其他用户资料的连接',
 			'connections.sessionExpiredOne' => ({required Object name}) => '${name} 的会话已过期',
 			'connections.sessionExpiredMany' => ({required Object count}) => '${count} 个服务器的会话已过期',
@@ -4941,9 +4943,9 @@ extension on TranslationsZh {
 			'liveTv.editRuleAction' => '编辑',
 			'liveTv.recordingRuleUpdated' => '录制规则已更新',
 			'liveTv.guideReloadRequested' => '已请求更新节目指南',
-			'liveTv.guideReloadFailed' => '无法刷新节目指南',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.guideReloadFailed' => '无法刷新节目指南',
 			'liveTv.rulesProcessRequested' => '已请求重新评估规则',
 			'liveTv.rulesProcessFailed' => '无法重新评估录制规则',
 			'liveTv.recordShow' => '录制节目',
@@ -5455,9 +5457,9 @@ extension on TranslationsZh {
 			'metadataEdit.squareArt' => '方形图片',
 			'metadataEdit.selectPoster' => '选择海报',
 			'metadataEdit.selectBackground' => '选择背景',
-			'metadataEdit.selectLogo' => '选择标志',
 			_ => null,
 		} ?? switch (path) {
+			'metadataEdit.selectLogo' => '选择标志',
 			'metadataEdit.selectSquareArt' => '选择方形图片',
 			'metadataEdit.fromUrl' => '通过 URL',
 			'metadataEdit.uploadFile' => '上传文件',

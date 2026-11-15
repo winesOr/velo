@@ -56,13 +56,13 @@ List<MediaRatingSource> _ratingsFor(MediaItem item) {
 }
 
 /// Every score read out as `<source> <value>`, for merged metadata-line
-/// announcements. Falls back to the bare value where the source is unnamed.
+/// announcements. Identifies scores whose source is not attributed.
 String ratingsSemanticLabel(List<MediaRatingSource> ratings) => [
   for (final rating in ratings)
     switch (ratingSourceLabel(rating.source)) {
       final label? => '$label ${mediaRatingLabel(rating)}',
       null =>
-        '${rating.source == 'personal' ? t.explore.detail.yourRating : t.discover.rating} ${mediaRatingLabel(rating)}/10',
+        '${rating.source == 'personal' ? t.explore.detail.yourRating : t.ratingDetails.unattributedSource} ${mediaRatingLabel(rating)}/10',
     },
 ].join(', ');
 

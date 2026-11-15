@@ -253,6 +253,9 @@ class Translations$ratingDetails$en {
 	/// en: 'View rating sources'
 	String get viewSources => 'View rating sources';
 
+	/// en: 'Source not specified'
+	String get unattributedSource => 'Source not specified';
+
 	/// en: 'Server rating'
 	String get serverRating => 'Server rating';
 
@@ -8241,6 +8244,7 @@ extension on Translations {
 			'auth.pinCheckRejected' => 'The Plex PIN check was rejected',
 			'ratingDetails.title' => 'Ratings and sources',
 			'ratingDetails.viewSources' => 'View rating sources',
+			'ratingDetails.unattributedSource' => 'Source not specified',
 			'ratingDetails.serverRating' => 'Server rating',
 			'ratingDetails.sourceUnspecified' => 'Source unspecified',
 			'ratingDetails.tenPointScale' => '0–10 scale',
@@ -8709,9 +8713,9 @@ extension on Translations {
 			'hotkeys.noShortcutSet' => 'No shortcut set',
 			'hotkeys.currentShortcut' => 'Current shortcut:',
 			'hotkeys.pressToRecord' => 'Select to record a shortcut',
-			'hotkeys.recordingShortcut' => 'Press the shortcut now',
 			_ => null,
 		} ?? switch (path) {
+			'hotkeys.recordingShortcut' => 'Press the shortcut now',
 			'hotkeys.actions.playPause' => 'Play/Pause',
 			'hotkeys.actions.volumeUp' => 'Volume Up',
 			'hotkeys.actions.volumeDown' => 'Volume Down',
@@ -9223,9 +9227,9 @@ extension on Translations {
 			'profiles.tokenIdentityMismatch' => 'The Plex profile token resolved to an unexpected server',
 			'connections.sectionTitle' => 'Connections',
 			'connections.addConnection' => 'Add connection',
-			'connections.addConnectionSubtitleNoProfile' => 'Sign in with Plex or connect a Jellyfin or Emby server',
 			_ => null,
 		} ?? switch (path) {
+			'connections.addConnectionSubtitleNoProfile' => 'Sign in with Plex or connect a Jellyfin or Emby server',
 			'connections.addConnectionSubtitleScoped' => ({required Object displayName}) => 'Add to ${displayName}: Plex, Jellyfin, Emby, or another profile connection',
 			'connections.sessionExpiredOne' => ({required Object name}) => 'Session expired for ${name}',
 			'connections.sessionExpiredMany' => ({required Object count}) => 'Session expired for ${count} servers',
@@ -9737,9 +9741,9 @@ extension on Translations {
 			'liveTv.editRuleAction' => 'Edit',
 			'liveTv.recordingRuleUpdated' => 'Recording rule updated',
 			'liveTv.guideReloadRequested' => 'Guide refresh requested',
-			'liveTv.guideReloadFailed' => 'Couldn\'t refresh the guide',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.guideReloadFailed' => 'Couldn\'t refresh the guide',
 			'liveTv.rulesProcessRequested' => 'Rule re-evaluation requested',
 			'liveTv.rulesProcessFailed' => 'Couldn\'t re-evaluate recording rules',
 			'liveTv.recordShow' => 'Record show',
@@ -10251,9 +10255,9 @@ extension on Translations {
 			'metadataEdit.squareArt' => 'Square Art',
 			'metadataEdit.selectPoster' => 'Select Poster',
 			'metadataEdit.selectBackground' => 'Select Background',
-			'metadataEdit.selectLogo' => 'Select Logo',
 			_ => null,
 		} ?? switch (path) {
+			'metadataEdit.selectLogo' => 'Select Logo',
 			'metadataEdit.selectSquareArt' => 'Select Square Art',
 			'metadataEdit.fromUrl' => 'From URL',
 			'metadataEdit.uploadFile' => 'Upload File',

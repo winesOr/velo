@@ -2,8 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
-import '../i18n/strings.g.dart';
 import '../media/media_item.dart';
 import '../media/media_rating.dart';
 import '../utils/rating_display_policy.dart';
@@ -12,7 +12,7 @@ import 'app_icon.dart';
 import 'media_rating_badge.dart';
 import 'settings_builder.dart';
 
-/// A reserved external-score region, independent of metadata's fitting budget.
+/// A compact external-score region, independent of metadata's fitting budget.
 /// Empty data collapses entirely; adding sources keeps the existing slot geometry.
 class MediaRatingsStrip extends StatelessWidget {
   const MediaRatingsStrip({
@@ -33,11 +33,11 @@ class MediaRatingsStrip extends StatelessWidget {
   final EdgeInsetsGeometry padding;
 
   static int columnsFor(double width, TextScaler scaler, int slots) =>
-      math.max(1, math.min(slots, (width / (76 * scaler.scale(1))).floor()));
+      math.max(1, math.min(slots, (width / (88 * scaler.scale(1))).floor()));
 
   static double heightFor(double width, TextScaler scaler, {int slots = RatingDisplayPolicy.detailLimit}) {
     final columns = columnsFor(width, scaler, slots);
-    return (slots / columns).ceil() * 78 * scaler.scale(1);
+    return (slots / columns).ceil() * 48 * scaler.scale(1);
   }
 
   @override
@@ -55,41 +55,39 @@ class MediaRatingsStrip extends StatelessWidget {
             final width = constraints.hasBoundedWidth ? constraints.maxWidth : 320.0;
             final columns = columnsFor(width, scaler, maxRatings);
             final cellWidth = width / columns;
+            final cellHeight = 48 * scaler.scale(1);
             return SizedBox(
               height: heightFor(width, scaler, slots: maxRatings),
               child: Wrap(
                 alignment: alignment,
                 children: [
-                  for (final rating in ratings)
+                  for (var index = 0; index < ratings.length; index++)
                     SizedBox(
                       width: cellWidth,
-                      height: 78 * scaler.scale(1),
+                      height: cellHeight,
                       child: Semantics(
-                        label: ratingsSemanticLabel([rating]),
+                        label: ratingsSemanticLabel([ratings[index]]),
                         excludeSemantics: true,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 3),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                mediaRatingLabel(rating),
-                                style: TextStyle(
-                                  color: foreground,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  fontFeatures: const [FontFeature.tabularFigures()],
-                                ),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            border: index % columns == 0
+                                ? null
+                                : Border(left: BorderSide(color: foreground.withValues(alpha: .16))),
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              alignment == WrapAlignment.start && index % columns == 0 ? 0 : 12,
+                              5,
+                              12,
+                              5,
+                            ),
+                            child: Align(
+                              alignment: alignment == WrapAlignment.start ? Alignment.centerLeft : Alignment.center,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: _RatingScore(rating: ratings[index], foreground: foreground),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                ratingSourceLabel(rating.source) ?? t.settings.otherRatingSources,
-                                textAlign: TextAlign.center,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: foreground.withValues(alpha: .78), fontSize: 11, height: 1.2),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
@@ -102,6 +100,43 @@ class MediaRatingsStrip extends StatelessWidget {
       );
     },
   );
+}
+
+class _RatingScore extends StatelessWidget {
+  const _RatingScore({required this.rating, required this.foreground});
+
+  final MediaRatingSource rating;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    final info = ratingInfoForSource(rating.source, rating.value);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (info != null)
+          SizedBox(width: 18 * info.iconAspect, height: 18, child: SvgPicture.asset(info.assetPath))
+        else
+          AppIcon(
+            rating.source == 'personal' ? Symbols.person_rounded : Symbols.star_rounded,
+            fill: 1,
+            size: 18,
+            color: rating.source == 'personal' ? foreground : const Color(0xfff5c544),
+          ),
+        const SizedBox(width: 6),
+        Text(
+          mediaRatingLabel(rating),
+          maxLines: 1,
+          style: TextStyle(
+            color: foreground,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 /// One real score on artwork; personal values are explicitly identified as /10.

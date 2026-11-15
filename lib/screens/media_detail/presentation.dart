@@ -244,8 +244,11 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
             textAlign: centered ? TextAlign.center : TextAlign.start,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
           ),
-        MediaRatingsStrip(item: metadata, alignment: centered ? WrapAlignment.center : WrapAlignment.start),
-        const SizedBox(height: 18),
+        MediaRatingsStrip(
+          item: metadata,
+          alignment: centered ? WrapAlignment.center : WrapAlignment.start,
+          padding: const EdgeInsets.only(bottom: 18),
+        ),
         if (!_usesCompactHero(MediaQuery.sizeOf(context).width - _heroSideInset * 2) && _canEditDetailRating(metadata))
           Padding(padding: const EdgeInsets.only(bottom: 8), child: _buildUserRatingChip(metadata)),
         _buildActionButtons(metadata),

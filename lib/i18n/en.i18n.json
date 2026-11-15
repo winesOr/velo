@@ -47,6 +47,7 @@
   "ratingDetails": {
     "title": "Ratings and sources",
     "viewSources": "View rating sources",
+    "unattributedSource": "Source not specified",
     "serverRating": "Server rating",
     "sourceUnspecified": "Source unspecified",
     "tenPointScale": "0–10 scale",

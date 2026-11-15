@@ -161,6 +161,7 @@ extension _MediaDetailResponsiveLayout on _MediaDetailScreenState {
                 MediaRatingsStrip(
                   item: ratingsItem,
                   fallbackItem: metadata,
+                  alignment: WrapAlignment.start,
                   foregroundColor: _tvDetailForegroundColor(context),
                 ),
                 if (canRate) _buildUserRatingChip(metadata),

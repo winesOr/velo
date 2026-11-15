@@ -104,12 +104,15 @@ void main() {
   });
 
   testWidgets('unknown source is labeled neutrally rather than exposing the key', (tester) async {
+    final semantics = tester.ensureSemantics();
     await _pump(
       tester,
       MediaRatingsStrip(item: _item(const [MediaRatingSource(source: 'internal.future.rating', value: 7.2)])),
     );
-    expect(find.text('Other ratings'), findsOneWidget);
+    expect(find.text('Other ratings'), findsNothing);
+    expect(find.bySemanticsLabel('${t.ratingDetails.unattributedSource} 7.2/10'), findsOneWidget);
     expect(find.textContaining('internal.future'), findsNothing);
+    semantics.dispose();
   });
 
   testWidgets('hero rating sources own clicks, scroll, close one layer and restore focus', (tester) async {
