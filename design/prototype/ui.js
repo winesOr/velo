@@ -14,7 +14,8 @@
   function navMarkup(){return entries.map(([key,label])=>`<a href="${key}.html" ${key===current?'class="on" aria-current="page"':''}>${icon(key)}<span>${label}</span></a>`).join('');}
   function hydrate(root=document){root.querySelectorAll('[data-icon]').forEach(n=>{n.innerHTML=icon(n.dataset.icon);});root.querySelectorAll('[data-app-nav],.tabbar').forEach(n=>{n.classList.add('app-nav');n.innerHTML=navMarkup();});}
   document.querySelectorAll('.nav').forEach(n=>n.innerHTML='<h1>VELO <span style="font-weight:400;color:#747a84">/ Design</span></h1>'+[['index','总览'],...entries.slice(0,2),['detail','视频详情'],entries[2],['player','播放器'],entries[3],['toast','提示条']].map(([key,label])=>`<a href="${key}.html" class="${key===current?'on':''}">${label}</a>`).join('')+'<span class="version">FINAL UI BASELINE V1</span>');
-  function toast(root,message){root.querySelector('.toast')?.remove();const n=document.createElement('div');n.className='toast';n.setAttribute('role','status');n.textContent=message;root.append(n);setTimeout(()=>n.remove(),2600);}
+  /* SHARED-03: delegates to the option-A engine in toast.js (opts: type, action:{label,run}, key, duration). */
+  function toast(root,message,opts={}){if(window.VeloToast)return VeloToast.show(root,{type:'info',...opts,text:message});root.querySelector('.toast')?.remove();const n=document.createElement('div');n.className='toast';n.setAttribute('role','status');n.textContent=message;root.append(n);setTimeout(()=>n.remove(),2600);}
   function sheet(root,title,content,onMount,options={}){
     const previous=root.querySelector('.modal-shade');
     const returnFocus=previous?.returnFocus||document.activeElement;

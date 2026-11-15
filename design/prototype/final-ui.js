@@ -58,7 +58,7 @@
       const restore=document.activeElement===status;
       state.pending=null;state.target=null;refresh(root);
       if(restore&&!root.querySelector('.modal-shade,.cast-overlay:not([hidden])'))root.querySelector(`[data-track-kind="${kind}"][aria-selected="true"]:not(:disabled)`)?.focus({preventScroll:true});
-      if(state.error)UI.toast(root,state.error);
+      if(state.error)UI.toast(root,state.error,{type:'error',action:{label:'重试',run:()=>choose(root,kind,next)}});
     },state.scene==='slow'?1400:360);
   }
   function bind(root,container){container.querySelectorAll('[data-track-id]').forEach(button=>button.onclick=()=>choose(root,button.dataset.trackKind,button.dataset.trackId));}
