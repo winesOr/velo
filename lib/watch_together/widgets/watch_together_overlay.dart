@@ -1,3 +1,4 @@
+import '../../theme/overlay_tokens.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -47,7 +48,7 @@ class WatchTogetherSessionIndicator extends StatelessWidget {
       OverlaySheetController.of(context)
           .show(
             presentation: OverlaySheetPresentation.edgeDrawer,
-            constraints: const BoxConstraints(maxWidth: 350),
+            constraints: const BoxConstraints(maxWidth: OverlayTokens.drawerWidth),
             builder: (context) => ListenableBuilder(
               listenable: provider,
               builder: (context, _) => _SessionMenuSheet(provider: provider),

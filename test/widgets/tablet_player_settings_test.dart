@@ -101,7 +101,7 @@ void main() {
   }
 
   for (final size in [const Size(820, 1180), const Size(1180, 820)]) {
-    testWidgets('tablet player settings keeps a wider stable panel at $size', (tester) async {
+    testWidgets('tablet player settings keeps a stable panel at $size', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -128,8 +128,8 @@ void main() {
       );
       await tester.pumpAndSettle();
       final panel = tester.getSize(find.byType(PlayerSettingsDrawer));
-      expect(panel.width, 400);
-      expect(panel.height, 680);
+      expect(panel.width, 340);
+      expect(panel.height, size.height);
       await tester.tap(find.text(t.videoControls.tabAudio));
       await tester.pumpAndSettle();
       expect(tester.getSize(find.byType(PlayerSettingsDrawer)), panel);

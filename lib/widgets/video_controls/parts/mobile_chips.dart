@@ -89,10 +89,6 @@ extension _PlexVideoControlsMobileChipMethods on _PlexVideoControlsState {
     OverlaySheetController.of(context)
         .show(
           style: OverlaySheetStyle.glass,
-          blurSigma: 28,
-          backgroundColor: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xc716171b)
-              : const Color(0xd1f6f6f8),
           presentation: OverlaySheetPresentation.edgeDrawer,
           constraints: BoxConstraints(maxWidth: PlayerSettingsDrawer.widthFor(context)),
           builder: (_) => PlayerSettingsDrawer(

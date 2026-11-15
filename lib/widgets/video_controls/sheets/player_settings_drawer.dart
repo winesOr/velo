@@ -7,7 +7,7 @@ import '../../../media/media_item.dart';
 import '../../../danmaku/danmaku_session.dart';
 import '../../../mpv/mpv.dart';
 import '../../../services/settings_service.dart';
-import '../../../theme/mono_presentation.dart';
+import '../../../theme/overlay_tokens.dart';
 import '../../../services/video_volume_controller.dart';
 import 'player_subtitle_appearance.dart';
 import '../../focusable_list_tile.dart';
@@ -26,7 +26,7 @@ enum PlayerDrawerTab { video, audio, subtitles, danmaku }
 /// The mobile player's "more" drawer: four segmented tabs over the existing
 /// sheets, which render headerless inside it ([EmbeddedVideoControlSheet]).
 class PlayerSettingsDrawer extends StatefulWidget {
-  static double widthFor(BuildContext context) => MonoPresentation.isTablet(context) ? 400 : 318;
+  static double widthFor(BuildContext context) => OverlayTokens.drawerWidth;
 
   const PlayerSettingsDrawer({
     super.key,
@@ -75,6 +75,19 @@ class _PlayerSettingsDrawerState extends State<PlayerSettingsDrawer> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
+              child: Row(
+                children: [
+                  Expanded(child: Text(t.videoControls.moreButton, style: Theme.of(context).textTheme.titleMedium)),
+                  IconButton(
+                    tooltip: t.common.close,
+                    onPressed: () => OverlaySheetController.of(context).close(),
+                    icon: const AppIcon(Symbols.close_rounded, size: 20),
+                  ),
+                ],
+              ),
+            ),
             Container(
               margin: const EdgeInsets.fromLTRB(12, 10, 12, 2),
               padding: const EdgeInsets.all(3),

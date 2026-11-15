@@ -19,7 +19,7 @@ extension _VideoPlayerCastingMethods on VideoPlayerScreenState {
           .show<void>(
             style: OverlaySheetStyle.glass,
             presentation: OverlaySheetPresentation.edgeDrawer,
-            constraints: const BoxConstraints(maxWidth: 360),
+            constraints: const BoxConstraints(maxWidth: OverlayTokens.drawerWidth),
             canDismiss: () => !sending,
             builder: (_) => DlnaCastSheet(
               unavailableReason: unavailable,

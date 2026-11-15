@@ -485,7 +485,11 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
     }
 
     BackKeyUpSuppressor.clearSuppression();
-    _animationController.duration = AppGlassSurface.reduceEffects(context) ? Duration.zero : OverlayTokens.motion;
+    _animationController.duration = AppGlassSurface.reduceEffects(context)
+        ? Duration.zero
+        : (presentation == OverlaySheetPresentation.edgeDrawer && anchor == null
+              ? OverlayTokens.drawerMotion
+              : OverlayTokens.motion);
     _animationController.forward(from: 0);
     _autoFocus();
 
@@ -779,55 +783,64 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
     final media = MediaQuery.of(context);
     final inset = media.padding;
     final maxWidth = (_constraints ?? OverlaySheetController._defaultSheetConstraints(context)).maxWidth;
-    final width = math.min(maxWidth.isFinite ? maxWidth : 350.0, media.size.width) + inset.right;
     final slide = Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(_slideCurve);
     return Positioned.fill(
-      child: FocusScope(
-        node: _sheetFocusScopeNode,
-        onKeyEvent: _handleKeyEvent,
-        child: Focus(
-          canRequestFocus: false,
-          skipTraversal: true,
-          onKeyEvent: _handleKeyEvent,
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: SlideTransition(
-              position: slide,
-              child: AppGlassSurface(
-                radius: OverlayTokens.radius,
-                shape: RoundedRectangleBorder(
-                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(OverlayTokens.radius)),
-                  side: BorderSide(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(
-                      alpha: AppGlassSurface.reduceEffects(context)
-                          ? 0.35
-                          : (Theme.of(context).brightness == Brightness.dark ? 0.12 : 0.10),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = math.min(maxWidth.isFinite ? maxWidth : OverlayTokens.drawerWidth, constraints.maxWidth * .85);
+          return FocusScope(
+            node: _sheetFocusScopeNode,
+            onKeyEvent: _handleKeyEvent,
+            child: Focus(
+              canRequestFocus: false,
+              skipTraversal: true,
+              onKeyEvent: _handleKeyEvent,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: SlideTransition(
+                  position: slide,
+                  child: AppGlassSurface(
+                    radius: OverlayTokens.radius,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: const BorderRadius.horizontal(left: Radius.circular(OverlayTokens.radius)),
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(
+                          alpha: AppGlassSurface.reduceEffects(context)
+                              ? 0.35
+                              : (Theme.of(context).brightness == Brightness.dark ? 0.12 : 0.10),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                backgroundColor: _explicitBackgroundColor,
-                blurSigma: _blurSigma,
-                frosted: _style == OverlaySheetStyle.glass,
-                child: SizedBox(
-                  key: ValueKey(_sheetSession),
-                  width: width,
-                  height: double.infinity,
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      0,
-                      inset.top,
-                      inset.right,
-                      math.max(inset.bottom, media.viewInsets.bottom),
-                    ),
-                    child: PrimaryScrollController.none(
-                      child: _pageStack.isNotEmpty ? _buildPageStack() : const SizedBox.shrink(),
+                    backgroundColor:
+                        _explicitBackgroundColor ??
+                        (Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xff202020)
+                            : const Color(0xfffdfcf9)),
+                    surfaceOpacity: Theme.of(context).brightness == Brightness.dark ? .96 : .97,
+                    blurSigma: _blurSigma,
+                    frosted: _style == OverlaySheetStyle.glass,
+                    child: SizedBox(
+                      key: ValueKey(_sheetSession),
+                      width: width,
+                      height: double.infinity,
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          0,
+                          inset.top,
+                          inset.right,
+                          math.max(inset.bottom, media.viewInsets.bottom),
+                        ),
+                        child: PrimaryScrollController.none(
+                          child: _pageStack.isNotEmpty ? _buildPageStack() : const SizedBox.shrink(),
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

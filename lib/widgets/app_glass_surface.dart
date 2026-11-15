@@ -14,6 +14,7 @@ class AppGlassSurface extends StatelessWidget {
     required this.child,
     this.radius = OverlayTokens.radius,
     this.backgroundColor,
+    this.surfaceOpacity,
     this.blurSigma = OverlayTokens.blurSigma,
     this.frosted = true,
     this.shape,
@@ -22,6 +23,7 @@ class AppGlassSurface extends StatelessWidget {
   final Widget child;
   final double radius;
   final Color? backgroundColor;
+  final double? surfaceOpacity;
   final double blurSigma;
   final bool frosted;
   final ShapeBorder? shape;
@@ -40,7 +42,7 @@ class AppGlassSurface extends StatelessWidget {
     // in light mode and an unreadable fallback.
     final tint = backgroundColor == null || backgroundColor!.a == 0 ? colors.surface : backgroundColor!;
     final surface = glass
-        ? tint.withValues(alpha: dark ? OverlayTokens.darkOpacity : OverlayTokens.lightOpacity)
+        ? tint.withValues(alpha: surfaceOpacity ?? (dark ? OverlayTokens.darkOpacity : OverlayTokens.lightOpacity))
         : tint.withValues(alpha: 1);
     final outline =
         shape ??

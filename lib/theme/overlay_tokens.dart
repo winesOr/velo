@@ -10,5 +10,7 @@ abstract final class OverlayTokens {
   static const double wideDialogMaxWidth = 720;
   static const double notificationMaxWidth = 520;
   static const double viewportInset = 16;
+  static const double drawerWidth = 340;
+  static const Duration drawerMotion = Duration(milliseconds: 240);
   static const Duration motion = Duration(milliseconds: 180);
 }

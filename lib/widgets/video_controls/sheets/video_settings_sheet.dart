@@ -1,3 +1,4 @@
+import '../../../theme/overlay_tokens.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -698,7 +699,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
     controller
         .show(
           presentation: OverlaySheetPresentation.edgeDrawer,
-          constraints: const BoxConstraints(maxWidth: 350),
+          constraints: const BoxConstraints(maxWidth: OverlayTokens.drawerWidth),
           initialFocusNode: sliderFocusNode,
           builder: (_) => _CompactSyncBar(
             title: title,

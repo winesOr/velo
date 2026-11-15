@@ -16,7 +16,7 @@ void main() {
               builder: (context) => ElevatedButton(
                 onPressed: () => OverlaySheetController.of(context).show<void>(
                   presentation: OverlaySheetPresentation.edgeDrawer,
-                  constraints: const BoxConstraints(maxWidth: 350),
+                  constraints: const BoxConstraints(maxWidth: 340),
                   builder: (_) => const Text('Drawer body'),
                 ),
                 child: const Text('Open'),
@@ -34,6 +34,19 @@ void main() {
     expect(rect.right, 800);
     expect(rect.top, 0);
     expect(rect.height, 600);
-    expect(rect.width, 350);
+    expect(rect.width, 340);
+
+    await tester.tapAt(const Offset(10, 300));
+    await tester.pumpAndSettle();
+    tester.view.physicalSize = const Size(300, 600);
+    await tester.pump();
+    await tester.tap(find.text('Open'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
+    final drawer = find.ancestor(of: find.text('Drawer body'), matching: find.byType(SizedBox)).first;
+    expect(tester.getRect(drawer).right, greaterThan(300));
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(tester.getRect(drawer).right, 300);
+    expect(tester.getSize(drawer).width, 255);
   });
 }

@@ -1,3 +1,4 @@
+import '../../../theme/overlay_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/services.dart';
@@ -173,7 +174,7 @@ class TrackChapterControls extends StatelessWidget {
                   OverlaySheetController.of(context)
                       .show(
                         presentation: OverlaySheetPresentation.edgeDrawer,
-                        constraints: const BoxConstraints(maxWidth: 350),
+                        constraints: const BoxConstraints(maxWidth: OverlayTokens.drawerWidth),
                         builder: (_) => VideoSettingsSheet(player: player, trackControlsState: state),
                       )
                       .whenComplete(() => state.onStartAutoHide?.call());
@@ -211,7 +212,7 @@ class TrackChapterControls extends StatelessWidget {
                     OverlaySheetController.of(context)
                         .show(
                           presentation: OverlaySheetPresentation.edgeDrawer,
-                          constraints: const BoxConstraints(maxWidth: 350),
+                          constraints: const BoxConstraints(maxWidth: OverlayTokens.drawerWidth),
                           builder: (_) => TrackSheet(player: player, trackControlsState: state),
                         )
                         .whenComplete(() => state.onStartAutoHide?.call());
@@ -237,7 +238,7 @@ class TrackChapterControls extends StatelessWidget {
                 OverlaySheetController.of(context)
                     .show(
                       presentation: OverlaySheetPresentation.edgeDrawer,
-                      constraints: const BoxConstraints(maxWidth: 350),
+                      constraints: const BoxConstraints(maxWidth: OverlayTokens.drawerWidth),
                       builder: (_) => ChapterSheet(
                         player: player,
                         chapters: chapters,
@@ -269,7 +270,7 @@ class TrackChapterControls extends StatelessWidget {
                 OverlaySheetController.of(context)
                     .show(
                       presentation: OverlaySheetPresentation.edgeDrawer,
-                      constraints: const BoxConstraints(maxWidth: 350),
+                      constraints: const BoxConstraints(maxWidth: OverlayTokens.drawerWidth),
                       builder: (_) => QueueSheet(onItemSelected: state.onQueueItemSelected!),
                     )
                     .whenComplete(() => state.onStartAutoHide?.call());
@@ -343,7 +344,7 @@ class TrackChapterControls extends StatelessWidget {
                 OverlaySheetController.of(context)
                     .show(
                       presentation: OverlaySheetPresentation.edgeDrawer,
-                      constraints: const BoxConstraints(maxWidth: 350),
+                      constraints: const BoxConstraints(maxWidth: OverlayTokens.drawerWidth),
                       builder: (_) => DanmakuSettingsSheet(metadata: state.metadata),
                     )
                     .whenComplete(() => state.onStartAutoHide?.call());
