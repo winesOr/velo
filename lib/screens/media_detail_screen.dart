@@ -3571,7 +3571,16 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                                 Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
-                                  children: [for (final genre in metadata.genres!) Chip(label: Text(genre))],
+                                  children: [
+                                    for (final genre in metadata.genres!)
+                                      Chip(
+                                        label: Text(genre),
+                                        labelStyle: const TextStyle(fontSize: 11, height: 1.5),
+                                        labelPadding: EdgeInsets.zero,
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+                                      ),
+                                  ],
                                 ),
                                 const SizedBox(height: 20),
                               ],
@@ -4569,7 +4578,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     final compact = !PlatformDetector.isTV() && _usesCompactHero(MediaQuery.sizeOf(context).width - _heroSideInset * 2);
     return CastMemberStrip(
       key: _castStripKey,
-      cardWidth: MonoPresentation.isTablet(context) ? 88 : (compact ? 65 : null),
+      cardWidth: compact ? 65 : null,
       portraitBorderRadius: compact ? 14 : null,
       compact: compact,
       members: [for (final actor in roles) (name: actor.tag, secondary: actor.role, imagePath: actor.thumbPath)],

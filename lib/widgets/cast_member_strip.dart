@@ -178,11 +178,12 @@ class CastMemberStripState extends State<CastMemberStrip> {
     final theme = Theme.of(context);
     final nameStyle = theme.textTheme.bodyMedium?.copyWith(
       fontWeight: widget.compact ? FontWeight.w500 : FontWeight.w600,
-      fontSize: widget.compact ? 11 : null,
+      fontSize: widget.compact ? 10 : null,
     );
     final secondaryStyle = theme.textTheme.bodySmall?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
       fontSize: widget.compact ? 9 : null,
+      height: widget.compact ? 1.3 : null,
     );
     final cardWidth = _cardWidth(context);
     final textScale = MediaQuery.textScalerOf(context).scale(1);

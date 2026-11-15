@@ -95,6 +95,15 @@ class _MediaDetailTechnicalInfoState extends State<MediaDetailTechnicalInfo> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final version = _selectedVersion;
+    final streams = [
+      if (version != null)
+        for (final part in version.parts)
+          for (final stream in part.streams)
+            if (stream.kind == MediaStreamKind.video ||
+                stream.kind == MediaStreamKind.audio ||
+                stream.kind == MediaStreamKind.subtitle)
+              stream,
+    ];
     return Column(
       key: const ValueKey('detail_technical_info'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,36 +122,23 @@ class _MediaDetailTechnicalInfoState extends State<MediaDetailTechnicalInfo> {
         else if (version == null)
           Text(t.messages.fileInfoNotAvailable, style: theme.textTheme.bodySmall)
         else ...[
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final streams = [
-                for (final part in version.parts)
-                  for (final stream in part.streams)
-                    if (stream.kind == MediaStreamKind.video ||
-                        stream.kind == MediaStreamKind.audio ||
-                        stream.kind == MediaStreamKind.subtitle)
-                      stream,
-              ];
-              if (streams.isEmpty) {
-                return _card(context, t.fileInfo.video, Symbols.videocam_rounded, {
-                  t.fileInfo.codec: version.videoCodec,
-                  t.fileInfo.resolution: version.resolutionFormatted,
-                  t.fileInfo.bitrate: version.bitrateFormatted,
-                  t.fileInfo.profile: version.videoProfile,
-                }, fullWidth: true);
-              }
-              final columns = constraints.maxWidth >= 520
-                  ? 3
-                  : constraints.maxWidth >= 330
-                  ? 2
-                  : 1;
-              final cardWidth = (constraints.maxWidth - (columns - 1) * 10) / columns;
-              return Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [for (final stream in streams) _streamCard(context, stream, width: cardWidth)],
-              );
-            },
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 11,
+              children: [
+                if (streams.isEmpty)
+                  _card(context, t.fileInfo.video, Symbols.videocam_rounded, {
+                    t.fileInfo.codec: version.videoCodec,
+                    t.fileInfo.resolution: version.resolutionFormatted,
+                    t.fileInfo.bitrate: version.bitrateFormatted,
+                    t.fileInfo.profile: version.videoProfile,
+                  })
+                else
+                  for (final stream in streams) _streamCard(context, stream),
+              ],
+            ),
           ),
           const SizedBox(height: 14),
           for (final part in version.parts)
@@ -195,13 +191,13 @@ class _MediaDetailTechnicalInfoState extends State<MediaDetailTechnicalInfo> {
     double? width,
   }) {
     final theme = Theme.of(context);
-    final text = theme.textTheme.bodySmall?.copyWith(height: 1.7);
+    final text = theme.textTheme.bodySmall?.copyWith(fontSize: fullWidth ? 10 : 11, height: 1.9);
     return FocusableWrapper(
       disableScale: true,
       child: Container(
         width: fullWidth ? double.infinity : (width ?? 235),
         margin: EdgeInsets.zero,
-        padding: const EdgeInsets.all(15),
+        padding: EdgeInsets.all(fullWidth ? 16 : 15),
         decoration: BoxDecoration(
           color: theme.colorScheme.onSurface.withValues(alpha: .065),
           borderRadius: BorderRadius.circular(16),
@@ -214,10 +210,15 @@ class _MediaDetailTechnicalInfoState extends State<MediaDetailTechnicalInfo> {
               children: [
                 AppIcon(icon, size: 17),
                 const SizedBox(width: 6),
-                Expanded(child: Text(title, style: text)),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: text?.copyWith(fontSize: fullWidth ? 11 : 13, fontWeight: FontWeight.w500, height: 1.5),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: fullWidth ? 7 : 10),
             for (final entry in rows.entries)
               if (entry.value?.isNotEmpty == true) Text('${entry.key}: ${entry.value}', style: text),
           ],
