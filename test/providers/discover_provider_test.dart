@@ -84,6 +84,7 @@ class _FakeAggregationService extends DataAggregationService {
   Future<void>? hubGate;
   Completer<void>? onDeckStarted;
   Completer<void>? hubStarted;
+  bool publishProgress = false;
 
   // This fixture models one logical whole-result fetch, including its gate
   // and call count. Real per-server incremental fan-out has separate tests.
@@ -93,7 +94,15 @@ class _FakeAggregationService extends DataAggregationService {
     Set<String>? hiddenLibraryKeys,
     Set<String>? serverIds,
     required void Function(OnDeckAggregationResult result) onProgress,
-  }) => getOnDeckFromAllServers(limit: limit, hiddenLibraryKeys: hiddenLibraryKeys, serverIds: serverIds);
+  }) async {
+    final result = await getOnDeckFromAllServers(
+      limit: limit,
+      hiddenLibraryKeys: hiddenLibraryKeys,
+      serverIds: serverIds,
+    );
+    if (publishProgress) onProgress(result);
+    return result;
+  }
 
   @override
   Future<HubAggregationResult> getHubsProgressively({
@@ -103,13 +112,17 @@ class _FakeAggregationService extends DataAggregationService {
     bool includePlaybackHubs = true,
     Set<String>? serverIds,
     required void Function(HubAggregationResult result) onProgress,
-  }) => getHubsFromAllServers(
-    limit: limit,
-    hiddenLibraryKeys: hiddenLibraryKeys,
-    useGlobalHubs: useGlobalHubs,
-    includePlaybackHubs: includePlaybackHubs,
-    serverIds: serverIds,
-  );
+  }) async {
+    final result = await getHubsFromAllServers(
+      limit: limit,
+      hiddenLibraryKeys: hiddenLibraryKeys,
+      useGlobalHubs: useGlobalHubs,
+      includePlaybackHubs: includePlaybackHubs,
+      serverIds: serverIds,
+    );
+    if (publishProgress) onProgress(result);
+    return result;
+  }
 
   @override
   Future<OnDeckAggregationResult> getOnDeckFromAllServers({
@@ -171,7 +184,7 @@ class _FakeClient implements MediaServerClient {
   final _PushChannel channel = _PushChannel();
 
   @override
-  final Object authenticationSessionId = Object();
+  Object authenticationSessionId = Object();
 
   @override
   LibraryEventChannel createLibraryEventChannel() => channel;
@@ -840,13 +853,30 @@ void main() {
   });
 
   test('load failure surfaces the error and ends both loading states', () async {
+    manager.debugRegisterClientForTesting(_FakeClient(serverIdValue: 'server_2'));
     aggregation.onDeckResult = () => throw Exception('boom');
-
     await provider.load();
-
     expect(provider.errorMessage, contains('boom'));
     expect(provider.isLoading, isFalse);
     expect(provider.areHubsLoading, isFalse);
+    expect(provider.failedServerIds, {'server_1', 'server_2'});
+
+    // Neither surface has loaded. A row retry still cannot fall back to full.
+    aggregation.onDeckResult = () => [_item('recovered')];
+    aggregation.hubsResult = () => [_hub('recovered-hub')];
+    await provider.retryServer('server_1');
+    expect(aggregation.lastOnDeckServerIds, {'server_1'});
+    expect(aggregation.lastHubsServerIds, {'server_1'});
+    expect(provider.failedServerIds, {'server_2'});
+    expect(provider.errorMessage, isNull);
+
+    // The aggregation's explicit-id path is broader than profile visibility.
+    // The provider must reject the hidden id before it ever reaches that path.
+    manager.setVisibleServerIds({'server_1'});
+    final calls = (aggregation.onDeckCalls, aggregation.hubCalls);
+    await provider.retryServer('server_2');
+    expect((aggregation.onDeckCalls, aggregation.hubCalls), calls);
+    expect(provider.failedServerIds, isEmpty);
   });
 
   test('no servers while the profile binder runs stays loading instead of erroring', () async {
@@ -869,6 +899,7 @@ void main() {
     expect(binderProvider.errorMessage, isNull);
 
     isBinding = false;
+    await hiddenLibraries.hideLibrary('server_1:hidden-library');
     await binderProvider.load();
     expect(binderProvider.isLoading, isFalse);
     expect(binderProvider.errorMessage, isNotNull);
@@ -1221,21 +1252,97 @@ void main() {
   });
 
   test('full load partial hub failure retries hubs without refetching continue watching', () async {
+    manager.debugRegisterClientForTesting(_FakeClient(serverIdValue: 'server_2'));
     aggregation.onDeckResult = () => [_item('a')];
-    aggregation.hubsResult = () => const [];
-    aggregation.hubSucceededServerIds = const {};
+    aggregation.hubsResult = () => [
+      const MediaHub(id: 'fresh-1', title: 'Fresh', type: 'movie', items: []),
+      _hub(
+        'hub-2',
+        serverId: 'server_2',
+        items: [
+          _item('b-keep', serverId: 'server_2'),
+          _item('b-old', serverId: 'server_2'),
+        ],
+      ),
+    ];
     await provider.load();
+
+    // A server can both succeed and fail across its libraries. Its old rows
+    // remain, including while progressive callbacks publish the other server.
+    aggregation.publishProgress = true;
+    aggregation.hubFailedServerIds = {'server_2'};
+    aggregation.hubsResult = () => [
+      MediaHub(id: 'fresh-1', title: 'Fresh', type: 'movie', items: [_item('a-recommended')]),
+      _hub(
+        'hub-2',
+        serverId: 'server_2',
+        items: [_item('b-keep', serverId: 'server_2')],
+      ),
+    ];
+    final visibleSnapshots = <List<String>>[];
+    final failedRowSnapshots = <List<String>>[];
+    void captureRows() {
+      visibleSnapshots.add(provider.hubs.map((hub) => hub.id).toList());
+      failedRowSnapshots.add(
+        provider.hubs.singleWhere((hub) => hub.id == 'hub-2').items.map((item) => item.id).toList(),
+      );
+    }
+
+    provider.addListener(captureRows);
+    expect(await provider.refreshNow(), DiscoverRefreshOutcome.degraded);
+    provider.removeListener(captureRows);
+    expect(visibleSnapshots.every((ids) => ids.contains('hub-2')), isTrue);
+    expect(failedRowSnapshots.every((ids) => ids.contains('b-old')), isTrue);
+    expect(provider.hubs.singleWhere((hub) => hub.id == 'fresh-1').items.map((item) => item.id), ['a-recommended']);
+    expect(provider.hubs.map((hub) => hub.id), containsAll(['fresh-1', 'hub-2']));
+    expect(provider.failedHubServerIds, {'server_2'});
+    expect(provider.failedOnDeckServerIds, isEmpty);
     final onDeckCallsBefore = aggregation.onDeckCalls;
     final hubCallsBefore = aggregation.hubCalls;
 
-    aggregation.hubsResult = () => [_hub('hub-1')];
-    aggregation.hubSucceededServerIds = const {'server_1'};
-    await provider.syncToOnlineServers({'server_1'});
+    final gate = Completer<void>();
+    aggregation.hubGate = gate.future;
+    aggregation.hubStarted = Completer<void>();
+    aggregation.hubFailedServerIds = {};
+    aggregation.hubSucceededServerIds = {'server_2'};
+    aggregation.hubsResult = () => const []; // Authoritative empty clears only B.
+    final retry = provider.retryServer('server_2');
+    await aggregation.hubStarted!.future;
+    final duplicate = provider.retryServer('server_2');
+    expect(provider.retryingServerIds, {'server_2'});
+    gate.complete();
+    await Future.wait([retry, duplicate]);
 
     expect(aggregation.onDeckCalls, onDeckCallsBefore);
     expect(aggregation.hubCalls, hubCallsBefore + 1);
-    expect(aggregation.lastHubsServerIds, {'server_1'});
-    expect(provider.hubs.map((h) => h.id), ['hub-1']);
+    expect(aggregation.lastHubsServerIds, {'server_2'});
+    expect(provider.hubs.map((h) => h.id), ['fresh-1']);
+    expect(provider.failedServerIds, isEmpty);
+    expect(provider.retryingServerIds, isEmpty);
+  });
+
+  test('row retry discards late results after authentication changes', () async {
+    aggregation.hubsResult = () => [_hub('old-hub')];
+    await provider.load();
+    aggregation.hubSucceededServerIds = {};
+    aggregation.hubFailedServerIds = {'server_1'};
+    aggregation.hubsResult = () => const [];
+    await provider.load();
+
+    final gate = Completer<void>();
+    aggregation.hubGate = gate.future;
+    aggregation.hubStarted = Completer<void>();
+    aggregation.hubSucceededServerIds = {'server_1'};
+    aggregation.hubFailedServerIds = {};
+    aggregation.hubsResult = () => [_hub('late-hub')];
+    final retry = provider.retryServer('server_1');
+    await aggregation.hubStarted!.future;
+    client.authenticationSessionId = Object();
+    gate.complete();
+    await retry;
+    expect(provider.hubs.map((hub) => hub.id), ['old-hub']);
+    expect(provider.failedServerIds, isEmpty);
+    expect(provider.retryingServerIds, isEmpty);
   });
 
   test('delta partial hub failure retries only the missing surface', () async {

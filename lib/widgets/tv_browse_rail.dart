@@ -26,6 +26,7 @@ import '../utils/media_image_helper.dart';
 import '../utils/media_navigation_helper.dart';
 import '../utils/provider_extensions.dart';
 import 'animated_dim_scrim.dart';
+import 'hub_row_error.dart';
 import 'app_icon.dart';
 import 'clickable_cursor.dart';
 import 'focus_builders.dart';
@@ -318,7 +319,16 @@ class TvBrowseRailLayout {
 /// What [TvBrowseRail] renders in a hub's trailing slot (after the last item).
 enum TvRailTrailing { none, loading, error, viewAll }
 
+class TvBrowseRailError {
+  const TvBrowseRailError({required this.id, required this.title, required this.retrying, required this.onRetry});
+  final String id;
+  final String title;
+  final bool retrying;
+  final VoidCallback onRetry;
+}
+
 class TvBrowseRail extends StatefulWidget {
+  final List<TvBrowseRailError> errors;
   final List<MediaHub> hubs;
   final HubFocusMemory focusMemory;
   final IconData Function(MediaHub hub, int index) iconForHub;
@@ -383,6 +393,7 @@ class TvBrowseRail extends StatefulWidget {
   const TvBrowseRail({
     super.key,
     required this.hubs,
+    this.errors = const [],
     required this.focusMemory,
     required this.iconForHub,
     this.showServerName = false,
@@ -430,6 +441,7 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
   // full-viewport saveLayer alive.
   static const _unfocusedRailDimAlpha = 0.4;
 
+  final Map<String, FocusNode> _errorFocusNodes = {};
   late final FocusNode _focusNode = LockedFocusRowNode(debugLabel: 'tv_browse_rail', focusedItemRect: _focusedCardRect);
   final Map<String, ScrollController> _scrollControllers = {};
   final ScrollController _verticalController = ScrollController();
@@ -492,6 +504,19 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
   @override
   void didUpdateWidget(covariant TvBrowseRail oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final removedFocused = oldWidget.errors.any(
+      (error) =>
+          !widget.errors.any((next) => next.id == error.id) && (_errorFocusNodes[error.id]?.hasPrimaryFocus ?? false),
+    );
+    if (removedFocused) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted &&
+            (FocusManager.instance.primaryFocus == null ||
+                FocusManager.instance.primaryFocus == FocusManager.instance.rootScope)) {
+          _focusNode.requestFocus();
+        }
+      });
+    }
     if (widget.hubs.length < oldWidget.hubs.length) {
       _artworkDims.removeWhere((index, dim) {
         if (index < widget.hubs.length) return false;
@@ -635,6 +660,9 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
   void dispose() {
     _selectLongPress.dispose();
     _focusNode.removeListener(_handleFocusChange);
+    for (final node in _errorFocusNodes.values) {
+      node.dispose();
+    }
     _focusNode.dispose();
     for (final dim in _artworkDims.values) {
       dim.dispose();
@@ -746,6 +774,7 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
   );
 
   KeyEventResult _handleKeyEvent(FocusNode _, KeyEvent event) {
+    if (!_focusNode.hasPrimaryFocus) return KeyEventResult.ignored;
     final key = event.logicalKey;
 
     if (key.isSelectKey) {
@@ -800,6 +829,10 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
     }
 
     if (key.isDownKey) {
+      if (_hubIndex == widget.hubs.length - 1 && widget.errors.isNotEmpty) {
+        _focusError(0);
+        return KeyEventResult.handled;
+      }
       _moveHub(1);
       return KeyEventResult.handled;
     }
@@ -810,6 +843,18 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
     }
 
     return KeyEventResult.ignored;
+  }
+
+  void _focusError(int index) {
+    if (index < 0 || index >= widget.errors.length) return;
+    final offsetIndex = widget.hubs.length + index;
+    if (_verticalController.hasClients && offsetIndex < _sectionOffsets.length) {
+      _verticalController.jumpTo(_sectionOffsets[offsetIndex].clamp(0.0, _sectionMaxScrollExtent));
+    }
+    final node = _errorFocusNodes.putIfAbsent(widget.errors[index].id, () => FocusNode());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && node.context != null) node.requestFocus();
+    });
   }
 
   void _moveItem(int delta) {
@@ -1194,6 +1239,8 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
             for (final metrics in metricsByHub)
               TvBrowseRailLayout.hubSectionHeightFor(scale: scale, activeRailHeight: metrics.height),
           ];
+          final errorHeight = sectionHeights.isEmpty ? 220.0 * scale : sectionHeights.last;
+          sectionHeights.addAll(List.filled(widget.errors.length, errorHeight));
           final offsets = <double>[];
           var nextOffset = 0.0;
           for (final height in sectionHeights) {
@@ -1207,7 +1254,7 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
             if (height > viewportSectionHeight) viewportSectionHeight = height;
           }
           final viewportHeight = TvBrowseRailLayout.viewportHeightFor(
-            hubCount: widget.hubs.length,
+            hubCount: sectionHeights.length,
             scale: scale,
             sectionHeight: viewportSectionHeight,
           );
@@ -1250,7 +1297,7 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
                       ),
                       child: ClipRect(
                         clipper: _RailClipper(leftOverflow: horizontalInset, rightOverflow: 0),
-                        child: ExcludeSemantics(
+                        child: Semantics(
                           // Both axes animate during D-pad navigation. Keeping
                           // the individual headers/cards in the semantics tree
                           // makes Android recompute every moving node's bounds
@@ -1334,8 +1381,30 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
       clipBehavior: Clip.none,
       padding: .only(bottom: bottomPadding),
       itemExtentBuilder: (index, _) => sectionHeights[index],
-      itemCount: widget.hubs.length,
+      itemCount: sectionHeights.length,
       itemBuilder: (context, hubIndex) {
+        if (hubIndex >= widget.hubs.length) {
+          final errorIndex = hubIndex - widget.hubs.length;
+          final error = widget.errors[errorIndex];
+          final node = _errorFocusNodes.putIfAbsent(error.id, () => FocusNode());
+          return HubRowError(
+            key: ValueKey('home-error-${error.id}'),
+            title: error.title,
+            retrying: error.retrying,
+            onRetry: error.onRetry,
+            focusNode: node,
+            height: sectionHeights[hubIndex],
+            onNavigateUp: () {
+              if (errorIndex == 0) {
+                _focusNode.requestFocus();
+                _scrollActiveHubToTop();
+              } else {
+                _focusError(errorIndex - 1);
+              }
+            },
+            onNavigateDown: () => _focusError(errorIndex + 1),
+          );
+        }
         final hub = widget.hubs[hubIndex];
         final metrics = metricsByHub[hubIndex];
         final sectionHeight = sectionHeights[hubIndex];
@@ -1344,34 +1413,36 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
         // below is passed through as a stable child.
         bool isActiveHub() => _focusModel.hubIndex == hubIndex;
 
-        return SnapshotWidget(
-          controller: _verticalScrollSnapshotController,
-          mode: SnapshotMode.permissive,
-          autoresize: true,
-          child: SizedBox(
-            key: _hubSectionKeys.putIfAbsent(hubIndex, () => GlobalKey()),
-            height: sectionHeight,
-            child: Column(
-              crossAxisAlignment: .stretch,
-              children: [
-                ListenableSelector<bool>(
-                  listenable: _focusModel,
-                  selector: isActiveHub,
-                  builder: (context, isActive, _) =>
-                      _buildHubHeader(context, hub: hub, hubIndex: hubIndex, isActive: isActive, scale: scale),
-                ),
-                _buildHubRail(
-                  hub: hub,
-                  hubIndex: hubIndex,
-                  episodePosterMode: modes[hubIndex],
-                  metrics: metrics,
-                  scale: scale,
-                  fullCardLayout: fullCardLayout,
-                  leftOverflow: leftOverflow,
-                  interactionExpansion: interactionExpansion,
-                  railViewportWidth: railViewportWidth,
-                ),
-              ],
+        return ExcludeSemantics(
+          child: SnapshotWidget(
+            controller: _verticalScrollSnapshotController,
+            mode: SnapshotMode.permissive,
+            autoresize: true,
+            child: SizedBox(
+              key: _hubSectionKeys.putIfAbsent(hubIndex, () => GlobalKey()),
+              height: sectionHeight,
+              child: Column(
+                crossAxisAlignment: .stretch,
+                children: [
+                  ListenableSelector<bool>(
+                    listenable: _focusModel,
+                    selector: isActiveHub,
+                    builder: (context, isActive, _) =>
+                        _buildHubHeader(context, hub: hub, hubIndex: hubIndex, isActive: isActive, scale: scale),
+                  ),
+                  _buildHubRail(
+                    hub: hub,
+                    hubIndex: hubIndex,
+                    episodePosterMode: modes[hubIndex],
+                    metrics: metrics,
+                    scale: scale,
+                    fullCardLayout: fullCardLayout,
+                    leftOverflow: leftOverflow,
+                    interactionExpansion: interactionExpansion,
+                    railViewportWidth: railViewportWidth,
+                  ),
+                ],
+              ),
             ),
           ),
         );

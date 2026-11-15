@@ -42,6 +42,7 @@ import '../theme/mono_presentation.dart';
 import '../providers/multi_server_provider.dart';
 import '../providers/watch_state_store.dart';
 import '../widgets/hub_section.dart';
+import '../widgets/hub_row_error.dart';
 import '../widgets/app_menu.dart';
 import '../widgets/clickable_cursor.dart';
 import '../widgets/profile_switching_overlay.dart';
@@ -187,6 +188,32 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   final Map<String, GlobalKey<HubSectionState>> _hubKeysByIdentity = {};
   List<GlobalKey<HubSectionState>> _orderedHubKeys = const [];
   final _tvBrowseRailKey = GlobalKey<TvBrowseRailState>();
+  final Map<String, FocusNode> _errorFocusNodes = {};
+
+  List<String> get _visibleFailedServerIds =>
+      _discover.failedServerIds.where((id) => _selectedHomeServerId == null || _selectedHomeServerId == id).toList()
+        ..sort();
+
+  FocusNode _errorFocusNode(String id) =>
+      _errorFocusNodes.putIfAbsent(id, () => FocusNode(debugLabel: 'home_error_$id'));
+
+  void _focusErrorRow(int index) {
+    final ids = _visibleFailedServerIds;
+    if (index >= 0 && index < ids.length) _errorFocusNode(ids[index]).requestFocus();
+  }
+
+  void _focusPreviousErrorOrContent(int index) {
+    if (index > 0) {
+      _focusErrorRow(index - 1);
+    } else if (PlatformDetector.isTV()) {
+      _focusTopActions();
+    } else if (_allHubKeys.isNotEmpty) {
+      _allHubKeys.last.currentState?.requestFocusFromMemory();
+    } else {
+      _focusTopBoundary();
+    }
+  }
+
   final _hubFocusMemory = HubFocusMemory();
 
   late FocusNode _heroFocusNode;
@@ -375,6 +402,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final keys = _allHubKeys;
     if (keys.isNotEmpty) {
       keys.first.currentState?.requestFocusFromMemory();
+    } else if (_visibleFailedServerIds.isNotEmpty) {
+      _focusErrorRow(0);
     }
   }
 
@@ -387,6 +416,17 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
     _pendingTvBrowseRailFocus = true;
     _railClaimFocusOrigin = FocusManager.instance.primaryFocus;
+    if (immediate &&
+        _tvBrowseHubs.isEmpty &&
+        _visibleFailedServerIds.isNotEmpty &&
+        !(_errorMessage != null && !_discover.hasDisplayableContent)) {
+      final node = _errorFocusNode(_visibleFailedServerIds.first);
+      if (node.context != null) {
+        _pendingTvBrowseRailFocus = false;
+        node.requestFocus();
+        return;
+      }
+    }
     if (immediate && _tvBrowseHubs.isNotEmpty) {
       final rail = _tvBrowseRailKey.currentState;
       if (rail != null) {
@@ -402,7 +442,20 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         _pendingTvBrowseRailFocus = false;
         return;
       }
-      if (_tvBrowseHubs.isEmpty) return;
+      if (_railClaimAbandoned) {
+        _pendingTvBrowseRailFocus = false;
+        return;
+      }
+      if (_tvBrowseHubs.isEmpty) {
+        if (_visibleFailedServerIds.isNotEmpty && !(_errorMessage != null && !_discover.hasDisplayableContent)) {
+          final node = _errorFocusNode(_visibleFailedServerIds.first);
+          if (node.context != null) {
+            _pendingTvBrowseRailFocus = false;
+            node.requestFocus();
+          }
+        }
+        return;
+      }
       final rail = _tvBrowseRailKey.currentState;
       if (rail == null) return;
       _pendingTvBrowseRailFocus = false;
@@ -447,6 +500,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       hubIndex: hubIndex,
       isUp: isUp,
       onTopBoundary: _focusTopBoundary,
+      onBottomBoundary: _visibleFailedServerIds.isEmpty ? null : () => _focusErrorRow(0),
       requestFocus: (targetIndex) {
         keys[targetIndex].currentState?.requestFocusFromMemory();
       },
@@ -485,10 +539,17 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   /// that leave this unchanged (e.g. a watch-state-driven Continue Watching
   /// refresh that found nothing new) skip the setState so the whole screen —
   /// TV rail included — is not rebuilt for nothing.
-  (List<MediaItem>, List<MediaHub>, bool, bool, bool, String?) get _renderSignature =>
-      (_onDeck, _hubs, _hasMoreContinueWatching, _isLoading, _areHubsLoading, _discover.errorMessage);
+  (List<MediaItem>, List<MediaHub>, bool, bool, bool, String?, String) get _renderSignature => (
+    _onDeck,
+    _hubs,
+    _hasMoreContinueWatching,
+    _isLoading,
+    _areHubsLoading,
+    _discover.errorMessage,
+    _visibleFailedServerIds.map((id) => '$id:${_discover.retryingServerIds.contains(id)}').join('|'),
+  );
 
-  (List<MediaItem>, List<MediaHub>, bool, bool, bool, String?)? _seenRenderSignature;
+  (List<MediaItem>, List<MediaHub>, bool, bool, bool, String?, String)? _seenRenderSignature;
 
   void _onDiscoverChanged() {
     if (!mounted) return;
@@ -615,6 +676,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     _scrollController.dispose();
     _heroFocusNode.removeListener(_onHeroFocusChanged);
     _heroFocusNode.dispose();
+    for (final node in _errorFocusNodes.values) {
+      node.dispose();
+    }
     super.dispose();
   }
 
@@ -1189,6 +1253,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     // while hubs finish would cover an already-available hero.
     final isInitialLoading = _isLoading && _onDeck.isEmpty && _hubs.isEmpty;
     final showHubLoadingSkeleton = !isInitialLoading && _areHubsLoading && _hubs.isEmpty;
+    final showFullError = _errorMessage != null && !_discover.hasDisplayableContent;
+    final failedServerIds = _visibleFailedServerIds;
 
     if (PlatformDetector.isTV()) {
       return Theme(
@@ -1234,8 +1300,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       ),
                     ),
                   ),
-                if (_errorMessage != null) SliverErrorState(message: _errorMessage!, onRetry: _discover.load),
-                if (!isInitialLoading && _errorMessage == null) ...[
+                if (showFullError) SliverErrorState(message: _errorMessage!, onRetry: _discover.load),
+                if (!isInitialLoading && !showFullError) ...[
                   if (continueWatchingHub != null)
                     SliverToBoxAdapter(
                       child: HubSection(
@@ -1284,7 +1350,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       ),
                     ),
 
-                  if (_onDeck.isEmpty && _hubs.isEmpty && !_areHubsLoading && !_isLoading)
+                  for (var i = 0; i < failedServerIds.length; i++)
+                    SliverToBoxAdapter(child: _buildHubRowError(failedServerIds[i], i)),
+
+                  if (_onDeck.isEmpty && _hubs.isEmpty && failedServerIds.isEmpty && !_areHubsLoading && !_isLoading)
                     SliverEmptyState(
                       message: t.discover.noContentAvailable,
                       subtitle: t.discover.addMediaToLibraries,
@@ -1311,10 +1380,33 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   // geometry) hand Element.updateChild the identical widget instance and the
   // whole rail subtree is skipped. Rebuilt only when its actual inputs change.
   TvBrowseRail? _tvBrowseRailWidget;
-  (List<MediaHub>, bool)? _tvBrowseRailWidgetKey;
+  (List<MediaHub>, bool, String)? _tvBrowseRailWidgetKey;
 
-  Widget _cachedTvBrowseRail(List<MediaHub> browseHubs, {required bool showServerName}) {
-    final key = (browseHubs, showServerName);
+  String _serverTitle(String id) {
+    final client = context.read<MultiServerProvider>().getClientForServer(ServerId(id));
+    return client?.serverName ?? client?.backend.name ?? t.common.unknown;
+  }
+
+  Widget _buildHubRowError(String id, int index) => HubRowError(
+    key: ValueKey('home-error-$id'),
+    focusNode: _errorFocusNode(id),
+    onNavigateUp: () => _focusPreviousErrorOrContent(index),
+    onNavigateDown: () => _focusErrorRow(index + 1),
+    title: _serverTitle(id),
+    retrying: _discover.retryingServerIds.contains(id),
+    onRetry: () => unawaited(_discover.retryServer(id)),
+  );
+
+  Widget _cachedTvBrowseRail(
+    List<MediaHub> browseHubs, {
+    required bool showServerName,
+    required List<String> failedServerIds,
+  }) {
+    final key = (
+      browseHubs,
+      showServerName,
+      failedServerIds.map((id) => '$id:${_discover.retryingServerIds.contains(id)}').join('|'),
+    );
     if (_tvBrowseRailWidget != null && key == _tvBrowseRailWidgetKey) return _tvBrowseRailWidget!;
     _tvBrowseRailWidgetKey = key;
     return _tvBrowseRailWidget = TvBrowseRail(
@@ -1322,6 +1414,15 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       showRatingBadges: true,
       key: _tvBrowseRailKey,
       hubs: browseHubs,
+      errors: [
+        for (final id in failedServerIds)
+          TvBrowseRailError(
+            id: id,
+            title: _serverTitle(id),
+            retrying: _discover.retryingServerIds.contains(id),
+            onRetry: () => unawaited(_discover.retryServer(id)),
+          ),
+      ],
       initialHubId: 'continue_watching',
       focusMemory: _hubFocusMemory,
       showServerName: showServerName,
@@ -1346,6 +1447,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final showServerNameOnHubs = svc.read(SettingsService.showServerNameOnHubs);
     final hubsSpanMultipleServers = _hubsSpanMultipleServers();
     final browseHubs = _tvBrowseHubs;
+    final showFullError = _errorMessage != null && !_discover.hasDisplayableContent;
+    final failedServerIds = _visibleFailedServerIds;
 
     return TvSpotlightScaffold(
       hubs: browseHubs,
@@ -1360,7 +1463,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           if (isInitialLoading) const DiscoverLoadingSkeleton(isTv: true),
           if (!isInitialLoading && _areHubsLoading && _hubs.isEmpty && browseHubs.isEmpty)
             const Positioned.fill(child: TvDiscoverHubLoadingSkeleton()),
-          if (_errorMessage != null)
+          if (showFullError)
             ErrorStateWidget(
               message: _errorMessage!,
               icon: Symbols.error_outline_rounded,
@@ -1368,7 +1471,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               actionAutofocus: true,
               actionUseBackgroundFocus: true,
             ),
-          if (!_isLoading && _errorMessage == null && browseHubs.isEmpty && !_areHubsLoading)
+          if (!_isLoading && !showFullError && browseHubs.isEmpty && failedServerIds.isEmpty && !_areHubsLoading)
             EmptyStateWidget(
               message: t.discover.noContentAvailable,
               subtitle: t.discover.addMediaToLibraries,
@@ -1379,7 +1482,17 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               left: 0,
               right: 0,
               bottom: 0,
-              child: _cachedTvBrowseRail(browseHubs, showServerName: showServerNameOnHubs || hubsSpanMultipleServers),
+              child: _cachedTvBrowseRail(
+                browseHubs,
+                showServerName: showServerNameOnHubs || hubsSpanMultipleServers,
+                failedServerIds: failedServerIds,
+              ),
+            ),
+          if (browseHubs.isEmpty && !showFullError && failedServerIds.isNotEmpty)
+            Positioned.fill(
+              child: ListView(
+                children: [for (var i = 0; i < failedServerIds.length; i++) _buildHubRowError(failedServerIds[i], i)],
+              ),
             ),
           TvToolbarOverlay(child: _buildOverlaidAppBar()),
           if (_switchingProfile) const ProfileSwitchingOverlay(),

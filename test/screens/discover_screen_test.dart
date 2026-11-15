@@ -1591,7 +1591,16 @@ class _GatedDiscover {
           id: 'hub_1',
           title: 'Recommended',
           type: 'movie',
-          items: [testMediaItem(id: 'movie_1', backend: MediaBackend.plex, kind: MediaKind.movie, title: 'Movie 1')],
+          serverId: 'server_1',
+          items: [
+            testMediaItem(
+              id: 'movie_1',
+              backend: MediaBackend.plex,
+              kind: MediaKind.movie,
+              title: 'Movie 1',
+              serverId: 'server_1',
+            ),
+          ],
           size: 1,
         ),
       );
@@ -1616,7 +1625,7 @@ Future<_GatedDiscover> _pumpGatedDiscover(WidgetTester tester) async {
   });
 
   final client = _GatedHubsFakeClient(
-    hubs: [MediaHub(id: 'hub_1', title: 'Recommended', type: 'movie', items: const [], size: 0)],
+    hubs: [MediaHub(id: 'hub_1', title: 'Recommended', type: 'movie', serverId: 'server_1', items: const [], size: 0)],
   );
   final multiServerProvider = testMultiServer(clients: [client]).provider;
   final hiddenLibrariesProvider = HiddenLibrariesProvider();
@@ -1836,6 +1845,9 @@ class _KeepHeroOrder implements math.Random {
 }
 
 class _FakeMediaServerClient implements MediaServerClient {
+  @override
+  final Object authenticationSessionId = Object();
+
   final List<MediaHub> hubs;
   List<MediaItem> continueWatching;
   final String id;
@@ -1893,6 +1905,9 @@ class _FakeMediaServerClient implements MediaServerClient {
 
 /// Publishes Continue Watching immediately while holding the hub leg open.
 class _SplitLoadingFakeClient implements MediaServerClient {
+  @override
+  final Object authenticationSessionId = Object();
+
   _SplitLoadingFakeClient({required this.continueWatching, this.gateContinueWatching = false});
 
   final List<MediaItem> continueWatching;
@@ -1938,6 +1953,9 @@ class _SplitLoadingFakeClient implements MediaServerClient {
 /// Hub client that holds each fetch open until [release], so a test can act
 /// while a Discover load pass is genuinely in flight.
 class _GatedHubsFakeClient implements MediaServerClient {
+  @override
+  final Object authenticationSessionId = Object();
+
   _GatedHubsFakeClient({required this.hubs});
 
   final List<MediaHub> hubs;
