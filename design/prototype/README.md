@@ -16,6 +16,7 @@ python3 -m http.server 8765 --bind 127.0.0.1
 - `together.html`: create, join, lobby, readiness and invite. Demo invite code: `246810`.
 - `settings.html`: category hierarchy, TV split view, empty-source onboarding, gateway URL validation, source order / removal, style ranges. Values persist only under `plezy-visual-study-settings-v2` in this prototype origin's localStorage.
 - `player.html`: V4 layout. Top right: danmaku toggle, cast, portrait/landscape, more. Left rail: lock only (rotation is the top-right portrait/landscape button). Right rail: screenshot, PiP. No centre buttons; double-tap left / centre / right seeks back, pauses, seeks forward, and vertical swipes on the left / right half set brightness / volume. Speed, subtitle and episode chips open translucent popovers above the bottom HUD; "more" and the danmaku chip open a floating four-tab drawer (video / audio / subtitle / danmaku). Menus follow the light / dark appearance; the video HUD stays dark.
+- `player.html` §⑤ TV · 播放界面（PLAYER-05）：1920×1080 画面缩放进 TV 帧；方向键移动、Enter 确认、Esc/Backspace 逐层返回；顶栏/进度条/底栏（上一集、播放、下一集、倍速、字幕、音轨、选集、队列、章节、弹幕、设置）、跳过片头、右侧抽屉。点一下画面或 Tab 进入后用键盘操作。
 
 All media, network connectivity, casting and room behavior are demonstrations. Gateway “检查格式” validates syntax only. No actual server sign-in, media download, discovery or playback occurs. VLC is disabled and marked planned. Generic secondary settings dialogs confirm layout / entry placement, not implementation completeness.
 

@@ -137,7 +137,44 @@
   const st = document.createElement('style'); st.textContent = 'body{padding:16px}.nav,.page-intro,h2,table.map,.cap{display:none!important}.stage-row>div{display:none}.stage-row>div:has(#'+id+'){display:block!important}'; document.head.appendChild(st);
   st.textContent += '#'+id+'{}'; document.documentElement.dataset.shot = id; })();
 </script>
-<link rel="stylesheet" href="final-ui.css?v=final2"><script src="final-ui.js?v=final2"></script></head>
+<link rel="stylesheet" href="final-ui.css?v=final2"><script src="final-ui.js?v=final2"></script><style id="tv-player-css">
+/* ⑤ TV 播放界面：1920×1080 画布，整体 0.5 缩放进 960×540 预览帧（与其他页 TV 帧同尺寸）。画布按实机 DPR 2 取值：实机 16/600 的跳过按钮在此为 32/600。 */
+.tv-section{max-width:100%;overflow-x:auto;padding-bottom:6px}
+.tvp-frame{width:984px;height:574px;border:12px solid #111;border-bottom-width:22px;border-radius:10px;position:relative;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6);background:#000;flex:none}
+.tv.tvp{position:absolute;left:0;top:0;width:1920px;height:1080px;border:0;border-radius:0;box-shadow:none;transform:scale(.5);transform-origin:0 0;background:#02090a;color:#fff;font-size:28px;--w:1920px;outline:none}
+.tvp .shade-t{height:300px}.tvp .shade-b{height:560px}
+.tvp .tvt,.tvp .tvb,.tvp .shade-t,.tvp .shade-b{transition:opacity .25s}
+.tvp.hide-ui :is(.tvt,.tvb,.shade-t,.shade-b){opacity:0;visibility:hidden;transition:opacity .25s,visibility 0s .25s}
+.tvp .tvt{position:absolute;left:64px;right:64px;top:40px;display:flex;align-items:center;gap:20px;z-index:4}
+.tvp .tv-ttl{margin-left:8px;min-width:0}.tvp .tv-ttl b{display:block;font-size:48px;line-height:60px;font-weight:600;letter-spacing:-.5px}.tvp .tv-ttl span{display:block;font-size:28px;line-height:36px;opacity:.78}
+.tvp .tv-btn,.tvp .tv-chip,.tvp .tv-act{border:0;color:#fff;background:rgba(255,255,255,.14);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:transform .12s,background .12s}
+.tvp .tv-btn{width:88px;height:88px;border-radius:50%;flex:none}.tvp .tv-btn .icon{width:44px;height:44px}
+.tvp .tv-btn.on{color:var(--amb,#6fd6cf)}
+.tvp .tv-chip{height:88px;padding:0 32px;border-radius:44px;gap:12px;font-size:28px;font-weight:600;background:color-mix(in srgb,var(--amb,#c9874a) 30%,transparent)}.tvp .tv-chip .icon{width:36px;height:36px}
+.tvp .tvb{position:absolute;left:64px;right:64px;bottom:44px;z-index:5}
+.tvp .tlrow{display:flex;align-items:center;gap:28px;font-size:28px;font-variant-numeric:tabular-nums}.tvp .tlrow .t{width:96px;text-align:left}.tvp .tlrow .t.r{text-align:right;opacity:.75}
+.tvp .tl{flex:1;height:72px;border-radius:16px}
+.tvp .ctl{display:flex;align-items:center;gap:14px;margin-top:18px}.tvp .ctl .gap{flex:1}
+.tvp .ctl .tv-btn{width:112px;height:112px}.tvp .ctl .tv-btn .icon{width:56px;height:56px}.tvp .ctl .tv-btn.flip .icon{transform:scaleX(-1)}
+.tvp .tv-act{flex-direction:column;gap:8px;min-width:140px;height:124px;padding:0 12px;border-radius:26px;font-size:26px;font-weight:500}.tvp .tv-act .icon{width:48px;height:48px}.tvp .tv-act span{line-height:30px;white-space:nowrap}
+/* 焦点：放大 + 白底黑字 + 紫色粗描边（不只靠颜色） */
+.tvp :is(.tv-btn,.tv-chip,.tv-act,.skip):focus{outline:6px solid var(--velo-focus)!important;outline-offset:5px;transform:scale(1.14);background:#fff!important;color:#111!important;z-index:2}
+.tvp .skip:focus{transform:scale(1.1);box-shadow:0 0 0 6px var(--velo-focus),0 8px 28px rgba(0,0,0,.5)}
+.tvp .tl:focus{outline:5px solid var(--velo-focus)!important;outline-offset:4px;background:rgba(255,255,255,.14)}
+.tvp .tv-btn:focus .icon,.tvp .tv-act:focus .icon{filter:none}
+.tv.tvp .skip{right:64px;bottom:316px;padding:24px 32px;font-size:32px;line-height:40px;border-radius:16px;gap:16px;z-index:5;box-shadow:0 4px 16px rgba(0,0,0,.3);transition:bottom .2s ease-in-out,transform .12s}
+.tv.tvp .skip .icon{width:40px;height:40px}.tvp.hide-ui .skip{bottom:48px}
+.tvp .tv-osd{position:absolute;left:50%;bottom:340px;transform:translateX(-50%);padding:14px 30px;border-radius:999px;background:rgba(0,0,0,.62);font-size:32px;font-weight:600;opacity:0;transition:opacity .2s;z-index:6;pointer-events:none}.tvp .tv-osd.on{opacity:1}
+.tvp .toast{font-size:28px;padding:20px 32px;border-radius:28px;top:48px!important;max-width:1200px}
+/* 右侧抽屉：同手机的抽屉组件，整体放大 2× 后宽 580（≈画面 30%）；行内焦点用内描边 + 底色，避免被滚动区裁掉 */
+.tv.tvp.device.player-device :is(.drawer,.cast-sheet,.modal-sheet){zoom:2;width:290px!important}
+.tvp [data-cast-open] svg{width:44px;height:44px}
+.tvp .drawer :is(button,[tabindex="0"],input):focus,.tvp :is(.cast-sheet,.modal-sheet) :is(button,input):focus{outline:3px solid var(--velo-focus)!important;outline-offset:-3px;background-color:var(--velo-selected);transform:none}
+.tvp .drawer .tabs button:focus{box-shadow:inset 0 -3px 0 var(--velo-focus)}
+.tvp .drawer .navrow[role=button]{cursor:pointer;border-radius:12px;padding:0 6px}
+html[data-shot] .tv-section{display:none}html[data-shot=ptv] .tv-section{display:block}
+</style>
+</head>
 <body>
 <div class="nav"><h1>Velo Fusion 原型</h1>
   <a href="index.html">总览</a><a href="home.html">首页</a><a class="on" href="player.html">播放界面</a><a href="settings.html">设置界面</a></div>
@@ -199,6 +236,11 @@
   <tr><td>手势 · 上下滑动调亮度 / 音量</td><td class="mv">从屏幕边缘窄条扩大到左半屏 / 右半屏</td></tr>
   <tr><td>设置页 · 滑动调进度、长按倍速档位、亮度 / 音量滑动开关</td><td class="keep">保留在设置 → 视频播放 → 手势</td></tr>
 </table></div>
+
+<section class="tv-section"><h2>⑤ TV · 播放界面 · 方向键移动 / Enter 确认 / 返回逐层关闭</h2>
+<div class="tvp-frame"><div class="tv device player-device tvp" id="ptv"></div></div>
+<div class="cap" style="max-width:984px">TV · 1920×1080 画面，整体 0.5 缩放进 960×540 预览帧。点一下画面或 Tab 进入后：方向键在控件间移动（↑↓换行：顶栏 / 跳过片头 / 进度条 / 底栏，←→同行）；进度条上 ←→ 快退快进 10 秒；Enter 确认。面板（选集、队列、章节、字幕、音轨、倍速、设置、弹幕、一起看、投屏）都是同一右侧抽屉，抽屉内 ↑↓ 移动、←→ 在标签 / 步进器间移动、Enter 选择；返回（Esc / Backspace）先关抽屉（子列表先回上一层），再隐藏控件，控件隐藏时再按返回才退出播放；隐藏时按任意方向键唤出，10 秒无操作自动隐藏。画中画、锁屏、截图、横竖屏在 TV 不适用，不提供。</div>
+</section>
 
 <script src="ui.js?v=final2"></script>
 <script>
@@ -346,6 +388,167 @@
     if (act === 'dm') return drawer(root, '弹幕', anchor);
   }
 
+  // ⑤ TV 播放界面：遥控器模型（方向键 / Enter / 返回）。仅原型演示；真实应用走 lib/focus/ 与 desktop_video_controls 的 FocusNode。
+  function tvPlayer() {
+    const root = document.getElementById('ptv'); if (!root || typeof Proto === 'undefined') return;
+    const fmt = Proto.fmt, D = 1420000, SKIPS = [[62000, 152000], [1310000, 1400000]];
+    const st = { playing: true, speed: '1.0x', anchor: null, sel: { core: 'mpv', ver: '原始 1080p', scale: '100%', sleep: '关闭', dmsrc: '家用网关' } };
+    const SUB = {
+      core: ['播放内核', ['mpv', 'ExoPlayer']],
+      ver: ['版本与画质', ['原始 1080p', '4K HDR（杜比视界回退）', '1080p · 8 Mbps 转码', '720p · 4 Mbps 转码']],
+      scale: ['画面缩放', ['100%', '110%', '125%']],
+      sleep: ['睡眠定时', ['关闭', '15 分钟', '30 分钟', '60 分钟', '本集结束后']],
+      dmsrc: ['弹幕源与屏蔽词', ['家用网关', '换一个匹配', '手动搜索', '屏蔽词管理']],
+    };
+    const ROWK = { 播放内核: 'core', 版本与画质: 'ver', 画面缩放: 'scale', 睡眠定时: 'sleep', 弹幕源与屏蔽词: 'dmsrc' };
+    const subName = { 's-zh': '简中', 's-tw': '繁中', 's-en': 'English', off: '字幕关' }, audName = { 'a-zh': '普通话', 'a-ja': '日语', 'a-commentary': '解说' };
+    const act = (k, ic, label) => `<button class="tv-act" data-tv="${k}" aria-label="${label}">${ic}<span>${label}</span></button>`;
+    root.tabIndex = 0; root.setAttribute('role', 'application'); root.setAttribute('aria-label', 'TV 播放界面：方向键移动，确认键选择，返回键逐层关闭');
+    root.innerHTML = `
+      <div class="scene"></div><div class="shade-t"></div><div class="shade-b"></div>
+      <div class="tvt">
+        <button class="tv-btn" data-tv="back" aria-label="返回">${I('back')}</button>
+        <div class="tv-ttl"><b>一念永恒</b><span>第 4 季 · 第 7 集　新的旅程</span></div>
+        <span style="flex:1"></span>
+        <button class="tv-btn on" data-tv="dm" aria-label="弹幕开关" aria-pressed="true">${I('danmaku')}</button>
+        <button class="tv-btn" data-cast-open aria-label="投屏"></button>
+        <button class="tv-chip" data-tv="together" aria-label="一起看">${I('together')}一起看 · 3</button>
+        <button class="tv-btn" data-tv="more" aria-label="更多">${I('more')}</button>
+      </div>
+      <button class="skip" type="button" data-tv="skip" aria-label="跳过片头"><span>跳过片头</span>${I('fastfwd')}</button>
+      <div class="tv-osd" role="status" aria-live="polite"></div>
+      <div class="tvb">
+        <div class="tlrow"><span class="t cur">1:20</span><div class="tl"><canvas></canvas><div class="tip"></div></div><span class="t r">${fmt(D)}</span></div>
+        <div class="ctl">
+          <button class="tv-btn flip" data-tv="prev" aria-label="上一集">${I('skip')}</button>
+          <button class="tv-btn" data-tv="play" aria-label="暂停">${I('pause')}</button>
+          <button class="tv-btn" data-tv="next" aria-label="下一集">${I('skip')}</button>
+          <span class="gap"></span>
+          ${act('speed', X('speed'), '1.0x').replace('aria-label="1.0x"', 'aria-label="倍速"')}
+          ${act('subs', I('subtitles'), '简中').replace('aria-label="简中"', 'aria-label="字幕"')}
+          ${act('audio', I('audio'), '普通话').replace('aria-label="普通话"', 'aria-label="音轨"')}
+          ${act('eps', I('grid'), '选集')}${act('queue', I('list'), '队列')}${act('chapters', I('flag'), '章节')}${act('dmset', I('danmaku'), '弹幕')}${act('settings', I('settings'), '设置')}
+        </div>
+      </div>`;
+    const q = (s) => root.querySelector(s), tl = q('.tl'), skip = q('.skip'), cur = q('.cur'), osdEl = q('.tv-osd');
+    const c = Proto.fakeComments(D, [[400000, 25000, 260], [860000, 40000, 180], [1180000, 30000, 420]]);
+    const o = { durationMs: D, heat: Proto.heat(c, D), chapters: [], skips: SKIPS, posMs: 80000, bufferMs: 300000, track: 10 };
+    Proto.mount(tl, o);
+    let osdT = 0; const osd = (t) => { osdEl.textContent = t; osdEl.classList.add('on'); clearTimeout(osdT); osdT = setTimeout(() => osdEl.classList.remove('on'), 1200); };
+    const sync = () => {
+      tl.dispatchEvent(new CustomEvent('heat-toggle', { detail: o.heatOn })); cur.textContent = fmt(o.posMs);
+      const idx = SKIPS.findIndex(([a, b]) => o.posMs >= a && o.posMs < b);
+      skip.style.display = idx < 0 ? 'none' : ''; if (idx >= 0) { skip.firstElementChild.textContent = idx ? '跳过片尾' : '跳过片头'; skip.setAttribute('aria-label', skip.firstElementChild.textContent); }
+      if (idx < 0 && document.activeElement === skip) focusPlay();
+    };
+    const seek = (ms, label) => { o.posMs = Math.max(0, Math.min(D, ms)); o.bufferMs = Math.max(o.bufferMs, o.posMs + 90000); sync(); if (label) osd(label + ' · ' + fmt(o.posMs)); };
+    sync();
+    tl.addEventListener('focus', () => { o.track = 16; sync(); }); tl.addEventListener('blur', () => { o.track = 10; sync(); });
+    const focusPlay = () => (q('[data-tv=play]')).focus({ preventScroll: true });
+    const toast = (m) => UI.toast(root, m);
+    // 列表型抽屉（倍速 / 选集 / 队列 / 章节 / 一起看 / 设置子项）。Esc 回到上一层（设置子项回设置），其余直接关闭。
+    function tvList(title, html, anchor, o2 = {}) {
+      clear(root, false); root.overlayReturn = anchor; scrim(root);
+      const p = document.createElement('section'); p.className = 'drawer'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-modal', 'true'); p.setAttribute('aria-label', title);
+      p.innerHTML = `<div class="player-dialog-heading"><span>${title}</span><button class="icon-button" data-player-close aria-label="关闭${title}">${I('close')}</button></div><div class="pane"><div class="pop">${html}</div></div>`;
+      root.append(p);
+      const back = o2.back || (() => clear(root));
+      p.querySelector('[data-player-close]').onclick = () => clear(root);
+      p.querySelectorAll('.pop button').forEach((b) => b.onclick = () => { if (!o2.noMark) p.querySelectorAll('.pop button').forEach((n) => n.classList.toggle('sel', n === b)); o2.pick?.(b); (o2.after || (() => clear(root)))(b); });
+      FinalUI.trap(p, back); (p.querySelector('.sel,.pop button'))?.focus({ preventScroll: true });
+    }
+    const li = (items, on, small) => items.map((t, i) => `<button class="${on === i ? 'sel' : ''}">${t}${small?.[i] ? `<small>${small[i]}</small>` : ''}</button>`).join('');
+    const epsNames = ['初入宗门', '故人重逢', '新的旅程', '风起云涌', '血溪之战'];
+    const CH = [[0, '片头'], [152000, '第一幕 · 初入宗门'], [500000, '第二幕 · 故人重逢'], [845000, '第三幕 · 新的旅程'], [1310000, '片尾']];
+    const tabOf = () => q('.drawer .tabs .on')?.dataset.tab || '视频';
+    function reopen(tab, k) { drawer(root, tab, st.anchor); enhance(); if (k) q(`.drawer .navrow[data-k="${k}"]`)?.focus({ preventScroll: true }); }
+    function openSub(k, tab) {
+      const [title, opts] = SUB[k], on = opts.indexOf(st.sel[k]);
+      tvList(title, li(opts, on), st.anchor, { back: () => reopen(tab, k), pick: (b) => { st.sel[k] = b.firstChild.textContent; }, after: () => reopen(tab, k) });
+    }
+    // 设置抽屉里的「导航行」在手机上是静态行；TV 上都要能聚焦并打开子列表
+    function enhance() {
+      root.querySelectorAll('.drawer .navrow:not([data-k])').forEach((n) => {
+        const name = [...n.childNodes].find((x) => x.nodeType === 3)?.textContent.trim(), k = ROWK[name]; if (!k) return;
+        n.dataset.k = k; n.tabIndex = 0; n.setAttribute('role', 'button'); n.setAttribute('aria-label', name);
+        const v = n.querySelector('.val'); if (v) v.textContent = (st.sel[k] || '') + ' ›';
+        n.onclick = () => openSub(k, tabOf());
+      });
+    }
+    function labels() {
+      const t = PlayerTracks.get(root), set = (sel, v) => { const e = q(sel + ' span'); if (e && e.textContent !== v) e.textContent = v; };
+      set('[data-tv=speed]', st.speed); set('[data-tv=subs]', subName[t.primary] || '字幕'); set('[data-tv=audio]', audName[t.audio] || '音轨');
+    }
+    new MutationObserver(() => { enhance(); labels(); }).observe(root, { childList: true, subtree: true });
+    const settings = (tab, anchor) => { st.anchor = anchor; drawer(root, tab, anchor); enhance(); };
+    function run(k, b) {
+      if (k === 'back') return toast('演示：退出播放器，回到视频详情');
+      if (k === 'dm') { b.classList.toggle('on'); b.setAttribute('aria-pressed', String(b.classList.contains('on'))); return osd(b.classList.contains('on') ? '弹幕已开启' : '弹幕已关闭'); }
+      if (k === 'play') { st.playing = !st.playing; b.innerHTML = I(st.playing ? 'pause' : 'play'); b.setAttribute('aria-label', st.playing ? '暂停' : '播放'); return osd(st.playing ? '播放' : '已暂停'); }
+      if (k === 'prev') return toast('上一集 · 第 6 集　故人重逢');
+      if (k === 'next') return toast('下一集 · 第 8 集　风起云涌');
+      if (k === 'skip') return seek(skip.firstElementChild.textContent === '跳过片尾' ? D : 152000, skip.firstElementChild.textContent);
+      if (k === 'speed') return tvList('播放速度', speedHTML.replace(/<button class="(sel)?">(.*?)<\/button>/g, (m, s, v) => `<button class="${v === st.speed ? 'sel' : ''}">${v}</button>`), b, { pick: (x) => { st.speed = x.textContent; labels(); } });
+      if (k === 'eps') return tvList('选集', epsHTML, b, { pick: (x) => toast('切换到 ' + x.firstChild.textContent) });
+      if (k === 'queue') return tvList('播放队列', li(['第 7 集 新的旅程', '第 8 集 风起云涌', '第 9 集 血溪之战'], 0, ['正在播放', '接下来 · 23:12', '23:40']) + '<div class="sep"></div><button>自动播放下一集<small>开</small></button><button>清空队列</button>', b, { noMark: true, pick: (x) => toast(x.firstChild.textContent.trim() + '（演示）') });
+      if (k === 'chapters') return tvList('章节', li(CH.map((x) => x[1]), 1, CH.map((x) => fmt(x[0]))), b, { pick: (x) => { const i = [...x.parentNode.querySelectorAll('button')].indexOf(x); seek(CH[i][0], CH[i][1]); } });
+      if (k === 'together') return tvList('一起看 · 房间 3 人', '<button class="sel">房间 246810<small>已同步</small></button><button>成员：你、小林、阿杰</button><button>邀请码 246810<small>复制</small></button><button>同步状态：与房主一致</button><div class="sep"></div><button>离开房间</button>', b, { noMark: true, pick: (x) => toast(x.firstChild.textContent + '（演示）') });
+      if (k === 'subs') return settings('字幕', b);
+      if (k === 'audio') return settings('音频', b);
+      if (k === 'dmset') return settings('弹幕', b);
+      if (k === 'settings' || k === 'more') return settings('视频', b);
+    }
+    root.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-tv]');
+      if (!b) { if (e.target.closest('[data-cast-open]')) { poke(); return; } if (hidden() && !panel()) showUI(); return; }
+      poke(); run(b.dataset.tv, b);
+    });
+    // 显示 / 隐藏 / 返回
+    let hideT = 0; const hidden = () => root.classList.contains('hide-ui');
+    const panel = () => root.querySelector('.drawer:not(.out),.modal-shade:not(.out),.cast-overlay:not([hidden]):not(.out)');
+    const poke = () => { clearTimeout(hideT); hideT = setTimeout(() => { if (!panel() && !hidden()) hideUI(); }, 10000); };
+    const hideUI = () => { root.classList.add('hide-ui'); root.focus({ preventScroll: true }); };
+    const showUI = () => { root.classList.remove('hide-ui'); focusPlay(); poke(); };
+    const rows = () => [[...root.querySelectorAll('.tvt button')], [skip], [tl], [...root.querySelectorAll('.tvb .ctl button')]].map((r) => r.filter((n) => n.getClientRects().length)).filter((r) => r.length);
+    const cx = (n) => { const r = n.getBoundingClientRect(); return r.x + r.width / 2; };
+    function move(k) {
+      const R = rows(), a = document.activeElement, ri = R.findIndex((r) => r.includes(a)); if (ri < 0) return focusPlay();
+      if (k === 'ArrowLeft' || k === 'ArrowRight') return R[ri][R[ri].indexOf(a) + (k === 'ArrowRight' ? 1 : -1)]?.focus({ preventScroll: true });
+      const nr = R[ri + (k === 'ArrowDown' ? 1 : -1)]; if (!nr) return;
+      nr.reduce((m, n) => (Math.abs(cx(n) - cx(a)) < Math.abs(cx(m) - cx(a)) ? n : m)).focus({ preventScroll: true });
+    }
+    const ARR = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'], BACK = ['Escape', 'Backspace', 'BrowserBack', 'GoBack'];
+    root.addEventListener('keydown', (e) => {
+      const k = e.key, a = document.activeElement; poke();
+      const pn = panel();
+      if (pn) {
+        const top = [...root.querySelectorAll('.drawer:not(.out),.modal-shade:not(.out) .modal-sheet,.cast-overlay:not([hidden]):not(.out) .cast-sheet')].pop() || pn;
+        if (BACK.includes(k) && k !== 'Escape') { e.preventDefault(); e.stopPropagation(); (a && a !== document.body ? a : root).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); return; }
+        if (k === 'Escape') { if (a === root) { e.preventDefault(); e.stopPropagation(); clear(root); } return; }
+        if (ARR.includes(k) || k === 'Home' || k === 'End') {
+          e.stopPropagation();
+          if (k === 'ArrowLeft' || k === 'ArrowRight') {
+            if (a.tagName === 'INPUT' && a.type === 'range') return;
+            e.preventDefault(); const g = a.closest('.tabs,.opts,.step'); if (g) { const bs = [...g.querySelectorAll('button')], nx = bs[bs.indexOf(a) + (k === 'ArrowRight' ? 1 : -1)]; if (g.classList.contains('tabs')) nx?.click(); else nx?.focus({ preventScroll: true }); } return;
+          }
+          e.preventDefault();
+          const nodes = [...top.querySelectorAll('button:not(:disabled),input:not(:disabled),[tabindex="0"]')].filter((n) => n.getClientRects().length && (!n.closest('.tabs') || n.classList.contains('on'))), i = nodes.indexOf(a.closest('.tabs') ? top.querySelector('.tabs .on') : a);
+          if (nodes.length) nodes[k === 'Home' ? 0 : k === 'End' ? nodes.length - 1 : (i + (k === 'ArrowDown' ? 1 : -1) + nodes.length) % nodes.length].focus({ preventScroll: true });
+          return;
+        }
+        if ((k === 'Enter' || k === ' ') && a.matches?.('[role=button]:not(button)')) { e.preventDefault(); a.click(); }
+        return;
+      }
+      if (BACK.includes(k)) { e.preventDefault(); e.stopPropagation(); if (hidden()) toast('演示：此处退出播放器，返回视频详情'); else hideUI(); return; }
+      if (!ARR.includes(k) && k !== 'Enter' && k !== ' ') return;
+      if (hidden()) { e.preventDefault(); e.stopPropagation(); if (k === 'Enter' && skip.style.display !== 'none') run('skip'); else showUI(); return; }
+      if (a === root || !root.contains(a)) { e.preventDefault(); e.stopPropagation(); focusPlay(); return; }
+      if (a === tl && (k === 'ArrowLeft' || k === 'ArrowRight')) { e.preventDefault(); e.stopPropagation(); seek(o.posMs + (k === 'ArrowRight' ? 10000 : -10000), k === 'ArrowRight' ? '快进 10 秒' : '快退 10 秒'); return; }
+      if (ARR.includes(k)) { e.preventDefault(); e.stopPropagation(); move(k); }
+    }, true);
+    labels();
+  }
+
   const loadProto = new Promise((ok) => { const s = document.createElement('script'); s.src = 'proto.js?v=final2'; s.onload = ok; s.onerror = ok; document.body.appendChild(s); });
   loadProto.then(() => {
     const live = base('p1', { together: true, skip: true }); live.dataset.live = '1'; PlayerTracks.review(live); live.addEventListener('tracksreview',e=>drawer(live,e.detail));
@@ -359,6 +562,7 @@
     const p4 = base('p4'); open(p4, 'eps', q(p4, '[data-act=eps]')); p4.dataset.live = '1';
     ['视频', '音频', '字幕', '弹幕'].forEach((t, i) => { const r = base('p' + (5 + i)); drawer(r, t); r.dataset.live = '1'; });
     document.querySelectorAll('.phone.device').forEach((n) => { n.classList.add('player-device'); PlayerTracks.refresh(n); });
+    tvPlayer();
     const cast = document.createElement('script'); cast.src = 'cast.js?v=20261024velo'; document.body.appendChild(cast);
   });
 })();
