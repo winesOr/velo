@@ -27,6 +27,7 @@ import 'clickable_cursor.dart';
 
 class RatingBottomSheet extends StatefulWidget {
   final MediaItem item;
+  final VoidCallback? onClose;
   final MediaServerClient? serverClient;
   final ValueChanged<double>? onServerRatingChanged;
   final ValueChanged<bool>? onServerFavoriteChanged;
@@ -35,6 +36,7 @@ class RatingBottomSheet extends StatefulWidget {
     super.key,
     required this.item,
     required this.serverClient,
+    this.onClose,
     this.onServerRatingChanged,
     this.onServerFavoriteChanged,
   });
@@ -107,6 +109,7 @@ class _RatingBottomSheetState extends State<RatingBottomSheet> {
         // rather than removing its row.
         return BottomSheetPageScaffold(
           title: t.rateSheet.title,
+          onClose: widget.onClose,
           icon: Symbols.star_rounded,
           child: ListView(
             shrinkWrap: true,

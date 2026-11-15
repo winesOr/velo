@@ -115,6 +115,46 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('detail score opens sources and returns focus without moving the scroll position', (tester) async {
+    final focus = FocusNode();
+    addTearDown(focus.dispose);
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      TranslationProvider(
+        child: MaterialApp(
+          navigatorObservers: [BackKeySuppressorObserver()],
+          home: Scaffold(
+            body: SingleChildScrollView(
+              controller: controller,
+              child: Column(
+                children: [
+                  const SizedBox(height: 500),
+                  MediaRatingsStrip(item: _item(_scores), firstFocusNode: focus),
+                  const SizedBox(height: 800),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    controller.jumpTo(400);
+    await tester.pump();
+    focus.requestFocus();
+    await tester.pump();
+    final offset = controller.offset;
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.byType(RatingSourceDialog), findsOneWidget);
+    expect(find.text(t.common.ratingSource.simkl), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byType(RatingSourceDialog), findsNothing);
+    expect(focus.hasFocus, isTrue);
+    expect(controller.offset, offset);
+  });
+
   testWidgets('hero rating sources own clicks, scroll, close one layer and restore focus', (tester) async {
     tester.view.physicalSize = const Size(320, 568);
     tester.view.devicePixelRatio = 1;

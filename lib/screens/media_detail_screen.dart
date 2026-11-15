@@ -19,6 +19,8 @@ import '../widgets/detail_action_icon.dart';
 import '../widgets/rating_bottom_sheet.dart';
 import '../widgets/app_select_field.dart';
 import '../widgets/app_toast.dart';
+import '../widgets/app_dialog.dart';
+import '../utils/focus_utils.dart';
 import '../widgets/press_feedback.dart';
 import '../theme/interaction_tokens.dart';
 import '../media/media_backend.dart';
@@ -482,6 +484,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
   late final FocusNode _playButtonFocusNode;
   late final FocusNode _ratingChipFocusNode;
+  final FocusNode _tvRatingSourceFocusNode = FocusNode(debugLabel: 'detail_rating_source');
   late final FocusNode _backButtonFocusNode;
   final _extrasSelectLongPress = DpadSelectLongPressController();
 
@@ -1088,6 +1091,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     _subtitleSelectFocusNode.dispose();
     _playButtonStates.dispose();
     _ratingChipFocusNode.dispose();
+    _tvRatingSourceFocusNode.dispose();
     _backButtonFocusNode.dispose();
     _overviewFocusNode.dispose();
     _tvDetailInfoFocusNode.dispose();
@@ -1198,7 +1202,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                 return KeyEventResult.handled;
               }
               if (key.isUpKey) {
-                (PlatformDetector.isTV() ? _tvDetailInfoFocusNode : _backButtonFocusNode).requestFocus();
+                if (PlatformDetector.isTV()) {
+                  _focusTvRatingsOrInfo();
+                } else {
+                  _backButtonFocusNode.requestFocus();
+                }
                 return KeyEventResult.handled;
               }
               if (key.isLeftKey || key.isRightKey) {
@@ -1241,26 +1249,39 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
   void _showRatingDialog(BuildContext sheetContext, MediaItem metadata) {
     final target = metadata.globalKey;
-    OverlaySheetController.of(sheetContext).show(
-      showDragHandle: true,
-      builder: (context) => RatingBottomSheet(
-        item: metadata,
-        serverClient: _getMediaClientForMetadata(this.context),
-        onServerRatingChanged: (rating) {
-          if (!_canUseDetail || _metadata.globalKey != target) return;
-          setStateIfMounted(() {
-            _fullMetadata = _metadata.copyWith(userRating: rating);
-          });
-        },
-        onServerFavoriteChanged: (favorite) {
-          if (!_canUseDetail || _metadata.globalKey != target) return;
-          setStateIfMounted(() {
-            _fullMetadata = _metadata.copyWith(isFavorite: favorite);
-          });
-        },
-      ),
+    final hadFocus = _ratingChipFocusNode.hasFocus;
+    unawaited(
+      showScopedDialog<void>(
+        context: sheetContext,
+        builder: (dialogContext) => _detailDialog(
+          dialogContext,
+          RatingBottomSheet(
+            item: metadata,
+            serverClient: _getMediaClientForMetadata(context),
+            onClose: () => Navigator.of(dialogContext).pop(),
+            onServerRatingChanged: (rating) {
+              if (!_canUseDetail || _metadata.globalKey != target) return;
+              setStateIfMounted(() => _fullMetadata = _metadata.copyWith(userRating: rating));
+            },
+            onServerFavoriteChanged: (favorite) {
+              if (!_canUseDetail || _metadata.globalKey != target) return;
+              setStateIfMounted(() => _fullMetadata = _metadata.copyWith(isFavorite: favorite));
+            },
+          ),
+        ),
+      ).whenComplete(() {
+        if (mounted && hadFocus) FocusUtils.restoreFocusAfterBuild(this, _ratingChipFocusNode);
+      }),
     );
   }
+
+  Widget _detailDialog(BuildContext dialogContext, Widget child) => Focus(
+    autofocus: true,
+    onKeyEvent: (_, event) => handleBackKeyAction(event, () {
+      if (ModalRoute.of(dialogContext)?.isCurrent ?? false) Navigator.of(dialogContext).pop();
+    }),
+    child: AppDialog(child: child),
+  );
 
   /// Returns a
   /// [MediaServerClient] for Jellyfin items too, so image URLs use the
@@ -2269,12 +2290,27 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     });
   }
 
+  void _focusTvRatingsOrInfo() {
+    final episode = _tvDetailFocusedEpisode.value;
+    final item = episode == null ? _metadata : _withProbedRatings(episode);
+    if (preferredMediaRatingsFor(item, fallbackItem: _metadata, limit: RatingDisplayPolicy.detailLimit).isNotEmpty &&
+        _tvRatingSourceFocusNode.context != null) {
+      _tvRatingSourceFocusNode.requestFocus();
+    } else {
+      _tvDetailInfoFocusNode.requestFocus();
+    }
+  }
+
   /// Focus the first available section above the primary action row.
   void _focusAboveActionRow() {
     if (PlatformDetector.isTV()) {
       // The hero information block sits directly above the action row and is
       // the D-pad path to the full details sheet (#2042).
-      (_canEditDetailRating(_metadata) ? _ratingChipFocusNode : _tvDetailInfoFocusNode).requestFocus();
+      if (_canEditDetailRating(_metadata)) {
+        _ratingChipFocusNode.requestFocus();
+      } else {
+        _focusTvRatingsOrInfo();
+      }
       return;
     }
     final contentWidth =
@@ -3773,10 +3809,22 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     final item = focusedEpisode == null ? metadata : _withProbedRatings(focusedEpisode);
     final description = _tvDetailDescription(metadata, hideSpoilers: hideSpoilers);
     final genres = metadata.genres ?? const <String>[];
+    final hadFocus = _tvDetailInfoFocusNode.hasFocus;
     unawaited(
-      OverlaySheetController.of(context).show<void>(
-        builder: (_) => MediaDetailsSheet(item: item, description: description, genres: genres),
-      ),
+      showScopedDialog<void>(
+        context: context,
+        builder: (dialogContext) => _detailDialog(
+          dialogContext,
+          MediaDetailsSheet(
+            item: item,
+            description: description,
+            genres: genres,
+            onClose: () => Navigator.of(dialogContext).pop(),
+          ),
+        ),
+      ).whenComplete(() {
+        if (mounted && hadFocus) FocusUtils.restoreFocusAfterBuild(this, _tvDetailInfoFocusNode);
+      }),
     );
   }
 

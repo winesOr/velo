@@ -243,8 +243,10 @@ void main() {
       isFalse,
     );
 
-    // The reveal autofocuses the play button for movies; UP from the action
-    // row lands on the hero information block.
+    // UP crosses the external scores before reaching the information block.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pump();
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'detail_rating_source');
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pump();
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'tv_detail_info');

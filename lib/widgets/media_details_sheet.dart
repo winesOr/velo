@@ -21,6 +21,7 @@ import 'media_rating_badge.dart';
 /// or scrolls.
 class MediaDetailsSheet extends StatefulWidget {
   final MediaItem item;
+  final VoidCallback? onClose;
 
   /// Already resolved by the caller — honoring the spoiler setting and, for
   /// shows, the episode → season → show fallback — so the sheet never shows
@@ -32,7 +33,7 @@ class MediaDetailsSheet extends StatefulWidget {
   /// itself no longer renders them (#2217).
   final List<String> genres;
 
-  const MediaDetailsSheet({super.key, required this.item, this.description, this.genres = const []});
+  const MediaDetailsSheet({super.key, required this.item, this.description, this.genres = const [], this.onClose});
 
   @override
   State<MediaDetailsSheet> createState() => _MediaDetailsSheetState();
@@ -89,11 +90,13 @@ class _MediaDetailsSheetState extends State<MediaDetailsSheet> {
 
     return BottomSheetPageScaffold(
       title: item.displayTitle,
+      onClose: widget.onClose,
       showHeaderBorder: false,
       // One chrome-less focus stop around the viewport: like the file-info
       // sheet's fields there is nothing to activate, so no focus chrome is
       // drawn — the arrows only page the content beneath.
       child: FocusableWrapper(
+        autofocus: widget.onClose != null,
         onNavigateUp: () => _scrollBy(-1),
         onNavigateDown: () => _scrollBy(1),
         delegateFocusBorder: true,

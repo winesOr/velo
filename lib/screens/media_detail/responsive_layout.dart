@@ -115,7 +115,20 @@ extension _MediaDetailResponsiveLayout on _MediaDetailScreenState {
                   focusNode: _tvDetailInfoFocusNode,
                   onSelect: openDetails,
                   onNavigateUp: _backButtonFocusNode.requestFocus,
-                  onNavigateDown: canRate ? _ratingChipFocusNode.requestFocus : _focusTvDetailActionRow,
+                  onNavigateDown: () {
+                    if (preferredMediaRatingsFor(
+                          ratingsItem,
+                          fallbackItem: metadata,
+                          limit: RatingDisplayPolicy.detailLimit,
+                        ).isNotEmpty &&
+                        _tvRatingSourceFocusNode.context != null) {
+                      _tvRatingSourceFocusNode.requestFocus();
+                    } else if (canRate) {
+                      _ratingChipFocusNode.requestFocus();
+                    } else {
+                      _focusTvDetailActionRow();
+                    }
+                  },
                   onBack: _popMediaDetailIfBackNotSuppressed,
                   disableScale: true,
                   borderRadius: 8,
@@ -162,6 +175,9 @@ extension _MediaDetailResponsiveLayout on _MediaDetailScreenState {
                   item: ratingsItem,
                   fallbackItem: metadata,
                   alignment: WrapAlignment.start,
+                  firstFocusNode: _tvRatingSourceFocusNode,
+                  onNavigateUp: _tvDetailInfoFocusNode.requestFocus,
+                  onNavigateDown: canRate ? _ratingChipFocusNode.requestFocus : _focusTvDetailActionRow,
                   foregroundColor: _tvDetailForegroundColor(context),
                 ),
                 if (canRate) _buildUserRatingChip(metadata),
