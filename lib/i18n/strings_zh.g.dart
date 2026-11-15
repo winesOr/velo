@@ -1836,6 +1836,8 @@ class Translations$watchTogether$zh extends Translations$watchTogether$en {
 	@override String get title => '一起看';
 	@override String get description => '与朋友和家人同步观看内容';
 	@override String get createSession => '创建会话';
+	@override String get optionalRoomName => '房间名称（可选）';
+	@override String get createRoomHostDescription => '你将成为房主，可以控制播放和暂停。';
 	@override String get creating => '正在创建…';
 	@override String get joinSession => '加入会话';
 	@override String get joining => '正在加入…';
@@ -5045,6 +5047,8 @@ extension on TranslationsZh {
 			'watchTogether.title' => '一起看',
 			'watchTogether.description' => '与朋友和家人同步观看内容',
 			'watchTogether.createSession' => '创建会话',
+			'watchTogether.optionalRoomName' => '房间名称（可选）',
+			'watchTogether.createRoomHostDescription' => '你将成为房主，可以控制播放和暂停。',
 			'watchTogether.creating' => '正在创建…',
 			'watchTogether.joinSession' => '加入会话',
 			'watchTogether.joining' => '正在加入…',
@@ -5458,10 +5462,10 @@ extension on TranslationsZh {
 			'metadataEdit.summary' => '简介',
 			'metadataEdit.poster' => '海报',
 			'metadataEdit.background' => '背景',
-			'metadataEdit.logo' => '标志',
-			'metadataEdit.squareArt' => '方形图片',
 			_ => null,
 		} ?? switch (path) {
+			'metadataEdit.logo' => '标志',
+			'metadataEdit.squareArt' => '方形图片',
 			'metadataEdit.selectPoster' => '选择海报',
 			'metadataEdit.selectBackground' => '选择背景',
 			'metadataEdit.selectLogo' => '选择标志',

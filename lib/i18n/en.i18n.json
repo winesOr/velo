@@ -1797,6 +1797,8 @@
     "title": "Watch Together",
     "description": "Watch content in sync with friends and family",
     "createSession": "Create Session",
+    "optionalRoomName": "Room name (optional)",
+    "createRoomHostDescription": "You will be the host and can control playback and pause.",
     "creating": "Creating...",
     "joinSession": "Join Session",
     "joining": "Joining...",

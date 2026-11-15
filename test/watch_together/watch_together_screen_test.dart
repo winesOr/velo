@@ -5,10 +5,59 @@ import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/watch_together/models/watch_session.dart';
 import 'package:plezy/watch_together/providers/watch_together_provider.dart';
 import 'package:plezy/watch_together/screens/watch_together_screen.dart';
+import 'package:plezy/watch_together/widgets/create_session_dialog.dart';
 import 'package:provider/provider.dart';
 
 void main() {
   setUpAll(() => LocaleSettings.setLocaleSync(AppLocale.en));
+
+  testWidgets('create form preserves name and control choice across a failed submission', (tester) async {
+    String? submittedName;
+    ControlMode? submittedMode;
+    var calls = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => CreateSessionDialog(
+                  onSubmit: (_, name, mode) async {
+                    submittedName = name;
+                    submittedMode = mode;
+                    calls++;
+                    return calls == 1 ? (success: false, error: 'Try again') : (success: true, error: null);
+                  },
+                ),
+              ),
+              child: const Text('Open create'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open create'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '  Film Night  ');
+    await tester.tap(find.text(t.watchTogether.anyone));
+    await tester.tap(find.text(t.watchTogether.createSession).last);
+    await tester.pumpAndSettle();
+    expect(find.text('Try again'), findsOneWidget);
+    expect(submittedName, 'Film Night');
+    expect(submittedMode, ControlMode.anyone);
+    await tester.tap(find.text(t.watchTogether.createSession).last);
+    await tester.pumpAndSettle();
+    expect(calls, 2);
+    expect(find.byType(CreateSessionDialog), findsNothing);
+    await tester.tap(find.text('Open create'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '   ');
+    await tester.tap(find.text(t.watchTogether.createSession).last);
+    await tester.pumpAndSettle();
+    expect(submittedName, isNull);
+    expect(submittedMode, ControlMode.hostOnly);
+  });
 
   Future<_FakeWatchTogetherProvider> pumpHostedSession(WidgetTester tester, {required String sessionId}) async {
     final provider = _FakeWatchTogetherProvider(sessionId: sessionId);

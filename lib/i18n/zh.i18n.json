@@ -1786,6 +1786,8 @@
     "title": "一起看",
     "description": "与朋友和家人同步观看内容",
     "createSession": "创建会话",
+    "optionalRoomName": "房间名称（可选）",
+    "createRoomHostDescription": "你将成为房主，可以控制播放和暂停。",
     "creating": "正在创建…",
     "joinSession": "加入会话",
     "joining": "正在加入…",

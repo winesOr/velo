@@ -4556,6 +4556,12 @@ class Translations$watchTogether$en {
 	/// en: 'Create Session'
 	String get createSession => 'Create Session';
 
+	/// en: 'Room name (optional)'
+	String get optionalRoomName => 'Room name (optional)';
+
+	/// en: 'You will be the host and can control playback and pause.'
+	String get createRoomHostDescription => 'You will be the host and can control playback and pause.';
+
 	/// en: 'Creating...'
 	String get creating => 'Creating...';
 
@@ -9849,6 +9855,8 @@ extension on Translations {
 			'watchTogether.title' => 'Watch Together',
 			'watchTogether.description' => 'Watch content in sync with friends and family',
 			'watchTogether.createSession' => 'Create Session',
+			'watchTogether.optionalRoomName' => 'Room name (optional)',
+			'watchTogether.createRoomHostDescription' => 'You will be the host and can control playback and pause.',
 			'watchTogether.creating' => 'Creating...',
 			'watchTogether.joinSession' => 'Join Session',
 			'watchTogether.joining' => 'Joining...',
@@ -10262,10 +10270,10 @@ extension on Translations {
 			'metadataEdit.summary' => 'Summary',
 			'metadataEdit.poster' => 'Poster',
 			'metadataEdit.background' => 'Background',
-			'metadataEdit.logo' => 'Logo',
-			'metadataEdit.squareArt' => 'Square Art',
 			_ => null,
 		} ?? switch (path) {
+			'metadataEdit.logo' => 'Logo',
+			'metadataEdit.squareArt' => 'Square Art',
 			'metadataEdit.selectPoster' => 'Select Poster',
 			'metadataEdit.selectBackground' => 'Select Background',
 			'metadataEdit.selectLogo' => 'Select Logo',

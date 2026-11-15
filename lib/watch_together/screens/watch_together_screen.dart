@@ -39,6 +39,7 @@ import '../services/recent_rooms_service.dart';
 import '../services/relay_protocol.g.dart';
 import '../services/watch_together_relay_endpoint.dart';
 import '../widgets/join_session_dialog.dart';
+import '../widgets/create_session_dialog.dart';
 import '../widgets/local_media_match_dialog.dart';
 import '../../widgets/loading_indicator_box.dart';
 
@@ -351,42 +352,62 @@ class _NotInSessionViewState extends State<_NotInSessionView> with MountedSetSta
   String _sessionActionErrorDetail(Object error) => error is PeerError ? error.message : error.toString();
 
   Future<void> _createSession() async {
-    final controlMode = await _showControlModeDialog();
-    if (controlMode == null || !mounted) return;
-
-    await _runSessionAction(
-      setBusy: (busy) => _isCreating = busy,
-      logMessage: 'Failed to create session',
-      failureMessage: t.watchTogether.failedToCreate,
-      action: () async {
-        final sessionId = await widget.watchTogether.createSession(
-          controlMode: controlMode,
-          relayEndpoint: _relayEndpoint,
-          displayName: _plexDisplayName,
-        );
-        await _recordRecentRoom(sessionId, controlMode: controlMode);
-      },
-    );
-  }
-
-  Future<ControlMode?> _showControlModeDialog() {
-    return showScopedDialog<ControlMode>(
+    final provider = widget.watchTogether;
+    final profiles = context.read<ActiveProfileProvider>();
+    final settings = SettingsService.instanceOrNull;
+    await showScopedDialog<void>(
       context: context,
-      builder: (context) => AppAlertDialog(
-        title: Text(t.watchTogether.controlMode),
-        content: Text(t.watchTogether.controlModeQuestion),
-        actions: [
-          DialogActionButton(onPressed: () => Navigator.pop(context), label: t.common.cancel),
-          DialogActionButton(
-            onPressed: () => Navigator.pop(context, ControlMode.hostOnly),
-            label: t.watchTogether.hostOnly,
-          ),
-          DialogActionButton(
-            onPressed: () => Navigator.pop(context, ControlMode.anyone),
-            label: t.watchTogether.anyone,
-            isPrimary: true,
-          ),
-        ],
+      builder: (_) => CreateSessionDialog(
+        onSubmit: (dialogContext, name, controlMode) async {
+          final profileId = profiles.activeId;
+          final profileGeneration = profiles.identityMutationGeneration;
+          final endpoint = WatchTogetherRelayEndpoint.resolve(settings?.read(SettingsService.customRelayUrl));
+          final displayName = profiles.active?.displayName;
+          final relayPreference = settings?.listenableOf(SettingsService.customRelayUrl);
+          var relayChanged = false;
+          void onRelayChanged() => relayChanged = true;
+          relayPreference?.addListener(onRelayChanged);
+          if (mounted) setState(() => _isCreating = true);
+          try {
+            final sessionId = await provider.createSession(
+              controlMode: controlMode,
+              relayEndpoint: endpoint,
+              displayName: displayName,
+            );
+            final scopeIsCurrent =
+                profiles.activeId == profileId &&
+                profiles.identityMutationGeneration == profileGeneration &&
+                !relayChanged &&
+                WatchTogetherRelayEndpoint.resolve(settings?.read(SettingsService.customRelayUrl)) == endpoint &&
+                provider.isConnected &&
+                provider.sessionId == sessionId &&
+                dialogContext.mounted &&
+                (ModalRoute.of(dialogContext)?.isCurrent ?? false);
+            if (!scopeIsCurrent) return (success: false, error: t.watchTogether.failedToCreate);
+            if (profileId != null && profileId.isNotEmpty) {
+              await RecentRoomsService.addOrUpdateRoom(
+                sessionId,
+                profileId: profileId,
+                endpoint: endpoint,
+                name: name,
+                controlMode: controlMode,
+              );
+            }
+            return (success: true, error: null);
+          } catch (error) {
+            appLogger.e('Failed to create session', error: error);
+            if (dialogContext.mounted && (ModalRoute.of(dialogContext)?.isCurrent ?? false)) {
+              showErrorSnackBar(
+                dialogContext,
+                '${t.watchTogether.failedToCreate}: ${_sessionActionErrorDetail(error)}',
+              );
+            }
+            return (success: false, error: null);
+          } finally {
+            relayPreference?.removeListener(onRelayChanged);
+            if (mounted) setState(() => _isCreating = false);
+          }
+        },
       ),
     );
   }
