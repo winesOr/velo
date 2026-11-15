@@ -30,7 +30,7 @@ The unchanged tall screenshot is cropped by CSS for artwork / cast / episode pre
 ## V3 review adjustments (2026-10-23)
 
 - Server identity uses the existing repository Emby / Jellyfin / Plex SVG paths. Home server selection updates the logo, media metadata carries its server icon, and version switching updates the detail source icon. No provider uses a first-letter avatar.
-- Home account / more menus are anchored popovers. Filters, episode selection and settings use centered, fully rounded floating dialogs; player dialogs float at the side. No dialog attaches to the bottom edge. The 16px corner and separate menu surface reference VidHub's decoded `dialog_corner_background` / `dialog_radius` resources; exact behavior remains our prototype implementation.
+- Home account / more menus are anchored popovers. Filters, episode selection and settings use centered, fully rounded floating dialogs; all player panels (settings, tracks, subtitles, speed, episodes, search, cast) are full-height right-side drawers (340px, left corners 24px, scrim, slide in/out). No dialog attaches to the bottom edge. The 16px corner and separate menu surface reference VidHub's decoded `dialog_corner_background` / `dialog_radius` resources; exact behavior remains our prototype implementation.
 - `appearance.js` handles `system`, `light`, `dark`, defaults to system, persists under `plezy-prototype-appearance`, listens to OS changes in system mode, and synchronizes other open prototype documents via storage events. `appearance.css` owns the light palette and stronger dark navigation separation. Artwork sampling stays independent from the appearance preference.
 - Choose the appearance in Settings → 外观与首页 → 界面主题, or use the review toolbar above the device. Video HUD remains dark for readability over the video frame.
 - The home carousel uses real pointer / touch swipes, dots and TV keyboard input; the visible left / right arrow controls were removed.
@@ -58,7 +58,7 @@ The unchanged tall screenshot is cropped by CSS for artwork / cast / episode pre
 
 入口 `index.html`；逐组件验收规范 `final-ui-spec.html`。本轮将详情评分归入海报信息组，播放器采用 Velo AppSelectField 双行字段，统一全页居中对话框与顶部轻通知，不再使用底部弹出面板。三种外观、海报取色与上一轮加载场景保留。
 
-- `final-ui.css`：Velo Cinema/品牌与 Overlay token；所有独立弹窗居中（24px），紧凑选择菜单 18px，字段 14px。
+- `final-ui.css`：Velo Cinema/品牌与 Overlay token；非播放页独立弹窗居中（24px），播放器内面板为右侧抽屉（宽340px、左侧圆角24px），紧凑选择菜单 18px，字段 14px。
 - `final-ui.js`：播放器轨道稳定 ID、主次字幕互斥、按示例设备保存、焦点约束。默认普通话/简体中文/次字幕关闭；仅本地演示。
 - `player.html` 第一个播放器下的验收工具切换正常、无音轨、无次字幕、慢切换、失败。也可用 `?tracks=empty|single|slow|failure`；360/1400ms 是设计参数。
 - `detail.html?ratings=none` 展示无分收起；默认评分在 hero 元数据后、播放前，数值为示例，服务器分来源未标注。

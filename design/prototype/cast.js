@@ -17,7 +17,7 @@
     const sheet = overlay.firstElementChild;
     let selected = null, paused = false, position = 512, volume = 65;
     const fmt = value => `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`;
-    const close = () => { overlay.hidden = true; trigger.focus(); };
+    const close = () => { trigger.focus(); if (!frame.classList.contains('player-device')) { overlay.hidden = true; return; } overlay.classList.add('out'); setTimeout(() => { overlay.hidden = true; overlay.classList.remove('out'); }, 240); };
     const header = title => `<div class="cast-heading"><h3 id="cast-title-${index}">${title}</h3><button class="cast-close" aria-label="关闭投屏面板">×</button></div>`;
     function render() {
       if (selected === null) {
@@ -40,7 +40,7 @@
       sheet.querySelector('.cast-close').onclick = close;
       sheet.querySelector('button').focus();
     }
-    trigger.onclick = () => { overlay.hidden = false; render(); };
+    trigger.onclick = () => { overlay.classList.remove('out'); overlay.hidden = false; render(); };
     overlay.onclick = e => { if (e.target === overlay) close(); };
     overlay.onkeydown = e => {
       if (e.key === 'Escape') { e.stopPropagation(); close(); }

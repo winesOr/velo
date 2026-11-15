@@ -21,7 +21,7 @@
     previous?.remove();
     const shade=document.createElement('div');shade.className='modal-shade';shade.innerHTML=`<section class="modal-sheet" role="dialog" aria-modal="true" aria-label="${title}"><div class="sheet-heading"><h4>${title}</h4><button class="icon-button" data-dismiss aria-label="关闭">${icon('close')}</button></div>${content}</section>`;
     shade.returnFocus=returnFocus;
-    const close=()=>{shade.remove();if(returnFocus?.isConnected)returnFocus.focus({preventScroll:true});};
+    const close=()=>{if(root.classList.contains('player-device')){if(shade.classList.contains('out'))return;shade.classList.add('out');setTimeout(()=>shade.remove(),240);}else shade.remove();if(returnFocus?.isConnected)returnFocus.focus({preventScroll:true});};
     shade.addEventListener('click',e=>{if(e.target===shade||e.target.closest('[data-dismiss]'))close();});
     shade.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();close();}if(e.key==='Tab'){const nodes=[...shade.querySelectorAll('button,a,input,select')].filter(x=>!x.disabled);const i=nodes.indexOf(document.activeElement);if(e.shiftKey&&i===0){e.preventDefault();nodes.at(-1)?.focus();}if(!e.shiftKey&&i===nodes.length-1){e.preventDefault();nodes[0]?.focus();}}});
     root.append(shade);

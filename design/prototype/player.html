@@ -81,10 +81,8 @@
   .pop button.sel::before { content: "✓"; position: absolute; left: 11px; font-size: 13px; }
   .pop button small { color: var(--menu-dim); font-size: 11px; margin-left: auto; padding-left: 12px; font-weight: 400; }
   .pop .sep { height: 1px; margin: 4px 8px; background: var(--menu-line); }
-  .pop.center-text button { justify-content: center; padding: 0 22px 0 30px; }
 
-  /* Right drawer for "更多" (VidHub: dark full-height pane with top tabs). */
-  /* Floating drawer: inset from the edges with rounded corners, segmented tabs. */
+  /* Right side drawer (final baseline: no centered dialogs over the picture); geometry lives in final-ui.css. */
   .drawer { position: absolute; top: 10px; right: 10px; bottom: 10px; width: 318px; z-index: 18; color: var(--menu-fg);
     background: var(--drawer-bg); border: 1px solid var(--menu-edge); border-radius: 22px; overflow: hidden;
     backdrop-filter: blur(28px) saturate(1.4); -webkit-backdrop-filter: blur(28px) saturate(1.4);
@@ -167,9 +165,9 @@
 
 <h2>② 倍速 · 字幕 · 音轨 · 选集（统一选择与居中菜单）</h2>
 <div class="stage-row">
-  <div><div class="phone land device" id="p2"></div><div class="cap">倍速：一列选项，勾选当前值。</div></div>
+  <div><div class="phone land device" id="p2"></div><div class="cap">倍速：右侧抽屉一列选项，勾选当前值。</div></div>
   <div><div class="phone land device" id="p3"></div><div class="cap">字幕：主／次字幕双行选择字段；与更多面板共享当前选择，支持关闭与互斥。</div></div>
-  <div><div class="phone land device" id="p4"></div><div class="cap">选集：居中显示集号与集名，当前集勾选；集数多时在面板内滚动。</div></div>
+  <div><div class="phone land device" id="p4"></div><div class="cap">选集：右侧抽屉列出集号与集名，当前集勾选；集数多时在面板内滚动。</div></div>
 </div>
 
 <h2>③ 播放设置 · 居中面板 · 四个标签</h2>
@@ -266,16 +264,19 @@
   }
 
   function clear(root, restore=true) {
-    root.querySelectorAll('.pop,.drawer,.scrim,.track-menu-layer').forEach(n=>n.remove());
+    // Real closes (restore=true) slide the drawer back out; swaps between panels replace it at once.
+    root.querySelectorAll('.drawer,.scrim').forEach(n=>{if(restore&&!n.classList.contains('out')){n.classList.add('out');n.setAttribute('inert','');setTimeout(()=>n.remove(),240);}else n.remove();});
     if(restore&&root.overlayReturn?.isConnected)root.overlayReturn.focus({preventScroll:true});
   }
-  function scrim(root) { const s=document.createElement('div');s.className='scrim';s.onclick=()=>clear(root);root.appendChild(s); }
+  function scrim(root,quiet) { const s=document.createElement('div');s.className='scrim'+(quiet?' no-anim':'');s.onclick=()=>clear(root);root.appendChild(s); }
   function pop(root,anchor,html,place='up',cls='') {
     clear(root,false);root.overlayReturn=anchor;scrim(root);
-    const p=document.createElement('div');p.className='pop '+cls;p.setAttribute('role','dialog');p.setAttribute('aria-modal','true');p.setAttribute('aria-label',cls==='center-text'?'播放速度':'选集');p.innerHTML=html;root.append(p);
-    p.style.left='50%';p.style.top='50%';p.style.bottom='auto';p.style.transform='translate(-50%,-50%)';p.style.maxHeight='calc(100% - 32px)';p.style.minWidth='220px';
-    p.querySelectorAll('button').forEach(b=>b.onclick=()=>{p.querySelectorAll('button').forEach(n=>n.classList.toggle('sel',n===b));if(cls==='center-text')anchor.innerHTML=UI.icon('play')+b.textContent.trim();if(!b.dataset.keep)clear(root);});
-    FinalUI.trap(p,()=>clear(root));p.querySelector('.sel,button')?.focus({preventScroll:true});return p;
+    const title=cls==='center-text'?'播放速度':'选集';
+    const p=document.createElement('section');p.className='drawer';p.setAttribute('role','dialog');p.setAttribute('aria-modal','true');p.setAttribute('aria-label',title);
+    p.innerHTML='<div class="player-dialog-heading"><span>'+title+'</span><button class="icon-button" data-player-close aria-label="关闭'+title+'">'+I('close')+'</button></div><div class="pane"><div class="pop '+cls+'">'+html+'</div></div>';root.append(p);
+    p.querySelector('[data-player-close]').onclick=()=>clear(root);
+    p.querySelectorAll('.pop button').forEach(b=>b.onclick=()=>{p.querySelectorAll('.pop button').forEach(n=>n.classList.toggle('sel',n===b));if(cls==='center-text')anchor.innerHTML=UI.icon('play')+b.textContent.trim();if(!b.dataset.keep)clear(root);});
+    FinalUI.trap(p,()=>clear(root));p.querySelector('.sel,.pop button')?.focus({preventScroll:true});return p;
   }
 
   const speedHTML = ['2.0x', '1.5x', '1.25x', '1.0x', '0.75x', '0.5x'].map((v) => `<button class="${v === '1.0x' ? 'sel' : ''}">${v}</button>`).join('');
@@ -317,10 +318,10 @@
       <div class="navrow">${I('settings')}弹幕源与屏蔽词<span class="spacer"></span><span class="val">›</span></div>`,
   };
   function drawer(root,tab,anchor) {
-    const previous=root.querySelector('.drawer');
+    const previous=root.querySelector('.drawer:not(.out)');
     if(!previous)root.overlayReturn=anchor||root.querySelector('[data-act="more"]');
-    clear(root,false);scrim(root);
-    const d=document.createElement('section');d.className='drawer';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.setAttribute('aria-label','播放设置');
+    clear(root,false);scrim(root,!!previous);
+    const d=document.createElement('section');d.className='drawer'+(previous?' no-anim':'');d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.setAttribute('aria-label','播放设置');
     d.innerHTML='<div class="player-dialog-heading"><span>播放设置</span><button class="icon-button" data-player-close aria-label="关闭播放设置">'+I('close')+'</button></div>'+tabs(tab)+`<div class="pane">${panes[tab]}</div>`;
     d.querySelectorAll('[data-tab]').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.tab===tab));b.onclick=()=>drawer(root,b.dataset.tab);});
     d.querySelector('[data-player-close]').onclick=()=>clear(root);
