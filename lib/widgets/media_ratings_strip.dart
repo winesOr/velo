@@ -113,28 +113,25 @@ class MediaCardRatingBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final personal = rating.source == 'personal';
-    final colors = Theme.of(context).colorScheme;
     return Semantics(
       label: ratingsSemanticLabel([rating]),
       excludeSemantics: true,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        decoration: BoxDecoration(
-          color: colors.surfaceContainerHighest.withValues(alpha: .94),
-          borderRadius: BorderRadius.circular(6),
-        ),
+        decoration: BoxDecoration(color: const Color(0xcc000000), borderRadius: BorderRadius.circular(6)),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (personal) ...[
-              AppIcon(Symbols.person_rounded, size: 12, color: colors.primary),
+              AppIcon(Symbols.person_rounded, size: 12, color: Colors.white),
               const SizedBox(width: 3),
-              Text('${mediaRatingLabel(rating)}/10', style: TextStyle(color: colors.onSurface, fontSize: 11)),
+              Text('${mediaRatingLabel(rating)}/10', style: const TextStyle(color: Colors.white, fontSize: 11)),
             ] else
               InlineRatingBadges(
                 ratings: [rating],
                 iconSize: 11,
-                textStyle: TextStyle(color: colors.onSurface, fontSize: 11, fontWeight: FontWeight.w600),
+                foregroundColor: Colors.white,
+                textStyle: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
               ),
           ],
         ),

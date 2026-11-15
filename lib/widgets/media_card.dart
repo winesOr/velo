@@ -668,8 +668,8 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
           (item.isMovie || item.isShow || item.isEpisode) &&
           badgeRating != null)
         PositionedDirectional(
-          bottom: 8,
-          start: 6,
+          bottom: 4,
+          end: 5,
           child: IgnorePointer(
             child: MediaCardRatingBadge(key: ValueKey('recommendation-score-${item.globalKey}'), rating: badgeRating),
           ),
