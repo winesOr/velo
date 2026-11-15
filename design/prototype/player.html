@@ -155,8 +155,8 @@
 .tvp .tlrow{display:flex;align-items:center;gap:28px;font-size:28px;font-variant-numeric:tabular-nums}.tvp .tlrow .t{width:96px;text-align:left}.tvp .tlrow .t.r{text-align:right;opacity:.75}
 .tvp .tl{flex:1;height:72px;border-radius:16px}
 .tvp .ctl{display:flex;align-items:center;gap:14px;margin-top:18px}.tvp .ctl .gap{flex:1}
-.tvp .ctl .tv-btn{width:112px;height:112px}.tvp .ctl .tv-btn .icon{width:56px;height:56px}.tvp .ctl .tv-btn.flip .icon{transform:scaleX(-1)}
-.tvp .tv-act{flex-direction:column;gap:8px;min-width:140px;height:124px;padding:0 12px;border-radius:26px;font-size:26px;font-weight:500}.tvp .tv-act .icon{width:48px;height:48px}.tvp .tv-act span{line-height:30px;white-space:nowrap}
+.tvp .ctl{gap:12px}.tvp .ctl .tv-btn{width:96px;height:96px}.tvp .ctl .tv-btn .icon{width:48px;height:48px}.tvp .ctl .tv-btn.big{width:108px;height:108px}.tvp .ctl .tv-btn.flip .icon{transform:scaleX(-1)}
+.tvp .tv-act{flex-direction:column;gap:8px;min-width:124px;height:124px;padding:0 8px;border-radius:26px;font-size:24px;font-weight:500}.tvp .tv-act .icon{width:48px;height:48px}.tvp .tv-act span{line-height:30px;white-space:nowrap}
 /* 焦点：放大 + 白底黑字 + 紫色粗描边（不只靠颜色） */
 .tvp :is(.tv-btn,.tv-chip,.tv-act,.skip):focus{outline:6px solid var(--velo-focus)!important;outline-offset:5px;transform:scale(1.14);background:#fff!important;color:#111!important;z-index:2}
 .tvp .skip:focus{transform:scale(1.1);box-shadow:0 0 0 6px var(--velo-focus),0 8px 28px rgba(0,0,0,.5)}
@@ -168,7 +168,9 @@
 .tvp .toast{font-size:28px;padding:20px 32px;border-radius:28px;top:48px!important;max-width:1200px}
 /* 右侧抽屉：同手机的抽屉组件，整体放大 2× 后宽 580（≈画面 30%）；行内焦点用内描边 + 底色，避免被滚动区裁掉 */
 .tv.tvp.device.player-device :is(.drawer,.cast-sheet,.modal-sheet){zoom:2;width:290px!important}
-.tvp [data-cast-open] svg{width:44px;height:44px}
+.ep-prog{position:absolute;left:30px;right:14px;bottom:3px;height:3px;border-radius:2px;background:rgba(127,127,127,.3)}.ep-prog i{display:block;height:100%;border-radius:2px;background:var(--velo-focus)}
+.device .pop button.watched{opacity:.62}.ep-next{padding:6px 14px 2px;font-size:12px;font-weight:600;color:var(--velo-caption)}
+.tvp .tv-mode{margin:0 0 12px}
 .tvp .drawer :is(button,[tabindex="0"],input):focus,.tvp :is(.cast-sheet,.modal-sheet) :is(button,input):focus{outline:3px solid var(--velo-focus)!important;outline-offset:-3px;background-color:var(--velo-selected);transform:none}
 .tvp .drawer .tabs button:focus{box-shadow:inset 0 -3px 0 var(--velo-focus)}
 .tvp .drawer .navrow[role=button]{cursor:pointer;border-radius:12px;padding:0 6px}
@@ -204,7 +206,7 @@ html[data-shot] .tv-section{display:none}html[data-shot=ptv] .tv-section{display
 <div class="stage-row">
   <div><div class="phone land device" id="p2"></div><div class="cap">倍速：右侧抽屉一列选项，勾选当前值。</div></div>
   <div><div class="phone land device" id="p3"></div><div class="cap">字幕：主／次字幕双行选择字段；与更多面板共享当前选择，支持关闭与互斥。</div></div>
-  <div><div class="phone land device" id="p4"></div><div class="cap">选集：右侧抽屉列出集号与集名，当前集勾选；集数多时在面板内滚动。</div></div>
+  <div><div class="phone land device" id="p4"></div><div class="cap">选集：右侧抽屉，顶部分季标签，列出本季剧集（已看 / 当前进度 / 接下来播放），末尾衔接下一季；电影或播放列表进入时同一入口叫「播放列表」。下方 TV 区的「剧集 / 电影」开关可切换。</div></div>
 </div>
 
 <h2>③ 播放设置 · 居中面板 · 四个标签</h2>
@@ -232,14 +234,15 @@ html[data-shot] .tv-section{display:none}html[data-shot=ptv] .tv-section{display
   <tr><td>底部 · 截图按钮</td><td class="mv">右侧竖排，画中画上方</td></tr>
   <tr><td>设置页 · 睡眠定时、音画同步、音量增益、字幕延迟、画面缩放</td><td class="mv">只在「播放设置」居中面板里调，设置页只保留默认值</td></tr>
   <tr><td>画面中间 · 快退 / 暂停 / 快进按钮</td><td class="del">去掉，改成手势：双击左快退、双击中间暂停、双击右快进</td></tr>
-  <tr><td>手势 · 上下滑动呼出章节 / 队列条</td><td class="del">去掉；章节和队列只从「选集」进入</td></tr>
+  <tr><td>手势 · 上下滑动呼出章节 / 队列条</td><td class="del">去掉；章节从「章节」进入；剧集与播放队列合并为「选集 / 播放列表」一个入口</td></tr>
   <tr><td>手势 · 上下滑动调亮度 / 音量</td><td class="mv">从屏幕边缘窄条扩大到左半屏 / 右半屏</td></tr>
   <tr><td>设置页 · 滑动调进度、长按倍速档位、亮度 / 音量滑动开关</td><td class="keep">保留在设置 → 视频播放 → 手势</td></tr>
 </table></div>
 
 <section class="tv-section"><h2>⑤ TV · 播放界面 · 方向键移动 / Enter 确认 / 返回逐层关闭</h2>
+<div class="review-appearance tv-mode" role="group" aria-label="播放内容类型（同时切换手机横屏播放器）" style="display:inline-flex"><button data-list-mode="series" class="active">剧集</button><button data-list-mode="movie">电影 / 播放列表</button></div>
 <div class="tvp-frame"><div class="tv device player-device tvp" id="ptv"></div></div>
-<div class="cap" style="max-width:984px">TV · 1920×1080 画面，整体 0.5 缩放进 960×540 预览帧。点一下画面或 Tab 进入后：方向键在控件间移动（↑↓换行：顶栏 / 跳过片头 / 进度条 / 底栏，←→同行）；进度条上 ←→ 快退快进 10 秒；Enter 确认。面板（选集、队列、章节、字幕、音轨、倍速、设置、弹幕、一起看、投屏）都是同一右侧抽屉，抽屉内 ↑↓ 移动、←→ 在标签 / 步进器间移动、Enter 选择；返回（Esc / Backspace）先关抽屉（子列表先回上一层），再隐藏控件，控件隐藏时再按返回才退出播放；隐藏时按任意方向键唤出，10 秒无操作自动隐藏。画中画、锁屏、截图、横竖屏在 TV 不适用，不提供。</div>
+<div class="cap" style="max-width:984px">TV · 1920×1080 画面，整体 0.5 缩放进 960×540 预览帧。点一下画面或 Tab 进入后：方向键在控件间移动（↑↓换行：顶栏 / 跳过片头 / 进度条 / 底栏，←→同行）；快退 / 快进 10 秒按钮与进度条上的 ←→ 一致；Enter 确认。底栏左组按实机顺序：上一集、上一章、快退、播放、快进、下一章、下一集。「选集」与「队列」合并为一个入口：剧集播放时叫「选集」，抽屉顶部分季标签，列出本季（已看 / 当前进度 / 接下来播放），末尾衔接下一季；电影或从播放列表进入时同一按钮叫「播放列表」，显示当前项与接下来；上方「剧集 / 电影」开关可切换演示（手机横屏同步）。章节仍独立。面板都是同一右侧抽屉，抽屉内 ↑↓ 移动、←→ 在标签 / 步进器间移动、Enter 选择；返回（Esc / Backspace）先关抽屉（子列表先回上一层），再隐藏控件，控件隐藏时再按返回才退出播放；隐藏时按任意方向键唤出，10 秒无操作自动隐藏。TV 是接收端，不提供投屏；画中画、锁屏、截图、横竖屏同样不提供。</div>
 </section>
 
 <script src="ui.js?v=final2"></script>
@@ -249,6 +252,10 @@ html[data-shot] .tv-section{display:none}html[data-shot=ptv] .tv-section{display
   const extra = {
     captions: '<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M6 11h4m4 0h4M6 15h7m3 0h2"/>',
     speed: '<path d="M12 13 16 9"/><path d="M4 18a9 9 0 1 1 16 0"/>',
+    replay: '<path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v4h4"/><text x="12" y="15.6" text-anchor="middle" font-size="7.5" font-weight="700" fill="currentColor" stroke="none">10</text>',
+    ahead: '<path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4h-4"/><text x="12" y="15.6" text-anchor="middle" font-size="7.5" font-weight="700" fill="currentColor" stroke="none">10</text>',
+    chprev: '<path d="m11 7-5 5 5 5"/><path d="m18 7-5 5 5 5"/>',
+    chnext: '<path d="m13 7 5 5-5 5"/><path d="m6 7 5 5-5 5"/>',
     camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4Z"/><circle cx="12" cy="13" r="3.5"/>',
     orient: '<rect x="3" y="7" width="14" height="10" rx="2"/><path d="M21 9v8a2 2 0 0 1-2 2h-8"/><path d="m19 17 2 2 2-2" transform="translate(-2 0)"/>',
   };
@@ -288,7 +295,7 @@ html[data-shot] .tv-section{display:none}html[data-shot=ptv] .tv-section{display
           <span class="gap"></span>
           <button class="tchip" data-act="speed">1.0x</button>
           <button class="tchip" data-act="subs">${X('captions')}简中</button>
-          <button class="tchip" data-act="eps">${I('list')}选集</button>
+          <button class="tchip" data-act="eps">${I('list')}<span class="eps-label">选集</span></button>
           <button class="tchip" data-act="dm">${I('danmaku')}弹幕</button>
         </div>
       </div>`;
@@ -332,6 +339,36 @@ html[data-shot] .tv-section{display:none}html[data-shot=ptv] .tv-section{display
     <div class="sep"></div>
     <button>在线搜索字幕…</button>
     <button>加载本地字幕…</button>`;
+  // 选集 / 播放列表：同一入口。剧集 = 分季标签 + 本季剧集 + 衔接下一季；电影 / 播放列表 = 播放队列。手机与 TV 共用。
+  let listMode = 'series';
+  const S4 = ['初入宗门', '故人重逢', '暗流涌动', '山门之变', '云海之约', '风起云涌', '新的旅程', '血溪之战', '白骨之门', '归途'], S5 = ['新篇章', '旧部来信', '异乡客'];
+  const listLabel = () => (listMode === 'series' ? '选集' : '播放列表');
+  function listHTML(season) {
+    if (listMode === 'movie') return '<div class="ep-next">当前播放</div><button class="sel">沙丘：第二部<small>38:12 / 2:46:00</small><span class="ep-prog"><i style="width:23%"></i></span></button><div class="ep-next">接下来播放</div><button>沙丘<small>2:35:00</small></button><button>银翼杀手 2049<small>2:44:00</small></button><button>星际穿越<small>2:49:00</small></button><div class="sep"></div><button>循环播放<small>关</small></button><button>随机播放<small>关</small></button>';
+    const row = (n, name, tag, cls, pct) => `<button class="${cls}" data-ep="${n}">第 ${n} 集 ${name}<small>${tag}</small>${pct ? `<span class="ep-prog"><i style="width:${pct}%"></i></span>` : ''}</button>`;
+    if (season === 3) return Array.from({ length: 8 }, (_, i) => row(i + 1, '第三季·' + (i + 1), '已看', 'watched')).join('');
+    if (season === 5) return S5.map((nm, i) => row(i + 1, nm, i ? '' : '即将上线', '')).join('');
+    return S4.map((nm, i) => { const n = i + 1; return n < 7 ? row(n, nm, '已看', 'watched') : n === 7 ? row(n, nm, '8:32 / 23:40', 'sel', 36) : row(n, nm, n === 8 ? '接下来播放' : '', ''); }).join('')
+      + '<div class="sep"></div><div class="ep-next">接下来 · 第 5 季</div>' + S5.slice(0, 2).map((nm, i) => row(i + 1, nm, '', '')).join('');
+  }
+  function epsDrawer(root, anchor, onPick) {
+    clear(root, false); root.overlayReturn = anchor; scrim(root);
+    const series = listMode === 'series', title = listLabel(); let season = 4;
+    const p = document.createElement('section'); p.className = 'drawer'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-modal', 'true'); p.setAttribute('aria-label', title);
+    p.innerHTML = `<div class="player-dialog-heading"><span>${title}</span><button class="icon-button" data-player-close aria-label="关闭${title}">${I('close')}</button></div>${series ? `<div class="tabs">${[3, 4, 5].map((n) => `<button data-season="${n}">第 ${n} 季</button>`).join('')}</div>` : ''}<div class="pane"><div class="pop"></div></div>`;
+    root.append(p);
+    const box = p.querySelector('.pop');
+    const render = (focusTab) => {
+      p.querySelectorAll('[data-season]').forEach((b) => { const on = +b.dataset.season === season; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+      box.innerHTML = listHTML(season);
+      box.querySelectorAll('button').forEach((b) => b.onclick = () => { const t = b.firstChild.textContent.trim(); if (!series && /循环|随机/.test(t)) { const sm = b.querySelector('small'); sm.textContent = sm.textContent === '关' ? '开' : '关'; return; } (onPick || ((x) => UI.toast(root, '切换到 ' + (series ? `第 ${season} 季 ` : '') + x))) (t); clear(root); });
+      if (focusTab) p.querySelector(`[data-season="${season}"]`)?.focus({ preventScroll: true }); else (box.querySelector('.sel') || box.querySelector('button'))?.focus({ preventScroll: true });
+      const sx = scrollX, sy = scrollY; (box.querySelector('.sel') || box.firstElementChild)?.scrollIntoView({ block: 'center' }); scrollTo(sx, sy);
+    };
+    p.querySelectorAll('[data-season]').forEach((b) => b.onclick = () => { season = +b.dataset.season; render(true); });
+    p.querySelector('[data-player-close]').onclick = () => clear(root);
+    FinalUI.trap(p, () => clear(root)); render(false);
+  }
   const epsHTML = [5, 6, 7, 8, 9].map((n) => `<button class="${n === 7 ? 'sel' : ''}">第 ${n} 集<small>${['初入宗门', '故人重逢', '新的旅程', '风起云涌', '血溪之战'][n - 5]}</small></button>`).join('');
 
   const tabs = (on) => `<div class="tabs">${['视频', '音频', '字幕', '弹幕'].map((t) => `<button class="${t === on ? 'on' : ''}" data-tab="${t}">${t}</button>`).join('')}</div>`;
@@ -383,7 +420,7 @@ html[data-shot] .tv-section{display:none}html[data-shot=ptv] .tv-section{display
     if (act === 'dmtoggle') { anchor.classList.toggle('on'); return; }
     if (act === 'speed') return pop(root, anchor, speedHTML, 'up', 'center-text');
     if (act === 'subs') return drawer(root, '字幕', anchor);
-    if (act === 'eps') return pop(root, anchor, epsHTML);
+    if (act === 'eps') return epsDrawer(root, anchor);
     if (act === 'more') return drawer(root, '视频', anchor);
     if (act === 'dm') return drawer(root, '弹幕', anchor);
   }
@@ -411,7 +448,6 @@ html[data-shot] .tv-section{display:none}html[data-shot=ptv] .tv-section{display
         <div class="tv-ttl"><b>一念永恒</b><span>第 4 季 · 第 7 集　新的旅程</span></div>
         <span style="flex:1"></span>
         <button class="tv-btn on" data-tv="dm" aria-label="弹幕开关" aria-pressed="true">${I('danmaku')}</button>
-        <button class="tv-btn" data-cast-open aria-label="投屏"></button>
         <button class="tv-chip" data-tv="together" aria-label="一起看">${I('together')}一起看 · 3</button>
         <button class="tv-btn" data-tv="more" aria-label="更多">${I('more')}</button>
       </div>
@@ -421,13 +457,17 @@ html[data-shot] .tv-section{display:none}html[data-shot=ptv] .tv-section{display
         <div class="tlrow"><span class="t cur">1:20</span><div class="tl"><canvas></canvas><div class="tip"></div></div><span class="t r">${fmt(D)}</span></div>
         <div class="ctl">
           <button class="tv-btn flip" data-tv="prev" aria-label="上一集">${I('skip')}</button>
-          <button class="tv-btn" data-tv="play" aria-label="暂停">${I('pause')}</button>
+          <button class="tv-btn" data-tv="prevch" aria-label="上一章">${X('chprev')}</button>
+          <button class="tv-btn" data-tv="back10" aria-label="快退 10 秒">${X('replay')}</button>
+          <button class="tv-btn big" data-tv="play" aria-label="暂停">${I('pause')}</button>
+          <button class="tv-btn" data-tv="fwd10" aria-label="快进 10 秒">${X('ahead')}</button>
+          <button class="tv-btn" data-tv="nextch" aria-label="下一章">${X('chnext')}</button>
           <button class="tv-btn" data-tv="next" aria-label="下一集">${I('skip')}</button>
           <span class="gap"></span>
           ${act('speed', X('speed'), '1.0x').replace('aria-label="1.0x"', 'aria-label="倍速"')}
           ${act('subs', I('subtitles'), '简中').replace('aria-label="简中"', 'aria-label="字幕"')}
           ${act('audio', I('audio'), '普通话').replace('aria-label="普通话"', 'aria-label="音轨"')}
-          ${act('eps', I('grid'), '选集')}${act('queue', I('list'), '队列')}${act('chapters', I('flag'), '章节')}${act('dmset', I('danmaku'), '弹幕')}${act('settings', I('settings'), '设置')}
+          ${act('eps', I('grid'), '选集')}${act('chapters', I('flag'), '章节')}${act('dmset', I('danmaku'), '弹幕')}${act('settings', I('settings'), '设置')}
         </div>
       </div>`;
     const q = (s) => root.querySelector(s), tl = q('.tl'), skip = q('.skip'), cur = q('.cur'), osdEl = q('.tv-osd');
@@ -446,7 +486,7 @@ html[data-shot] .tv-section{display:none}html[data-shot=ptv] .tv-section{display
     tl.addEventListener('focus', () => { o.track = 16; sync(); }); tl.addEventListener('blur', () => { o.track = 10; sync(); });
     const focusPlay = () => (q('[data-tv=play]')).focus({ preventScroll: true });
     const toast = (m) => UI.toast(root, m);
-    // 列表型抽屉（倍速 / 选集 / 队列 / 章节 / 一起看 / 设置子项）。Esc 回到上一层（设置子项回设置），其余直接关闭。
+    // 列表型抽屉（倍速 / 章节 / 一起看 / 设置子项）。Esc 回到上一层（设置子项回设置），其余直接关闭。
     function tvList(title, html, anchor, o2 = {}) {
       clear(root, false); root.overlayReturn = anchor; scrim(root);
       const p = document.createElement('section'); p.className = 'drawer'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-modal', 'true'); p.setAttribute('aria-label', title);
@@ -477,7 +517,7 @@ html[data-shot] .tv-section{display:none}html[data-shot=ptv] .tv-section{display
     }
     function labels() {
       const t = PlayerTracks.get(root), set = (sel, v) => { const e = q(sel + ' span'); if (e && e.textContent !== v) e.textContent = v; };
-      set('[data-tv=speed]', st.speed); set('[data-tv=subs]', subName[t.primary] || '字幕'); set('[data-tv=audio]', audName[t.audio] || '音轨');
+      set('[data-tv=speed]', st.speed); set('[data-tv=eps]', listLabel()); set('[data-tv=subs]', subName[t.primary] || '字幕'); set('[data-tv=audio]', audName[t.audio] || '音轨');
     }
     new MutationObserver(() => { enhance(); labels(); }).observe(root, { childList: true, subtree: true });
     const settings = (tab, anchor) => { st.anchor = anchor; drawer(root, tab, anchor); enhance(); };
@@ -485,12 +525,18 @@ html[data-shot] .tv-section{display:none}html[data-shot=ptv] .tv-section{display
       if (k === 'back') return toast('演示：退出播放器，回到视频详情');
       if (k === 'dm') { b.classList.toggle('on'); b.setAttribute('aria-pressed', String(b.classList.contains('on'))); return osd(b.classList.contains('on') ? '弹幕已开启' : '弹幕已关闭'); }
       if (k === 'play') { st.playing = !st.playing; b.innerHTML = I(st.playing ? 'pause' : 'play'); b.setAttribute('aria-label', st.playing ? '暂停' : '播放'); return osd(st.playing ? '播放' : '已暂停'); }
-      if (k === 'prev') return toast('上一集 · 第 6 集　故人重逢');
-      if (k === 'next') return toast('下一集 · 第 8 集　风起云涌');
+      if (k === 'prev') return toast(listMode === 'series' ? '上一集 · 第 6 集　风起云涌' : '上一项 · 无（已是第一项）');
+      if (k === 'next') return toast(listMode === 'series' ? '下一集 · 第 8 集　血溪之战' : '下一项 · 沙丘');
+      if (k === 'back10') return seek(o.posMs - 10000, '快退 10 秒');
+      if (k === 'fwd10') return seek(o.posMs + 10000, '快进 10 秒');
+      if (k === 'prevch' || k === 'nextch') {
+        let i = CH.reduce((m, c, n) => (c[0] <= o.posMs ? n : m), 0);
+        if (k === 'prevch') i = o.posMs - CH[i][0] > 3000 ? i : Math.max(0, i - 1); else if (i + 1 < CH.length) i += 1; else return toast('已是最后一章');
+        return seek(CH[i][0], '章节 · ' + CH[i][1]);
+      }
       if (k === 'skip') return seek(skip.firstElementChild.textContent === '跳过片尾' ? D : 152000, skip.firstElementChild.textContent);
       if (k === 'speed') return tvList('播放速度', speedHTML.replace(/<button class="(sel)?">(.*?)<\/button>/g, (m, s, v) => `<button class="${v === st.speed ? 'sel' : ''}">${v}</button>`), b, { pick: (x) => { st.speed = x.textContent; labels(); } });
-      if (k === 'eps') return tvList('选集', epsHTML, b, { pick: (x) => toast('切换到 ' + x.firstChild.textContent) });
-      if (k === 'queue') return tvList('播放队列', li(['第 7 集 新的旅程', '第 8 集 风起云涌', '第 9 集 血溪之战'], 0, ['正在播放', '接下来 · 23:12', '23:40']) + '<div class="sep"></div><button>自动播放下一集<small>开</small></button><button>清空队列</button>', b, { noMark: true, pick: (x) => toast(x.firstChild.textContent.trim() + '（演示）') });
+      if (k === 'eps') return epsDrawer(root, b);
       if (k === 'chapters') return tvList('章节', li(CH.map((x) => x[1]), 1, CH.map((x) => fmt(x[0]))), b, { pick: (x) => { const i = [...x.parentNode.querySelectorAll('button')].indexOf(x); seek(CH[i][0], CH[i][1]); } });
       if (k === 'together') return tvList('一起看 · 房间 3 人', '<button class="sel">房间 246810<small>已同步</small></button><button>成员：你、小林、阿杰</button><button>邀请码 246810<small>复制</small></button><button>同步状态：与房主一致</button><div class="sep"></div><button>离开房间</button>', b, { noMark: true, pick: (x) => toast(x.firstChild.textContent + '（演示）') });
       if (k === 'subs') return settings('字幕', b);
@@ -563,6 +609,16 @@ html[data-shot] .tv-section{display:none}html[data-shot=ptv] .tv-section{display
     ['视频', '音频', '字幕', '弹幕'].forEach((t, i) => { const r = base('p' + (5 + i)); drawer(r, t); r.dataset.live = '1'; });
     document.querySelectorAll('.phone.device').forEach((n) => { n.classList.add('player-device'); PlayerTracks.refresh(n); });
     tvPlayer();
+    const setMode = (m) => {
+      listMode = m;
+      document.querySelectorAll('[data-list-mode]').forEach((b) => { b.classList.toggle('active', b.dataset.listMode === m); b.setAttribute('aria-pressed', String(b.dataset.listMode === m)); });
+      document.querySelectorAll('[data-act=eps] .eps-label').forEach((e) => { e.textContent = listLabel(); });
+      const lab = document.querySelector('#ptv [data-tv=eps] span'); if (lab) lab.textContent = listLabel();
+      document.querySelectorAll('.player-device .ttl .logo,.player-device .tv-ttl b').forEach((e) => { e.textContent = m === 'series' ? '一念永恒' : '沙丘：第二部'; });
+      document.querySelectorAll('.player-device .ttl .sub,.player-device .tv-ttl span').forEach((e) => { e.textContent = m === 'series' ? (e.closest('.tv-ttl') ? '第 4 季 · 第 7 集　新的旅程' : 'S4 · E7　新的旅程') : '2024 · 电影 · 播放列表 1 / 4'; });
+      const p4r = document.getElementById('p4'); if (p4r) epsDrawer(p4r, p4r.querySelector('[data-act=eps]'));
+    };
+    document.querySelectorAll('[data-list-mode]').forEach((b) => { b.onclick = () => setMode(b.dataset.listMode); b.setAttribute('aria-pressed', String(b.classList.contains('active'))); });
     const cast = document.createElement('script'); cast.src = 'cast.js?v=20261024velo'; document.body.appendChild(cast);
   });
 })();
