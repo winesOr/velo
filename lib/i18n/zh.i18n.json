@@ -890,6 +890,8 @@
   },
   "userStatus": {},
   "messages": {
+    "addedToFavorites": "已收藏",
+    "removedFromFavorites": "已取消收藏",
     "markedAsWatched": "已标记为已观看",
     "markedAsUnwatched": "已标记为未观看",
     "markedAsWatchedOffline": "已标记为已观看（将在联网时同步）",

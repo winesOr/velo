@@ -18,6 +18,7 @@ import '../widgets/collapsible_text.dart';
 import '../widgets/detail_action_icon.dart';
 import '../widgets/rating_bottom_sheet.dart';
 import '../widgets/app_select_field.dart';
+import '../widgets/app_toast.dart';
 import '../widgets/press_feedback.dart';
 import '../theme/interaction_tokens.dart';
 import '../media/media_backend.dart';
@@ -426,7 +427,15 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   List<WatchlistCandidate> _watchlistCandidates = const [];
   List<CatalogSource> _watchlistListenedSources = const [];
   final GlobalKey _watchlistButtonKey = GlobalKey();
-  bool _watchlistMutationInFlight = false;
+  Object? _watchlistRequest;
+  String? _watchlistTarget;
+  Object? _favoriteRequest;
+  String? _favoriteTarget;
+  Object? _watchedRequest;
+  String? _watchedTarget;
+  AppToastHandle? _favoriteToast;
+  AppToastHandle? _watchedToast;
+  AppToastHandle? _watchlistToast;
 
   // Inline season tabs
   int _selectedSeasonIndex = 0;
@@ -1054,6 +1063,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
   @override
   void dispose() {
+    _favoriteToast?.dismiss();
+    _watchedToast?.dismiss();
+    _watchlistToast?.dismiss();
     _libraryContentSubscription?.cancel();
     for (final source in _watchlistListenedSources) {
       source.watchlistChanges.removeListener(_onWatchlistSourceChanged);
@@ -1228,17 +1240,20 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   }
 
   void _showRatingDialog(BuildContext sheetContext, MediaItem metadata) {
+    final target = metadata.globalKey;
     OverlaySheetController.of(sheetContext).show(
       showDragHandle: true,
       builder: (context) => RatingBottomSheet(
         item: metadata,
         serverClient: _getMediaClientForMetadata(this.context),
         onServerRatingChanged: (rating) {
+          if (!_canUseDetail || _metadata.globalKey != target) return;
           setStateIfMounted(() {
             _fullMetadata = _metadata.copyWith(userRating: rating);
           });
         },
         onServerFavoriteChanged: (favorite) {
+          if (!_canUseDetail || _metadata.globalKey != target) return;
           setStateIfMounted(() {
             _fullMetadata = _metadata.copyWith(isFavorite: favorite);
           });

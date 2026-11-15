@@ -122,15 +122,41 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
 
   Future<void> _toggleDetailFavorite(MediaItem metadata) async {
     final client = _getMediaClientForMetadata(context);
-    if (!_canUseDetail || widget.isOffline || client?.capabilities.userFavorites != true) return;
+    if (!_canUseDetail ||
+        widget.isOffline ||
+        client?.capabilities.userFavorites != true ||
+        _favoriteTarget == metadata.globalKey) {
+      return;
+    }
+    final request = Object();
+    final target = metadata.globalKey;
+    final next = metadata.isFavorite != true;
+    _favoriteToast?.dismiss();
+    _favoriteRequest = request;
+    _favoriteTarget = target;
+    final toast = AppToast.pending(context);
+    _favoriteToast = toast;
+    setStateIfMounted(() {});
     try {
-      final next = metadata.isFavorite != true;
       await client!.setFavorite(metadata, next);
-      if (!_canUseDetail) return;
+      if (!_canUseDetail || _metadata.globalKey != target) {
+        toast.dismiss();
+        return;
+      }
       setStateIfMounted(() => _fullMetadata = _metadata.copyWith(isFavorite: next));
+      toast.update(next ? t.messages.addedToFavorites : t.messages.removedFromFavorites);
     } catch (error) {
-      if (mounted && _canUseDetail) {
-        showErrorSnackBar(context, t.messages.errorLoading(error: localizedErrorReason(error)));
+      if (_canUseDetail && _metadata.globalKey == target) {
+        toast.update(t.messages.errorLoading(error: localizedErrorReason(error)), type: AppToastType.error);
+      } else {
+        toast.dismiss();
+      }
+    } finally {
+      if (identical(_favoriteRequest, request)) {
+        _favoriteRequest = null;
+        _favoriteTarget = null;
+        if (identical(_favoriteToast, toast)) _favoriteToast = null;
+        setStateIfMounted(() {});
       }
     }
   }

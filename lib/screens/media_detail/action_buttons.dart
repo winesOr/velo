@@ -288,7 +288,14 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       required VoidCallback? onPressed,
       String? tooltip,
       Color? foregroundColor,
+      bool busy = false,
     }) {
+      if (busy) {
+        icon = SizedBox.square(
+          dimension: 18,
+          child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: t.common.loading),
+        );
+      }
       if (compactPresentation) {
         return DetailActionPress(
           builder: (states) => IconButton(
@@ -389,7 +396,10 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
               key: _watchlistButtonKey,
               child: iconActionButton(
                 state,
-                onPressed: onWatchlist == null ? null : () => unawaited(_handleWatchlistTogglePressed(metadata)),
+                onPressed: onWatchlist == null && !(_watchlistTarget == metadata.globalKey)
+                    ? null
+                    : () => unawaited(_handleWatchlistTogglePressed(metadata)),
+                busy: (_watchlistTarget == metadata.globalKey),
                 icon: AppIcon(
                   (onWatchlist ?? false) ? Symbols.bookmark_added_rounded : Symbols.bookmark_add_rounded,
                   fill: 1,
@@ -488,6 +498,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                   builder: (context, state) => iconActionButton(
                     state,
                     onPressed: () => unawaited(_toggleDetailFavorite(metadata)),
+                    busy: _favoriteTarget == metadata.globalKey,
                     icon: DetailActionIcon(DetailActionGlyph.favorite, selected: metadata.isFavorite == true),
                     tooltip: metadata.isFavorite == true ? t.rateSheet.favorited : t.rateSheet.favorite,
                   ),
@@ -542,7 +553,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
   Future<void> _handleWatchlistTogglePressed(MediaItem metadata) async {
     if (!_canUseDetail) return;
     final candidates = _watchlistCandidates;
-    if (candidates.isEmpty || _watchlistMutationInFlight) return;
+    if (candidates.isEmpty || (_watchlistTarget == metadata.globalKey)) return;
     // Parity with the disabled pointer button: while every membership is
     // still unknown, a dpad press kicks the snapshot loads instead of
     // opening a chooser whose selection would silently no-op.
@@ -568,44 +579,84 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       anchorRect: renderBox.localToGlobal(Offset.zero) & renderBox.size,
       focusFirstItem: true,
     );
-    if (choice == null || !_canUseDetail) return;
+    if (choice == null || !_canUseDetail || _metadata.globalKey != metadata.globalKey) return;
     await _toggleWatchlistOn(metadata, choice);
   }
 
   Future<void> _toggleWatchlistOn(MediaItem metadata, WatchlistCandidate candidate) async {
     if (!_canUseDetail) return;
     final current = candidate.source.isOnWatchlist(metadata.kind, candidate.ids);
-    if (current == null || _watchlistMutationInFlight) return;
-    _watchlistMutationInFlight = true;
+    if (current == null || (_watchlistTarget == metadata.globalKey)) return;
+    final target = metadata.globalKey;
+    final request = Object();
+    _watchlistToast?.dismiss();
+    _watchlistRequest = request;
+    _watchlistTarget = target;
+    final toast = AppToast.pending(context);
+    _watchlistToast = toast;
+    setStateIfMounted(() {});
     try {
       // Optimistic inside the source; the row/screens listening to
       // watchlistChanges (including this one) rebuild immediately.
       await mutateWatchlistMembership(metadata.kind, candidate, add: !current);
+      toast.dismiss();
     } catch (_) {
-      if (mounted) showErrorSnackBar(context, t.explore.watchlistUpdateFailed);
+      if (_canUseDetail && _metadata.globalKey == target) {
+        toast.update(t.explore.watchlistUpdateFailed, type: AppToastType.error);
+      } else {
+        toast.dismiss();
+      }
     } finally {
-      _watchlistMutationInFlight = false;
+      if (identical(_watchlistRequest, request)) {
+        _watchlistRequest = null;
+        _watchlistTarget = null;
+        if (identical(_watchlistToast, toast)) _watchlistToast = null;
+        setStateIfMounted(() {});
+      }
     }
   }
 
   Future<void> _handleWatchedTogglePressed(MediaItem metadata) async {
-    if (!_canUseDetail) return;
+    if (!_canUseDetail || _watchedTarget == metadata.globalKey) return;
+    final request = Object();
+    final target = metadata.globalKey;
+    final isWatched = metadata.isWatched;
+    _watchedToast?.dismiss();
+    _watchedRequest = request;
+    _watchedTarget = target;
+    final toast = AppToast.pending(context);
+    _watchedToast = toast;
+    setStateIfMounted(() {});
     try {
-      final isWatched = metadata.isWatched;
       final outcome = await WatchActions.setWatched(context, metadata, watched: !isWatched, offline: widget.isOffline);
-      if (!mounted || !_canUseDetail) return;
+      if (!_canUseDetail || _metadata.globalKey != target) {
+        toast.dismiss();
+        return;
+      }
       switch (outcome) {
         case WatchMarkOutcome.queuedOffline:
-          showAppSnackBar(context, isWatched ? t.messages.markedAsUnwatchedOffline : t.messages.markedAsWatchedOffline);
+          toast.update(
+            isWatched ? t.messages.markedAsUnwatchedOffline : t.messages.markedAsWatchedOffline,
+            type: AppToastType.info,
+          );
         case WatchMarkOutcome.marked:
           _watchStateChanged = true;
-          showSuccessSnackBar(context, isWatched ? t.messages.markedAsUnwatched : t.messages.markedAsWatched);
+          toast.update(isWatched ? t.messages.markedAsUnwatched : t.messages.markedAsWatched);
         case WatchMarkOutcome.skipped:
-          break;
+          toast.dismiss();
       }
-    } catch (e) {
-      if (mounted) {
-        showErrorSnackBar(context, t.messages.errorLoading(error: localizedErrorReason(e)));
+    } catch (error) {
+      if (_canUseDetail && _metadata.globalKey == target) {
+        toast.update(t.messages.errorLoading(error: localizedErrorReason(error)), type: AppToastType.error);
+      } else {
+        toast.dismiss();
+      }
+    } finally {
+      if (identical(_watchedRequest, request)) {
+        _watchedRequest = null;
+        _watchedTarget = null;
+        if (identical(_watchedToast, toast)) _watchedToast = null;
+        setStateIfMounted(() {});
       }
     }
   }
@@ -621,7 +672,12 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       builder: (states) => IconButton.filledTonal(
         statesController: states,
         onPressed: () => unawaited(_handleWatchedTogglePressed(metadata)),
-        icon: DetailActionIcon(DetailActionGlyph.watched, selected: metadata.isWatched),
+        icon: _watchedTarget == metadata.globalKey
+            ? SizedBox.square(
+                dimension: 18,
+                child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: t.common.loading),
+              )
+            : DetailActionIcon(DetailActionGlyph.watched, selected: metadata.isWatched),
         tooltip: metadata.isWatched ? t.tooltips.markAsUnwatched : t.tooltips.markAsWatched,
         iconSize: PlatformDetector.isTV() ? 21 * tvScale : 20,
         style: actionButtonStyle(showFocus: showFocus),

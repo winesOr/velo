@@ -893,6 +893,8 @@
   },
   "userStatus": {},
   "messages": {
+    "addedToFavorites": "Added to favorites",
+    "removedFromFavorites": "Removed from favorites",
     "markedAsWatched": "Marked as watched",
     "markedAsUnwatched": "Marked as unwatched",
     "markedAsWatchedOffline": "Marked as watched (will sync when online)",

@@ -1044,6 +1044,8 @@ class Translations$messages$zh extends Translations$messages$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String get addedToFavorites => '已收藏';
+	@override String get removedFromFavorites => '已取消收藏';
 	@override String get markedAsWatched => '已标记为已观看';
 	@override String get markedAsUnwatched => '已标记为未观看';
 	@override String get markedAsWatchedOffline => '已标记为已观看（将在联网时同步）';
@@ -4245,6 +4247,8 @@ extension on TranslationsZh {
 			'videoControls.drawerPrimarySubtitle' => '主字幕',
 			'videoControls.drawerSecondarySubtitle' => '次字幕',
 			'videoControls.drawerAdjustments' => '调整',
+			'messages.addedToFavorites' => '已收藏',
+			'messages.removedFromFavorites' => '已取消收藏',
 			'messages.markedAsWatched' => '已标记为已观看',
 			'messages.markedAsUnwatched' => '已标记为未观看',
 			'messages.markedAsWatchedOffline' => '已标记为已观看（将在联网时同步）',
@@ -4424,10 +4428,10 @@ extension on TranslationsZh {
 			'connections.sectionTitle' => '连接',
 			'connections.addConnection' => '添加连接',
 			'connections.addConnectionSubtitleNoProfile' => '使用 Plex 登录，或连接 Jellyfin 或 Emby 服务器',
-			'connections.addConnectionSubtitleScoped' => ({required Object displayName}) => '添加到 ${displayName}：Plex、Jellyfin、Emby，或其他用户资料的连接',
-			'connections.sessionExpiredOne' => ({required Object name}) => '${name} 的会话已过期',
 			_ => null,
 		} ?? switch (path) {
+			'connections.addConnectionSubtitleScoped' => ({required Object displayName}) => '添加到 ${displayName}：Plex、Jellyfin、Emby，或其他用户资料的连接',
+			'connections.sessionExpiredOne' => ({required Object name}) => '${name} 的会话已过期',
 			'connections.sessionExpiredMany' => ({required Object count}) => '${count} 个服务器的会话已过期',
 			'connections.accessDeniedOne' => ({required Object name}) => '${name} 拒绝此账户访问',
 			'connections.accessDeniedMany' => ({required Object count}) => '${count} 台服务器拒绝此账户访问',
@@ -4938,10 +4942,10 @@ extension on TranslationsZh {
 			'liveTv.recordingRuleUpdated' => '录制规则已更新',
 			'liveTv.guideReloadRequested' => '已请求更新节目指南',
 			'liveTv.guideReloadFailed' => '无法刷新节目指南',
-			'liveTv.rulesProcessRequested' => '已请求重新评估规则',
-			'liveTv.rulesProcessFailed' => '无法重新评估录制规则',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.rulesProcessRequested' => '已请求重新评估规则',
+			'liveTv.rulesProcessFailed' => '无法重新评估录制规则',
 			'liveTv.recordShow' => '录制节目',
 			'liveTv.recordSettings.startEarly' => '提前开始（秒）',
 			'liveTv.recordSettings.endLate' => '延后结束（秒）',
@@ -5452,10 +5456,10 @@ extension on TranslationsZh {
 			'metadataEdit.selectPoster' => '选择海报',
 			'metadataEdit.selectBackground' => '选择背景',
 			'metadataEdit.selectLogo' => '选择标志',
-			'metadataEdit.selectSquareArt' => '选择方形图片',
-			'metadataEdit.fromUrl' => '通过 URL',
 			_ => null,
 		} ?? switch (path) {
+			'metadataEdit.selectSquareArt' => '选择方形图片',
+			'metadataEdit.fromUrl' => '通过 URL',
 			'metadataEdit.uploadFile' => '上传文件',
 			'metadataEdit.enterImageUrl' => '输入图片 URL',
 			'metadataEdit.imageUrl' => '图片 URL',

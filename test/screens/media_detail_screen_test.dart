@@ -2054,6 +2054,31 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
     }
 
+    testWidgets('favorite stays busy and ignores repeat activation until the server responds', (tester) async {
+      final movie = testMediaItem(
+        id: 'favorite-busy',
+        title: 'Favorite',
+        kind: MediaKind.movie,
+        backend: MediaBackend.jellyfin,
+        serverId: 'server_1',
+      );
+      final client = _FakeMediaServerClient(show: movie, childrenByParent: {})..favoriteGate = Completer<void>();
+      await pumpPhoneDetail(tester, client, movie, viewport: const Size(390, 844));
+      final button = find.byTooltip(t.rateSheet.favorite);
+      expect(button, findsOneWidget);
+      await tester.tap(button);
+      await tester.pump();
+      expect(find.descendant(of: button, matching: find.byType(CircularProgressIndicator)), findsOneWidget);
+      await tester.tap(button);
+      await tester.pump();
+      expect(client.favoriteCalls, 1);
+      client.favoriteGate!.complete();
+      await tester.pump();
+      await tester.pump();
+      expect(find.byTooltip(t.rateSheet.favorited), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('detail selectors pass source descriptors and explicit Off through the existing player route', (
       tester,
     ) async {
@@ -4814,6 +4839,8 @@ Map<String, dynamic> _previewItem(
 class _FakeMediaServerClient implements MediaServerClient {
   final MediaItem show;
   final MediaBackend serverBackend;
+  Completer<void>? favoriteGate;
+  int favoriteCalls = 0;
   int extrasReads = 0;
   int relatedReads = 0;
   Object? sourceError;
@@ -4867,6 +4894,12 @@ class _FakeMediaServerClient implements MediaServerClient {
     this.fileInfo,
   }) : rawItems = rawItems ?? {},
        childrenPageFuturesByStart = childrenPageFuturesByStart ?? {};
+
+  @override
+  Future<void> setFavorite(MediaItem item, bool isFavorite) async {
+    favoriteCalls++;
+    await favoriteGate?.future;
+  }
 
   @override
   ServerId get serverId => ServerId('server_1');

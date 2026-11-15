@@ -2628,6 +2628,12 @@ class Translations$messages$en {
 
 	// Translations
 
+	/// en: 'Added to favorites'
+	String get addedToFavorites => 'Added to favorites';
+
+	/// en: 'Removed from favorites'
+	String get removedFromFavorites => 'Removed from favorites';
+
 	/// en: 'Marked as watched'
 	String get markedAsWatched => 'Marked as watched';
 
@@ -9037,6 +9043,8 @@ extension on Translations {
 			'videoControls.drawerPrimarySubtitle' => 'Primary subtitle',
 			'videoControls.drawerSecondarySubtitle' => 'Secondary subtitle',
 			'videoControls.drawerAdjustments' => 'Adjustments',
+			'messages.addedToFavorites' => 'Added to favorites',
+			'messages.removedFromFavorites' => 'Removed from favorites',
 			'messages.markedAsWatched' => 'Marked as watched',
 			'messages.markedAsUnwatched' => 'Marked as unwatched',
 			'messages.markedAsWatchedOffline' => 'Marked as watched (will sync when online)',
@@ -9216,10 +9224,10 @@ extension on Translations {
 			'connections.sectionTitle' => 'Connections',
 			'connections.addConnection' => 'Add connection',
 			'connections.addConnectionSubtitleNoProfile' => 'Sign in with Plex or connect a Jellyfin or Emby server',
-			'connections.addConnectionSubtitleScoped' => ({required Object displayName}) => 'Add to ${displayName}: Plex, Jellyfin, Emby, or another profile connection',
-			'connections.sessionExpiredOne' => ({required Object name}) => 'Session expired for ${name}',
 			_ => null,
 		} ?? switch (path) {
+			'connections.addConnectionSubtitleScoped' => ({required Object displayName}) => 'Add to ${displayName}: Plex, Jellyfin, Emby, or another profile connection',
+			'connections.sessionExpiredOne' => ({required Object name}) => 'Session expired for ${name}',
 			'connections.sessionExpiredMany' => ({required Object count}) => 'Session expired for ${count} servers',
 			'connections.accessDeniedOne' => ({required Object name}) => '${name} refused access for this account',
 			'connections.accessDeniedMany' => ({required Object count}) => '${count} servers refused access for this account',
@@ -9730,10 +9738,10 @@ extension on Translations {
 			'liveTv.recordingRuleUpdated' => 'Recording rule updated',
 			'liveTv.guideReloadRequested' => 'Guide refresh requested',
 			'liveTv.guideReloadFailed' => 'Couldn\'t refresh the guide',
-			'liveTv.rulesProcessRequested' => 'Rule re-evaluation requested',
-			'liveTv.rulesProcessFailed' => 'Couldn\'t re-evaluate recording rules',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.rulesProcessRequested' => 'Rule re-evaluation requested',
+			'liveTv.rulesProcessFailed' => 'Couldn\'t re-evaluate recording rules',
 			'liveTv.recordShow' => 'Record show',
 			'liveTv.recordSettings.startEarly' => 'Start early (seconds)',
 			'liveTv.recordSettings.endLate' => 'End late (seconds)',
@@ -10244,10 +10252,10 @@ extension on Translations {
 			'metadataEdit.selectPoster' => 'Select Poster',
 			'metadataEdit.selectBackground' => 'Select Background',
 			'metadataEdit.selectLogo' => 'Select Logo',
-			'metadataEdit.selectSquareArt' => 'Select Square Art',
-			'metadataEdit.fromUrl' => 'From URL',
 			_ => null,
 		} ?? switch (path) {
+			'metadataEdit.selectSquareArt' => 'Select Square Art',
+			'metadataEdit.fromUrl' => 'From URL',
 			'metadataEdit.uploadFile' => 'Upload File',
 			'metadataEdit.enterImageUrl' => 'Enter image URL',
 			'metadataEdit.imageUrl' => 'Image URL',
