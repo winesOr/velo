@@ -1,8 +1,6 @@
 part of '../video_controls.dart';
 
-/// Popovers, the "more" drawer and one-shot actions of the mobile player
-/// (V4, `design/prototype/player.html`). Popovers anchor above their chip;
-/// the drawer floats at the right edge. Both use [OverlaySheetStyle.glass].
+/// Mobile player drawers, queue popover and one-shot actions.
 extension _PlexVideoControlsMobileChipMethods on _PlexVideoControlsState {
   String? get _mobileCoreLabel {
     if (!Platform.isAndroid) return null;
@@ -36,21 +34,36 @@ extension _PlexVideoControlsMobileChipMethods on _PlexVideoControlsState {
         .whenComplete(_startHideTimer);
   }
 
-  void _openSpeedPopover(BuildContext context, TrackControlsState state, Rect chip) {
-    _showPopover(context, chip, (_) => PlayerSpeedPopover(player: widget.player, state: state));
+  void _openSpeedDrawer(BuildContext context, TrackControlsState state) {
+    widget.chromeController.cancelAutoHide();
+    OverlaySheetController.of(context)
+        .show(
+          style: OverlaySheetStyle.glass,
+          presentation: OverlaySheetPresentation.edgeDrawer,
+          constraints: BoxConstraints(maxWidth: PlayerSettingsDrawer.widthFor(context)),
+          builder: (_) => PlayerSpeedDrawer(player: widget.player, state: state),
+        )
+        .whenComplete(_startHideTimer);
   }
 
-  void _openSubtitlePopover(BuildContext context, TrackControlsState state, Rect chip) {
-    _showPopover(
-      context,
-      chip,
-      (_) => SizedBox(
-        width: 280,
-        child: EmbeddedVideoControlSheet(
-          child: TrackSheet(player: widget.player, trackControlsState: state, only: TrackSheetKind.subtitles),
-        ),
-      ),
-    );
+  void _openChapterDrawer(BuildContext context) {
+    widget.chromeController.cancelAutoHide();
+    OverlaySheetController.of(context)
+        .show(
+          style: OverlaySheetStyle.glass,
+          presentation: OverlaySheetPresentation.edgeDrawer,
+          constraints: BoxConstraints(maxWidth: PlayerSettingsDrawer.widthFor(context)),
+          builder: (_) => ChapterSheet(
+            player: widget.player,
+            chapters: _chapters,
+            chaptersLoaded: _chaptersLoaded,
+            canControl: widget.canControl,
+            serverId: widget.metadata.serverId,
+            onSeekRequested: widget.onSeekRequested,
+            onSeekCompleted: widget.onSeekCompleted,
+          ),
+        )
+        .whenComplete(_startHideTimer);
   }
 
   void _openEpisodesPopover(BuildContext context, Rect chip) {
@@ -63,25 +76,6 @@ extension _PlexVideoControlsMobileChipMethods on _PlexVideoControlsState {
       );
       return;
     }
-    // Movies with chapters: the chapter list stands in for episodes.
-    _showPopover(
-      context,
-      chip,
-      (_) => SizedBox(
-        width: 280,
-        child: EmbeddedVideoControlSheet(
-          child: ChapterSheet(
-            player: widget.player,
-            chapters: _chapters,
-            chaptersLoaded: _chaptersLoaded,
-            canControl: widget.canControl,
-            serverId: widget.metadata.serverId,
-            onSeekRequested: widget.onSeekRequested,
-            onSeekCompleted: widget.onSeekCompleted,
-          ),
-        ),
-      ),
-    );
   }
 
   void _openPlayerDrawer(BuildContext context, TrackControlsState state, PlayerDrawerTab tab) {

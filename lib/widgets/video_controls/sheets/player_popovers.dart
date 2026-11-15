@@ -76,10 +76,11 @@ class PlayerPopoverRow extends StatelessWidget {
 
 /// Speed chip popover: one column, current rate checked.
 class PlayerSpeedPopover extends StatelessWidget {
-  const PlayerSpeedPopover({super.key, required this.player, required this.state});
+  const PlayerSpeedPopover({super.key, required this.player, required this.state, this.drawer = false});
 
   final Player player;
   final TrackControlsState state;
+  final bool drawer;
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +91,7 @@ class PlayerSpeedPopover extends StatelessWidget {
         final current = snapshot.data ?? 1.0;
         final nearest = playerPopoverSpeeds.reduce((a, b) => (a - current).abs() <= (b - current).abs() ? a : b);
         return SizedBox(
-          width: 132,
+          width: drawer ? double.infinity : 132,
           child: ListView(
             shrinkWrap: true,
             padding: const EdgeInsets.all(5),
@@ -112,6 +113,36 @@ class PlayerSpeedPopover extends StatelessWidget {
       },
     );
   }
+}
+
+/// Full-height speed drawer using the same rate actions as the chip menu.
+class PlayerSpeedDrawer extends StatelessWidget {
+  const PlayerSpeedDrawer({super.key, required this.player, required this.state});
+
+  final Player player;
+  final TrackControlsState state;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
+        child: Row(
+          children: [
+            Expanded(child: Text(t.videoSettings.playbackSpeed, style: Theme.of(context).textTheme.titleMedium)),
+            IconButton(
+              tooltip: t.common.close,
+              onPressed: () => OverlaySheetController.of(context).close(),
+              icon: const AppIcon(Symbols.close_rounded, size: 20),
+            ),
+          ],
+        ),
+      ),
+      Expanded(
+        child: PlayerSpeedPopover(player: player, state: state, drawer: true),
+      ),
+    ],
+  );
 }
 
 /// Episode chip popover: queue items as "episode N + title", current one

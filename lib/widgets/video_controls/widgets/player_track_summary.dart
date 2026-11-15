@@ -13,7 +13,7 @@ import '../../app_icon.dart';
 ///
 /// Without callbacks this is informational (desktop). With callbacks it is the
 /// mobile chip row: speed, a short subtitle chip, then [trailing] chips. Each
-/// chip reports its global rect so a popover can open above it.
+/// chip reports its global rect to the caller.
 class PlayerTrackSummary extends StatelessWidget {
   const PlayerTrackSummary({
     super.key,
@@ -69,7 +69,7 @@ class PlayerTrackSummary extends StatelessWidget {
                   if (onSubtitleTap != null)
                     PlayerChip(
                       icon: Symbols.closed_caption_rounded,
-                      // Language only: the popover shows codec and source.
+                      // Language only: the track drawer shows codec and source.
                       label: !hasSubtitles || subtitleOff
                           ? t.common.off
                           : _shortSubtitleName(subtitle.title) ??

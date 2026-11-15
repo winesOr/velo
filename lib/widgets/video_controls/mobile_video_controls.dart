@@ -67,14 +67,14 @@ class MobileVideoControls extends StatefulWidget {
   /// Returns true when a global touch position belongs to the parent edge-adjustment zone.
   final bool Function(Offset globalPosition)? isInEdgeAdjustmentZone;
 
-  /// Bottom chips. Rect-taking callbacks receive the chip's global rect so the
-  /// popover can sit above it.
+  /// Bottom chips retain their global rect for existing callbacks.
   final ValueChanged<Rect>? onSpeedTap;
   final ValueChanged<Rect>? onSubtitlesTap;
   final ValueChanged<Rect>? onEpisodesTap;
   final ValueChanged<Rect>? onDanmakuTap;
 
   /// Top-right actions; a null callback hides its button.
+  final VoidCallback? onChapters;
   final VoidCallback? onDanmakuToggle;
   final bool danmakuEnabled;
   final VoidCallback? onCast;
@@ -118,6 +118,7 @@ class MobileVideoControls extends StatefulWidget {
     this.onSubtitlesTap,
     this.onEpisodesTap,
     this.onDanmakuTap,
+    this.onChapters,
     this.onDanmakuToggle,
     this.danmakuEnabled = false,
     this.onCast,
@@ -208,6 +209,8 @@ class _MobileVideoControlsState extends State<MobileVideoControls> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (widget.onChapters != null)
+          button(Symbols.format_list_numbered_rounded, t.videoControls.chapters, widget.onChapters),
         if (widget.onDanmakuToggle != null)
           button(
             Symbols.subtitles_rounded,

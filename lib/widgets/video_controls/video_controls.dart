@@ -80,10 +80,8 @@ import 'models/track_controls_state.dart';
 import '../../utils/device_channel.dart';
 import '../../danmaku/danmaku_session.dart';
 import 'sheets/chapter_sheet.dart';
-import 'sheets/base_video_control_sheet.dart';
 import 'sheets/player_settings_drawer.dart';
 import 'sheets/player_popovers.dart';
-import 'sheets/track_sheet.dart';
 import 'widgets/double_tap_feedback.dart';
 import 'helpers/mobile_edge_adjustment_tracker.dart';
 import 'helpers/render_geometry.dart';
@@ -1398,11 +1396,14 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
                                                       liveEpochForPosition: widget.liveEpochForPosition,
                                                       onLiveSeek: _liveSeekAbandoningBurst(widget.onLiveSeek),
                                                       isInEdgeAdjustmentZone: _isGlobalPositionInEdgeAdjustmentZone,
-                                                      onSpeedTap: (rect) => _openSpeedPopover(context, state, rect),
-                                                      onSubtitlesTap: (rect) =>
-                                                          _openSubtitlePopover(context, state, rect),
-                                                      onEpisodesTap: canShowQueue || _chapters.isNotEmpty
+                                                      onSpeedTap: (_) => _openSpeedDrawer(context, state),
+                                                      onSubtitlesTap: (_) =>
+                                                          _openPlayerDrawer(context, state, PlayerDrawerTab.subtitles),
+                                                      onEpisodesTap: canShowQueue
                                                           ? (rect) => _openEpisodesPopover(context, rect)
+                                                          : null,
+                                                      onChapters: _chapters.isNotEmpty
+                                                          ? () => _openChapterDrawer(context)
                                                           : null,
                                                       onDanmakuTap: (_) =>
                                                           _openPlayerDrawer(context, state, PlayerDrawerTab.danmaku),
