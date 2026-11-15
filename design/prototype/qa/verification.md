@@ -1,5 +1,3 @@
-> 历史验收记录，不代表公开插画版或当前版本已通过；截图未公开。
-
 # Prototype V2 verification — 2026-10-23
 
 Browser: ego-browser, one review task space, local HTTP origin `http://127.0.0.1:8765`. Only prototype files and the visual audit were edited; no Flutter checks, APK build, physical Android playback or TV device performance test were run.

@@ -1,5 +1,3 @@
-> 历史验收记录，不代表公开插画版或当前版本已通过；截图未公开。
-
 # Prototype revision 3 verification — 2026-10-23
 
 33 browser assertions passed; see `checks.json`. Checks use one ego-browser task space against the existing local prototype server. Source syntax checks passed for all prototype JavaScript files; all local literal HTML links resolve; `git diff --check` passed for the prototype and audit paths.

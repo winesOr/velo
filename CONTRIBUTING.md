@@ -18,13 +18,26 @@ configuration, signing keys, third-party APKs or copyrighted media. Redact logs 
 
 Use Python 3.10 or later (3.13 recommended) for repository scripts. The upstream release workflows remain disabled for
 Velo until independent application identifiers, signing and update channels are configured. The upstream marketing
-website, private QA screenshots, prototype reference artwork and local native archives are not included in this
+website, private QA screenshots and local native archives are not included in this
 source publication; historical notes may refer to those local-only artifacts.
 
-Reviewed design prototypes, original demo screenshots and redacted research notes are published through
-[the design archive](design/README.md) and [development notes](docs/README.md). Restricted reference artwork is
-replaced in public prototypes. Historical validation notes describe their original local source snapshot, not a
-new test run or functionality guaranteed by this documentation-only publication.
+The main design handoff is the earlier prototype series iterated into its final UI baseline V1:
+[overview](design/prototype/index.html), [home](design/prototype/home.html),
+[specification](design/prototype/final-ui-spec.html) and [sanitized V1 archive](design/downloads/prototype-final-v1-sanitized.zip).
+The [complete design and research archive](design/downloads/velo-design-and-research.zip) includes the other studies.
+V2 and competitor studies remain separate research archives. This is not an untouched first draft.
+
+A narrow archive-only exception preserves the nine original reference JPGs and the original QA / preview PNGs
+for this explicitly requested V1 visual reference. One sensitive path is masked in the public screenshot; image
+dimensions and every pixel outside the mask are preserved. Local originals remain unchanged. The public ZIP is
+a sanitized repack of the frozen baseline, not a byte-identical copy of the original ZIP. Source notices
+remain in force; archiving these references grants no permission to ship them as production assets. This exception
+does not admit private server data, credentials, signing files, APKs, raw reverse-engineering exports or unrelated
+private screenshots. Other research prototypes may still use replacement illustrations.
+
+Reviewed prototypes and redacted research notes are indexed by [the design archive](design/README.md) and
+[development notes](docs/README.md). Historical validation notes describe their original local source snapshot,
+not a new test run or functionality guaranteed by this documentation-only publication.
 
 ## Development
 
