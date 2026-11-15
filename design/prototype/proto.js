@@ -1,4 +1,4 @@
-// Velo Fusion 原型：时间轴（热力 + 章节分段 + 缓冲 + 跳过标记，同一块画布）与假弹幕。
+// Velo Fusion 原型：时间轴（热力 + 连续进度轨 + 缓冲 + 跳过标记，同一块画布）与假弹幕。
 // 热力算法即 P0 方案：bucketMs = max(1000, durationMs ~/ 600)，P95 归一化（自主设计）。
 const Proto = (() => {
   // 确定性伪随机，保证每次打开原型图形一致
@@ -36,18 +36,14 @@ const Proto = (() => {
     const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
     cv.width = W * dpr; cv.height = H * dpr;
     const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-    const th = o.track || 5, ty = H - th - 4, gap = 4, D = o.durationMs;
-    const edges = [0, ...o.chapters.map(c => c / D), 1];
-    const segs = [];
-    for (let i = 0; i < edges.length - 1; i++) {
-      const l = edges[i] * W + (i ? gap / 2 : 0), r = edges[i + 1] * W - (i < edges.length - 2 ? gap / 2 : 0);
-      if (r > l) segs.push([l, r]);
-    }
+    const th = o.track || 5, ty = H - th - 4, D = o.durationMs;
+    // 定稿：进度条为一条连续轨道，不再按章节切成分段（章节数据保留，仅不再留缝）
+    const segs = [[0, W]];
     const clip = () => { g.beginPath(); for (const [l, r] of segs) g.rect(l, 0, r - l, H); g.clip(); };
     const bar = (x0, x1, color) => { g.fillStyle = color;
       for (const [l, r] of segs) { const a = Math.max(l, x0), b = Math.min(r, x1);
         if (b > a) { g.beginPath(); g.roundRect(a, ty, b - a, th, th / 2); g.fill(); } } };
-    // 1. 热度（先画），只在分段内显示，章节缝隙保持干净
+    // 1. 热度（先画），画在连续轨道上方
     if (o.heatOn !== false) {
       g.save(); clip();
       const hs = o.heat.smooth, top = 2, hh = ty - 3 - top, n = hs.length;
@@ -60,7 +56,7 @@ const Proto = (() => {
       g.lineTo(W, ty - 1); g.closePath(); g.fillStyle = grad; g.fill();
       g.restore();
     }
-    // 2. 章节分段底轨 → 缓冲 → 已播放 → 片头片尾跳过区
+    // 2. 连续底轨 → 缓冲 → 已播放 → 片头片尾跳过区
     bar(0, W, 'rgba(255,255,255,.22)');
     bar(0, o.bufferMs / D * W, 'rgba(255,255,255,.4)');
     bar(0, o.posMs / D * W, '#fff');

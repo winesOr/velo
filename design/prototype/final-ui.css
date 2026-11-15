@@ -72,3 +72,7 @@
 .detail-actions button.is-loading::after{content:"";position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;opacity:.85;animation:velo-btn-spin .7s linear infinite}
 @keyframes velo-btn-spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.detail-actions button.is-loading::after{animation-duration:1.6s}}
+
+/* 跳过片头：对齐实机 SkipMarkerButton —— 白底 90%、黑字 16/600、快进图标、圆角 8、投影；右 24，控件显示时离底 80、隐藏时离底 24 */
+.player-device .skip,.skip{right:24px;bottom:80px;height:auto;padding:12px 16px;border:0;border-radius:8px;background:rgba(255,255,255,.9);color:#000;font-size:16px;font-weight:600;gap:8px;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer;transition:bottom .2s ease-in-out}
+.skip .icon{width:20px;height:20px;fill:#000;stroke:none}
