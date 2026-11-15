@@ -1444,7 +1444,12 @@ class Translations$about$zh extends Translations$about$en {
 	@override String get title => '关于';
 	@override String get openSourceLicenses => '开源许可证';
 	@override String versionLabel({required Object version}) => '版本 ${version}';
-	@override String get appDescription => '一款精美的 Flutter Plex、Jellyfin 和 Emby 客户端';
+	@override String get appDescription => 'Velo 是基于 Plezy 的开源媒体客户端，支持 Plex、Jellyfin 和 Emby。';
+	@override String get projectAttribution => '基于 Plezy · GPL-3.0';
+	@override String get upstreamProject => 'Plezy · 作者 edde746';
+	@override String get projectRepository => 'Velo 项目仓库';
+	@override String get gplLicense => 'GNU GPL-3.0 许可证';
+	@override String get copyright => '版权所有 © Velo 与 Plezy 贡献者。感谢 edde746 及所有上游贡献者。';
 	@override String get viewLicensesDescription => '查看第三方库的许可证';
 }
 
@@ -4625,7 +4630,12 @@ extension on TranslationsZh {
 			'about.title' => '关于',
 			'about.openSourceLicenses' => '开源许可证',
 			'about.versionLabel' => ({required Object version}) => '版本 ${version}',
-			'about.appDescription' => '一款精美的 Flutter Plex、Jellyfin 和 Emby 客户端',
+			'about.appDescription' => 'Velo 是基于 Plezy 的开源媒体客户端，支持 Plex、Jellyfin 和 Emby。',
+			'about.projectAttribution' => '基于 Plezy · GPL-3.0',
+			'about.upstreamProject' => 'Plezy · 作者 edde746',
+			'about.projectRepository' => 'Velo 项目仓库',
+			'about.gplLicense' => 'GNU GPL-3.0 许可证',
+			'about.copyright' => '版权所有 © Velo 与 Plezy 贡献者。感谢 edde746 及所有上游贡献者。',
 			'about.viewLicensesDescription' => '查看第三方库的许可证',
 			'serverSelection.noServersFoundForAccount' => ({required Object username, required Object email}) => '未找到 ${username}（${email}）的服务器',
 			'serverSelection.failedToLoadServers' => ({required Object error}) => '无法加载服务器：${error}',
@@ -4908,13 +4918,13 @@ extension on TranslationsZh {
 			'liveTv.startingInMinutes' => ({required Object minutes}) => '${minutes} 分钟后开始',
 			'liveTv.dayAtTime' => ({required Object day, required Object time}) => '${day} ${time}',
 			'liveTv.invalidPlaybackData' => ({required Object product}) => '${product} 返回了无效的直播电视播放数据',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.failedToStartChannel' => '无法播放直播频道',
 			'liveTv.failedToBuildStreamUrl' => '无法生成视频流 URL',
 			'liveTv.playbackStartFailed' => ({required Object reason}) => '无法启动该频道：${reason}',
 			'liveTv.channelSwitchFailed' => ({required Object reason}) => '无法切换频道：${reason}',
 			'collections.title' => '合集',
-			_ => null,
-		} ?? switch (path) {
 			'collections.collection' => '合集',
 			'collections.empty' => '合集为空',
 			'collections.deleteCollection' => '删除合集',
@@ -5422,13 +5432,13 @@ extension on TranslationsZh {
 			'metadataEdit.selectedArtworkOption' => ({required Object index}) => '封面图片选项 ${index}，已选择',
 			'metadataEdit.notSet' => '未设置',
 			'metadataEdit.libraryDefault' => '媒体库默认',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.accountDefault' => '账户默认',
 			'metadataEdit.seriesDefault' => '剧集默认',
 			'metadataEdit.episodeSorting' => '剧集排序',
 			'metadataEdit.oldestFirst' => '最旧优先',
 			'metadataEdit.newestFirst' => '最新优先',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.keep' => '保留',
 			'metadataEdit.allEpisodes' => '所有剧集',
 			'metadataEdit.latestEpisodes' => ({required Object count}) => '最新 ${count} 集',

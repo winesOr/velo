@@ -5,6 +5,8 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
 import '../../widgets/loading_indicator_box.dart';
 import '../../i18n/strings.g.dart';
+import '../../utils/project_licenses.dart';
+import '../../widgets/focusable_list_tile.dart';
 
 class MergedLicenseEntry {
   final String packageName;
@@ -20,6 +22,7 @@ class LicensesScreen extends StatelessWidget {
   static final Future<List<MergedLicenseEntry>> _licensesFuture = _loadLicenses();
 
   static Future<List<MergedLicenseEntry>> _loadLicenses() async {
+    ProjectLicenses.register();
     final licenseMap = <String, List<LicenseEntry>>{};
     final allPackageNames = <String, Set<String>>{};
 
@@ -68,7 +71,7 @@ class LicensesScreen extends StatelessWidget {
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
+                    child: FocusableListTile(
                       title: Text(
                         packageName,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: .bold),
@@ -93,6 +96,31 @@ class LicensesScreen extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => _LicenseDetailScreen(mergedLicense: mergedLicense)),
+    );
+  }
+}
+
+/// A direct, offline entry to the application's full GPL text.
+class ProjectLicenseScreen extends StatelessWidget {
+  const ProjectLicenseScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<LicenseEntry>(
+      future: ProjectLicenses.license,
+      builder: (context, snapshot) {
+        final license = snapshot.data;
+        if (license == null) {
+          return FocusedScrollScaffold(title: Text(t.about.gplLicense), slivers: [LoadingIndicatorBox.sliver]);
+        }
+        return _LicenseDetailScreen(
+          mergedLicense: MergedLicenseEntry(
+            packageName: t.about.gplLicense,
+            licenseEntries: [license],
+            allPackageNames: {'Velo', 'Plezy'},
+          ),
+        );
+      },
     );
   }
 }

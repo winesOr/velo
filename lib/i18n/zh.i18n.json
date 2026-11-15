@@ -1339,7 +1339,12 @@
     "title": "关于",
     "openSourceLicenses": "开源许可证",
     "versionLabel": "版本 ${version}",
-    "appDescription": "一款精美的 Flutter Plex、Jellyfin 和 Emby 客户端",
+    "appDescription": "Velo 是基于 Plezy 的开源媒体客户端，支持 Plex、Jellyfin 和 Emby。",
+    "projectAttribution": "基于 Plezy · GPL-3.0",
+    "upstreamProject": "Plezy · 作者 edde746",
+    "projectRepository": "Velo 项目仓库",
+    "gplLicense": "GNU GPL-3.0 许可证",
+    "copyright": "版权所有 © Velo 与 Plezy 贡献者。感谢 edde746 及所有上游贡献者。",
     "viewLicensesDescription": "查看第三方库的许可证"
   },
   "serverSelection": {

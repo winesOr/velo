@@ -3647,8 +3647,23 @@ class Translations$about$en {
 	/// en: 'Version ${version}'
 	String versionLabel({required Object version}) => 'Version ${version}';
 
-	/// en: 'A beautiful Plex, Jellyfin, and Emby client for Flutter'
-	String get appDescription => 'A beautiful Plex, Jellyfin, and Emby client for Flutter';
+	/// en: 'Velo is an open-source media client based on Plezy, with support for Plex, Jellyfin, and Emby.'
+	String get appDescription => 'Velo is an open-source media client based on Plezy, with support for Plex, Jellyfin, and Emby.';
+
+	/// en: 'Based on Plezy · GPL-3.0'
+	String get projectAttribution => 'Based on Plezy · GPL-3.0';
+
+	/// en: 'Plezy by edde746'
+	String get upstreamProject => 'Plezy by edde746';
+
+	/// en: 'Velo repository'
+	String get projectRepository => 'Velo repository';
+
+	/// en: 'GNU GPL-3.0 license'
+	String get gplLicense => 'GNU GPL-3.0 license';
+
+	/// en: 'Copyright © Velo and Plezy contributors. Thanks to edde746 and all upstream contributors.'
+	String get copyright => 'Copyright © Velo and Plezy contributors. Thanks to edde746 and all upstream contributors.';
 
 	/// en: 'View licenses of third-party libraries'
 	String get viewLicensesDescription => 'View licenses of third-party libraries';
@@ -9383,7 +9398,12 @@ extension on Translations {
 			'about.title' => 'About',
 			'about.openSourceLicenses' => 'Open Source Licenses',
 			'about.versionLabel' => ({required Object version}) => 'Version ${version}',
-			'about.appDescription' => 'A beautiful Plex, Jellyfin, and Emby client for Flutter',
+			'about.appDescription' => 'Velo is an open-source media client based on Plezy, with support for Plex, Jellyfin, and Emby.',
+			'about.projectAttribution' => 'Based on Plezy · GPL-3.0',
+			'about.upstreamProject' => 'Plezy by edde746',
+			'about.projectRepository' => 'Velo repository',
+			'about.gplLicense' => 'GNU GPL-3.0 license',
+			'about.copyright' => 'Copyright © Velo and Plezy contributors. Thanks to edde746 and all upstream contributors.',
 			'about.viewLicensesDescription' => 'View licenses of third-party libraries',
 			'serverSelection.noServersFoundForAccount' => ({required Object username, required Object email}) => 'No servers found for ${username} (${email})',
 			'serverSelection.failedToLoadServers' => ({required Object error}) => 'Failed to load servers: ${error}',
@@ -9666,13 +9686,13 @@ extension on Translations {
 			'liveTv.startingInMinutes' => ({required Object minutes}) => 'Starting in ${minutes} min',
 			'liveTv.dayAtTime' => ({required Object day, required Object time}) => '${day} at ${time}',
 			'liveTv.invalidPlaybackData' => ({required Object product}) => '${product} returned invalid Live TV playback data',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.failedToStartChannel' => 'Could not start the live channel',
 			'liveTv.failedToBuildStreamUrl' => 'Could not build the stream URL',
 			'liveTv.playbackStartFailed' => ({required Object reason}) => 'Couldn\'t start the channel: ${reason}',
 			'liveTv.channelSwitchFailed' => ({required Object reason}) => 'Couldn\'t switch channel: ${reason}',
 			'collections.title' => 'Collections',
-			_ => null,
-		} ?? switch (path) {
 			'collections.collection' => 'Collection',
 			'collections.empty' => 'Collection is empty',
 			'collections.deleteCollection' => 'Delete Collection',
@@ -10180,13 +10200,13 @@ extension on Translations {
 			'metadataEdit.selectedArtworkOption' => ({required Object index}) => 'Artwork option ${index}, selected',
 			'metadataEdit.notSet' => 'Not set',
 			'metadataEdit.libraryDefault' => 'Library default',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.accountDefault' => 'Account default',
 			'metadataEdit.seriesDefault' => 'Series default',
 			'metadataEdit.episodeSorting' => 'Episode Sorting',
 			'metadataEdit.oldestFirst' => 'Oldest first',
 			'metadataEdit.newestFirst' => 'Newest first',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.keep' => 'Keep',
 			'metadataEdit.allEpisodes' => 'All episodes',
 			'metadataEdit.latestEpisodes' => ({required Object count}) => '${count} latest episodes',

@@ -1344,7 +1344,12 @@
     "title": "About",
     "openSourceLicenses": "Open Source Licenses",
     "versionLabel": "Version ${version}",
-    "appDescription": "A beautiful Plex, Jellyfin, and Emby client for Flutter",
+    "appDescription": "Velo is an open-source media client based on Plezy, with support for Plex, Jellyfin, and Emby.",
+    "projectAttribution": "Based on Plezy · GPL-3.0",
+    "upstreamProject": "Plezy by edde746",
+    "projectRepository": "Velo repository",
+    "gplLicense": "GNU GPL-3.0 license",
+    "copyright": "Copyright © Velo and Plezy contributors. Thanks to edde746 and all upstream contributors.",
     "viewLicensesDescription": "View licenses of third-party libraries"
   },
   "serverSelection": {

@@ -45,6 +45,7 @@ import 'services/agent_control_service.dart';
 import 'widgets/agent_control_scope.dart';
 import 'widgets/settings_builder.dart';
 import 'utils/platform_detector.dart';
+import 'utils/project_licenses.dart';
 import 'utils/pointer_scroll_axis.dart';
 import 'services/apple_tv_remote_touch_service.dart';
 import 'services/discord_rpc_service.dart';
@@ -1064,6 +1065,7 @@ void _startNonessentialInitialization(SettingsService settings) {
   }
 
   bestEffort('Shader licenses', _registerShaderLicenses);
+  bestEffort('Project licenses', ProjectLicenses.register);
   // The startup-gate application can precede the engine's first metrics
   // report, which reads as a 1.0 display budget; re-derive it now that the
   // tree is mounted and the display is known.
