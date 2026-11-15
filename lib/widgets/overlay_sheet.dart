@@ -21,6 +21,16 @@ enum OverlaySheetStyle {
   glass,
 }
 
+/// How a hosted sheet is placed on screen.
+enum OverlaySheetPresentation {
+  /// Floating card positioned by `alignment` with an edge inset.
+  floating,
+
+  /// Full-height drawer flush with the right screen edge that slides in
+  /// whole from the right. Width comes from the constraints' `maxWidth`.
+  edgeDrawer,
+}
+
 /// Colours for [OverlaySheetStyle.glass], derived from the ambient brightness.
 @immutable
 class GlassSheetColors {
@@ -110,6 +120,7 @@ class OverlaySheetController {
     OverlaySheetStyle style = OverlaySheetStyle.glass,
     double blurSigma = OverlayTokens.blurSigma,
     Rect? anchor,
+    OverlaySheetPresentation presentation = OverlaySheetPresentation.floating,
   }) {
     return _state._show<T>(
       builder: builder,
@@ -123,6 +134,7 @@ class OverlaySheetController {
       style: style,
       blurSigma: blurSigma,
       anchor: anchor,
+      presentation: presentation,
     );
   }
 
@@ -368,6 +380,7 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
   BoxConstraints? _constraints;
   Color? _explicitBackgroundColor;
   Alignment _alignment = Alignment.center;
+  OverlaySheetPresentation _presentation = OverlaySheetPresentation.floating;
   OverlaySheetStyle _style = OverlaySheetStyle.glass;
   double _blurSigma = OverlayTokens.blurSigma;
 
@@ -432,6 +445,7 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
     OverlaySheetStyle style = OverlaySheetStyle.glass,
     double blurSigma = OverlayTokens.blurSigma,
     Rect? anchor,
+    OverlaySheetPresentation presentation = OverlaySheetPresentation.floating,
   }) {
     BackKeyCoordinator.clear();
     // If already open, close first (instant)
@@ -460,6 +474,7 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
       _constraints = constraints;
       _explicitBackgroundColor = backgroundColor;
       _alignment = alignment;
+      _presentation = presentation;
       _style = style;
       _blurSigma = blurSigma;
       _anchor = anchor;
@@ -758,7 +773,67 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
     return CustomSingleChildLayout(delegate: _AnchorAboveLayout(anchor.shift(-origin)), child: sheet);
   }
 
+  /// Right-edge drawer: full height, flush right, safe-area insets applied as
+  /// content padding so the glass background still reaches every screen edge.
+  Widget _buildEdgeDrawer(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final inset = media.padding;
+    final maxWidth = (_constraints ?? OverlaySheetController._defaultSheetConstraints(context)).maxWidth;
+    final width = math.min(maxWidth.isFinite ? maxWidth : 350.0, media.size.width) + inset.right;
+    final slide = Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(_slideCurve);
+    return Positioned.fill(
+      child: FocusScope(
+        node: _sheetFocusScopeNode,
+        onKeyEvent: _handleKeyEvent,
+        child: Focus(
+          canRequestFocus: false,
+          skipTraversal: true,
+          onKeyEvent: _handleKeyEvent,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: SlideTransition(
+              position: slide,
+              child: AppGlassSurface(
+                radius: OverlayTokens.radius,
+                shape: RoundedRectangleBorder(
+                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(OverlayTokens.radius)),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(
+                      alpha: AppGlassSurface.reduceEffects(context)
+                          ? 0.35
+                          : (Theme.of(context).brightness == Brightness.dark ? 0.12 : 0.10),
+                    ),
+                  ),
+                ),
+                backgroundColor: _explicitBackgroundColor,
+                blurSigma: _blurSigma,
+                frosted: _style == OverlaySheetStyle.glass,
+                child: SizedBox(
+                  key: ValueKey(_sheetSession),
+                  width: width,
+                  height: double.infinity,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      0,
+                      inset.top,
+                      inset.right,
+                      math.max(inset.bottom, media.viewInsets.bottom),
+                    ),
+                    child: PrimaryScrollController.none(
+                      child: _pageStack.isNotEmpty ? _buildPageStack() : const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSheet(BuildContext context) {
+    if (_presentation == OverlaySheetPresentation.edgeDrawer && _anchor == null) return _buildEdgeDrawer(context);
     final effectiveConstraints = _constraints ?? OverlaySheetController._defaultSheetConstraints(context);
     return Positioned.fill(
       child: SafeArea(

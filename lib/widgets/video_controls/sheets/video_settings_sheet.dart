@@ -697,8 +697,8 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
     // whenComplete in track_chapter_controls). Cancel it again here.
     controller
         .show(
-          alignment: Alignment.centerRight,
-          constraints: const BoxConstraints(maxHeight: 220, maxWidth: 350),
+          presentation: OverlaySheetPresentation.edgeDrawer,
+          constraints: const BoxConstraints(maxWidth: 350),
           initialFocusNode: sliderFocusNode,
           builder: (_) => _CompactSyncBar(
             title: title,

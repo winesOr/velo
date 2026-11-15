@@ -172,8 +172,8 @@ class TrackChapterControls extends StatelessWidget {
                   state.onCancelAutoHide?.call();
                   OverlaySheetController.of(context)
                       .show(
-                        alignment: Alignment.centerRight,
-                        constraints: BoxConstraints(maxWidth: 350, maxHeight: MediaQuery.sizeOf(context).height - 24),
+                        presentation: OverlaySheetPresentation.edgeDrawer,
+                        constraints: const BoxConstraints(maxWidth: 350),
                         builder: (_) => VideoSettingsSheet(player: player, trackControlsState: state),
                       )
                       .whenComplete(() => state.onStartAutoHide?.call());
@@ -210,8 +210,8 @@ class TrackChapterControls extends StatelessWidget {
                     state.onCancelAutoHide?.call();
                     OverlaySheetController.of(context)
                         .show(
-                          alignment: Alignment.centerRight,
-                          constraints: BoxConstraints(maxWidth: 350, maxHeight: MediaQuery.sizeOf(context).height - 24),
+                          presentation: OverlaySheetPresentation.edgeDrawer,
+                          constraints: const BoxConstraints(maxWidth: 350),
                           builder: (_) => TrackSheet(player: player, trackControlsState: state),
                         )
                         .whenComplete(() => state.onStartAutoHide?.call());
@@ -236,8 +236,8 @@ class TrackChapterControls extends StatelessWidget {
                 state.onCancelAutoHide?.call();
                 OverlaySheetController.of(context)
                     .show(
-                      alignment: Alignment.centerRight,
-                      constraints: BoxConstraints(maxWidth: 350, maxHeight: MediaQuery.sizeOf(context).height - 24),
+                      presentation: OverlaySheetPresentation.edgeDrawer,
+                      constraints: const BoxConstraints(maxWidth: 350),
                       builder: (_) => ChapterSheet(
                         player: player,
                         chapters: chapters,
@@ -268,8 +268,8 @@ class TrackChapterControls extends StatelessWidget {
                 state.onCancelAutoHide?.call();
                 OverlaySheetController.of(context)
                     .show(
-                      alignment: Alignment.centerRight,
-                      constraints: BoxConstraints(maxWidth: 350, maxHeight: MediaQuery.sizeOf(context).height - 24),
+                      presentation: OverlaySheetPresentation.edgeDrawer,
+                      constraints: const BoxConstraints(maxWidth: 350),
                       builder: (_) => QueueSheet(onItemSelected: state.onQueueItemSelected!),
                     )
                     .whenComplete(() => state.onStartAutoHide?.call());
@@ -342,8 +342,8 @@ class TrackChapterControls extends StatelessWidget {
                 state.onCancelAutoHide?.call();
                 OverlaySheetController.of(context)
                     .show(
-                      alignment: Alignment.centerRight,
-                      constraints: BoxConstraints(maxWidth: 350, maxHeight: MediaQuery.sizeOf(context).height - 24),
+                      presentation: OverlaySheetPresentation.edgeDrawer,
+                      constraints: const BoxConstraints(maxWidth: 350),
                       builder: (_) => DanmakuSettingsSheet(metadata: state.metadata),
                     )
                     .whenComplete(() => state.onStartAutoHide?.call());

@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../app_icon.dart';
@@ -58,8 +56,6 @@ class PlayerSettingsDrawer extends StatefulWidget {
 }
 
 class _PlayerSettingsDrawerState extends State<PlayerSettingsDrawer> {
-  static const _panelHeight = 560.0;
-
   late PlayerDrawerTab _tab = widget.initialTab;
 
   String _label(PlayerDrawerTab tab) => switch (tab) {
@@ -76,10 +72,6 @@ class _PlayerSettingsDrawerState extends State<PlayerSettingsDrawer> {
     return PlayerDrawerStyle(
       child: SizedBox(
         width: PlayerSettingsDrawer.widthFor(context),
-        height: math.min(
-          MediaQuery.sizeOf(context).height - 20,
-          MonoPresentation.isTablet(context) ? 680 : _panelHeight,
-        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

@@ -46,7 +46,8 @@ class WatchTogetherSessionIndicator extends StatelessWidget {
     unawaited(
       OverlaySheetController.of(context)
           .show(
-            showDragHandle: true,
+            presentation: OverlaySheetPresentation.edgeDrawer,
+            constraints: const BoxConstraints(maxWidth: 350),
             builder: (context) => ListenableBuilder(
               listenable: provider,
               builder: (context, _) => _SessionMenuSheet(provider: provider),

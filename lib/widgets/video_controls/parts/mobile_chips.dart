@@ -93,11 +93,8 @@ extension _PlexVideoControlsMobileChipMethods on _PlexVideoControlsState {
           backgroundColor: Theme.of(context).brightness == Brightness.dark
               ? const Color(0xc716171b)
               : const Color(0xd1f6f6f8),
-          alignment: Alignment.centerRight,
-          constraints: BoxConstraints(
-            maxWidth: PlayerSettingsDrawer.widthFor(context),
-            maxHeight: MediaQuery.sizeOf(context).height - 20,
-          ),
+          presentation: OverlaySheetPresentation.edgeDrawer,
+          constraints: BoxConstraints(maxWidth: PlayerSettingsDrawer.widthFor(context)),
           builder: (_) => PlayerSettingsDrawer(
             player: widget.player,
             state: state,
@@ -120,7 +117,7 @@ extension _PlexVideoControlsMobileChipMethods on _PlexVideoControlsState {
     OverlaySheetController.of(context)
         .show(
           style: OverlaySheetStyle.glass,
-          alignment: Alignment.centerRight,
+          presentation: OverlaySheetPresentation.edgeDrawer,
           constraints: BoxConstraints(maxWidth: PlayerSettingsDrawer.widthFor(context)),
           builder: (_) => const _CastUnavailablePanel(),
         )
