@@ -86,6 +86,8 @@ void main() {
     expect(code.height, lessThanOrEqualTo(label.height * 2));
     expect(card.height, lessThan(230));
     expect(card.contains(code.topLeft) && card.contains(code.bottomRight), isTrue);
+    expect(find.text(t.watchTogether.waitingForMedia), findsOneWidget);
+    expect(find.text(t.watchTogether.participantConnected), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -151,6 +153,9 @@ class _FakeWatchTogetherProvider extends WatchTogetherProvider {
 
   @override
   bool get isHost => true;
+
+  @override
+  bool get isConnected => true;
 
   @override
   bool get hasCurrentPlayback => false;

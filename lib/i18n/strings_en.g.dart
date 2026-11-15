@@ -4789,6 +4789,27 @@ class Translations$watchTogether$en {
 	/// en: 'Your rooms appear here after you create or join one.'
 	String get noRecentRooms => 'Your rooms appear here after you create or join one.';
 
+	/// en: 'Last used ${date}'
+	String lastUsed({required Object date}) => 'Last used ${date}';
+
+	/// en: 'Waiting for media'
+	String get waitingForMedia => 'Waiting for media';
+
+	/// en: 'Media selected'
+	String get mediaSelected => 'Media selected';
+
+	/// en: 'Local media unavailable'
+	String get mediaNotMatched => 'Local media unavailable';
+
+	/// en: 'Local media available'
+	String get localMediaAvailable => 'Local media available';
+
+	/// en: 'Connected'
+	String get participantConnected => 'Connected';
+
+	/// en: 'Buffering'
+	String get bufferingStatus => 'Buffering';
+
 	/// en: 'Reconnecting to relay…'
 	String get reconnectingRelay => 'Reconnecting to relay…';
 
@@ -9937,6 +9958,13 @@ extension on Translations {
 			'watchTogether.introHeading' => 'Apart, but watching together.',
 			'watchTogether.recentRoomsDescription' => 'Rooms saved for this profile and relay. Re-entering an empty room may make you its host.',
 			'watchTogether.noRecentRooms' => 'Your rooms appear here after you create or join one.',
+			'watchTogether.lastUsed' => ({required Object date}) => 'Last used ${date}',
+			'watchTogether.waitingForMedia' => 'Waiting for media',
+			'watchTogether.mediaSelected' => 'Media selected',
+			'watchTogether.mediaNotMatched' => 'Local media unavailable',
+			'watchTogether.localMediaAvailable' => 'Local media available',
+			'watchTogether.participantConnected' => 'Connected',
+			'watchTogether.bufferingStatus' => 'Buffering',
 			'watchTogether.reconnectingRelay' => 'Reconnecting to relay…',
 			'watchTogether.connectedToRelay' => 'Connected to relay',
 			'watchTogether.noMediaSelected' => 'No media selected. Browse your library and play a title to watch together.',
@@ -10263,6 +10291,8 @@ extension on Translations {
 			'metadataEdit.title' => 'Title',
 			'metadataEdit.sortTitle' => 'Sort Title',
 			'metadataEdit.originalTitle' => 'Original Title',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.releaseDate' => 'Release Date',
 			'metadataEdit.contentRating' => 'Content Rating',
 			'metadataEdit.studio' => 'Studio',
@@ -10270,8 +10300,6 @@ extension on Translations {
 			'metadataEdit.summary' => 'Summary',
 			'metadataEdit.poster' => 'Poster',
 			'metadataEdit.background' => 'Background',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.logo' => 'Logo',
 			'metadataEdit.squareArt' => 'Square Art',
 			'metadataEdit.selectPoster' => 'Select Poster',

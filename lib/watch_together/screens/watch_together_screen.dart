@@ -590,10 +590,10 @@ class _RecentRoomTile extends StatelessWidget {
     final title = room.name ?? room.code;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: 13),
       child: FocusableWrapper(
         useBackgroundFocus: true,
-        borderRadius: 12,
+        borderRadius: 16,
         // Hold SELECT/OK to open the rename/remove menu on TV/dpad (matches media cards).
         enableLongPress: true,
         // The wrapper owns key handling; the ListTile's InkWell and the trailing
@@ -601,24 +601,44 @@ class _RecentRoomTile extends StatelessWidget {
         descendantsAreFocusable: false,
         onSelect: isBusy ? null : onTap,
         onLongPress: () => _showActions(context),
-        child: Material(
-          type: MaterialType.transparency,
-          child: ListTile(
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-            leading: isEntering ? const LoadingIndicatorBox(size: 24) : const AppIcon(Symbols.meeting_room_rounded),
-            title: Text(title, maxLines: 1, overflow: .ellipsis),
-            subtitle: room.name != null
-                ? Text(
-                    room.code,
-                    style: TextStyle(fontFamily: 'monospace', color: theme.colorScheme.onSurfaceVariant),
-                  )
-                : null,
-            trailing: IconButton(
-              icon: const AppIcon(Symbols.more_vert_rounded),
-              onPressed: () => _showActions(context),
-            ),
-            onTap: isBusy ? null : onTap,
-            onLongPress: () => _showActions(context),
+        child: _RoomSurface(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: isEntering ? const LoadingIndicatorBox(size: 24) : const AppIcon(Symbols.meeting_room_rounded),
+                title: Text(title, maxLines: 1, overflow: .ellipsis),
+                subtitle: room.name != null
+                    ? Text(
+                        room.code,
+                        style: TextStyle(fontFamily: 'monospace', color: theme.colorScheme.onSurfaceVariant),
+                      )
+                    : null,
+                trailing: IconButton(
+                  icon: const AppIcon(Symbols.more_vert_rounded),
+                  onPressed: () => _showActions(context),
+                ),
+                onTap: isBusy ? null : onTap,
+                onLongPress: () => _showActions(context),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  if (room.controlMode case final mode?)
+                    _RoomTag(label: mode == ControlMode.hostOnly ? t.watchTogether.hostOnly : t.watchTogether.anyone),
+                  Text(
+                    t.watchTogether.lastUsed(
+                      date: MaterialLocalizations.of(context).formatShortDate(room.lastUsed.toLocal()),
+                    ),
+                    style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -687,6 +707,21 @@ class _ActiveSessionContent extends StatelessWidget {
             ],
           ),
         ),
+        if (watchTogether.isConnected &&
+            !watchTogether.isReconnectingRelay &&
+            !watchTogether.isWaitingForHostReconnect) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _RoomTag(
+              label: !watchTogether.hasCurrentPlayback
+                  ? t.watchTogether.waitingForMedia
+                  : watchTogether.isWaitingForPeers
+                  ? t.watchTogether.waitingForParticipants
+                  : t.watchTogether.mediaSelected,
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         _RoomStatus(message: connectionMessage, isError: session.state == SessionState.error),
         if (watchTogether.isWaitingForPeers) ...[
@@ -753,7 +788,16 @@ class _ActiveSessionContent extends StatelessWidget {
                           ],
                         ),
                       ),
-                      if (participant.isBuffering) const LoadingIndicatorBox(size: 16),
+                      if (watchTogether.isConnected &&
+                          !watchTogether.isReconnectingRelay &&
+                          !watchTogether.isWaitingForHostReconnect)
+                        Flexible(
+                          child: _RoomTag(
+                            label: participant.isBuffering
+                                ? t.watchTogether.bufferingStatus
+                                : t.watchTogether.participantConnected,
+                          ),
+                        ),
                       if (watchTogether.canTransferHostTo(participant))
                         FocusableButton(
                           useBackgroundFocus: true,
@@ -965,6 +1009,10 @@ class _JoinCurrentPlaybackCardState extends State<_JoinCurrentPlaybackCard> {
           ),
           const SizedBox(height: 12),
           Text(mediaTitle, style: theme.textTheme.bodyLarge),
+          if (!_isResolving) ...[
+            const SizedBox(height: 8),
+            _RoomTag(label: _mediaAvailable ? t.watchTogether.localMediaAvailable : t.watchTogether.mediaNotMatched),
+          ],
           if (widget.watchTogether.localMediaMatch case final match?) ...[
             const SizedBox(height: 8),
             Text('${t.watchTogether.localMatch}: ${match.displayTitle}', style: theme.textTheme.bodySmall),
@@ -1057,6 +1105,26 @@ class _RoomSurface extends StatelessWidget {
       ),
       color: Color.alphaBlend(colors.onSurface.withValues(alpha: highlighted ? 0.045 : 0.025), colors.surface),
       child: Padding(padding: const EdgeInsets.all(16), child: child),
+    );
+  }
+}
+
+class _RoomTag extends StatelessWidget {
+  const _RoomTag({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(7),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Text(label, style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+      ),
     );
   }
 }

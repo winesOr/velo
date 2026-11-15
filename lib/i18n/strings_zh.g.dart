@@ -1914,6 +1914,13 @@ class Translations$watchTogether$zh extends Translations$watchTogether$en {
 	@override String get introHeading => '相隔两地，一起入戏。';
 	@override String get recentRoomsDescription => '仅显示当前用户与中继的最近房间；重新进入空房间时，你可能成为房主。';
 	@override String get noRecentRooms => '创建或加入后，房间会显示在这里。';
+	@override String lastUsed({required Object date}) => '上次使用 ${date}';
+	@override String get waitingForMedia => '等待媒体';
+	@override String get mediaSelected => '已选择媒体';
+	@override String get mediaNotMatched => '本地媒体不可用';
+	@override String get localMediaAvailable => '本地媒体可用';
+	@override String get participantConnected => '已连接';
+	@override String get bufferingStatus => '缓冲中';
 	@override String get reconnectingRelay => '正在重新连接中继…';
 	@override String get connectedToRelay => '已连接中继';
 	@override String get noMediaSelected => '尚未选择影片。前往媒体库播放影片，即可一起观看。';
@@ -5129,6 +5136,13 @@ extension on TranslationsZh {
 			'watchTogether.introHeading' => '相隔两地，一起入戏。',
 			'watchTogether.recentRoomsDescription' => '仅显示当前用户与中继的最近房间；重新进入空房间时，你可能成为房主。',
 			'watchTogether.noRecentRooms' => '创建或加入后，房间会显示在这里。',
+			'watchTogether.lastUsed' => ({required Object date}) => '上次使用 ${date}',
+			'watchTogether.waitingForMedia' => '等待媒体',
+			'watchTogether.mediaSelected' => '已选择媒体',
+			'watchTogether.mediaNotMatched' => '本地媒体不可用',
+			'watchTogether.localMediaAvailable' => '本地媒体可用',
+			'watchTogether.participantConnected' => '已连接',
+			'watchTogether.bufferingStatus' => '缓冲中',
 			'watchTogether.reconnectingRelay' => '正在重新连接中继…',
 			'watchTogether.connectedToRelay' => '已连接中继',
 			'watchTogether.noMediaSelected' => '尚未选择影片。前往媒体库播放影片，即可一起观看。',
@@ -5455,6 +5469,8 @@ extension on TranslationsZh {
 			'metadataEdit.title' => '标题',
 			'metadataEdit.sortTitle' => '排序标题',
 			'metadataEdit.originalTitle' => '原始标题',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.releaseDate' => '上映日期',
 			'metadataEdit.contentRating' => '内容分级',
 			'metadataEdit.studio' => '制片厂',
@@ -5462,8 +5478,6 @@ extension on TranslationsZh {
 			'metadataEdit.summary' => '简介',
 			'metadataEdit.poster' => '海报',
 			'metadataEdit.background' => '背景',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.logo' => '标志',
 			'metadataEdit.squareArt' => '方形图片',
 			'metadataEdit.selectPoster' => '选择海报',
