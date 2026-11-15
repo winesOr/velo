@@ -44,11 +44,24 @@ extension _VideoPlayerEpisodeQueueMethods on VideoPlayerScreenState {
         return;
       }
       if (playbackState.isQueueActive) {
-        appLogger.d('Resetting stale play queue (was: ${playbackState.shuffleContextKey}, now: $showRatingKey)');
-        playbackState.clearShuffle();
+        // A queue may be a playlist whose current entry is outside its window.
+        // Do not replace it while resolving a show queue.
+        return;
       }
 
       appLogger.d('Creating sequential play queue for show $showRatingKey');
+      final authSession = client.authenticationSessionId;
+      final itemKey = _currentMetadata.globalKey;
+      final serverId = ServerId(_currentMetadata.serverId!);
+      final transitionGeneration = _transitionGate.generation;
+      final queueRevision = playbackState.queueRevision;
+      bool scopeCurrent() =>
+          mounted &&
+          _transitionGate.generation == transitionGeneration &&
+          _currentMetadata.globalKey == itemKey &&
+          playbackState.queueRevision == queueRevision &&
+          identical(context.tryGetPlexClientForServer(serverId), client) &&
+          client.authenticationSessionId == authSession;
       final playQueue = await client.createShowPlayQueue(
         showRatingKey: showRatingKey,
         shuffle: 0,
@@ -57,17 +70,29 @@ extension _VideoPlayerEpisodeQueueMethods on VideoPlayerScreenState {
         librarySectionTitle: _currentMetadata.libraryTitle,
       );
 
+      if (!scopeCurrent()) return;
       if (playQueue != null && playQueue.items != null && playQueue.items!.isNotEmpty) {
         await playbackState.setPlaybackFromPlayQueue(playQueue, showRatingKey);
-        playbackState.setPlayQueueWindowFetcher(
-          (id, {center, window = 50}) => client.getPlayQueue(
+        final libraryId = _currentMetadata.libraryId;
+        final libraryTitle = _currentMetadata.libraryTitle;
+        playbackState.setPlayQueueWindowFetcher((id, {center, window = 50}) async {
+          if (!mounted ||
+              !identical(context.tryGetPlexClientForServer(serverId), client) ||
+              client.authenticationSessionId != authSession)
+            return null;
+          final result = await client.getPlayQueue(
             id,
             center: center,
             window: window,
-            librarySectionID: _currentMetadata.libraryId,
-            librarySectionTitle: _currentMetadata.libraryTitle,
-          ),
-        );
+            librarySectionID: libraryId,
+            librarySectionTitle: libraryTitle,
+          );
+          return mounted &&
+                  identical(context.tryGetPlexClientForServer(serverId), client) &&
+                  client.authenticationSessionId == authSession
+              ? result
+              : null;
+        });
 
         appLogger.d('Sequential play queue created with ${playQueue.items!.length} items');
       } else {

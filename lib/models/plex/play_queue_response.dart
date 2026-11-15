@@ -4,6 +4,7 @@ import '../../media/media_item.dart';
 /// Contains queue metadata and a window of items in neutral [MediaItem] form.
 class PlayQueueResponse {
   final int playQueueID;
+  final int? playQueueVersion;
   final int? playQueueSelectedItemID;
   final bool playQueueShuffled;
   final int? playQueueTotalCount;
@@ -12,6 +13,7 @@ class PlayQueueResponse {
 
   PlayQueueResponse({
     required this.playQueueID,
+    this.playQueueVersion,
     this.playQueueSelectedItemID,
     required this.playQueueShuffled,
     required this.playQueueTotalCount,

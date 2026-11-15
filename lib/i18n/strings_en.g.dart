@@ -2556,6 +2556,27 @@ class Translations$videoControls$en {
 	/// en: 'Reopening with ${core}'
 	String switchingCore({required Object core}) => 'Reopening with ${core}';
 
+	/// en: 'Playlist'
+	String get playlistDrawer => 'Playlist';
+
+	/// en: 'Repeat off'
+	String get repeatOff => 'Repeat off';
+
+	/// en: 'Repeat all'
+	String get repeatAll => 'Repeat all';
+
+	/// en: 'Repeat one'
+	String get repeatOne => 'Repeat one';
+
+	/// en: 'Up next'
+	String get nextPlaying => 'Up next';
+
+	/// en: 'Next up · Season ${n}'
+	String nextSeason({required Object n}) => 'Next up · Season ${n}';
+
+	/// en: 'Load more'
+	String get drawerLoadMore => 'Load more';
+
 	/// en: 'Episodes'
 	String get episodesButton => 'Episodes';
 
@@ -9067,6 +9088,13 @@ extension on Translations {
 			'videoControls.seekPreview' => ({required Object target, required Object delta}) => '${target} (${delta})',
 			'videoControls.holdSpeed' => ({required Object rate}) => '${rate} · slide to change',
 			'videoControls.switchingCore' => ({required Object core}) => 'Reopening with ${core}',
+			'videoControls.playlistDrawer' => 'Playlist',
+			'videoControls.repeatOff' => 'Repeat off',
+			'videoControls.repeatAll' => 'Repeat all',
+			'videoControls.repeatOne' => 'Repeat one',
+			'videoControls.nextPlaying' => 'Up next',
+			'videoControls.nextSeason' => ({required Object n}) => 'Next up · Season ${n}',
+			'videoControls.drawerLoadMore' => 'Load more',
 			'videoControls.episodesButton' => 'Episodes',
 			'videoControls.episodeNumber' => ({required Object n}) => 'Episode ${n}',
 			'videoControls.castButton' => 'Cast',
@@ -9262,6 +9290,8 @@ extension on Translations {
 			'profiles.sourceProfileMissingParentAccount' => 'Source profile is missing its parent account.',
 			'profiles.failedToLoadHomeUsers' => 'Could not load your Plex Home users. Check your connection and try again.',
 			'profiles.failedToVerifyPin' => 'Failed to verify PIN.',
+			_ => null,
+		} ?? switch (path) {
 			'profiles.newProfile' => 'New profile',
 			'profiles.profileNameHint' => 'e.g. Guests, Kids, Family Room',
 			'profiles.pinProtectionOptional' => 'PIN protection (optional)',
@@ -9269,8 +9299,6 @@ extension on Translations {
 			'profiles.continueButton' => 'Continue',
 			'profiles.pinsDontMatch' => 'PINs don\'t match',
 			'profiles.tokenIdentityMismatch' => 'The Plex profile token resolved to an unexpected server',
-			_ => null,
-		} ?? switch (path) {
 			'connections.sectionTitle' => 'Connections',
 			'connections.addConnection' => 'Add connection',
 			'connections.addConnectionSubtitleNoProfile' => 'Sign in with Plex or connect a Jellyfin or Emby server',
@@ -9776,6 +9804,8 @@ extension on Translations {
 			'liveTv.recordingFailed' => 'Couldn\'t schedule recording',
 			'liveTv.recordingTargetMissing' => 'Couldn\'t determine recording library',
 			'liveTv.recordNotAvailable' => 'Recording not available for this program',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.recordingCancelled' => 'Recording canceled',
 			'liveTv.recordingRuleDeleted' => 'Recording rule deleted',
 			'liveTv.processRecordingRules' => 'Re-evaluate rules',
@@ -9783,8 +9813,6 @@ extension on Translations {
 			'liveTv.recordingsCount' => ({required Object count}) => '${count} scheduled',
 			'liveTv.editRule' => 'Edit rule',
 			'liveTv.editRuleAction' => 'Edit',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordingRuleUpdated' => 'Recording rule updated',
 			'liveTv.guideReloadRequested' => 'Guide refresh requested',
 			'liveTv.guideReloadFailed' => 'Couldn\'t refresh the guide',
@@ -10290,6 +10318,8 @@ extension on Translations {
 			'externalPlayer.off' => 'Off',
 			'externalPlayer.launchFailed' => 'Failed to open external player',
 			'externalPlayer.appNotInstalled' => ({required Object name}) => '${name} is not installed',
+			_ => null,
+		} ?? switch (path) {
 			'externalPlayer.playInExternalPlayer' => 'Play in External Player',
 			'metadataEdit.editMetadata' => 'Edit...',
 			'metadataEdit.screenTitle' => 'Edit Metadata',
@@ -10297,8 +10327,6 @@ extension on Translations {
 			'metadataEdit.artwork' => 'Artwork',
 			'metadataEdit.advancedSettings' => 'Advanced Settings',
 			'metadataEdit.title' => 'Title',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.sortTitle' => 'Sort Title',
 			'metadataEdit.originalTitle' => 'Original Title',
 			'metadataEdit.releaseDate' => 'Release Date',

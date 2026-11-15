@@ -1,4 +1,5 @@
 import 'package:plezy/widgets/app_toast.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -30,6 +31,8 @@ import '../test_helpers/prefs.dart';
 /// [MediaServerClient.fetchClientSideEpisodeQueue] surface, but we
 /// `implements JellyfinClient` so existing tests stay backend-tagged.
 class _RecordingJellyfinClient implements JellyfinClient {
+  @override
+  Object authenticationSessionId = Object();
   final List<MediaItem> playableDescendantsResponse;
   final List<MediaItem> playableFolderDescendantsResponse;
   final List<MediaItem> seriesEpisodesResponse;
@@ -402,6 +405,12 @@ void main() {
       expect(playback.isShuffleActive, isTrue);
       // The shuffle should not preserve the original order.
       expect(shuffledIds, isNot(equals(originalIds)));
+      final playing = playback.currentQueueItem;
+      final cursor = playback.currentPlayQueueItemID;
+      expect(await playback.setShuffleEnabled(false), isTrue);
+      expect(playback.loadedItems.map((item) => item.id), originalIds);
+      expect(playback.currentPlayQueueItemID, cursor);
+      expect(playback.currentQueueItem, same(playing));
     });
 
     testWidgets('shuffled launch strips the launched item\'s resume offset when the pref is on (#2303)', (
@@ -1021,6 +1030,28 @@ void main() {
 
       expect(await resultFuture, isA<PlayQueueCancelled>());
       expect(fakeClient.fetchPlayableDescendantsCalls, ['col-cancel']);
+      expect(playback.isQueueActive, isFalse);
+
+      final lateGate = Completer<void>();
+      final changedClient = _RecordingJellyfinClient(
+        playableDescendantsResponse: [_ep('old-user')],
+        playableDescendantsGate: lateGate,
+      );
+      final lateLauncher = JellyfinSequentialLauncher(
+        context: ctx,
+        clientForTesting: changedClient,
+        playbackStateForTesting: playback,
+        navigateForTesting: (_) async => fail('old identity must not navigate'),
+      );
+      final late = lateLauncher.launchFromCollectionOrPlaylist(
+        item: collection,
+        shuffle: true,
+        showLoadingIndicator: false,
+      );
+      await tester.pump();
+      changedClient.authenticationSessionId = Object();
+      lateGate.complete();
+      expect(await late, isA<PlayQueueCancelled>());
       expect(playback.isQueueActive, isFalse);
     });
 

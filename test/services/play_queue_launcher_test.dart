@@ -1,4 +1,5 @@
 import 'package:plezy/widgets/app_toast.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -29,6 +30,8 @@ class _StubPlexClient implements PlexClient {
   _StubPlexClient({this.response, this.gate});
 
   final PlayQueueResponse? response;
+  @override
+  final Object authenticationSessionId = Object();
 
   /// Holds [createPlayQueue] open until completed, so a test can act while the
   /// launch's loading dialog is up.
@@ -47,7 +50,16 @@ class _StubPlexClient implements PlexClient {
     String? librarySectionTitle,
   }) async {
     await gate?.future;
-    return response!;
+    final value = response!;
+    return PlayQueueResponse(
+      playQueueID: value.playQueueID,
+      playQueueVersion: value.playQueueVersion,
+      playQueueSelectedItemID: value.playQueueSelectedItemID,
+      playQueueShuffled: shuffle != 0,
+      playQueueTotalCount: value.playQueueTotalCount,
+      size: value.size,
+      items: value.items,
+    );
   }
 
   @override
@@ -199,6 +211,25 @@ void main() {
       expect(playbackState.isQueueActive, isFalse);
       expect(didNavigate, isFalse);
       expect(find.byType(AppToast), findsNothing);
+
+      final lateGate = Completer<void>();
+      final lateLauncher = PlexPlayQueueLauncher(
+        context: context,
+        client: _StubPlexClient(response: _queueWith(item), gate: lateGate),
+        playbackStateForTesting: playbackState,
+        navigateForTesting: (_) async => didNavigate = true,
+      );
+      final late = lateLauncher.launchFromCollectionOrPlaylist(
+        item: playlist,
+        shuffle: false,
+        showLoadingIndicator: false,
+      );
+      await tester.pump();
+      playbackState.clearShuffle(); // Retire this launch before its first server response.
+      lateGate.complete();
+      expect(await late, isA<PlayQueueCancelled>());
+      expect(playbackState.isQueueActive, isFalse);
+      expect(didNavigate, isFalse);
     });
 
     testWidgets('navigation failure is returned as PlayQueueError, not success', (tester) async {

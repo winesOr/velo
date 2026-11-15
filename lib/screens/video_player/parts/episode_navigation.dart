@@ -177,7 +177,11 @@ extension _VideoPlayerEpisodeNavigationMethods on VideoPlayerScreenState {
   /// in-place swap (previous session still on screen) from rejected or
   /// superseded attempts. The screen-replacement fallback reports
   /// [MediaReloadOutcome.rejected]: no in-place reload ran.
-  Future<MediaReloadOutcome> _navigateToEpisode(MediaItem episodeMetadata) async {
+  Future<MediaReloadOutcome> _navigateToEpisode(
+    MediaItem episodeMetadata, {
+    Duration? resumePosition,
+    bool Function()? canProceed,
+  }) async {
     _episode.lastReloadFailureReason = null;
     final watchTogether = _activeWatchTogetherSession();
     final watchTogetherLease = watchTogether?.capturePlaybackLease(selection: true);
@@ -203,7 +207,10 @@ extension _VideoPlayerEpisodeNavigationMethods on VideoPlayerScreenState {
       // preferences, both audio and subtitles start at the server-selected
       // priority (#1717).
       final settingsService = await SettingsService.getInstance();
-      if (!mounted || currentPlayer != player || (watchTogetherLease != null && !watchTogetherLease.isCurrent)) {
+      if (!mounted ||
+          currentPlayer != player ||
+          (canProceed != null && !canProceed()) ||
+          (watchTogetherLease != null && !watchTogetherLease.isCurrent)) {
         return MediaReloadOutcome.superseded;
       }
       final followServerSelections = settingsService.read(SettingsService.followServerTrackSelections);
@@ -227,6 +234,7 @@ extension _VideoPlayerEpisodeNavigationMethods on VideoPlayerScreenState {
             );
       return await _reloadMediaInPlace(
         metadata: episodeMetadata,
+        resumePosition: resumePosition,
         selectedMediaIndex: _effectiveSelectedMediaIndex,
         selectedMediaSourceId: null,
         preferredVersionSignature: currentVersionSignature,

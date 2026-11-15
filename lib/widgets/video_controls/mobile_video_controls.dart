@@ -71,6 +71,7 @@ class MobileVideoControls extends StatefulWidget {
   final ValueChanged<Rect>? onSpeedTap;
   final ValueChanged<Rect>? onSubtitlesTap;
   final ValueChanged<Rect>? onEpisodesTap;
+  final String? episodesLabel;
   final ValueChanged<Rect>? onDanmakuTap;
 
   /// Top-right actions; a null callback hides its button.
@@ -117,6 +118,7 @@ class MobileVideoControls extends StatefulWidget {
     this.onSpeedTap,
     this.onSubtitlesTap,
     this.onEpisodesTap,
+    this.episodesLabel,
     this.onDanmakuTap,
     this.onChapters,
     this.onDanmakuToggle,
@@ -269,7 +271,7 @@ class _MobileVideoControlsState extends State<MobileVideoControls> {
             if (widget.onEpisodesTap != null)
               PlayerChip(
                 icon: Symbols.format_list_bulleted_rounded,
-                label: t.videoControls.episodesButton,
+                label: widget.episodesLabel ?? t.videoControls.episodesButton,
                 onTapWithRect: widget.onEpisodesTap,
               ),
             if (widget.onDanmakuTap != null)

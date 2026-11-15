@@ -25,6 +25,7 @@ import '../media/media_display_criteria.dart';
 import '../media/media_server_user_profile.dart';
 import '../media/media_item.dart';
 import '../media/media_item_types.dart';
+import '../media/play_queue.dart';
 import '../media/media_server_client.dart';
 import '../media/episode_collection.dart';
 import '../media/live_tv_support.dart';
@@ -2756,6 +2757,66 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
   Future<void> navigateToQueueItem(MediaItem metadata) async {
     if (!_canNavigateMediaItems()) return;
     await _navigateToEpisode(metadata);
+  }
+
+  Future<bool> navigateToQueueItemForDrawer(MediaItem metadata) async {
+    if (!canChangeQueueFromDrawer()) return false;
+    return await _navigateToEpisode(metadata) == MediaReloadOutcome.opened;
+  }
+
+  bool canChangeQueueFromDrawer() {
+    if (!mounted || !_canNavigateMediaItems()) return false;
+    final room = _watchTogetherProvider ?? context.read<WatchTogetherProvider?>();
+    return room == null || !room.isInSession || (room.isHost && identical(_activeWatchTogetherSession(), room));
+  }
+
+  PlaybackStateProvider? _prepareDrawerQueue() {
+    if (!canChangeQueueFromDrawer()) return null;
+    final queue = context.read<PlaybackStateProvider>();
+    if (!queue.isQueueActive) {
+      queue.setPlaybackFromLocalQueue(
+        LocalPlayQueue(items: [_currentMetadata], currentIndex: 0),
+        contextKey: _currentMetadata.globalKey,
+      );
+    }
+    return queue;
+  }
+
+  Future<bool> changeDrawerRepeat(VideoQueueRepeatMode mode) async {
+    final queue = _prepareDrawerQueue();
+    if (queue == null || !canChangeQueueFromDrawer() || !queue.setRepeatMode(mode)) return false;
+    await _loadAdjacentEpisodes();
+    return true;
+  }
+
+  Future<bool> changeDrawerShuffle(bool enabled, {required bool Function() isDrawerCurrent}) async {
+    final queue = _prepareDrawerQueue();
+    if (queue == null) return false;
+    final revision = queue.queueRevision;
+    final itemKey = _currentMetadata.globalKey;
+    final originalPlayer = player;
+    final originalOffline = _isOfflinePlayback;
+    final serverId = serverIdOrNull(_currentMetadata.serverId);
+    final client = originalOffline ? null : context.tryGetMediaClientForServer(serverId);
+    final auth = client?.authenticationSessionId;
+    final room = _activeWatchTogetherSession();
+    final lease = room?.capturePlaybackLease(selection: true);
+    bool isCurrent() =>
+        canChangeQueueFromDrawer() &&
+        isDrawerCurrent() &&
+        identical(context.read<PlaybackStateProvider>(), queue) &&
+        queue.queueRevision == revision &&
+        _currentMetadata.globalKey == itemKey &&
+        identical(player, originalPlayer) &&
+        _isOfflinePlayback == originalOffline &&
+        (originalOffline ||
+            (identical(context.tryGetMediaClientForServer(serverId), client) &&
+                client?.authenticationSessionId == auth)) &&
+        identical(_activeWatchTogetherSession(), room) &&
+        (room == null || (lease != null && lease.isCurrent));
+    final success = await queue.setShuffleEnabled(enabled, isCurrent: isCurrent);
+    if (success && isCurrent()) await _loadAdjacentEpisodes();
+    return success && isCurrent();
   }
 
   void _setPlayerState(VoidCallback fn) => setStateIfMounted(fn);

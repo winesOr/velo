@@ -232,50 +232,54 @@ abstract class MediaListPlaybackLauncher {
     required PlaybackStateProvider playbackState,
     required LocalPlayQueue queue,
     required String contextKey,
+    bool shuffle = false,
+    bool Function()? isCurrent,
     Future<void> Function(MediaItem item)? navigateForTesting,
   }) async {
     if (queue.items.isEmpty) return const PlayQueueEmpty();
-    if (!context.mounted && navigateForTesting == null) {
-      return const PlayQueueError('Context not mounted');
-    }
-
+    if (!context.mounted && navigateForTesting == null) return const PlayQueueError('Context not mounted');
     final currentIndex = queue.currentIndex ?? 0;
     if (currentIndex < 0 || currentIndex >= queue.items.length) {
       return PlayQueueError(RangeError.index(currentIndex, queue.items, 'currentIndex'));
     }
-
-    var itemToPlay = queue.items[currentIndex];
-    var queueToPublish = queue;
-    // Shuffle + "start at beginning" (#2303): strip the resume offset so
-    // external players — which read viewOffsetMs directly and cannot take an
-    // explicit start position — also open at 0:00. The built-in player
-    // applies the same override per item in resolveOpenResumePosition.
-    if (queue.shuffled && (itemToPlay.viewOffsetMs ?? 0) > 0) {
-      if ((await SettingsService.getInstance()).read(SettingsService.shuffleStartsFromBeginning)) {
-        itemToPlay = itemToPlay.copyWith(viewOffsetMs: 0);
-        // The published queue must hold the instance that is launched: queue
-        // membership is by identity (see isItemInActiveQueue), so launching a
-        // copy the queue does not hold would make the player drop the queue.
-        queueToPublish = LocalPlayQueue(
-          items: [...queue.items]..[currentIndex] = itemToPlay,
-          currentIndex: queue.currentIndex,
-          shuffled: queue.shuffled,
-        );
+    final ownerRevision = playbackState.queueRevision;
+    bool current() =>
+        (isCurrent?.call() ?? true) &&
+        !playbackState.isDisposed &&
+        ownerRevision == playbackState.queueRevision &&
+        (context.mounted || navigateForTesting != null);
+    final prepared = PlaybackStateProvider();
+    try {
+      prepared.setPlaybackFromLocalQueue(queue, contextKey: contextKey);
+      var itemToPlay = prepared.currentQueueItem;
+      if (shuffle) {
+        final result = await prepared.startShuffledPlayback(isCurrent: current);
+        if (!current()) return const PlayQueueCancelled();
+        if (result.status != QueueNavigationStatus.found || result.item == null) {
+          return const PlayQueueError('Could not prepare a shuffled playback queue');
+        }
+        itemToPlay = result.item;
       }
+      if (itemToPlay == null) return const PlayQueueEmpty();
+      if ((shuffle || queue.shuffled) &&
+          (itemToPlay.viewOffsetMs ?? 0) > 0 &&
+          (await SettingsService.getInstance()).read(SettingsService.shuffleStartsFromBeginning)) {
+        final original = itemToPlay;
+        itemToPlay = itemToPlay.copyWith(viewOffsetMs: 0);
+        prepared.replaceQueueEntry(original, itemToPlay);
+      }
+      if (!current()) return const PlayQueueCancelled();
+      if (!playbackState.adoptPreparedQueue(prepared)) return const PlayQueueError('Could not publish playback queue');
+      if (navigateForTesting != null) {
+        await navigateForTesting(itemToPlay);
+      } else {
+        if (!context.mounted) return const PlayQueueCancelled();
+        await navigateToVideoPlayer(context, metadata: itemToPlay, resolveWatchState: false);
+      }
+      return const PlayQueueSuccess();
+    } finally {
+      prepared.dispose();
     }
-    playbackState.setPlaybackFromLocalQueue(queueToPublish, contextKey: contextKey);
-    if (navigateForTesting != null) {
-      await navigateForTesting(itemToPlay);
-    } else {
-      if (!context.mounted) return const PlayQueueError('Context not mounted');
-      // The queue holds these exact instances and the player's initState gate
-      // matches by identity — a WatchStateStore clone here would wipe the
-      // launcher-set queue on entry. The items were fetched from the server
-      // in this same user action, so session watch patches are already
-      // reflected.
-      await navigateToVideoPlayer(context, metadata: itemToPlay, resolveWatchState: false);
-    }
-    return const PlayQueueSuccess();
   }
 }
 

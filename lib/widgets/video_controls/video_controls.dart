@@ -41,6 +41,7 @@ import '../../focus/transport_keys.dart';
 import '../../database/app_database.dart';
 import '../../media/media_backend.dart';
 import '../../media/media_item.dart';
+import '../../media/media_item_types.dart';
 import '../../media/stepped_seek.dart';
 import '../../models/livetv_capture_buffer.dart';
 import '../../providers/multi_server_provider.dart';
@@ -82,6 +83,7 @@ import '../../danmaku/danmaku_session.dart';
 import 'sheets/chapter_sheet.dart';
 import 'sheets/player_settings_drawer.dart';
 import 'sheets/player_popovers.dart';
+import 'sheets/episodes_drawer.dart';
 import 'widgets/double_tap_feedback.dart';
 import 'helpers/mobile_edge_adjustment_tracker.dart';
 import 'helpers/render_geometry.dart';
@@ -1362,8 +1364,13 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
                                                 child: Builder(
                                                   builder: (context) {
                                                     final playbackState = context.watch<PlaybackStateProvider>();
-                                                    final canShowQueue =
-                                                        playbackState.isQueueActive && widget.canNavigateMediaItems;
+                                                    final queueContext = playbackState.shuffleContextKey;
+                                                    final episodeMode =
+                                                        widget.metadata.isEpisode &&
+                                                        (!playbackState.isQueueActive ||
+                                                            queueContext == null ||
+                                                            queueContext == widget.metadata.grandparentId ||
+                                                            queueContext == widget.metadata.seriesGlobalKey);
                                                     final state = _buildTrackControlsState(
                                                       playbackState: playbackState,
                                                       onToggleAlwaysOnTop: _toggleAlwaysOnTop,
@@ -1399,9 +1406,12 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
                                                       onSpeedTap: (_) => _openSpeedDrawer(context, state),
                                                       onSubtitlesTap: (_) =>
                                                           _openPlayerDrawer(context, state, PlayerDrawerTab.subtitles),
-                                                      onEpisodesTap: canShowQueue
-                                                          ? (rect) => _openEpisodesPopover(context, rect)
+                                                      onEpisodesTap: !widget.isLive && widget.canNavigateMediaItems
+                                                          ? (_) => _openEpisodesDrawer(context)
                                                           : null,
+                                                      episodesLabel: episodeMode
+                                                          ? t.videoControls.episodesButton
+                                                          : t.videoControls.playlistDrawer,
                                                       onChapters: _chapters.isNotEmpty
                                                           ? () => _openChapterDrawer(context)
                                                           : null,

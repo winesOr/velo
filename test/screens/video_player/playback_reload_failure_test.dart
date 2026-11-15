@@ -866,10 +866,9 @@ void main() {
         await tester.pump(const Duration(seconds: 1));
         final next = testMediaItem(id: 'next', serverId: 'srv-1', backend: MediaBackend.jellyfin);
         final later = testMediaItem(id: 'later', serverId: 'srv-1', backend: MediaBackend.jellyfin);
-        Provider.of<PlaybackStateProvider>(
-          screen.key.currentContext!,
-          listen: false,
-        ).setPlaybackFromLocalQueue(LocalPlayQueue(items: [state.widget.metadata, next, later], currentIndex: 0));
+        final queue = Provider.of<PlaybackStateProvider>(screen.key.currentContext!, listen: false);
+        queue.setPlaybackFromLocalQueue(LocalPlayQueue(items: [state.widget.metadata, next, later], currentIndex: 0));
+        expect(queue.setRepeatMode(VideoQueueRepeatMode.all), isTrue);
         state.debugCommitAdjacentEpisodesForTesting(
           AdjacentEpisodes(
             next: next,

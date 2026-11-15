@@ -1014,6 +1014,13 @@ class Translations$videoControls$zh extends Translations$videoControls$en {
 	@override String seekPreview({required Object target, required Object delta}) => '${target}（${delta}）';
 	@override String holdSpeed({required Object rate}) => '${rate} · 左右滑动调速';
 	@override String switchingCore({required Object core}) => '正在用 ${core} 重新打开';
+	@override String get playlistDrawer => '播放列表';
+	@override String get repeatOff => '循环关闭';
+	@override String get repeatAll => '全部循环';
+	@override String get repeatOne => '单集循环';
+	@override String get nextPlaying => '接下来播放';
+	@override String nextSeason({required Object n}) => '接下来 · 第 ${n} 季';
+	@override String get drawerLoadMore => '加载更多';
 	@override String get episodesButton => '选集';
 	@override String episodeNumber({required Object n}) => '第 ${n} 集';
 	@override String get castButton => '投屏';
@@ -4241,6 +4248,13 @@ extension on TranslationsZh {
 			'videoControls.seekPreview' => ({required Object target, required Object delta}) => '${target}（${delta}）',
 			'videoControls.holdSpeed' => ({required Object rate}) => '${rate} · 左右滑动调速',
 			'videoControls.switchingCore' => ({required Object core}) => '正在用 ${core} 重新打开',
+			'videoControls.playlistDrawer' => '播放列表',
+			'videoControls.repeatOff' => '循环关闭',
+			'videoControls.repeatAll' => '全部循环',
+			'videoControls.repeatOne' => '单集循环',
+			'videoControls.nextPlaying' => '接下来播放',
+			'videoControls.nextSeason' => ({required Object n}) => '接下来 · 第 ${n} 季',
+			'videoControls.drawerLoadMore' => '加载更多',
 			'videoControls.episodesButton' => '选集',
 			'videoControls.episodeNumber' => ({required Object n}) => '第 ${n} 集',
 			'videoControls.castButton' => '投屏',
@@ -4436,6 +4450,8 @@ extension on TranslationsZh {
 			'profiles.sourceProfileMissingParentAccount' => '源用户资料缺少关联的主账户。',
 			'profiles.failedToLoadHomeUsers' => '无法加载您的 Plex Home 用户。请检查网络连接后重试。',
 			'profiles.failedToVerifyPin' => '无法验证 PIN。',
+			_ => null,
+		} ?? switch (path) {
 			'profiles.newProfile' => '新建用户资料',
 			'profiles.profileNameHint' => '例如：访客、儿童、客厅',
 			'profiles.pinProtectionOptional' => 'PIN 保护（可选）',
@@ -4443,8 +4459,6 @@ extension on TranslationsZh {
 			'profiles.continueButton' => '继续',
 			'profiles.pinsDontMatch' => 'PIN 不匹配',
 			'profiles.tokenIdentityMismatch' => 'Plex 用户资料令牌解析到了非预期服务器',
-			_ => null,
-		} ?? switch (path) {
 			'connections.sectionTitle' => '连接',
 			'connections.addConnection' => '添加连接',
 			'connections.addConnectionSubtitleNoProfile' => '使用 Plex 登录，或连接 Jellyfin 或 Emby 服务器',
@@ -4950,6 +4964,8 @@ extension on TranslationsZh {
 			'liveTv.recordingFailed' => '无法安排录制',
 			'liveTv.recordingTargetMissing' => '无法确定录制库',
 			'liveTv.recordNotAvailable' => '此节目无法录制',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.recordingCancelled' => '录制已取消',
 			'liveTv.recordingRuleDeleted' => '录制规则已删除',
 			'liveTv.processRecordingRules' => '重新评估规则',
@@ -4957,8 +4973,6 @@ extension on TranslationsZh {
 			'liveTv.recordingsCount' => ({required Object count}) => '已安排 ${count} 项录制',
 			'liveTv.editRule' => '编辑规则',
 			'liveTv.editRuleAction' => '编辑',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordingRuleUpdated' => '录制规则已更新',
 			'liveTv.guideReloadRequested' => '已请求更新节目指南',
 			'liveTv.guideReloadFailed' => '无法刷新节目指南',
@@ -5464,6 +5478,8 @@ extension on TranslationsZh {
 			'externalPlayer.off' => '关闭',
 			'externalPlayer.launchFailed' => '无法打开外部播放器',
 			'externalPlayer.appNotInstalled' => ({required Object name}) => '${name} 未安装',
+			_ => null,
+		} ?? switch (path) {
 			'externalPlayer.playInExternalPlayer' => '在外部播放器中播放',
 			'metadataEdit.editMetadata' => '编辑…',
 			'metadataEdit.screenTitle' => '编辑元数据',
@@ -5471,8 +5487,6 @@ extension on TranslationsZh {
 			'metadataEdit.artwork' => '封面图片',
 			'metadataEdit.advancedSettings' => '高级设置',
 			'metadataEdit.title' => '标题',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.sortTitle' => '排序标题',
 			'metadataEdit.originalTitle' => '原始标题',
 			'metadataEdit.releaseDate' => '上映日期',

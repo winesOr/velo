@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +15,7 @@ import 'package:plezy/media/media_source_info.dart';
 import 'package:plezy/providers/playback_state_provider.dart';
 import 'package:plezy/services/settings_service.dart';
 import 'package:plezy/widgets/video_controls/sheets/queue_sheet.dart';
+import 'package:plezy/widgets/video_controls/sheets/episodes_drawer.dart';
 import 'package:plezy/widgets/video_controls/widgets/content_strip.dart';
 import 'package:plezy/widgets/video_controls/widgets/media_selector_thumbnail.dart';
 import 'package:provider/provider.dart';
@@ -281,6 +284,109 @@ void main() {
     );
     await tester.pump();
     expect(find.text('Spoiler Episode'), findsNothing);
+  });
+
+  testWidgets('playlist drawer keeps duplicate queue identities and waits for selection', (tester) async {
+    final current = testMediaItem(id: 'duplicate', title: 'Current movie');
+    final next = testMediaItem(id: 'duplicate', title: 'Next copy');
+    final playback = PlaybackStateProvider()
+      ..setPlaybackFromLocalQueue(LocalPlayQueue(items: [current, next], currentIndex: 0), contextKey: 'playlist');
+    addTearDown(playback.dispose);
+    final result = Completer<bool>();
+    final selected = <MediaItem>[];
+    var shuffleCalls = 0;
+    Completer<void>? shuffleGate;
+    final authorized = ValueNotifier(true);
+    addTearDown(authorized.dispose);
+    await tester.pumpWidget(
+      _queueHarness(
+        playback: playback,
+        child: ValueListenableBuilder<bool>(
+          valueListenable: authorized,
+          builder: (context, allowed, _) => EpisodesDrawer(
+            current: current,
+            offline: true,
+            canNavigate: true,
+            onSelect: (item) {
+              selected.add(item);
+              return result.future;
+            },
+            isAuthorized: () => allowed,
+            onRepeat: (mode) async => playback.setRepeatMode(mode),
+            onShuffle: (enabled, isCurrent) async {
+              shuffleCalls++;
+              if (shuffleGate != null) await shuffleGate.future;
+              return playback.setShuffleEnabled(enabled, isCurrent: isCurrent);
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(t.videoControls.playlistDrawer), findsOneWidget);
+    await tester.tap(find.text(t.videoControls.repeatOff));
+    await tester.pumpAndSettle();
+    expect(playback.repeatMode, VideoQueueRepeatMode.all);
+    await tester.tap(find.text(t.common.shuffle));
+    await tester.pumpAndSettle();
+    expect(shuffleCalls, 1);
+    expect(playback.isShuffleActive, isTrue);
+    shuffleGate = Completer<void>();
+    await tester.tap(find.text(t.common.shuffle));
+    await tester.pump();
+    authorized.value = false;
+    await tester.pump();
+    shuffleGate.complete();
+    await tester.pumpAndSettle();
+    expect(shuffleCalls, 2);
+    expect(playback.isShuffleActive, isTrue, reason: 'revoked authority cancels the pending change');
+    expect(tester.widget<TextButton>(find.widgetWithText(TextButton, t.videoControls.repeatAll)).onPressed, isNull);
+    authorized.value = true;
+    await tester.pump();
+    await tester.tap(find.text('Next copy'));
+    await tester.pump();
+    await tester.tap(find.text('Next copy'));
+    expect(selected, [same(next)]);
+    result.complete(false);
+    await tester.pumpAndSettle();
+    expect(find.text('Next copy'), findsOneWidget);
+    final replacement = testMediaItem(id: 'replacement', title: 'Replacement queue');
+    playback.setPlaybackFromLocalQueue(LocalPlayQueue(items: [replacement], currentIndex: 0), contextKey: 'new');
+    await tester.pumpAndSettle();
+    expect(find.text('Next copy'), findsNothing);
+    expect(find.text('Replacement queue'), findsOneWidget);
+
+    final episodes = List.generate(
+      24,
+      (index) => testMediaItem(
+        id: 'episode-$index',
+        kind: MediaKind.episode,
+        title: 'Episode $index',
+        parentId: 'season',
+        grandparentId: 'show',
+        index: index + 1,
+      ),
+    );
+    final episodeQueue = PlaybackStateProvider()
+      ..setPlaybackFromLocalQueue(LocalPlayQueue(items: episodes, currentIndex: 20), contextKey: 'show');
+    addTearDown(episodeQueue.dispose);
+    await tester.pumpWidget(
+      _queueHarness(
+        playback: episodeQueue,
+        child: EpisodesDrawer(
+          current: episodes[20],
+          offline: true,
+          canNavigate: true,
+          onSelect: (_) async => false,
+          isAuthorized: () => true,
+          onRepeat: (mode) async => episodeQueue.setRepeatMode(mode),
+          onShuffle: (enabled, isCurrent) => episodeQueue.setShuffleEnabled(enabled, isCurrent: isCurrent),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(t.videoControls.episodesButton), findsOneWidget);
+    expect(find.text('Episode 21 · Episode 20'), findsOneWidget);
   });
 
   testWidgets('queue sheet blurs spoiler episode thumbnails', (tester) async {

@@ -11,29 +11,6 @@ extension _PlexVideoControlsMobileChipMethods on _PlexVideoControlsState {
     };
   }
 
-  /// Lifts the anchor above the whole bottom HUD so the timeline stays visible.
-  Rect _popoverAnchor(BuildContext context, Rect chip) {
-    final box = context.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return chip;
-    final top = box.localToGlobal(Offset.zero).dy + box.size.height - _mobileBottomHudHeight;
-    return Rect.fromLTRB(chip.left, top, chip.right, chip.bottom);
-  }
-
-  /// Timeline row plus control row, measured from the bottom of the surface.
-  static const double _mobileBottomHudHeight = 96;
-
-  void _showPopover(BuildContext context, Rect chip, WidgetBuilder builder) {
-    widget.chromeController.cancelAutoHide();
-    OverlaySheetController.of(context)
-        .show(
-          style: OverlaySheetStyle.glass,
-          anchor: _popoverAnchor(context, chip),
-          constraints: const BoxConstraints(maxWidth: 280),
-          builder: builder,
-        )
-        .whenComplete(_startHideTimer);
-  }
-
   void _openSpeedDrawer(BuildContext context, TrackControlsState state) {
     widget.chromeController.cancelAutoHide();
     OverlaySheetController.of(context)
@@ -66,16 +43,32 @@ extension _PlexVideoControlsMobileChipMethods on _PlexVideoControlsState {
         .whenComplete(_startHideTimer);
   }
 
-  void _openEpisodesPopover(BuildContext context, Rect chip) {
-    final playback = context.read<PlaybackStateProvider>();
-    if (playback.isQueueActive && widget.canNavigateMediaItems) {
-      _showPopover(
-        context,
-        chip,
-        (_) => PlayerEpisodesPopover(onSelected: _onQueueItemSelected, current: widget.metadata),
-      );
-      return;
-    }
+  void _openEpisodesDrawer(BuildContext context) {
+    widget.chromeController.cancelAutoHide();
+    final host = context.findAncestorStateOfType<VideoPlayerScreenState>();
+    OverlaySheetController.of(context)
+        .show(
+          style: OverlaySheetStyle.glass,
+          presentation: OverlaySheetPresentation.edgeDrawer,
+          constraints: BoxConstraints(maxWidth: PlayerSettingsDrawer.widthFor(context)),
+          builder: (_) => EpisodesDrawer(
+            current: widget.metadata,
+            offline: widget.isOfflinePlayback,
+            canNavigate: widget.canNavigateMediaItems,
+            onSelect: (item) async {
+              if (host == null) return false;
+              _hiddenSeek.cancel();
+              _desktopControlsKey.currentState?.abandonPendingSeek();
+              _dismissSkipFeedback();
+              return host.navigateToQueueItemForDrawer(item);
+            },
+            isAuthorized: () => host?.canChangeQueueFromDrawer() ?? false,
+            onRepeat: (mode) async => await host?.changeDrawerRepeat(mode) ?? false,
+            onShuffle: (enabled, isCurrent) async =>
+                await host?.changeDrawerShuffle(enabled, isDrawerCurrent: isCurrent) ?? false,
+          ),
+        )
+        .whenComplete(_startHideTimer);
   }
 
   void _openPlayerDrawer(BuildContext context, TrackControlsState state, PlayerDrawerTab tab) {

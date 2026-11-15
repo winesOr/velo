@@ -29,6 +29,7 @@ mixin _PlexPlayQueueMethods on _PlexClientInternals {
     }
     return PlayQueueResponse(
       playQueueID: playQueueID,
+      playQueueVersion: playQueueVersion,
       playQueueSelectedItemID: flexibleInt(container['playQueueSelectedItemID']),
       playQueueShuffled: flexibleBool(container['playQueueShuffled']),
       playQueueTotalCount: flexibleInt(container['playQueueTotalCount']),

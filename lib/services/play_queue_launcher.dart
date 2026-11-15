@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import '../media/ids.dart';
 
 import 'package:flutter/material.dart';
@@ -113,6 +114,7 @@ class PlexPlayQueueLauncher extends MediaListPlaybackLauncher {
     // requests cannot be torn down mid-flight, so each step checks it
     // instead and a cancelled launch never publishes or navigates.
     final abort = AbortController();
+    final launchCurrent = _captureLaunchScope(abort);
 
     return executeWithLoading(
       context: context,
@@ -131,6 +133,7 @@ class PlexPlayQueueLauncher extends MediaListPlaybackLauncher {
         if (facts.isCollection) {
           final machineId = client.config.machineIdentifier ?? await client.getMachineIdentifier();
           abort.throwIfAborted();
+          if (!launchCurrent()) return const PlayQueueCancelled();
 
           if (machineId == null) {
             throw Exception('Could not get server machine identifier');
@@ -140,7 +143,7 @@ class PlexPlayQueueLauncher extends MediaListPlaybackLauncher {
           playQueue = await client.createPlayQueue(
             uri: collectionUri,
             type: 'video',
-            shuffle: shuffle ? 1 : 0,
+            shuffle: 0,
             key: selectedKey,
             librarySectionID: sourceLibraryId,
             librarySectionTitle: sourceLibraryTitle,
@@ -150,20 +153,20 @@ class PlexPlayQueueLauncher extends MediaListPlaybackLauncher {
           playQueue = await client.createPlayQueue(
             playlistID: int.parse(ratingKey),
             type: 'video',
-            shuffle: shuffle ? 1 : 0,
+            shuffle: 0,
             key: selectedKey,
           );
         }
 
         abort.throwIfAborted();
+        if (!launchCurrent()) return const PlayQueueCancelled();
         playQueue = await _refetchIfEmpty(playQueue, libraryId: sourceLibraryId, libraryTitle: sourceLibraryTitle);
         abort.throwIfAborted();
-
-        // Close loading dialog before navigating to the player
-        await dismissLoading();
-        abort.throwIfAborted();
+        if (!launchCurrent()) return const PlayQueueCancelled();
 
         return _launchFromQueue(
+          beforePublish: dismissLoading,
+          isCurrent: launchCurrent,
           playQueue: playQueue,
           ratingKey: ratingKey,
           serverId: serverIdOrNull(itemServerId),
@@ -187,6 +190,7 @@ class PlexPlayQueueLauncher extends MediaListPlaybackLauncher {
     }
 
     final abort = AbortController();
+    final launchCurrent = _captureLaunchScope(abort);
 
     return executeWithLoading(
       context: context,
@@ -208,17 +212,16 @@ class PlexPlayQueueLauncher extends MediaListPlaybackLauncher {
 
         final playQueue = await client.createShowPlayQueue(
           showRatingKey: showRatingKey,
-          shuffle: 1,
+          shuffle: 0,
           librarySectionID: metadata.libraryId,
           librarySectionTitle: metadata.libraryTitle,
         );
         abort.throwIfAborted();
-
-        // Close loading dialog before navigating to the player
-        await dismissLoading();
-        abort.throwIfAborted();
+        if (!launchCurrent()) return const PlayQueueCancelled();
 
         return _launchFromQueue(
+          beforePublish: dismissLoading,
+          isCurrent: launchCurrent,
           playQueue: playQueue,
           ratingKey: showRatingKey,
           serverId: serverIdOrNull(metadata.serverId ?? serverId),
@@ -249,6 +252,7 @@ class PlexPlayQueueLauncher extends MediaListPlaybackLauncher {
     final libraryTitle = folder.libraryTitle;
 
     final abort = AbortController();
+    final launchCurrent = _captureLaunchScope(abort);
 
     return executeWithLoading(
       context: context,
@@ -258,23 +262,25 @@ class PlexPlayQueueLauncher extends MediaListPlaybackLauncher {
       execute: (dismissLoading) async {
         final folderUri = await client.buildFolderUri(folderKey);
         abort.throwIfAborted();
+        if (!launchCurrent()) return const PlayQueueCancelled();
 
         var playQueue = await client.createPlayQueue(
           uri: folderUri,
           type: 'video',
-          shuffle: shuffle ? 1 : 0,
+          shuffle: 0,
           librarySectionID: libraryId,
           librarySectionTitle: libraryTitle,
         );
 
         abort.throwIfAborted();
+        if (!launchCurrent()) return const PlayQueueCancelled();
         playQueue = await _refetchIfEmpty(playQueue, libraryId: libraryId, libraryTitle: libraryTitle);
         abort.throwIfAborted();
-
-        await dismissLoading();
-        abort.throwIfAborted();
+        if (!launchCurrent()) return const PlayQueueCancelled();
 
         return _launchFromQueue(
+          beforePublish: dismissLoading,
+          isCurrent: launchCurrent,
           playQueue: playQueue,
           ratingKey: folderKey,
           serverId: serverIdOrNull(serverId),
@@ -285,6 +291,18 @@ class PlexPlayQueueLauncher extends MediaListPlaybackLauncher {
         );
       },
     );
+  }
+
+  bool Function() _captureLaunchScope(AbortController abort) {
+    final playbackState = playbackStateForTesting ?? context.read<PlaybackStateProvider>();
+    final revision = playbackState.queueRevision;
+    final authentication = client.authenticationSessionId;
+    return () =>
+        !abort.isAborted &&
+        !playbackState.isDisposed &&
+        playbackState.queueRevision == revision &&
+        identical(client.authenticationSessionId, authentication) &&
+        (context.mounted || navigateForTesting != null);
   }
 
   /// Creation sometimes returns a queue without its items; re-read it by ID
@@ -326,68 +344,74 @@ class PlexPlayQueueLauncher extends MediaListPlaybackLauncher {
     String? libraryTitle,
     MediaItem? selectedItem,
     bool copyServerInfo = false,
+    Future<void> Function()? beforePublish,
+    bool Function()? isCurrent,
   }) async {
-    if (playQueue == null || playQueue.items == null || playQueue.items!.isEmpty) {
-      return const PlayQueueEmpty();
-    }
-
-    if (!context.mounted && navigateForTesting == null) {
-      return const PlayQueueError('Context not mounted');
-    }
-
+    if (playQueue == null || playQueue.items == null || playQueue.items!.isEmpty) return const PlayQueueEmpty();
+    if (!context.mounted && navigateForTesting == null) return const PlayQueueError('Context not mounted');
     final playbackState = playbackStateForTesting ?? context.read<PlaybackStateProvider>();
-    playbackState.setPlayQueueWindowFetcher(
-      libraryId == null
-          ? (id, {center, window = 50}) => client.getPlayQueue(id, center: center, window: window)
-          : (id, {center, window = 50}) => client.getPlayQueue(
-              id,
-              center: center,
-              window: window,
-              librarySectionID: libraryId,
-              librarySectionTitle: libraryTitle,
-            ),
-    );
-    await playbackState.setPlaybackFromPlayQueue(playQueue, ratingKey);
-
-    if (!context.mounted && navigateForTesting == null) {
-      return const PlayQueueError('Context not mounted');
-    }
-
-    var itemToPlay = selectedItem ?? playQueue.items!.first;
-
-    if (copyServerInfo && serverId != null) {
-      itemToPlay = itemToPlay.copyWith(
-        serverId: serverId,
-        serverName: serverName ?? itemToPlay.serverName,
-        libraryId: itemToPlay.libraryId ?? libraryId,
-        libraryTitle: itemToPlay.libraryTitle ?? libraryTitle,
-      );
-    }
-
-    // Shuffle + "start at beginning" (#2303): strip the resume offset so
-    // external players — which read viewOffsetMs directly and cannot take an
-    // explicit start position — also open at 0:00, and skip the watch-state
-    // re-resolve that would restore it. The built-in player applies the same
-    // override per item in resolveOpenResumePosition.
-    var stripResumeOffset = false;
-    if (shuffle && (itemToPlay.viewOffsetMs ?? 0) > 0) {
-      stripResumeOffset = (await SettingsService.getInstance()).read(SettingsService.shuffleStartsFromBeginning);
-      if (stripResumeOffset) {
-        itemToPlay = itemToPlay.copyWith(viewOffsetMs: 0);
+    final ownerRevision = playbackState.queueRevision;
+    final authentication = client.authenticationSessionId;
+    bool current() =>
+        (isCurrent?.call() ?? true) &&
+        !playbackState.isDisposed &&
+        playbackState.queueRevision == ownerRevision &&
+        identical(client.authenticationSessionId, authentication) &&
+        (context.mounted || navigateForTesting != null);
+    final prepared = PlaybackStateProvider();
+    try {
+      prepared.setPlayQueueWindowFetcher((id, {center, window = 50}) async {
+        if (!identical(client.authenticationSessionId, authentication)) return null;
+        final response = await client.getPlayQueue(
+          id,
+          center: center,
+          window: window,
+          librarySectionID: libraryId,
+          librarySectionTitle: libraryTitle,
+        );
+        return identical(client.authenticationSessionId, authentication) ? response : null;
+      });
+      await prepared.setPlaybackFromPlayQueue(playQueue, ratingKey);
+      prepared.setCurrentItem(selectedItem ?? playQueue.selectedItem ?? playQueue.items!.first);
+      var itemToPlay = prepared.currentQueueItem;
+      if (shuffle) {
+        final result = await prepared.startShuffledPlayback(isCurrent: current);
+        if (!current()) return const PlayQueueCancelled();
+        if (result.status != QueueNavigationStatus.found || result.item == null) {
+          return const PlayQueueError('Could not load a complete playback queue');
+        }
+        itemToPlay = result.item;
       }
+      if (itemToPlay == null) return const PlayQueueEmpty();
+      final original = itemToPlay;
+      if (copyServerInfo && serverId != null) {
+        itemToPlay = itemToPlay.copyWith(
+          serverId: serverId,
+          serverName: serverName ?? itemToPlay.serverName,
+          libraryId: itemToPlay.libraryId ?? libraryId,
+          libraryTitle: itemToPlay.libraryTitle ?? libraryTitle,
+        );
+        prepared.replaceQueueEntry(original, itemToPlay);
+      }
+      var stripResumeOffset = false;
+      if (shuffle && (itemToPlay.viewOffsetMs ?? 0) > 0) {
+        stripResumeOffset = (await SettingsService.getInstance()).read(SettingsService.shuffleStartsFromBeginning);
+        if (stripResumeOffset) itemToPlay = itemToPlay.copyWith(viewOffsetMs: 0);
+      }
+      if (!current()) return const PlayQueueCancelled();
+      await beforePublish?.call();
+      if (!current()) return const PlayQueueCancelled();
+      if (!playbackState.adoptPreparedQueue(prepared)) return const PlayQueueError('Could not publish playback queue');
+      if (navigateForTesting != null) {
+        await navigateForTesting!(itemToPlay);
+      } else {
+        if (!context.mounted) return const PlayQueueCancelled();
+        await navigateToVideoPlayer(context, metadata: itemToPlay, resolveWatchState: !stripResumeOffset);
+      }
+      return const PlayQueueSuccess();
+    } finally {
+      prepared.dispose();
     }
-
-    if (!context.mounted && navigateForTesting == null) {
-      return const PlayQueueError('Context not mounted');
-    }
-
-    if (navigateForTesting != null) {
-      await navigateForTesting!(itemToPlay);
-    } else {
-      await navigateToVideoPlayer(context, metadata: itemToPlay, resolveWatchState: !stripResumeOffset);
-    }
-
-    return const PlayQueueSuccess();
   }
 }
 

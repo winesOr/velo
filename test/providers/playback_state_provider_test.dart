@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/media/media_backend.dart';
@@ -9,6 +10,7 @@ import 'package:plezy/media/media_version.dart';
 import 'package:plezy/media/play_queue.dart';
 import 'package:plezy/models/plex/play_queue_response.dart';
 import 'package:plezy/providers/playback_state_provider.dart';
+
 import '../test_helpers/media_items.dart';
 
 PlexMediaItem _item(String ratingKey, int playQueueItemID) => PlexMediaItem(
@@ -40,6 +42,7 @@ PlexMediaItem _miItem(String id, int playQueueItemId) =>
 PlayQueueResponse _queue({
   int playQueueID = 1,
   int? selectedItemID,
+  int? version,
   bool shuffled = false,
   int? totalCount,
   int? size,
@@ -47,6 +50,7 @@ PlayQueueResponse _queue({
 }) {
   return PlayQueueResponse(
     playQueueID: playQueueID,
+    playQueueVersion: version,
     playQueueSelectedItemID: selectedItemID,
     playQueueShuffled: shuffled,
     playQueueTotalCount: totalCount,
@@ -116,6 +120,65 @@ void main() {
       expect(requested, isEmpty);
 
       p.dispose();
+    });
+
+    test('queue modes retain the cursor and restore the complete opaque queue order', () async {
+      final p = PlaybackStateProvider(random: Random(7));
+      addTearDown(p.dispose);
+      final items = [
+        _item('first', 3),
+        _item('before', 7),
+        _item('anchor', 19),
+        _item('duplicate', 40),
+        _item('duplicate', 51),
+        _item('last', 99),
+      ];
+      await p.setPlaybackFromPlayQueue(
+        _queue(selectedItemID: 19, version: 2, totalCount: items.length, items: items.sublist(1, 4)),
+        'playlist',
+      );
+      final centers = <int>[];
+      p.setPlayQueueWindowFetcher((queueId, {center, window = 50}) async {
+        final id = int.parse(center!);
+        centers.add(id);
+        final index = items.indexWhere((item) => item.playQueueItemId == id);
+        final from = max(0, index - 1);
+        final to = min(items.length, index + 2);
+        return _queue(
+          playQueueID: queueId,
+          version: 2,
+          selectedItemID: 19,
+          totalCount: items.length,
+          items: items.sublist(from, to),
+        );
+      });
+
+      expect(await p.setShuffleEnabled(true), isTrue);
+      expect(p.isShuffleActive, isTrue);
+      expect(p.currentPlayQueueItemID, 19);
+      expect(centers, containsAll([7, 3, 40, 51]));
+      final shuffled = await p.loadQueuePage(limit: 10);
+      expect(shuffled.status, QueueNavigationStatus.found);
+      expect(shuffled.hasMore, isFalse);
+      expect(shuffled.items.map(p.playQueueItemIdFor).toSet(), {19, 40, 51, 99});
+      expect(shuffled.items.where((item) => item.id == 'duplicate'), hasLength(2));
+
+      final stalePage = p.loadQueuePage(limit: 10);
+      final disable = p.setShuffleEnabled(false);
+      expect((await stalePage).status, QueueNavigationStatus.failed);
+      expect(await disable, isTrue);
+      expect(p.currentPlayQueueItemID, 19);
+      final sequential = await p.loadQueuePage(limit: 10);
+      expect(sequential.items.map(p.playQueueItemIdFor), [19, 40, 51, 99]);
+      expect(p.setRepeatMode(VideoQueueRepeatMode.one), isTrue);
+      expect(p.playQueueItemIdFor((await p.getCompletionTarget('anchor')).item!), 19);
+      expect(p.playQueueItemIdFor((await p.getNextEpisode('anchor')).item!), 40);
+      p.setCurrentItem(sequential.items.last);
+      p.setRepeatMode(VideoQueueRepeatMode.all);
+      expect(p.playQueueItemIdFor((await p.getCompletionTarget('last')).item!), 3);
+      expect(p.currentPlayQueueItemID, 99);
+      p.clearShuffle();
+      expect(p.repeatMode, VideoQueueRepeatMode.off);
     });
 
     test('clearShuffle resets all state and notifies', () async {
@@ -290,7 +353,7 @@ void main() {
 
       // The user starts a different queue while the old queue's window is in flight.
       await p.setPlaybackFromPlayQueue(
-        _queue(playQueueID: 2, selectedItemID: 2001, totalCount: 1, items: [_item('new-a', 2001)]),
+        _queue(playQueueID: 1, selectedItemID: 2001, totalCount: 1, items: [_item('new-a', 2001)]),
         null,
       );
       var notified = 0;
@@ -360,6 +423,11 @@ void main() {
       final previous = await p.getPreviousEpisode('a');
       expect(previous.status, QueueNavigationStatus.boundary);
       expect(previous.item, isNull);
+      await p.setPlaybackFromPlayQueue(_queue(selectedItemID: 1001, totalCount: 1, items: [items.first]), null);
+      p.setRepeatMode(VideoQueueRepeatMode.all);
+      expect((await p.getPreviousEpisode('a')).status, QueueNavigationStatus.boundary);
+      expect((await p.getNextEpisode('a')).status, QueueNavigationStatus.boundary);
+      expect((await p.getCompletionTarget('a')).item, same(items.first));
 
       p.dispose();
     });
@@ -599,6 +667,13 @@ void main() {
       final previous = await p.getPreviousEpisode('e25', playedPartId: 'part-e25');
       expect(previous.status, QueueNavigationStatus.found);
       expect(previous.item!.id, 'e23');
+      final sameFile = p.loadedItems.where((item) => item.id == 'e24' || item.id == 'e25').toList();
+      await p.setPlaybackFromPlayQueue(
+        _queue(selectedItemID: 1003, totalCount: sameFile.length, items: sameFile),
+        null,
+      );
+      p.setRepeatMode(VideoQueueRepeatMode.all);
+      expect((await p.getPreviousEpisode('e25', playedPartId: 'part-e25')).status, QueueNavigationStatus.boundary);
     });
 
     test('sameFileSiblings returns the other episodes of the playing file', () async {

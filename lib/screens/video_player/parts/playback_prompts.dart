@@ -81,6 +81,61 @@ extension _VideoPlayerPlaybackPromptMethods on VideoPlayerScreenState {
       return;
     }
 
+    final playbackState = context.read<PlaybackStateProvider>();
+    final serverStoppedAtEof = _progressTracker?.stoppedByServer ?? false;
+    if (playbackState.isQueueActive &&
+        playbackState.repeatMode != VideoQueueRepeatMode.off &&
+        !_episode.completionLatch.triggered &&
+        !serverStoppedAtEof) {
+      _episode.isResolvingCompletionAdjacency = true;
+      late final QueueNavigationResult target;
+      try {
+        target = await playbackState.getCompletionTarget(
+          _currentMetadata.globalKey,
+          playedPartId: _currentMediaInfo?.partId?.toString(),
+        );
+      } finally {
+        _episode.isResolvingCompletionAdjacency = false;
+      }
+      if (!isCurrentCompletion() || !canChangeQueueFromDrawer()) return;
+      if (sleepTimerService.isEndOfVideoMode) {
+        _episode.completionLatch.latch();
+        sleepTimerService.notifyVideoCompleted();
+        return;
+      }
+      if (!(_progressTracker?.stoppedByServer ?? false)) {
+        if (target.status == QueueNavigationStatus.failed) {
+          _episode.completionLatch.latch();
+          showGlobalErrorSnackBar(t.messages.errorLoadingSeries);
+          return;
+        }
+        final targetIsCurrent =
+            target.item != null &&
+            playbackState.currentPlayQueueItemID != null &&
+            playbackState.playQueueItemIdFor(target.item!) == playbackState.currentPlayQueueItemID;
+        if (target.item != null && targetIsCurrent) {
+          _episode.completionLatch.latch();
+          final outcome = await _navigateToEpisode(
+            target.item!,
+            resumePosition: Duration.zero,
+            canProceed: () =>
+                isCurrentCompletion() &&
+                canChangeQueueFromDrawer() &&
+                !sleepTimerService.isEndOfVideoMode &&
+                !(_progressTracker?.stoppedByServer ?? false),
+          );
+          if (mounted && outcome == MediaReloadOutcome.failed) {
+            showGlobalErrorSnackBar(t.messages.errorLoadingSeries);
+          }
+          return;
+        }
+        if (target.item != null) {
+          _episode.next = target.item;
+          _episode.nextStatus = QueueNavigationStatus.found;
+        }
+      }
+    }
+
     var navigationAction = completionNavigationAction(
       hasNext: _episode.next != null,
       adjacentStatus: _episode.nextStatus,

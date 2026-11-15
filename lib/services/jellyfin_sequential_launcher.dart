@@ -1,4 +1,3 @@
-import 'dart:math';
 import '../media/ids.dart';
 
 import 'package:flutter/material.dart';
@@ -188,6 +187,17 @@ class JellyfinSequentialLauncher extends MediaListPlaybackLauncher {
     int Function(List<MediaItem> items)? resolveStartIndex,
   }) async {
     final abort = AbortController();
+    final playbackState = playbackStateForTesting ?? context.read<PlaybackStateProvider>();
+    final revision = playbackState.queueRevision;
+    final client = clientForTesting ?? _resolveClient(ServerId(serverId));
+    final authentication = client?.authenticationSessionId;
+    bool launchCurrent() =>
+        !abort.isAborted &&
+        !playbackState.isDisposed &&
+        playbackState.queueRevision == revision &&
+        (context.mounted || navigateForTesting != null) &&
+        identical(client?.authenticationSessionId, authentication) &&
+        (clientForTesting != null || identical(_resolveClient(ServerId(serverId)), client));
 
     return executeWithLoading(
       context: context,
@@ -195,34 +205,35 @@ class JellyfinSequentialLauncher extends MediaListPlaybackLauncher {
       actionLabel: shuffle ? t.common.shuffle : t.common.play,
       abort: abort,
       execute: (dismissLoading) async {
-        final client = clientForTesting ?? _resolveClient(ServerId(serverId));
         if (client == null) {
           return _missingClientError(serverId, dismissLoading);
         }
 
-        var items = await fetchItems(client, abort);
+        final items = await fetchItems(client, abort);
+        if (!launchCurrent()) return const PlayQueueCancelled();
         if (items.isEmpty) return const PlayQueueEmpty();
 
         abort.throwIfAborted();
-        if (shuffle) {
-          items = List.of(items)..shuffle(Random());
-        }
-
+        if (!launchCurrent()) return const PlayQueueCancelled();
         abort.throwIfAborted();
+        if (!launchCurrent()) return const PlayQueueCancelled();
         final startIndex = resolveStartIndex?.call(items) ?? 0;
 
         await dismissLoading();
         abort.throwIfAborted();
+        if (!launchCurrent()) return const PlayQueueCancelled();
         if (!context.mounted && navigateForTesting == null) {
           return const PlayQueueError('Context not mounted');
         }
 
         abort.throwIfAborted();
-        final playbackState = playbackStateForTesting ?? context.read<PlaybackStateProvider>();
+        if (!launchCurrent()) return const PlayQueueCancelled();
         return launchLocalQueuePlayback(
           context: context,
           playbackState: playbackState,
-          queue: LocalPlayQueue(items: items, currentIndex: startIndex, shuffled: shuffle),
+          queue: LocalPlayQueue(items: items, currentIndex: startIndex),
+          shuffle: shuffle,
+          isCurrent: launchCurrent,
           contextKey: contextKey,
           navigateForTesting: navigateForTesting,
         );
