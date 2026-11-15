@@ -286,171 +286,165 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
   }
 
   Widget _buildDetailEpisodeRail() {
-    final group = _detailEpisodeGroup.clamp(0, math.max(0, (_episodes.length - 1) ~/ 10)).toInt();
-    final start = group * 10;
-    final visible = _episodes.skip(start).take(10).toList();
     final selected = _playbackTargetItem(_metadata)?.globalKey;
     final theme = Theme.of(context);
     final textScale = MediaQuery.textScalerOf(context).scale(1);
-    return Column(
+    return DetailEpisodeRail(
       key: _detailEpisodesKey,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: 158 + math.max(0, textScale - 1) * 50,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: visible.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              final episode = _fresh(visible[index]);
-              final active = selected == episode.globalKey;
-              final episodeNumber = effectiveEpisodeIndex(episode);
-              final status = episode.isWatched
-                  ? t.libraries.watched
-                  : episode.viewOffsetMs != null && episode.viewOffsetMs! > 0
-                  ? t.common.resume
-                  : t.libraries.filterCategories.unwatched;
-              final local = widget.isOffline && episode.thumbPath != null
-                  ? _offlineArtworkCandidatePath(context, episode.thumbPath!)
-                  : null;
-              return SizedBox(
-                width: 202,
-                child: FocusableWrapper(
-                  key: ValueKey('detail_episode_${episode.id}'),
-                  focusNode: _episodeListFocusNode(
-                    episode: episode,
-                    index: start + index,
-                    hasPinnedLastEpisode: _hasPinnedLastEpisodeInList,
-                  ),
-                  onSelect: () => _selectDetailEpisode(episode),
-                  onLongPress: () => unawaited(
-                    navigateToVideoPlayerWithRefresh(
-                      context,
-                      metadata: episode,
-                      isOffline: widget.isOffline,
-                      onRefresh: _refreshWatchState,
-                      isLaunchCurrent: () => _canUseDetail,
+      episodeCount: _episodes.length,
+      height: 158 + math.max(0, textScale - 1) * 50,
+      initialIndex: _detailEpisodeRailIndex,
+      resetToken: _detailEpisodeRailRevision,
+      onPositionChanged: (index) => _detailEpisodeRailIndex = index,
+      hasTail: _episodeListHasMore || _episodeListLoadingMore || _episodeListPageError,
+      canLoadMore: _episodeListHasMore && !_episodeListLoadingMore && !_episodeListPageError,
+      onLoadMore: () => unawaited(_loadMoreEpisodeList()),
+      groupsBuilder: (context, group, scrollToGroup) => _buildDetailEpisodeGroups(group, scrollToGroup),
+      itemBuilder: (context, index) {
+        if (index == _episodes.length) return _buildEpisodeListTail();
+        final episode = _fresh(_episodes[index]);
+        final active = selected == episode.globalKey;
+        final episodeNumber = effectiveEpisodeIndex(episode);
+        final status = episode.isWatched
+            ? t.libraries.watched
+            : episode.viewOffsetMs != null && episode.viewOffsetMs! > 0
+            ? t.common.resume
+            : t.libraries.filterCategories.unwatched;
+        final local = widget.isOffline && episode.thumbPath != null
+            ? _offlineArtworkCandidatePath(context, episode.thumbPath!)
+            : null;
+        return SizedBox(
+          width: 202,
+          child: FocusableWrapper(
+            key: ValueKey('detail_episode_${episode.id}'),
+            focusNode: _episodeListFocusNode(
+              episode: episode,
+              index: index,
+              hasPinnedLastEpisode: _hasPinnedLastEpisodeInList,
+            ),
+            onSelect: () => _selectDetailEpisode(episode),
+            onLongPress: () => unawaited(
+              navigateToVideoPlayerWithRefresh(
+                context,
+                metadata: episode,
+                isOffline: widget.isOffline,
+                onRefresh: _refreshWatchState,
+                isLaunchCurrent: () => _canUseDetail,
+              ),
+            ),
+            onNavigateUp: _focusSelectedSeasonTab,
+            disableScale: true,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _selectDetailEpisode(episode),
+              onLongPress: () => unawaited(
+                navigateToVideoPlayerWithRefresh(
+                  context,
+                  metadata: episode,
+                  isOffline: widget.isOffline,
+                  onRefresh: _refreshWatchState,
+                  isLaunchCurrent: () => _canUseDetail,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 112,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: active ? Border.all(color: theme.colorScheme.onSurface, width: 2) : null,
                     ),
-                  ),
-                  onNavigateUp: _focusSelectedSeasonTab,
-                  disableScale: true,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => _selectDetailEpisode(episode),
-                    onLongPress: () => unawaited(
-                      navigateToVideoPlayerWithRefresh(
-                        context,
-                        metadata: episode,
-                        isOffline: widget.isOffline,
-                        onRefresh: _refreshWatchState,
-                        isLaunchCurrent: () => _canUseDetail,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    clipBehavior: Clip.antiAlias,
+                    child: Stack(
+                      fit: StackFit.expand,
                       children: [
-                        Container(
+                        OptimizedMediaImage.thumb(
+                          client: widget.isOffline ? null : _getArtworkMediaClient(context),
+                          imagePath: episode.thumbPath,
+                          localFilePath: local,
+                          width: 202,
                           height: 112,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            border: active ? Border.all(color: theme.colorScheme.onSurface, width: 2) : null,
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              OptimizedMediaImage.thumb(
-                                client: widget.isOffline ? null : _getArtworkMediaClient(context),
-                                imagePath: episode.thumbPath,
-                                localFilePath: local,
-                                width: 202,
-                                height: 112,
+                        ),
+                        if (episodeNumber != null)
+                          Positioned(
+                            right: 8,
+                            bottom: 6,
+                            child: DecoratedBox(
+                              key: ValueKey('detail_episode_number_${episode.id}'),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: .52),
+                                borderRadius: BorderRadius.circular(5),
                               ),
-                              if (episodeNumber != null)
-                                Positioned(
-                                  right: 8,
-                                  bottom: 6,
-                                  child: DecoratedBox(
-                                    key: ValueKey('detail_episode_number_${episode.id}'),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withValues(alpha: .52),
-                                      borderRadius: BorderRadius.circular(5),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                      child: Text(
-                                        padNumber(episodeNumber, 2),
-                                        style: theme.textTheme.labelSmall?.copyWith(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          height: 1.2,
-                                        ),
-                                      ),
-                                    ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                child: Text(
+                                  padNumber(episodeNumber, 2),
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    height: 1.2,
                                   ),
                                 ),
-                            ],
+                              ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 7),
-                        Text(
-                          episodeDisplayTitle(episode),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontSize: 12,
-                            color: Colors.white,
-                            height: 1.5,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          [
-                            if (episode.durationMs != null) formatDurationTextual(episode.durationMs!),
-                            status,
-                          ].join(' · '),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelSmall?.copyWith(color: Colors.white, fontSize: 10, height: 1.5),
-                        ),
                       ],
                     ),
                   ),
-                ),
-              );
-            },
+                  const SizedBox(height: 7),
+                  Text(
+                    episodeDisplayTitle(episode),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 12,
+                      color: Colors.white,
+                      height: 1.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    [if (episode.durationMs != null) formatDurationTextual(episode.durationMs!), status].join(' · '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(color: Colors.white, fontSize: 10, height: 1.5),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        _buildDetailEpisodeGroups(group),
-      ],
+        );
+      },
     );
   }
 
-  Widget _buildDetailEpisodeGroups(int group) => Align(
+  Widget _buildDetailEpisodeGroups(int group, ValueChanged<int> scrollToGroup) => Align(
     alignment: Alignment.centerLeft,
     child: TabChipStrip(
       children: [
         for (var index = 0; index < (_episodes.length + 9) ~/ 10; index++)
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: FocusableWrapper(
-              disableScale: true,
-              onSelect: () => setStateIfMounted(() => _detailEpisodeGroup = index),
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => setStateIfMounted(() => _detailEpisodeGroup = index),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: index == group ? .125 : .035),
-                    border: Border.all(color: Colors.white.withValues(alpha: index == group ? .375 : .125)),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${index * 10 + 1}–${math.min((index + 1) * 10, _episodes.length)}',
-                    style: const TextStyle(color: Colors.white, fontSize: 11, height: 1.5),
+            child: Semantics(
+              selected: index == group,
+              child: FocusableWrapper(
+                disableScale: true,
+                onSelect: () => scrollToGroup(index),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => scrollToGroup(index),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: index == group ? .125 : .035),
+                      border: Border.all(color: Colors.white.withValues(alpha: index == group ? .375 : .125)),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      episodeGroupLabel(index, _episodes.length),
+                      style: const TextStyle(color: Colors.white, fontSize: 11, height: 1.5),
+                    ),
                   ),
                 ),
               ),

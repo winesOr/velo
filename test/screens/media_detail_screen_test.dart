@@ -3002,42 +3002,51 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    for (final dark in [false, true]) {
-      testWidgets('view all episodes shares the detail palette and returns to the selected episode ($dark)', (
-        tester,
-      ) async {
+    group('view all fixture', () {
+      setUpAll(() async {
         await loadTabletFonts();
-        final show = buildShow();
-        final boundary = GlobalKey();
-        await pumpPhoneDetail(
-          tester,
-          singleSeasonClient(show, episodeCount: 12),
-          show,
-          viewport: const Size(390, 844),
-          screenshotKey: boundary,
-          theme: tabletFixtureTheme(monoTheme(dark: dark)),
-        );
-        await tester.ensureVisible(find.text(t.common.viewAll));
-        await tester.tap(find.text(t.common.viewAll));
-        await tester.pumpAndSettle();
-        final cards = find.byType(EpisodeCard);
-        expect(cards, findsNWidgets(12));
-        final element = tester.element(cards.first);
-        final palette = HomeThemeScope.colorOf(element);
-        final scheme = Theme.of(element).colorScheme;
-        expect(scheme.surface, palette);
-        expect(scheme.surfaceContainerLow, Color.alphaBlend(Colors.white.withValues(alpha: .045), palette));
-        expect(tester.widget<EpisodeCard>(cards.first).detailStyle, isTrue);
-        await Scrollable.ensureVisible(tester.element(cards.first), alignment: .2);
-        await tester.pumpAndSettle();
-        await captureTablet(tester, find.byKey(boundary), 'detail-all-${dark ? 'dark' : 'light'}');
-        await tester.tap(cards.at(2));
-        await tester.pumpAndSettle();
-        expect(find.byType(EpisodeCard), findsNothing);
-        expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 3)}'), findsOneWidget);
-        expect(tester.takeException(), isNull);
+        // Complete font notifications in real async before a widget test owns
+        // the frame scheduler, rather than leaving callbacks at test teardown.
+        await Future<void>.delayed(Duration.zero);
       });
-    }
+      for (final dark in [false, true]) {
+        testWidgets('view all episodes shares the detail palette and returns to the selected episode ($dark)', (
+          tester,
+        ) async {
+          final show = buildShow();
+          final boundary = GlobalKey();
+          await pumpPhoneDetail(
+            tester,
+            singleSeasonClient(show, episodeCount: 12),
+            show,
+            viewport: const Size(390, 844),
+            screenshotKey: boundary,
+            theme: tabletFixtureTheme(monoTheme(dark: dark)),
+          );
+          await tester.ensureVisible(find.text(t.common.viewAll));
+          await tester.tap(find.text(t.common.viewAll));
+          await tester.pumpAndSettle();
+          final cards = find.byType(EpisodeCard);
+          expect(cards, findsNWidgets(12));
+          final element = tester.element(cards.first);
+          final palette = HomeThemeScope.colorOf(element);
+          final scheme = Theme.of(element).colorScheme;
+          expect(scheme.surface, palette);
+          expect(scheme.surfaceContainerLow, Color.alphaBlend(Colors.white.withValues(alpha: .045), palette));
+          expect(tester.widget<EpisodeCard>(cards.first).detailStyle, isTrue);
+          await Scrollable.ensureVisible(tester.element(cards.first), alignment: .2);
+          await tester.pumpAndSettle();
+          await captureTablet(tester, find.byKey(boundary), 'detail-all-${dark ? 'dark' : 'light'}');
+          await tester.tap(cards.at(2));
+          await tester.pumpAndSettle();
+          expect(find.byType(EpisodeCard), findsNothing);
+          expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 3)}'), findsOneWidget);
+          final rail = tester.widget<ListView>(find.byKey(const ValueKey('detail_episode_rail_scroll')));
+          expect(rail.controller!.offset, 428);
+          expect(tester.takeException(), isNull);
+        });
+      }
+    });
 
     testWidgets('actual detail fixture phone-show-cast keeps the prototype section rhythm', (tester) async {
       await (FontLoader('DetailFixture')..addFont(rootBundle.load('assets/go-noto-current-regular.ttf'))).load();

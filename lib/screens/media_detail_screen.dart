@@ -28,6 +28,7 @@ import '../media/media_version.dart';
 import '../services/cached_playback_metadata_service.dart';
 import 'media_detail/playback_selection.dart';
 import 'media_detail/action_press.dart';
+import 'media_detail/episode_rail.dart';
 
 import '../focus/dpad_navigator.dart';
 import '../focus/dpad_select_long_press_controller.dart';
@@ -373,7 +374,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   bool _watchStateChanged = false;
   final HomeThemeController _detailTheme = HomeThemeController();
   MediaItem? _detailSelectedEpisode;
-  int _detailEpisodeGroup = 0;
+  int _detailEpisodeRailIndex = 0;
+  int _detailEpisodeRailRevision = 0;
   bool _detailAllEpisodes = false;
   final GlobalKey _detailEpisodesKey = GlobalKey();
   final GlobalKey _tvDetailRatingsGroupKey = GlobalKey();
@@ -2021,7 +2023,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     setState(() {
       _selectedSeasonIndex = seasonIndex;
       _detailSelectedEpisode = null;
-      _detailEpisodeGroup = 0;
+      _detailEpisodeRailIndex = 0;
+      _detailEpisodeRailRevision++;
       _syncSelectedSeasonEpisodes(seasonIndex, _seasons[seasonIndex].id);
     });
     unawaited(
@@ -2796,7 +2799,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
             if (_detailAllEpisodes) {
               setState(() {
                 _detailSelectedEpisode = episode;
-                _detailEpisodeGroup = index ~/ 10;
+                _detailEpisodeRailIndex = index;
                 _detailAllEpisodes = false;
               });
               _playbackStatusRevision.value++;
@@ -2820,7 +2823,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextButton.icon(
-          onPressed: () => setState(() => _detailAllEpisodes = false),
+          onPressed: () => setState(() {
+            _detailAllEpisodes = false;
+            _detailEpisodeRailIndex = 0;
+          }),
           icon: const AppIcon(Symbols.arrow_back_rounded, size: 18),
           label: Text(t.common.back),
         ),
