@@ -1,3 +1,4 @@
+import 'package:plezy/widgets/app_toast.dart';
 import 'dart:async';
 
 import 'package:drift/native.dart';
@@ -201,7 +202,7 @@ void main() {
     expect((await StorageService.getInstance()).getActiveProfileId(), 'newer');
     expect(SystemShelfService().debugActiveOwner, 'newer');
     expect(harness.events, isNot(contains('rebind:target')));
-    expect(find.byType(SnackBar), findsNothing);
+    expect(find.byType(AppToast), findsNothing);
   });
 
   testWidgets('selecting current profile and cancelling PIN verification do not clear', (tester) async {
@@ -277,7 +278,7 @@ void main() {
     expect(binder.rebindStarted.isCompleted, isFalse);
     expect(harness.events, isNot(contains('rebind:owner')));
     await tester.pump();
-    expect(find.byType(SnackBar), findsNothing);
+    expect(find.byType(AppToast), findsNothing);
   });
 
   testWidgets('a switch whose screen is torn down mid-switch still keeps a downloads-owning profile offline', (
@@ -335,7 +336,7 @@ void main() {
     expect(binder.boundClientProfileId, 'owner');
     expect(SystemShelfService().debugActiveOwner, 'owner');
     await tester.pump();
-    expect(find.byType(SnackBar), findsOneWidget);
+    expect(find.byType(AppToast), findsOneWidget);
   });
 
   testWidgets('non-connectivity bind failure rolls back even when the profile owns downloads', (tester) async {
@@ -353,7 +354,7 @@ void main() {
     expect(binder.boundClientProfileId, 'owner');
     expect(SystemShelfService().debugActiveOwner, 'owner');
     await tester.pump();
-    expect(find.byType(SnackBar), findsOneWidget);
+    expect(find.byType(AppToast), findsOneWidget);
   });
 
   testWidgets('protected switch rolls back to profile active when its activation is admitted', (tester) async {
@@ -436,7 +437,7 @@ void main() {
     expect(harness.events, isNot(contains('rebind:owner')));
     expect((await StorageService.getInstance()).getActiveProfileId(), 'newer');
     await tester.pump();
-    expect(find.byType(SnackBar), findsNothing);
+    expect(find.byType(AppToast), findsNothing);
   });
 
   testWidgets('rollback waits for successive reserved switches and never rebinds the stale owner', (tester) async {
@@ -500,7 +501,7 @@ void main() {
     expect((await StorageService.getInstance()).getActiveProfileId(), 'latest');
     expect(SystemShelfService().debugActiveOwner, 'latest');
     expect(harness.events, isNot(contains('mark:newer')));
-    expect(find.byType(SnackBar), findsNothing);
+    expect(find.byType(AppToast), findsNothing);
   });
 
   testWidgets('new activation during a held restore write prevents stale prior-profile publication', (tester) async {
@@ -559,7 +560,7 @@ void main() {
     expect(harness.active.activeId, 'owner');
     expect(binder.boundClientProfileId, 'owner');
     await tester.pump();
-    expect(find.byType(SnackBar), findsOneWidget);
+    expect(find.byType(AppToast), findsOneWidget);
   });
 
   testWidgets('failed queued activation lets superseded restore retry the prior profile', (tester) async {

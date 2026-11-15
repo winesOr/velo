@@ -30,7 +30,7 @@ class ScreenBreakpoints {
 class AppDurations {
   static const Duration animMedium = Duration(milliseconds: 300);
   static const Duration animSlow = Duration(milliseconds: 500);
-  static const Duration snackBarDefault = Duration(seconds: 3);
+  static const Duration snackBarDefault = Duration(milliseconds: 2500);
   static const Duration snackBarLong = Duration(seconds: 4);
 }
 

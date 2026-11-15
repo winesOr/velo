@@ -1,3 +1,4 @@
+import '../app_toast.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 
@@ -722,7 +723,9 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
       ),
     );
 
-    return DesktopAppBarHelper.wrapWithGestureDetector(_absorbMissedClicks(topBar), opaque: true);
+    return AppToastAnchor(
+      child: DesktopAppBarHelper.wrapWithGestureDetector(_absorbMissedClicks(topBar), opaque: true),
+    );
   }
 
   Widget _buildBottomControlsContent(BuildContext _, {required bool hasFrame}) {

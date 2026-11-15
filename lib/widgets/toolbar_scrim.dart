@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'rasterized_gradient.dart';
+import 'app_toast.dart';
 
 /// Top-edge fade behind a toolbar that floats over content, keeping its
 /// glyphs legible against artwork without a solid chrome bar.
@@ -35,7 +36,7 @@ class ToolbarScrim extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.only(top: statusBarHeight + (overArtwork ? 16 : 8), left: 16, right: 16, bottom: 16),
-        child: child,
+        child: AppToastAnchor(child: child),
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:plezy/widgets/app_toast.dart';
 import 'dart:io';
 
 import 'package:drift/native.dart';
@@ -167,7 +168,7 @@ void main() {
         // The thrown open no longer lands in a snackbar behind the dialog:
         // the failure view carries it, so it survives the dialog's close and
         // is where Back/Retry live once the route stays.
-        expect(find.byType(SnackBar), findsNothing);
+        expect(find.byType(AppToast), findsNothing);
         expect(
           find.textContaining('loadfile failed'),
           findsOneWidget,

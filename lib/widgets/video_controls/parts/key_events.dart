@@ -164,6 +164,7 @@ extension _PlexVideoControlsKeyEventMethods on _PlexVideoControlsState {
   /// Global key event handler for focus-independent shortcuts (desktop only)
   bool _handleGlobalKeyEvent(KeyEvent event) {
     if (!mounted) return false;
+    if (AppToast.handleMenuKey(event)) return true;
     if (ModalRoute.of(context)?.isCurrent != true) return false;
 
     // Any actionable key (keyboard / dpad / controller) cancels an in-progress
@@ -230,6 +231,7 @@ extension _PlexVideoControlsKeyEventMethods on _PlexVideoControlsState {
   }
 
   KeyEventResult _handleControlsKeyEvent(KeyEvent event, bool isMobile) {
+    if (AppToast.handleMenuKey(event)) return KeyEventResult.handled;
     final navigationKey = classifyPlayerNavigationKey(event, isAppleTV: PlatformDetector.isAppleTV());
     final navigationResult = _handleLocalPlayerNavigationKeyEvent(event, navigationKey, isMobile);
     if (navigationResult != KeyEventResult.ignored) {

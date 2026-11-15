@@ -1,3 +1,4 @@
+import '../app_toast.dart';
 import 'dart:async' show StreamSubscription, Timer, unawaited;
 import 'dart:io' show Platform;
 
@@ -1241,7 +1242,7 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
       valueListenable: _pipService.isPipActive,
       builder: (context, isInPip, _) {
         if (isInPip && !Platform.isMacOS) return const SizedBox.shrink();
-        return Focus(
+        final controls = Focus(
           focusNode: _focusNode,
           autofocus: true,
           onKeyEvent: (node, event) => _handleControlsKeyEvent(event, isMobile),
@@ -1626,6 +1627,11 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
               ),
             ),
           ),
+        );
+        return AppToastPlayerRegion(
+          controlsVisible: _showControls,
+          canHandleMenu: () => !(OverlaySheetController.maybeOf(context)?.isOpen ?? false),
+          child: controls,
         );
       },
     );

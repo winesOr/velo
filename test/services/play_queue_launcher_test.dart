@@ -1,3 +1,4 @@
+import 'package:plezy/widgets/app_toast.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -197,7 +198,7 @@ void main() {
       expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
       expect(playbackState.isQueueActive, isFalse);
       expect(didNavigate, isFalse);
-      expect(find.byType(SnackBar), findsNothing);
+      expect(find.byType(AppToast), findsNothing);
     });
 
     testWidgets('navigation failure is returned as PlayQueueError, not success', (tester) async {

@@ -45,6 +45,8 @@
     "pinCheckRejected": "The Plex PIN check was rejected"
   },
   "common": {
+    "toastRepeated": "Repeated ${count} times",
+    "toastMenu": "Menu",
     "cancel": "Cancel",
     "save": "Save",
     "close": "Close",

@@ -246,6 +246,12 @@ class Translations$common$en {
 
 	// Translations
 
+	/// en: 'Repeated ${count} times'
+	String toastRepeated({required Object count}) => 'Repeated ${count} times';
+
+	/// en: 'Menu'
+	String get toastMenu => 'Menu';
+
 	/// en: 'Cancel'
 	String get cancel => 'Cancel';
 
@@ -8187,6 +8193,8 @@ extension on Translations {
 			'auth.quickConnectExpired' => 'Quick Connect expired. Try again.',
 			'auth.localDataRecoveryRequired' => 'Velo could not safely recover local sign-in and pending playback data. Please sign in again.',
 			'auth.pinCheckRejected' => 'The Plex PIN check was rejected',
+			'common.toastRepeated' => ({required Object count}) => 'Repeated ${count} times',
+			'common.toastMenu' => 'Menu',
 			'common.cancel' => 'Cancel',
 			'common.save' => 'Save',
 			'common.close' => 'Close',
@@ -8656,10 +8664,10 @@ extension on Translations {
 			'hotkeys.actions.subtitleToggle' => 'Toggle Subtitles',
 			'hotkeys.actions.audioTrackNext' => 'Next Audio Track',
 			'hotkeys.actions.subtitleTrackNext' => 'Next Subtitle Track',
-			'hotkeys.actions.chapterNext' => 'Next Chapter',
-			'hotkeys.actions.chapterPrevious' => 'Previous Chapter',
 			_ => null,
 		} ?? switch (path) {
+			'hotkeys.actions.chapterNext' => 'Next Chapter',
+			'hotkeys.actions.chapterPrevious' => 'Previous Chapter',
 			'hotkeys.actions.episodeNext' => 'Next Episode',
 			'hotkeys.actions.episodePrevious' => 'Previous Episode',
 			'hotkeys.actions.speedIncrease' => 'Increase Speed',
@@ -9170,10 +9178,10 @@ extension on Translations {
 			'accountPreferences.hubSubtitleSingle' => ({required Object account}) => 'Audio, subtitle and library options saved on ${account}',
 			'accountPreferences.hubSubtitleMultiple' => ({required Object count}) => 'Audio, subtitle and library options saved on ${count} accounts',
 			'accountPreferences.pickAccount' => 'Every account stores its own preferences. Pick the one to edit.',
-			'accountPreferences.storedOnAccount' => 'These options are saved on the account itself, so every app signed in to it uses them — including Velo on your other devices.',
-			'accountPreferences.noAccounts' => 'No accounts to configure',
 			_ => null,
 		} ?? switch (path) {
+			'accountPreferences.storedOnAccount' => 'These options are saved on the account itself, so every app signed in to it uses them — including Velo on your other devices.',
+			'accountPreferences.noAccounts' => 'No accounts to configure',
 			'accountPreferences.noAccountsHint' => 'Sign in to Plex, or connect a Jellyfin or Emby server, and the preferences stored on that account show up here.',
 			'accountPreferences.unavailable' => 'Can\'t reach this account',
 			'accountPreferences.loadFailed' => 'Couldn\'t load these preferences',
@@ -9684,10 +9692,10 @@ extension on Translations {
 			'liveTv.recordSettings.keepUpTo' => 'Episodes to keep',
 			'liveTv.recordSettings.keepUpToHint' => '0 keeps every episode',
 			'liveTv.startingInMinutes' => ({required Object minutes}) => 'Starting in ${minutes} min',
-			'liveTv.dayAtTime' => ({required Object day, required Object time}) => '${day} at ${time}',
-			'liveTv.invalidPlaybackData' => ({required Object product}) => '${product} returned invalid Live TV playback data',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.dayAtTime' => ({required Object day, required Object time}) => '${day} at ${time}',
+			'liveTv.invalidPlaybackData' => ({required Object product}) => '${product} returned invalid Live TV playback data',
 			'liveTv.failedToStartChannel' => 'Could not start the live channel',
 			'liveTv.failedToBuildStreamUrl' => 'Could not build the stream URL',
 			'liveTv.playbackStartFailed' => ({required Object reason}) => 'Couldn\'t start the channel: ${reason}',
@@ -10198,10 +10206,10 @@ extension on Translations {
 			'metadataEdit.noArtworkAvailable' => 'No artwork available',
 			'metadataEdit.artworkOption' => ({required Object index}) => 'Artwork option ${index}',
 			'metadataEdit.selectedArtworkOption' => ({required Object index}) => 'Artwork option ${index}, selected',
-			'metadataEdit.notSet' => 'Not set',
-			'metadataEdit.libraryDefault' => 'Library default',
 			_ => null,
 		} ?? switch (path) {
+			'metadataEdit.notSet' => 'Not set',
+			'metadataEdit.libraryDefault' => 'Library default',
 			'metadataEdit.accountDefault' => 'Account default',
 			'metadataEdit.seriesDefault' => 'Series default',
 			'metadataEdit.episodeSorting' => 'Episode Sorting',

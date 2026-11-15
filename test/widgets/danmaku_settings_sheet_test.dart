@@ -1,3 +1,4 @@
+import 'package:plezy/widgets/app_toast.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -530,9 +531,11 @@ void main() {
     final opacity = session.opacity;
     await _pump(tester, DanmakuSettingsSheet(metadata: _item, session: session));
     store.failWrites = true;
-    await _tap(tester, find.byKey(const ValueKey('danmaku-heatmap')));
+    await tester.tap(find.byKey(const ValueKey('danmaku-heatmap')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
     expect(session.heatmapEnabled, isTrue);
-    expect(find.descendant(of: find.byType(SnackBar), matching: find.text(t.danmaku.saveFailed)), findsOneWidget);
+    expect(find.descendant(of: find.byType(AppToast), matching: find.text(t.danmaku.saveFailed)), findsOneWidget);
     for (final key in ['danmaku-opacity', 'danmaku-font-size', 'danmaku-time-offset']) {
       final slider = find.byKey(ValueKey(key));
       await tester.ensureVisible(slider);

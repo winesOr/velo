@@ -4,6 +4,7 @@ import '../services/fullscreen_state_manager.dart';
 import '../theme/mono_presentation.dart';
 import '../utils/platform_detector.dart';
 import 'app_bar_back_button.dart';
+import 'app_toast.dart';
 
 /// Page chrome stays outside the scrollable, including during pull-to-refresh
 /// and iOS overscroll. Artwork headers such as Home keep their own treatment.
@@ -29,19 +30,21 @@ class DesktopPageAppBar extends StatelessWidget implements PreferredSizeWidget {
         includeGestureDetector: true,
         context: context,
       );
-      return AppBar(
-        title: title == null ? null : DesktopTitleBarPadding(leftPadding: leading != null ? 0 : null, child: title!),
-        leading: leading,
-        leadingWidth: DesktopAppBarHelper.calculateLeadingWidth(leading, context: context),
-        automaticallyImplyLeading: false,
-        actions: DesktopAppBarHelper.buildAdjustedActions(actions),
-        // TV pages sit on the same open background as the floating navigation
-        // and settings; a solid header band there reads as a separate app.
-        backgroundColor: tv ? Colors.transparent : MonoPresentation.headerSurface(context),
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        shape: tv ? null : Border(bottom: BorderSide(color: MonoPresentation.headerEdge(context), width: .5)),
+      return AppToastAnchor(
+        child: AppBar(
+          title: title == null ? null : DesktopTitleBarPadding(leftPadding: leading != null ? 0 : null, child: title!),
+          leading: leading,
+          leadingWidth: DesktopAppBarHelper.calculateLeadingWidth(leading, context: context),
+          automaticallyImplyLeading: false,
+          actions: DesktopAppBarHelper.buildAdjustedActions(actions),
+          // TV pages sit on the same open background as the floating navigation
+          // and settings; a solid header band there reads as a separate app.
+          backgroundColor: tv ? Colors.transparent : MonoPresentation.headerSurface(context),
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          shape: tv ? null : Border(bottom: BorderSide(color: MonoPresentation.headerEdge(context), width: .5)),
+        ),
       );
     },
   );
@@ -94,9 +97,19 @@ class DesktopSliverAppBar extends StatelessWidget {
     );
 
     return SliverAppBar(
-      title: title == null
-          ? null
-          : DesktopTitleBarPadding(leftPadding: effectiveLeading != null ? 0 : null, child: title!),
+      title: AppToastAnchor(
+        bottomInset: bottom?.preferredSize.height ?? 0,
+        child: SizedBox(
+          height: kToolbarHeight,
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            widthFactor: 1,
+            child: title == null
+                ? const SizedBox.shrink()
+                : DesktopTitleBarPadding(leftPadding: effectiveLeading != null ? 0 : null, child: title!),
+          ),
+        ),
+      ),
       actions: DesktopAppBarHelper.buildAdjustedActions(actions),
       leading: effectiveLeading,
       leadingWidth: DesktopAppBarHelper.calculateLeadingWidth(effectiveLeading, context: context),

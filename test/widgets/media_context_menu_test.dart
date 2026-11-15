@@ -1,3 +1,4 @@
+import 'package:plezy/widgets/app_toast.dart';
 import '../test_helpers/paged_fakes.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -792,7 +793,8 @@ void main() {
       await tester.tap(find.text('kids'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(t.common.save));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(postedBody, isNotNull);
       expect((jsonDecode(postedBody!) as Map<String, dynamic>)['Tags'], ['kids']);
@@ -1012,7 +1014,7 @@ void main() {
       expect(client.activeAbort!.isAborted, isTrue);
       expect(playback.isQueueActive, isFalse);
       expect(find.text('video target'), findsOneWidget);
-      expect(find.byType(SnackBar), findsNothing);
+      expect(find.byType(AppToast), findsNothing);
     });
 
     testWidgets('file info client resolution failure shows an error without popping another route', (tester) async {
@@ -1065,10 +1067,11 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.text(t.mediaMenu.fileInfo));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(tester.takeException(), isNull);
-      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byType(AppToast), findsOneWidget);
       expect(find.text('target'), findsOneWidget);
     });
 
@@ -1188,7 +1191,8 @@ void main() {
       requests.clear();
 
       await tester.tap(find.text(t.mediaMenu.markAsWatched));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text(t.messages.markedAsWatched), findsNothing);
       expect(find.text(t.messages.errorLoading(error: t.errors.reasonUnreachable)), findsOneWidget);
@@ -1214,10 +1218,11 @@ void main() {
       requests.clear();
 
       await tester.tap(find.text(t.mediaMenu.fileInfo));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(requests, isEmpty, reason: 'the registered srv-1 must not be asked about another server item');
-      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byType(AppToast), findsOneWidget);
     });
 
     testWidgets('playlist picker filters playlists by title', (tester) async {
@@ -1473,7 +1478,7 @@ void main() {
       expect(find.text(t.fileInfo.video), findsNothing);
       // The loading dialog must be gone and no error snackbar raised.
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(find.byType(SnackBar), findsNothing);
+      expect(find.byType(AppToast), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -1510,7 +1515,8 @@ void main() {
       expect(find.text(t.explore.removeFromWatchlist), findsNothing);
 
       await tester.tap(find.text(t.explore.addToWatchlist));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(source.mutations.map((m) => m.add), [true]);
       expect(source.mutations.single.ids.imdb, 'tt1');
@@ -1534,7 +1540,8 @@ void main() {
       expect(find.text(t.explore.removeFromWatchlist), findsOneWidget);
 
       await tester.tap(find.text(t.explore.removeFromWatchlist));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(source.mutations.map((m) => m.add), [false]);
       expect(find.text(t.explore.removedFromWatchlist), findsOneWidget);
@@ -1565,7 +1572,8 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.text(t.explore.addToWatchlist));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(source.mutations, isEmpty);
       expect(find.text(t.explore.watchlistNoMatch), findsOneWidget);
@@ -1595,7 +1603,8 @@ void main() {
       expect(find.text(t.explore.removeFromWatchlist), findsOneWidget);
 
       await tester.tap(find.text('Simkl'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(simkl.mutations.map((m) => m.add), [false]);
       expect(trakt.mutations, isEmpty);

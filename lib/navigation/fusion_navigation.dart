@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../focus/focusable_button.dart';
 import '../i18n/strings.g.dart';
 import '../widgets/app_icon.dart';
+import '../widgets/app_toast.dart';
 import '../theme/mono_presentation.dart';
 import '../theme/velo_brand.dart';
 import '../theme/interaction_tokens.dart';
@@ -86,6 +87,7 @@ class FusionNavigation extends StatelessWidget {
         ),
       ),
     );
+    final anchoredBody = isTv ? AppToastAnchor(child: navigationBody) : navigationBody;
     return SafeArea(
       top: isTv,
       bottom: !isTv,
@@ -95,8 +97,8 @@ class FusionNavigation extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(isTv ? 24 : 30),
           child: reduced
-              ? navigationBody
-              : BackdropFilter(filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28), child: navigationBody),
+              ? anchoredBody
+              : BackdropFilter(filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28), child: anchoredBody),
         ),
       ),
     );

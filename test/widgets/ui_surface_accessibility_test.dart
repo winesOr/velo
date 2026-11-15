@@ -1,3 +1,4 @@
+import 'package:plezy/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +17,13 @@ import '../test_helpers/tablet_screenshots.dart';
 const _urlLauncherChannel = MethodChannel('plugins.flutter.io/url_launcher');
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  // Font loading sends system-font notifications. Load once in the real async
+  // zone before any test mounts render objects that subscribe to those events.
+  setUpAll(() async {
+    await loadTabletFonts();
+    await Future<void>.delayed(Duration.zero);
+  });
   final launchedUrls = <String>[];
 
   setUp(() {
@@ -45,6 +53,154 @@ void main() {
       _urlLauncherChannel,
       null,
     );
+  });
+
+  testWidgets('toast slot merges, pauses, replaces and keeps page focus', (tester) async {
+    final context = await _pumpHost(tester, size: const Size(390, 844), dark: true);
+    addTearDown(() => AppToast.dismiss(immediately: true));
+    final focus = FocusNode();
+    addTearDown(focus.dispose);
+    FocusScope.of(context).requestFocus(focus);
+    await tester.pump();
+    final before = FocusManager.instance.primaryFocus;
+    for (var index = 0; index < 3; index++) {
+      notifications.showSuccessSnackBar(context, 'Saved');
+    }
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.byType(AppToast), findsOneWidget);
+    expect(find.text('×3'), findsOneWidget);
+    expect(FocusManager.instance.primaryFocus, before);
+    final semantics = tester.ensureSemantics();
+    expect(find.bySemanticsLabel('Saved, Repeated 3 times'), findsOneWidget);
+    semantics.dispose();
+    final hold = await tester.startGesture(tester.getCenter(find.text('Saved')));
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.text('Saved'), findsOneWidget);
+    await hold.cancel();
+    await tester.pump();
+    var actions = 0;
+    final handle = AppToast.show(
+      context,
+      'Try again',
+      type: AppToastType.error,
+      actionLabel: 'Retry',
+      onAction: () => actions++,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 130));
+    await tester.pump(const Duration(milliseconds: 130));
+    await tester.tap(find.text('Retry'));
+    await tester.pump();
+    await tester.tap(find.text('Retry'));
+    expect(actions, 1);
+    expect(find.text('Try again'), findsOneWidget);
+    handle.update('Done');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 130));
+    await tester.pump(const Duration(milliseconds: 130));
+    expect(find.text('Done'), findsOneWidget);
+    expect(find.text('Try again'), findsNothing);
+    AppToast.dismiss(immediately: true);
+    await tester.pump();
+    final pending = AppToast.pending(context);
+    await tester.pump(const Duration(milliseconds: 299));
+    expect(find.byType(AppToast), findsNothing);
+    pending.update('Fast completion');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.text('Fast completion'), findsOneWidget);
+    expect(find.text(t.common.loading), findsNothing);
+    // A close-to-expiry slot cannot retire its delayed successor.
+    AppToast.show(context, 'Old', duration: const Duration(milliseconds: 100));
+    await tester.pump();
+    final delayed = AppToast.pending(context);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+    expect(find.text(t.common.loading), findsOneWidget);
+    delayed.update('A', type: AppToastType.info);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 130));
+    await tester.pump(const Duration(milliseconds: 130));
+    AppToast.show(context, 'B');
+    await tester.pump(const Duration(milliseconds: 40));
+    AppToast.show(context, 'A');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.text('A'), findsOneWidget);
+    final fade = find.ancestor(of: find.text('A'), matching: find.byType(Opacity)).first;
+    expect(tester.widget<Opacity>(fade).opacity, 1);
+    AppToast.dismiss(immediately: true);
+    await tester.pump();
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    final toolbarContext = await _pumpHost(tester, size: const Size(390, 844), dark: true, toolbar: true);
+    notifications.showSuccessSnackBar(toolbarContext, 'Toolbar notice');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Toolbar notice'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byType(AppToast)).dy,
+      greaterThanOrEqualTo(tester.getBottomLeft(find.byType(AppBar)).dy + 8),
+    );
+    AppToast.dismiss(immediately: true);
+    await tester.pump();
+  });
+
+  testWidgets('TV menu consumes only available action and respects modal input', (tester) async {
+    TvDetectionService.debugSetAppleTVOverride(true);
+    final context = await _pumpHost(tester, size: const Size(960, 540), dark: true);
+    addTearDown(() => AppToast.dismiss(immediately: true));
+    var actions = 0;
+    final handle = AppToast.show(
+      context,
+      'Failed',
+      type: AppToastType.error,
+      actionLabel: 'Retry',
+      onAction: () => actions++,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    final key = KeyDownEvent(
+      physicalKey: PhysicalKeyboardKey.contextMenu,
+      logicalKey: LogicalKeyboardKey.contextMenu,
+      timeStamp: Duration.zero,
+    );
+    expect(AppToast.handleMenuKey(key), isTrue);
+    expect(AppToast.handleMenuKey(key), isTrue);
+    expect(actions, 1);
+    AppToast.handleMenuKey(
+      KeyUpEvent(
+        physicalKey: PhysicalKeyboardKey.contextMenu,
+        logicalKey: LogicalKeyboardKey.contextMenu,
+        timeStamp: const Duration(milliseconds: 1),
+      ),
+    );
+    handle.update('Another failure', type: AppToastType.error, actionLabel: 'Retry', onAction: () => actions++);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 130));
+    await tester.pump(const Duration(milliseconds: 130));
+    final dialog = showDialog<void>(
+      context: context,
+      builder: (_) => const AlertDialog(content: TextField(autofocus: true)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(AppToast.handleMenuKey(key), isFalse);
+    expect(actions, 1);
+    Navigator.of(context).pop();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    await dialog;
+    handle.dismiss();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    AppToast.show(context, 'No action');
+    await tester.pump();
+    expect(AppToast.handleMenuKey(key), isFalse);
+    AppToast.dismiss(immediately: true);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
   });
 
   for (final dark in [false, true]) {
@@ -153,9 +309,10 @@ void main() {
         final context = await _pumpHost(tester, size: const Size(320, 568), dark: dark, textScale: 2);
         const message = 'Your library could not be updated. Check the connection and try again.';
         notifications.showSnackBar(context, message, type: type, dismissible: true);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
         expect(tester.takeException(), isNull);
-        final bounds = tester.getRect(find.byType(SnackBar));
+        final bounds = tester.getRect(find.byType(AppToast));
         expect(bounds.left, greaterThanOrEqualTo(0));
         expect(bounds.right, lessThanOrEqualTo(320));
         expect(bounds.top, greaterThanOrEqualTo(0));
@@ -212,11 +369,11 @@ Future<BuildContext> _pumpHost(
   required Size size,
   required bool dark,
   double textScale = 1,
+  bool toolbar = false,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  await loadTabletFonts();
   late BuildContext hostContext;
   await tester.pumpWidget(
     MaterialApp(
@@ -226,6 +383,7 @@ Future<BuildContext> _pumpHost(
         child: child!,
       ),
       home: Scaffold(
+        appBar: toolbar ? AppBar(title: const Text('Toolbar')) : null,
         body: Center(
           child: Builder(
             builder: (context) {

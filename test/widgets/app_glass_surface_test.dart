@@ -1,3 +1,4 @@
+import 'package:plezy/widgets/app_toast.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -129,10 +130,11 @@ void main() {
       );
       await tester.pumpAndSettle();
       showSuccessSnackBar(host, 'Your library is up to date.');
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       expect(tester.takeException(), isNull);
       await _capture(tester, boundary, 'notification-${dark ? 'dark' : 'light'}');
-      ScaffoldMessenger.of(host).removeCurrentSnackBar();
+      AppToast.dismiss(immediately: true);
       final result = showConfirmDialog(
         host,
         title: 'Remove download?',

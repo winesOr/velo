@@ -1,3 +1,4 @@
+import 'package:plezy/widgets/app_toast.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -195,7 +196,7 @@ void main() {
         );
 
         expect(find.byType(CircularProgressIndicator), findsNothing, reason: 'the spinner must not cover the view');
-        expect(find.byType(SnackBar), findsNothing);
+        expect(find.byType(AppToast), findsNothing);
         expect(find.text('Browse'), findsNothing, reason: 'the route must stay so the viewer can act on the failure');
         expect(key.currentState, isNotNull);
         final retry = find.widgetWithText(FilledButton, t.common.retry);

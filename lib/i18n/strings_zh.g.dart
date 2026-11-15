@@ -161,6 +161,8 @@ class Translations$common$zh extends Translations$common$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String toastRepeated({required Object count}) => '重复 ${count} 次';
+	@override String get toastMenu => '菜单';
 	@override String get cancel => '取消';
 	@override String get save => '保存';
 	@override String get close => '关闭';
@@ -3419,6 +3421,8 @@ extension on TranslationsZh {
 			'auth.quickConnectExpired' => 'Quick Connect 已过期。请重试。',
 			'auth.localDataRecoveryRequired' => 'Velo 无法安全恢复本地登录状态和待处理的播放数据。请重新登录。',
 			'auth.pinCheckRejected' => 'Plex PIN 检查被拒绝',
+			'common.toastRepeated' => ({required Object count}) => '重复 ${count} 次',
+			'common.toastMenu' => '菜单',
 			'common.cancel' => '取消',
 			'common.save' => '保存',
 			'common.close' => '关闭',
@@ -3888,10 +3892,10 @@ extension on TranslationsZh {
 			'hotkeys.actions.subtitleToggle' => '切换字幕',
 			'hotkeys.actions.audioTrackNext' => '下一音轨',
 			'hotkeys.actions.subtitleTrackNext' => '下一字幕轨',
-			'hotkeys.actions.chapterNext' => '下一章节',
-			'hotkeys.actions.chapterPrevious' => '上一章节',
 			_ => null,
 		} ?? switch (path) {
+			'hotkeys.actions.chapterNext' => '下一章节',
+			'hotkeys.actions.chapterPrevious' => '上一章节',
 			'hotkeys.actions.episodeNext' => '下一集',
 			'hotkeys.actions.episodePrevious' => '上一集',
 			'hotkeys.actions.speedIncrease' => '加速',
@@ -4402,10 +4406,10 @@ extension on TranslationsZh {
 			'accountPreferences.hubSubtitleSingle' => ({required Object account}) => '音频、字幕和媒体库选项已保存在 ${account} 上',
 			'accountPreferences.hubSubtitleMultiple' => ({required Object count}) => '音频、字幕和媒体库选项已保存在 ${count} 个账户上',
 			'accountPreferences.pickAccount' => '每个账户都保存自己的偏好设置。选择要编辑的账户。',
-			'accountPreferences.storedOnAccount' => '这些选项保存在账户本身，因此所有登录该账户的应用都会使用它们——包括你其他设备上的 Velo。',
-			'accountPreferences.noAccounts' => '没有可配置的账户',
 			_ => null,
 		} ?? switch (path) {
+			'accountPreferences.storedOnAccount' => '这些选项保存在账户本身，因此所有登录该账户的应用都会使用它们——包括你其他设备上的 Velo。',
+			'accountPreferences.noAccounts' => '没有可配置的账户',
 			'accountPreferences.noAccountsHint' => '登录 Plex，或连接 Jellyfin 或 Emby 服务器，该账户上保存的偏好设置就会显示在这里。',
 			'accountPreferences.unavailable' => '无法访问此账户',
 			'accountPreferences.loadFailed' => '无法加载这些偏好设置',
@@ -4916,10 +4920,10 @@ extension on TranslationsZh {
 			'liveTv.recordSettings.keepUpTo' => '保留的剧集数',
 			'liveTv.recordSettings.keepUpToHint' => '0 表示保留全部剧集',
 			'liveTv.startingInMinutes' => ({required Object minutes}) => '${minutes} 分钟后开始',
-			'liveTv.dayAtTime' => ({required Object day, required Object time}) => '${day} ${time}',
-			'liveTv.invalidPlaybackData' => ({required Object product}) => '${product} 返回了无效的直播电视播放数据',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.dayAtTime' => ({required Object day, required Object time}) => '${day} ${time}',
+			'liveTv.invalidPlaybackData' => ({required Object product}) => '${product} 返回了无效的直播电视播放数据',
 			'liveTv.failedToStartChannel' => '无法播放直播频道',
 			'liveTv.failedToBuildStreamUrl' => '无法生成视频流 URL',
 			'liveTv.playbackStartFailed' => ({required Object reason}) => '无法启动该频道：${reason}',
@@ -5430,10 +5434,10 @@ extension on TranslationsZh {
 			'metadataEdit.noArtworkAvailable' => '没有可用的封面图片',
 			'metadataEdit.artworkOption' => ({required Object index}) => '封面图片选项 ${index}',
 			'metadataEdit.selectedArtworkOption' => ({required Object index}) => '封面图片选项 ${index}，已选择',
-			'metadataEdit.notSet' => '未设置',
-			'metadataEdit.libraryDefault' => '媒体库默认',
 			_ => null,
 		} ?? switch (path) {
+			'metadataEdit.notSet' => '未设置',
+			'metadataEdit.libraryDefault' => '媒体库默认',
 			'metadataEdit.accountDefault' => '账户默认',
 			'metadataEdit.seriesDefault' => '剧集默认',
 			'metadataEdit.episodeSorting' => '剧集排序',

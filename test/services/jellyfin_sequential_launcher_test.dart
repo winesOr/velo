@@ -1,3 +1,4 @@
+import 'package:plezy/widgets/app_toast.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -881,7 +882,7 @@ void main() {
       expect(didNavigate, isFalse);
       expect(playback.isQueueActive, isFalse);
       expect(find.byType(DialogActionButton), findsNothing);
-      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byType(AppToast), findsOneWidget);
     });
 
     testWidgets('dialog Cancel aborts playlist launch idempotently without queue or snackbar', (tester) async {
@@ -922,7 +923,7 @@ void main() {
       expect(fakeClient.fetchPlaylistItemsCalls, hasLength(1));
       expect(playback.isQueueActive, isFalse);
       expect(didNavigate, isFalse);
-      expect(find.byType(SnackBar), findsNothing);
+      expect(find.byType(AppToast), findsNothing);
       expect(find.byType(Scaffold), findsOneWidget);
     });
 
@@ -987,7 +988,7 @@ void main() {
       expect(playback.isQueueActive, isFalse);
       expect(didNavigate, isFalse);
       expect(find.byKey(const Key('replacement-profile')), findsOneWidget);
-      expect(find.byType(SnackBar), findsNothing);
+      expect(find.byType(AppToast), findsNothing);
     });
 
     testWidgets('collection cancellation suppresses mapping and publication', (tester) async {

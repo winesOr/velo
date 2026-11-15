@@ -1,3 +1,4 @@
+import '../app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -190,7 +191,7 @@ class _MobileVideoControlsState extends State<MobileVideoControls> {
       ),
     );
 
-    return DesktopAppBarHelper.wrapWithGestureDetector(topBar, opaque: true);
+    return AppToastAnchor(child: DesktopAppBarHelper.wrapWithGestureDetector(topBar, opaque: true));
   }
 
   /// Danmaku toggle, cast, orientation and "more", right-aligned.

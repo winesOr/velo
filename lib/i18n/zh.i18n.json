@@ -45,6 +45,8 @@
     "pinCheckRejected": "Plex PIN 检查被拒绝"
   },
   "common": {
+    "toastRepeated": "重复 ${count} 次",
+    "toastMenu": "菜单",
     "cancel": "取消",
     "save": "保存",
     "close": "关闭",

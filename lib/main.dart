@@ -1,3 +1,4 @@
+import 'widgets/app_toast.dart';
 import 'dart:async';
 import 'dart:io' show Directory, Platform, ProcessInfo;
 import 'dart:ui' show AppExitResponse;
@@ -1974,7 +1975,10 @@ Widget rootShell(Widget? child) {
   return FormFactorScale(
     child: ScaffoldMessenger(
       key: rootScaffoldMessengerKey,
-      child: Scaffold(backgroundColor: Colors.transparent, body: child),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: AppToastHost(child: child ?? const SizedBox.shrink()),
+      ),
     ),
   );
 }

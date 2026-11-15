@@ -1,3 +1,4 @@
+import 'package:plezy/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/i18n/strings.g.dart';
@@ -90,7 +91,7 @@ void main() {
     await playInstantMix(context, seed);
     await tester.pump();
 
-    expect(find.byType(SnackBar), findsNothing);
+    expect(find.byType(AppToast), findsNothing);
   });
 
   testWidgets('a superseded mix stays silent', (tester) async {
@@ -99,6 +100,6 @@ void main() {
     await playInstantMix(context, seed);
     await tester.pump();
 
-    expect(find.byType(SnackBar), findsNothing);
+    expect(find.byType(AppToast), findsNothing);
   });
 }

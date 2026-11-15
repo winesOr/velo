@@ -1,3 +1,4 @@
+import 'package:plezy/widgets/app_toast.dart';
 import 'dart:async';
 
 import 'package:drift/native.dart';
@@ -462,7 +463,7 @@ void main() {
     expect(harness.client.activeAbort!.isAborted, isTrue);
     expect(harness.playbackState.isQueueActive, isFalse);
     expect(find.byType(PlaylistDetailScreen), findsOneWidget);
-    expect(find.byType(SnackBar), findsNothing);
+    expect(find.byType(AppToast), findsNothing);
   });
 
   testWidgets('activating a smart playlist card plays the playlist from that entry (#2634)', (tester) async {
