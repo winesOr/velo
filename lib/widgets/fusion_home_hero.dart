@@ -11,6 +11,7 @@ import '../theme/mono_presentation.dart';
 import '../theme/interaction_tokens.dart';
 import '../i18n/strings.g.dart';
 import '../utils/tone_mapped_logo_image.dart';
+import '../utils/platform_detector.dart';
 import 'optimized_media_image.dart';
 import 'hero_metadata_badges.dart';
 import 'app_icon.dart';
@@ -43,7 +44,10 @@ class FusionHomeHero extends StatelessWidget {
   final bool compact;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      LayoutBuilder(builder: (context, constraints) => _buildHero(context, constraints.maxWidth));
+
+  Widget _buildHero(BuildContext context, double viewportWidth) {
     final tablet = MonoPresentation.isTablet(context);
     final leftAligned = MonoPresentation.isLandscapeTablet(context);
     final alignment = leftAligned ? Alignment.bottomLeft : Alignment.bottomCenter;
@@ -66,8 +70,14 @@ class FusionHomeHero extends StatelessWidget {
       child: Text(
         title,
         textAlign: textAlign,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
         style: (homeType?.heroTitle ?? Theme.of(context).textTheme.displaySmall)?.copyWith(
-          fontSize: tablet ? 48 : 44,
+          fontSize: HomeTypography.heroTitleSize(
+            tv: PlatformDetector.isTV(),
+            tablet: tablet,
+            viewportWidth: viewportWidth,
+          ),
           fontWeight: FontWeight.w600,
           color: heroForeground,
           shadows: [
@@ -117,8 +127,8 @@ class FusionHomeHero extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: tablet ? 32 : 20,
-              right: tablet ? 32 : 20,
+              left: tablet ? 32 : 24,
+              right: tablet ? 32 : 24,
               top: compact ? 24 : MediaQuery.paddingOf(context).top + 48,
               bottom: 28,
               child: SafeArea(

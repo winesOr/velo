@@ -16,6 +16,9 @@ class HomeTypography extends ThemeExtension<HomeTypography> {
   final TextStyle cardTitle;
   final TextStyle caption;
 
+  static double heroTitleSize({required bool tv, required bool tablet, double viewportWidth = double.infinity}) =>
+      tv || tablet ? 48 : (viewportWidth < 360 ? 37 : 42);
+
   static ThemeData apply(ThemeData theme, {required bool tv, bool tablet = false, Color? artworkSurface}) {
     final body = theme.textTheme.bodyMedium!;
     final artworkColors = artworkSurface == null ? null : MonoPresentation.artworkTextColors(artworkSurface);
@@ -35,7 +38,7 @@ class HomeTypography extends ThemeExtension<HomeTypography> {
         HomeTypography(
           heroTitle: body.copyWith(
             color: foreground,
-            fontSize: tv ? 48 : (tablet ? 48 : 45),
+            fontSize: heroTitleSize(tv: tv, tablet: tablet),
             fontWeight: FontWeight.w600,
             height: 1.1,
             letterSpacing: -1.5,
