@@ -20,6 +20,8 @@ import 'package:plezy/media/media_item.dart';
 import 'package:plezy/media/media_kind.dart';
 import 'package:plezy/services/file_picker_service.dart';
 import 'package:plezy/widgets/focusable_list_tile.dart';
+import 'package:plezy/widgets/app_dialog.dart';
+import 'package:plezy/widgets/overlay_sheet.dart';
 import 'package:plezy/widgets/video_controls/sheets/danmaku_settings_sheet.dart';
 import 'package:plezy/widgets/video_controls/sheets/base_video_control_sheet.dart';
 import 'package:plezy/widgets/video_controls/sheets/danmaku_sources_sheet.dart';
@@ -345,6 +347,40 @@ void main() {
     await _enter(tester, 'danmaku-source-name', 'Renamed');
     await _tap(tester, find.text(t.common.save));
     expect(session.sources.first.name, 'Renamed');
+    await _tap(tester, find.text(t.common.delete).first);
+    expect(find.byType(AppAlertDialog), findsOneWidget);
+    await _tap(tester, find.widgetWithText(TextButton, t.common.cancel));
+    expect(session.sources, hasLength(2));
+    await _pump(
+      tester,
+      SizedBox.expand(
+        child: OverlaySheetHost(
+          child: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => OverlaySheetController.of(context).show<void>(
+                presentation: OverlaySheetPresentation.edgeDrawer,
+                constraints: const BoxConstraints(maxWidth: 340),
+                builder: (sheetContext) => EmbeddedVideoControlSheet(
+                  child: DanmakuSourcesSheet(
+                    session: session,
+                    onBack: () => OverlaySheetController.of(sheetContext).close(),
+                  ),
+                ),
+              ),
+              child: Text(t.danmaku.sources),
+            ),
+          ),
+        ),
+      ),
+    );
+    await _tap(tester, find.text(t.danmaku.sources));
+    await _tap(tester, find.text(t.common.delete).first);
+    expect(find.byType(AppAlertDialog), findsNothing);
+    expect(find.text(t.danmaku.deleteSourceDescription(name: 'Renamed')), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(session.sources, hasLength(2));
+    expect(find.text('Renamed'), findsOneWidget);
     await _tap(tester, find.text(t.common.delete).first);
     await _tap(tester, find.widgetWithText(TextButton, t.common.delete).last);
     expect(session.sources.single.id, 'one');

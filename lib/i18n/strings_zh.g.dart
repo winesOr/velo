@@ -992,6 +992,8 @@ class Translations$videoControls$zh extends Translations$videoControls$en {
 	@override String get noQueueItems => '队列中没有项目';
 	@override String get noAudioDevicesAvailable => '没有可用的音频设备';
 	@override String get searchSubtitles => '搜索字幕';
+	@override String get localSubtitles => '本地字幕';
+	@override String get localSubtitlesUnavailable => '暂不支持导入本地字幕。';
 	@override String get language => '语言';
 	@override String get noSubtitlesFound => '未找到字幕';
 	@override String get subtitleDownloaded => '字幕已下载';
@@ -4226,6 +4228,8 @@ extension on TranslationsZh {
 			'videoControls.noQueueItems' => '队列中没有项目',
 			'videoControls.noAudioDevicesAvailable' => '没有可用的音频设备',
 			'videoControls.searchSubtitles' => '搜索字幕',
+			'videoControls.localSubtitles' => '本地字幕',
+			'videoControls.localSubtitlesUnavailable' => '暂不支持导入本地字幕。',
 			'videoControls.language' => '语言',
 			'videoControls.noSubtitlesFound' => '未找到字幕',
 			'videoControls.subtitleDownloaded' => '字幕已下载',
@@ -4448,10 +4452,10 @@ extension on TranslationsZh {
 			'profiles.incorrectPin' => 'PIN 不正确。',
 			'profiles.incorrectPinTryAgain' => 'PIN 不正确。请重试。',
 			'profiles.sourceProfileMissingParentAccount' => '源用户资料缺少关联的主账户。',
-			'profiles.failedToLoadHomeUsers' => '无法加载您的 Plex Home 用户。请检查网络连接后重试。',
-			'profiles.failedToVerifyPin' => '无法验证 PIN。',
 			_ => null,
 		} ?? switch (path) {
+			'profiles.failedToLoadHomeUsers' => '无法加载您的 Plex Home 用户。请检查网络连接后重试。',
+			'profiles.failedToVerifyPin' => '无法验证 PIN。',
 			'profiles.newProfile' => '新建用户资料',
 			'profiles.profileNameHint' => '例如：访客、儿童、客厅',
 			'profiles.pinProtectionOptional' => 'PIN 保护（可选）',
@@ -4962,10 +4966,10 @@ extension on TranslationsZh {
 			'liveTv.alreadyScheduled' => '此节目已安排录制',
 			'liveTv.dvrAdminRequired' => 'DVR 设置需要管理员账户',
 			'liveTv.recordingFailed' => '无法安排录制',
-			'liveTv.recordingTargetMissing' => '无法确定录制库',
-			'liveTv.recordNotAvailable' => '此节目无法录制',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.recordingTargetMissing' => '无法确定录制库',
+			'liveTv.recordNotAvailable' => '此节目无法录制',
 			'liveTv.recordingCancelled' => '录制已取消',
 			'liveTv.recordingRuleDeleted' => '录制规则已删除',
 			'liveTv.processRecordingRules' => '重新评估规则',
@@ -5476,10 +5480,10 @@ extension on TranslationsZh {
 			'externalPlayer.playerPackage' => '包名',
 			'externalPlayer.playerUrlScheme' => 'URL 方案',
 			'externalPlayer.off' => '关闭',
-			'externalPlayer.launchFailed' => '无法打开外部播放器',
-			'externalPlayer.appNotInstalled' => ({required Object name}) => '${name} 未安装',
 			_ => null,
 		} ?? switch (path) {
+			'externalPlayer.launchFailed' => '无法打开外部播放器',
+			'externalPlayer.appNotInstalled' => ({required Object name}) => '${name} 未安装',
 			'externalPlayer.playInExternalPlayer' => '在外部播放器中播放',
 			'metadataEdit.editMetadata' => '编辑…',
 			'metadataEdit.screenTitle' => '编辑元数据',

@@ -844,6 +844,8 @@
     "noQueueItems": "队列中没有项目",
     "noAudioDevicesAvailable": "没有可用的音频设备",
     "searchSubtitles": "搜索字幕",
+    "localSubtitles": "本地字幕",
+    "localSubtitlesUnavailable": "暂不支持导入本地字幕。",
     "language": "语言",
     "noSubtitlesFound": "未找到字幕",
     "subtitleDownloaded": "字幕已下载",

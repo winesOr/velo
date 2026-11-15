@@ -209,13 +209,19 @@ class _PlayerSettingsDrawerState extends State<PlayerSettingsDrawer> {
       padding: const EdgeInsets.only(bottom: 8),
       children: [
         PlayerDrawerHeading(t.videoControls.drawerPrimarySubtitle),
-        TrackSheet(player: widget.player, trackControlsState: widget.state, only: TrackSheetKind.subtitles),
+        TrackSheet(
+          player: widget.player,
+          trackControlsState: widget.state,
+          only: TrackSheetKind.subtitles,
+          showSubtitleActions: false,
+        ),
         VideoSettingsSheet(
           player: widget.player,
           trackControlsState: widget.state,
           section: VideoSettingsSection.subtitle,
         ),
         if (!widget.state.burnsSelectedSubtitle) PlayerSubtitleAppearance(player: widget.player),
+        SubtitleSourceActions(state: widget.state),
       ],
     ),
     PlayerDrawerTab.danmaku => DanmakuSettingsSheet(metadata: widget.metadata, session: widget.danmakuSession),

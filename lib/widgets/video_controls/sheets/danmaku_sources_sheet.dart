@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app_dialog.dart';
+import '../../overlay_sheet.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../danmaku/danmaku_session.dart';
@@ -29,6 +30,7 @@ class _DanmakuSourcesSheetState extends State<DanmakuSourcesSheet> {
   DanmakuSource? _editing;
   bool _editorOpen = false;
   bool _busy = false;
+  bool _deleteConfirmationOpen = false;
   String? _error;
   final Map<String, String> _testMessages = {};
   final Set<String> _testing = {};
@@ -105,8 +107,30 @@ class _DanmakuSourcesSheetState extends State<DanmakuSourcesSheet> {
     }
   }
 
-  Future<void> _delete(DanmakuSource source) async {
-    final confirmed = await showDialog<bool>(
+  Future<bool?> _confirmDelete(DanmakuSource source) {
+    final controller = OverlaySheetController.maybeOf(context);
+    if (BaseVideoControlSheet.embeddedIn(context) && controller != null && controller.isOpen) {
+      return controller.push<bool>(
+        builder: (context) => EmbeddedVideoControlSheet(
+          child: BaseVideoControlSheet(
+            title: t.danmaku.deleteSourceTitle,
+            icon: Symbols.delete_rounded,
+            onBack: () => controller.pop(false),
+            child: ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.all(16),
+              children: [
+                Text(t.danmaku.deleteSourceDescription(name: source.name)),
+                const SizedBox(height: 16),
+                DanmakuActionButton(label: t.common.cancel, onPressed: () => controller.pop(false)),
+                DanmakuActionButton(label: t.common.delete, onPressed: () => controller.pop(true)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return showDialog<bool>(
       context: context,
       builder: (context) => AppAlertDialog(
         title: Text(t.danmaku.deleteSourceTitle),
@@ -117,8 +141,18 @@ class _DanmakuSourcesSheetState extends State<DanmakuSourcesSheet> {
         ],
       ),
     );
-    if (confirmed != true || !mounted) return;
-    await _mutate(() => widget.session.deleteSource(source.id));
+  }
+
+  Future<void> _delete(DanmakuSource source) async {
+    if (_busy || _deleteConfirmationOpen) return;
+    _deleteConfirmationOpen = true;
+    try {
+      final confirmed = await _confirmDelete(source);
+      if (confirmed != true || !mounted || !widget.session.sources.any((current) => identical(current, source))) return;
+      await _mutate(() => widget.session.deleteSource(source.id));
+    } finally {
+      _deleteConfirmationOpen = false;
+    }
   }
 
   void _closeEditor() {

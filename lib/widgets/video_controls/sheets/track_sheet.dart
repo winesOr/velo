@@ -6,9 +6,10 @@ import '../../../mpv/mpv.dart';
 import '../../../services/playback_subtitle_resolver.dart';
 import '../../../services/track_selection_service.dart';
 import '../../../i18n/strings.g.dart';
+import '../../../focus/focusable_button.dart';
+import '../../../utils/platform_detector.dart';
 import '../../../utils/track_label_builder.dart';
 import '../../../widgets/app_icon.dart';
-import '../../../widgets/focusable_list_tile.dart';
 import '../../../widgets/overlay_sheet.dart';
 import 'base_video_control_sheet.dart';
 import 'sheet_selection_column.dart';
@@ -27,8 +28,15 @@ class TrackSheet extends StatelessWidget {
   /// Which columns to show. Null shows whatever applies (audio, subtitles or
   /// both); the player drawer tabs pin one kind.
   final TrackSheetKind? only;
+  final bool showSubtitleActions;
 
-  const TrackSheet({super.key, required this.player, required this.trackControlsState, this.only});
+  const TrackSheet({
+    super.key,
+    required this.player,
+    required this.trackControlsState,
+    this.only,
+    this.showSubtitleActions = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -105,6 +113,7 @@ class TrackSheet extends StatelessWidget {
                   showHeader: showHeader,
                   player: player,
                   nativeTracks: subtitleTracks,
+                  showSubtitleActions: showSubtitleActions,
                 );
               }
               return _SubtitleColumn(
@@ -115,6 +124,7 @@ class TrackSheet extends StatelessWidget {
                 showHeader: showHeader,
                 trackControlsState: state,
                 sourceSidecars: state.directPlaySourceSidecars,
+                showSubtitleActions: showSubtitleActions,
               );
             }
 
@@ -259,6 +269,7 @@ class _SourceSubtitleColumn extends StatelessWidget {
   final bool showHeader;
   final Player player;
   final List<SubtitleTrack> nativeTracks;
+  final bool showSubtitleActions;
 
   const _SourceSubtitleColumn({
     required this.tracks,
@@ -267,6 +278,7 @@ class _SourceSubtitleColumn extends StatelessWidget {
     required this.showHeader,
     required this.player,
     required this.nativeTracks,
+    this.showSubtitleActions = true,
   });
 
   @override
@@ -292,7 +304,7 @@ class _SourceSubtitleColumn extends StatelessWidget {
       headerLabel: showHeader ? t.videoControls.subtitlesLabel : null,
       itemCount: primaryCount + (supportsSecondary ? secondaryTracks.length + 2 : 0),
       initialIndex: selectedIndex,
-      footer: _buildSubtitleSearchFooter(context, trackControlsState),
+      footer: showSubtitleActions ? [SubtitleSourceActions(state: trackControlsState)] : const [],
       itemBuilder: (context, index, scope) {
         if (index >= primaryCount) {
           final secondaryIndex = index - primaryCount;
@@ -430,6 +442,7 @@ class _SubtitleColumn extends StatelessWidget {
   final bool showHeader;
   final TrackControlsState trackControlsState;
   final List<MediaSubtitleTrack> sourceSidecars;
+  final bool showSubtitleActions;
 
   const _SubtitleColumn({
     required this.tracks,
@@ -439,6 +452,7 @@ class _SubtitleColumn extends StatelessWidget {
     required this.showHeader,
     required this.trackControlsState,
     this.sourceSidecars = const [],
+    this.showSubtitleActions = true,
   });
 
   @override
@@ -479,7 +493,7 @@ class _SubtitleColumn extends StatelessWidget {
       headerLabel: showHeader ? t.videoControls.subtitlesLabel : null,
       itemCount: itemCount,
       initialIndex: selectedIndex,
-      footer: _buildSubtitleSearchFooter(context, trackControlsState),
+      footer: showSubtitleActions ? [SubtitleSourceActions(state: trackControlsState)] : const [],
       itemBuilder: (context, index, scope) {
         if (index >= primaryCount) {
           final secondaryIndex = index - primaryCount;
@@ -603,24 +617,60 @@ class _SubtitleColumn extends StatelessWidget {
   }
 }
 
-List<Widget> _buildSubtitleSearchFooter(BuildContext context, TrackControlsState state) {
-  if (!state.canSearchSubtitles) return const [];
+class SubtitleSourceActions extends StatelessWidget {
+  const SubtitleSourceActions({super.key, required this.state});
 
-  return [
-    Divider(height: 1, color: Theme.of(context).dividerColor),
-    FocusableListTile(
-      leading: const AppIcon(Symbols.search_rounded),
-      title: Text(t.videoControls.searchSubtitles),
-      onTap: () {
-        OverlaySheetController.of(context).push(
-          builder: (_) => SubtitleSearchSheet(
-            ratingKey: state.ratingKey,
-            serverId: state.serverId!,
-            mediaTitle: state.mediaTitle,
-            onSubtitleDownloaded: state.onSubtitleDownloaded,
+  final TrackControlsState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final showLocal = !PlatformDetector.isTV();
+    if (!state.canSearchSubtitles && !showLocal) return const SizedBox.shrink();
+
+    void search() {
+      OverlaySheetController.of(context).push(
+        builder: (_) => SubtitleSearchSheet(
+          ratingKey: state.ratingKey,
+          serverId: state.serverId!,
+          mediaTitle: state.mediaTitle,
+          onSubtitleDownloaded: state.onSubtitleDownloaded,
+        ),
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Divider(height: 1, color: Theme.of(context).dividerColor),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (state.canSearchSubtitles)
+                FocusableButton(
+                  onPressed: search,
+                  child: TextButton.icon(
+                    onPressed: search,
+                    icon: const AppIcon(Symbols.search_rounded),
+                    label: Text(t.videoControls.searchSubtitles),
+                  ),
+                ),
+              if (showLocal)
+                Tooltip(
+                  message: t.videoControls.localSubtitlesUnavailable,
+                  child: TextButton.icon(
+                    onPressed: null,
+                    icon: const AppIcon(Symbols.folder_open_rounded),
+                    label: Text(t.videoControls.localSubtitles),
+                  ),
+                ),
+            ],
           ),
-        );
-      },
-    ),
-  ];
+        ),
+      ],
+    );
+  }
 }

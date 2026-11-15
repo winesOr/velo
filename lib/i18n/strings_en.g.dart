@@ -2490,6 +2490,12 @@ class Translations$videoControls$en {
 	/// en: 'Search Subtitles'
 	String get searchSubtitles => 'Search Subtitles';
 
+	/// en: 'Local subtitles'
+	String get localSubtitles => 'Local subtitles';
+
+	/// en: 'Local subtitle import is not available yet.'
+	String get localSubtitlesUnavailable => 'Local subtitle import is not available yet.';
+
 	/// en: 'Language'
 	String get language => 'Language';
 
@@ -9066,6 +9072,8 @@ extension on Translations {
 			'videoControls.noQueueItems' => 'No items in queue',
 			'videoControls.noAudioDevicesAvailable' => 'No audio devices available',
 			'videoControls.searchSubtitles' => 'Search Subtitles',
+			'videoControls.localSubtitles' => 'Local subtitles',
+			'videoControls.localSubtitlesUnavailable' => 'Local subtitle import is not available yet.',
 			'videoControls.language' => 'Language',
 			'videoControls.noSubtitlesFound' => 'No subtitles found',
 			'videoControls.subtitleDownloaded' => 'Subtitle downloaded',
@@ -9288,10 +9296,10 @@ extension on Translations {
 			'profiles.incorrectPin' => 'Incorrect PIN.',
 			'profiles.incorrectPinTryAgain' => 'Incorrect PIN. Please try again.',
 			'profiles.sourceProfileMissingParentAccount' => 'Source profile is missing its parent account.',
-			'profiles.failedToLoadHomeUsers' => 'Could not load your Plex Home users. Check your connection and try again.',
-			'profiles.failedToVerifyPin' => 'Failed to verify PIN.',
 			_ => null,
 		} ?? switch (path) {
+			'profiles.failedToLoadHomeUsers' => 'Could not load your Plex Home users. Check your connection and try again.',
+			'profiles.failedToVerifyPin' => 'Failed to verify PIN.',
 			'profiles.newProfile' => 'New profile',
 			'profiles.profileNameHint' => 'e.g. Guests, Kids, Family Room',
 			'profiles.pinProtectionOptional' => 'PIN protection (optional)',
@@ -9802,10 +9810,10 @@ extension on Translations {
 			'liveTv.alreadyScheduled' => 'This program is already scheduled',
 			'liveTv.dvrAdminRequired' => 'DVR settings require an admin account',
 			'liveTv.recordingFailed' => 'Couldn\'t schedule recording',
-			'liveTv.recordingTargetMissing' => 'Couldn\'t determine recording library',
-			'liveTv.recordNotAvailable' => 'Recording not available for this program',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.recordingTargetMissing' => 'Couldn\'t determine recording library',
+			'liveTv.recordNotAvailable' => 'Recording not available for this program',
 			'liveTv.recordingCancelled' => 'Recording canceled',
 			'liveTv.recordingRuleDeleted' => 'Recording rule deleted',
 			'liveTv.processRecordingRules' => 'Re-evaluate rules',
@@ -10316,10 +10324,10 @@ extension on Translations {
 			'externalPlayer.playerPackage' => 'Package Name',
 			'externalPlayer.playerUrlScheme' => 'URL Scheme',
 			'externalPlayer.off' => 'Off',
-			'externalPlayer.launchFailed' => 'Failed to open external player',
-			'externalPlayer.appNotInstalled' => ({required Object name}) => '${name} is not installed',
 			_ => null,
 		} ?? switch (path) {
+			'externalPlayer.launchFailed' => 'Failed to open external player',
+			'externalPlayer.appNotInstalled' => ({required Object name}) => '${name} is not installed',
 			'externalPlayer.playInExternalPlayer' => 'Play in External Player',
 			'metadataEdit.editMetadata' => 'Edit...',
 			'metadataEdit.screenTitle' => 'Edit Metadata',

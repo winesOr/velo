@@ -847,6 +847,8 @@
     "noQueueItems": "No items in queue",
     "noAudioDevicesAvailable": "No audio devices available",
     "searchSubtitles": "Search Subtitles",
+    "localSubtitles": "Local subtitles",
+    "localSubtitlesUnavailable": "Local subtitle import is not available yet.",
     "language": "Language",
     "noSubtitlesFound": "No subtitles found",
     "subtitleDownloaded": "Subtitle downloaded",
