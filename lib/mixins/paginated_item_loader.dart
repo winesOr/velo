@@ -50,6 +50,10 @@ mixin PaginatedItemLoader<T, W extends StatefulWidget> on State<W> {
   /// looks authoritative. Such a total is no bound on the next request.
   int? _openEndedPageSize;
 
+  /// Whether the most recently merged page's total looks like a fallback sentinel.
+  /// Check only after a successful page load; reset clears this marker.
+  bool get hasOpenEndedTotal => _openEndedPageSize != null;
+
   /// Fetch a page of items. Subclass implements this — typically delegating
   /// to a paginated client method that returns a [LibraryPage].
   Future<LibraryPage<T>> fetchPage(int start, int size, AbortController? abort);

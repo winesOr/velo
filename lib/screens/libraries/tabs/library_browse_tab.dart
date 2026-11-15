@@ -1857,6 +1857,22 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaItem, LibraryBrows
           // filter / sort row stays inline (prototype library toolbar).
           SingleChildScrollView(scrollDirection: Axis.horizontal, child: _buildChipsBar()),
           if (_selectedFilters.isNotEmpty) _buildConditionSummary(),
+          if ((_selectedFilters.isNotEmpty || _search.isNotEmpty) &&
+              _selectedGrouping != 'folders' &&
+              !isLoading &&
+              errorMessage == null &&
+              hasLoadedData &&
+              !hasOpenEndedTotal)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Semantics(
+                  liveRegion: true,
+                  child: Text(t.playlists.itemCount(count: totalSize), style: Theme.of(context).textTheme.bodySmall),
+                ),
+              ),
+            ),
         ],
         if (_unsupportedFiltersRemoved || _filterDiscoveryFailed)
           Padding(

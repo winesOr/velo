@@ -421,6 +421,16 @@ void main() {
     await tester.enterText(search, 'old query');
     await tester.pump(const Duration(milliseconds: 360));
     await _pumpUntil(tester, () => client.pageQueries.last.search == 'old query');
+    client.pageResponses.add(() async {
+      final size = client.pageQueries.last.limit;
+      return LibraryPage(
+        items: List.generate(
+          size,
+          (i) => _pageFor(client, i == 0 ? 'Library A' : 'Result $i').items.first.copyWith(id: 'result-$i'),
+        ),
+        totalCount: 10000,
+      );
+    });
     final before = client.pageRequestCount;
     await tester.enterText(search, 'new');
     await tester.pump(const Duration(milliseconds: 100));
@@ -430,6 +440,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await pumpRequestFrames(tester);
     expect(client.pageQueries.last.search, 'new query');
+    expect(find.text(t.playlists.itemCount(count: 10000)), findsOneWidget);
     expect(client.pageQueries.last.offset, 0);
     oldPage.complete(_pageFor(client, 'Stale result'));
     await pumpRequestFrames(tester);
@@ -488,13 +499,28 @@ void main() {
     final harness = _BrowseHarness(clientA: client);
     addTearDown(harness.dispose);
     await _pumpHarness(tester, harness);
+    var sentinel = 0;
+    client.pageResponses.add(() async {
+      final size = client.pageQueries.last.limit;
+      sentinel = size + 1;
+      return LibraryPage(
+        items: List.generate(size, (i) => _pageFor(client, 'Result $i').items.first.copyWith(id: 'result-$i')),
+        totalCount: sentinel,
+      );
+    });
+    await tester.enterText(find.byType(FocusableTextField), 'unknown total');
+    await tester.pump(const Duration(milliseconds: 400));
+    await pumpRequestFrames(tester);
+    expect(find.text(t.playlists.itemCount(count: sentinel)), findsNothing);
     client.pageResponses.add(() async => const LibraryPage(items: [], totalCount: 0));
     await tester.enterText(find.byType(FocusableTextField), 'no match');
     await tester.pump(const Duration(milliseconds: 400));
     await pumpRequestFrames(tester);
     expect(find.text(t.libraries.noItemsMatchFilters), findsOneWidget);
+    expect(find.text(t.playlists.itemCount(count: 0)), findsOneWidget);
     await tester.tap(find.text(t.libraries.resetFilters));
     await pumpRequestFrames(tester);
+    expect(find.text(t.playlists.itemCount(count: 0)), findsNothing);
     expect(client.pageQueries.last.search, isNull);
     expect(client.pageQueries.last.filters, isEmpty);
     expect(client.pageQueries.last.sort, isNull);

@@ -97,6 +97,7 @@ void main() {
       expect(state.fetchCalls, 1);
       expect(state.fetchArgs.first, (start: 0, size: 10));
       expect(state.totalSize, 42);
+      expect(state.hasOpenEndedTotal, isFalse);
       expect(state.loadedItems.length, 10);
       expect(state.loadedItems[0]?.id, 'k0');
       expect(state.loadedItems[9]?.id, 'k9');
@@ -292,6 +293,7 @@ void main() {
 
       await state.loadInitialPage(200);
       expect(state.totalSize, 201);
+      expect(state.hasOpenEndedTotal, isTrue);
 
       state.ensureIndexLoaded(200, pageSize: 200);
       await tester.pumpAndSettle();
@@ -300,6 +302,7 @@ void main() {
 
       expect(state.fetchArgs, [(start: 0, size: 200), (start: 200, size: 200), (start: 400, size: 200)]);
       expect(state.totalSize, serverItems);
+      expect(state.hasOpenEndedTotal, isFalse);
       expect(state.loadedItems.length, serverItems);
     });
 
