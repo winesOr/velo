@@ -6,6 +6,7 @@ import '../../media/library_query.dart';
 import '../../media/media_filter.dart';
 import '../../media/media_sort.dart';
 import '../../theme/mono_presentation.dart';
+import '../../theme/velo_brand.dart';
 
 /// Inline prototype rows use the same backend fields and persisted clauses as
 /// the full editor. Never infer genres, countries or years from a loaded page.
@@ -169,7 +170,6 @@ class _Tag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = theme.colorScheme.primary;
     return Semantics(
       button: true,
       label: label,
@@ -180,7 +180,7 @@ class _Tag extends StatelessWidget {
           height: (MediaQuery.textScalerOf(context).scale(12) * 1.5 + 12).clamp(40, double.infinity),
           child: Center(
             child: Material(
-              color: selected ? accent.withValues(alpha: .14) : Colors.transparent,
+              color: selected ? VeloBrand.selection(theme.brightness) : Colors.transparent,
               borderRadius: BorderRadius.circular(100),
               child: InkWell(
                 onTap: onPressed,
@@ -195,7 +195,7 @@ class _Tag extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 12,
-                        color: selected ? accent : theme.colorScheme.onSurfaceVariant,
+                        color: selected ? VeloBrand.foreground(theme.brightness) : theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),

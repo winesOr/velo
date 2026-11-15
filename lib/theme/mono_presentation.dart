@@ -51,11 +51,9 @@ abstract final class MonoPresentation {
 
   static TextStyle libraryTitle(BuildContext context) => pageTitle(context);
 
-  static Color headerSurface(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark ? const Color(0xff20212c) : const Color(0xfffaf8ff);
+  static Color headerSurface(BuildContext context) => Theme.of(context).colorScheme.surface;
 
-  static Color headerEdge(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark ? const Color(0xff363544) : const Color(0xffdedbe9);
+  static Color headerEdge(BuildContext context) => VeloPalette.edge(Theme.of(context).brightness);
 
   // Artwork is content, not a theme surface. Appearance controls chrome; it
   // must not dilute a red poster into a pink or gray page.
@@ -79,13 +77,10 @@ abstract final class MonoPresentation {
   );
 
   static Color navigationSurface(Brightness brightness, {Color? artwork, double alpha = .94}) {
-    final base = brightness == Brightness.dark ? const Color(0xff272733) : const Color(0xfffcfbff);
+    final base = VeloPalette.surface(brightness);
     return (artwork == null ? base : Color.lerp(base, artwork, .16)!).withValues(alpha: alpha);
   }
 
-  static Color navigationForeground(Brightness brightness, {bool selected = false}) => selected
-      ? VeloBrand.foreground(brightness)
-      : brightness == Brightness.dark
-      ? const Color(0xffb8b6c8)
-      : const Color(0xff686b80);
+  static Color navigationForeground(Brightness brightness, {bool selected = false}) =>
+      selected ? VeloBrand.foreground(brightness) : VeloPalette.caption(brightness);
 }

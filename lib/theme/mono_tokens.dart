@@ -20,6 +20,9 @@ class MonoTokens extends ThemeExtension<MonoTokens> {
   /// clamps oversized RRect radii (same trick as FocusableButton).
   static const double radiusFull = 100;
 
+  /// Poster and continue-watching artwork, including its focus outline.
+  static const double radiusCard = 14;
+
   final double radiusSm;
   final double radiusMd;
 

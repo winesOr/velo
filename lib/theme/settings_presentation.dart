@@ -12,25 +12,23 @@ abstract final class SettingsPresentation {
   static double get rowHorizontalPadding => PlatformDetector.isTV() ? 22 : 17;
   static double get groupRadius => PlatformDetector.isTV() ? 18 : 15;
 
-  static Color surface(BuildContext context) => _dark(context) ? const Color(0xff252530) : const Color(0xfffdfcff);
+  static Color surface(BuildContext context) => Theme.of(context).colorScheme.surface;
 
-  static Color muted(BuildContext context) => _dark(context) ? const Color(0xffa6a7b8) : const Color(0xff686b80);
-  static Color outline(BuildContext context) => _dark(context) ? const Color(0x12eeebff) : const Color(0x1255506e);
-  static Color icon(BuildContext context) => _dark(context) ? const Color(0xffc6c3d5) : const Color(0xff67667b);
+  static Color muted(BuildContext context) => VeloPalette.caption(Theme.of(context).brightness);
+  static Color outline(BuildContext context) => VeloPalette.edge(Theme.of(context).brightness);
+  static Color icon(BuildContext context) => VeloPalette.caption(Theme.of(context).brightness);
 
   static BoxDecoration groupDecoration(BuildContext context) => BoxDecoration(
     gradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: _dark(context)
-          ? const [Color(0xff252530), Color(0xff20212a)]
-          : const [Color(0xfffefeff), Color(0xfffbfaff)],
+      colors: [surface(context), surface(context)],
     ),
     borderRadius: BorderRadius.circular(groupRadius),
-    border: Border.all(color: _dark(context) ? const Color(0x0ceeebff) : const Color(0xb3ffffff)),
+    border: Border.all(color: outline(context)),
     boxShadow: [
       BoxShadow(
-        color: _dark(context) ? const Color(0x12000000) : const Color(0x083d3452),
+        color: Colors.black.withAlpha(_dark(context) ? 0x12 : 0x08),
         blurRadius: 12,
         offset: const Offset(0, 3),
       ),
@@ -77,17 +75,9 @@ class SettingsAppearance extends StatelessWidget {
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
     // Respect an explicitly requested OLED black page.
-    final oled = dark && theme.colorScheme.surface == const Color(0xff0a0a0a);
-    final background = oled
-        ? Colors.black
-        : dark
-        ? const Color(0xff14151c)
-        : const Color(0xffeeeff2);
-    final glow = oled
-        ? Colors.black
-        : dark
-        ? const Color(0xff2b283c)
-        : const Color(0xfff4efff);
+    final oled = dark && theme.colorScheme.surface == VeloPalette.oledSurface;
+    final background = oled ? VeloPalette.oledBackground : VeloPalette.background(theme.brightness);
+    final glow = oled ? VeloPalette.oledBackground : VeloPalette.surface(theme.brightness);
     final tv = PlatformDetector.isTV();
     final themed = _SettingsAppearanceScope(
       child: Theme(

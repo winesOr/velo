@@ -50,31 +50,31 @@ TextTheme _textTheme(Color text, Color muted, {required bool compact}) {
 }
 
 ThemeData _buildMonoTheme({required bool dark, required bool oled, required TargetPlatform platform, bool tv = false}) {
-  // Pearl neutrals carry a restrained hint of the folded mark's violet.
+  // Keep neutral chrome separate from the accent and media artwork.
   final ({Color bg, Color surface, Color outline, Color text, Color textMuted}) c;
   if (oled) {
     c = (
-      bg: const Color(0xFF000000), // Pure black for OLED
-      surface: const Color(0xFF0A0A0A), // Very dark gray
-      outline: const Color(0x1FFFFFFF),
-      text: const Color(0xFFEDEDED),
-      textMuted: const Color(0x99EDEDED),
+      bg: VeloPalette.oledBackground,
+      surface: VeloPalette.oledSurface,
+      outline: VeloPalette.darkEdge,
+      text: VeloPalette.darkText,
+      textMuted: VeloPalette.darkCaption,
     );
   } else if (dark) {
     c = (
-      bg: const Color(0xFF000000),
-      surface: const Color(0xFF20212B),
-      outline: const Color(0x14FFFFFF),
-      text: const Color(0xFFECECF3),
-      textMuted: const Color(0xFFA6A7B8),
+      bg: VeloPalette.darkBackground,
+      surface: VeloPalette.darkSurface,
+      outline: VeloPalette.darkEdge,
+      text: VeloPalette.darkText,
+      textMuted: VeloPalette.darkCaption,
     );
   } else {
     c = (
-      bg: const Color(0xFFF1F0F6),
-      surface: const Color(0xFFFFFFFF),
-      outline: const Color(0x19000000),
-      text: const Color(0xFF2D2E40),
-      textMuted: const Color(0xFF686B80),
+      bg: VeloPalette.lightBackground,
+      surface: VeloPalette.lightSurface,
+      outline: VeloPalette.lightEdge,
+      text: VeloPalette.lightText,
+      textMuted: VeloPalette.lightCaption,
     );
   }
 

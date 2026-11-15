@@ -35,9 +35,9 @@ void main() {
     expect(icon.weight, 400);
     final light = monoTheme(dark: false);
     final dark = monoTheme(dark: true);
-    expect(light.scaffoldBackgroundColor, const Color(0xfff1f0f6));
-    expect(light.colorScheme.onSurface, const Color(0xff2d2e40));
-    expect(dark.colorScheme.onSurface, const Color(0xffececf3));
+    expect(light.scaffoldBackgroundColor, const Color(0xfff4f3ef));
+    expect(light.colorScheme.onSurface, const Color(0xff242424));
+    expect(dark.colorScheme.onSurface, const Color(0xfff3f3ef));
   });
 
   test('repeated calls return the identical instance per palette', () {
@@ -55,9 +55,9 @@ void main() {
     expect(identical(dark, oled), isFalse);
     expect(light.brightness, Brightness.light);
     expect(dark.brightness, Brightness.dark);
-    // Both use a black page; OLED retains darker raised surfaces.
+    // OLED retains pure black; ordinary dark uses a neutral charcoal page.
     expect(oled.scaffoldBackgroundColor, const Color(0xFF000000));
-    expect(dark.scaffoldBackgroundColor, const Color(0xFF000000));
+    expect(dark.scaffoldBackgroundColor, const Color(0xFF121212));
     expect(oled.colorScheme.surface, isNot(dark.colorScheme.surface));
   });
 

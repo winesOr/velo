@@ -97,10 +97,10 @@ void main() {
       await p.setThemeMode(settings.ThemeMode.oled);
       final oled = p.darkTheme;
 
-      // Both dark variants use the black page specified by the prototype;
-      // OLED still differentiates raised surfaces for controls and panels.
+      // Ordinary dark uses neutral charcoal; OLED retains pure black and
+      // darker raised surfaces for controls and panels.
       expect(oled.scaffoldBackgroundColor, const material.Color(0xFF000000));
-      expect(dark.scaffoldBackgroundColor, const material.Color(0xFF000000));
+      expect(dark.scaffoldBackgroundColor, const material.Color(0xFF121212));
       expect(oled.colorScheme.surface, isNot(dark.colorScheme.surface));
 
       p.dispose();

@@ -628,7 +628,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
     onLongPress: showContextMenuFromTap,
     onSecondaryTapDown: storeTapPosition,
     onSecondaryTap: showContextMenuFromTap,
-    borderRadius: BorderRadius.circular(tokens(context).radiusMd),
+    borderRadius: BorderRadius.circular(MonoTokens.radiusCard),
     child: child,
   );
 
@@ -1118,12 +1118,12 @@ bool _isArtist(Object item) => item is MediaItem && item.kind == MediaKind.artis
 /// rounded rect.
 Widget _clipPosterImage(BuildContext context, Object item, Widget image) {
   if (_isArtist(item)) return ClipOval(child: image);
-  return ClipRRect(borderRadius: BorderRadius.circular(tokens(context).radiusMd), child: image);
+  return ClipRRect(borderRadius: BorderRadius.circular(MonoTokens.radiusCard), child: image);
 }
 
 /// Focus border radius matching [_clipPosterImage]'s clip shape.
 double _posterFocusRadius(BuildContext context, Object item) =>
-    _isArtist(item) ? _circularFocusRadius : tokens(context).radiusMd;
+    _isArtist(item) ? _circularFocusRadius : MonoTokens.radiusCard;
 
 /// Watched/progress overlays are suppressed for artists: a corner checkmark
 /// sits outside the circular artwork and play-state on an artist is noise.
