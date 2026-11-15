@@ -64,3 +64,11 @@
 .track-empty{margin:0;padding:10px 12px;border:1px solid var(--velo-edge);border-radius:14px}.track-empty b{display:block;font-size:15px;font-weight:500;line-height:20px}.track-empty small{display:block;font-size:12px;color:var(--velo-caption);margin-top:3px}
 @keyframes velo-drawer-in{from{translate:100% 0}to{translate:0 0}}@keyframes velo-drawer-out{to{translate:100% 0}}@keyframes velo-fade-in{from{opacity:0}}@keyframes velo-fade-out{to{opacity:0}}
 @media(prefers-reduced-motion:reduce){.device.player-device :is(.drawer,.scrim,.modal-shade,.modal-sheet,.cast-overlay,.cast-sheet){animation-duration:1ms!important}}
+
+/* 收藏 / 标记看过：等待网络响应时的加载态 */
+.detail-actions button{position:relative}
+.detail-actions button.is-loading{pointer-events:none;cursor:progress}
+.detail-actions button.is-loading .icon{opacity:0;transition:opacity .15s}
+.detail-actions button.is-loading::after{content:"";position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;opacity:.85;animation:velo-btn-spin .7s linear infinite}
+@keyframes velo-btn-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.detail-actions button.is-loading::after{animation-duration:1.6s}}
