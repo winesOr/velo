@@ -39,9 +39,10 @@ extension _MediaDetailPlaybackSelectors on _MediaDetailScreenState {
               );
         final placeholder = busy ? t.common.loading : t.detailPlayback.unavailable;
         final selectedIndex = probed?.mediaIndex;
-        final selectedVersion = selectedIndex != null && selectedIndex >= 0 && selectedIndex < versions.length
-            ? versions[selectedIndex].id
+        final selected = selectedIndex != null && selectedIndex >= 0 && selectedIndex < versions.length
+            ? versions[selectedIndex]
             : null;
+        final selectedVersion = selected?.id;
         final scope = key == null || source == null ? null : detailTrackScope(key, source);
         final audioId = choice?.audioId ?? preview?.audio?.id;
         DetailTrackOption? trackOption(int? id) => scope == null ? null : (scope: scope, streamId: id);
@@ -61,6 +62,9 @@ extension _MediaDetailPlaybackSelectors on _MediaDetailScreenState {
             focusNode: _versionSelectFocusNode,
             label: t.detailPlayback.version,
             value: selectedVersion,
+            selectedLabel: selected == null ? null : _detailVersionSummary(selected, versions.length),
+            leading: BackendBadge(backend: item.backend, size: 20),
+            showChevron: versions.length > 1,
             placeholder: placeholder,
             busy: busy,
             enabled: !widget.isOffline && canProbe && !_playLaunchPending,
@@ -69,7 +73,7 @@ extension _MediaDetailPlaybackSelectors on _MediaDetailScreenState {
                 AppSelectOption(
                   value: version.id,
                   label: version.displayLabel,
-                  subtitle: t.fileInfo.versionCounter(index: index + 1, count: versions.length),
+                  subtitle: _detailVersionOptionSubtitle(version, index, versions.length),
                   enabled: version.isPlayable,
                 ),
             ],
@@ -208,6 +212,33 @@ extension _MediaDetailPlaybackSelectors on _MediaDetailScreenState {
               );
       },
     );
+  }
+
+  String _detailVersionSummary(MediaVersion version, int count) {
+    final resolution = version.videoResolution?.trim();
+    final codec = version.videoCodec?.trim();
+    final quality = <String>[
+      if (resolution != null && resolution.isNotEmpty)
+        resolutionDisplayLabel(resolution)
+      else if (version.height != null && version.height! > 0)
+        '${version.height}p',
+      if (codec != null && codec.isNotEmpty) CodecUtils.formatVideoCodec(codec),
+    ];
+    return [
+      if (quality.isNotEmpty) quality.join(' · ') else version.displayLabel,
+      if (count > 1) t.detailPlayback.versionCount(n: count),
+    ].join(' · ');
+  }
+
+  String _detailVersionOptionSubtitle(MediaVersion version, int index, int count) {
+    // Only report a version's size when every physical part has a known size.
+    final completeSize =
+        version.parts.isNotEmpty && version.parts.every((part) => part.sizeBytes != null && part.sizeBytes! > 0);
+    return [
+      t.fileInfo.versionCounter(index: index + 1, count: count),
+      if (completeSize)
+        ByteFormatter.formatBytes(version.parts.fold<int>(0, (total, part) => total + part.sizeBytes!), decimals: 2),
+    ].join(' · ');
   }
 
   Future<void> _selectDetailVersion(MediaItem target, List<MediaVersion> versions, String id) async {

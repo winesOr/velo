@@ -3085,12 +3085,9 @@ void main() {
       final source = tester.widget<AppSelectField<String>>(sourceField);
       expect(source.value, 'source-1080');
       expect(source.options, hasLength(2));
+      expect(find.descendant(of: sourceField, matching: find.text(source.selectedLabel!)), findsOneWidget);
       expect(
-        find.descendant(of: sourceField, matching: find.text(phoneMediaVersions.first.displayLabel)),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: sourceField, matching: find.text(t.fileInfo.versionCounter(index: 1, count: 2))),
+        find.descendant(of: sourceField, matching: find.textContaining(t.detailPlayback.versionCount(n: 2))),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);

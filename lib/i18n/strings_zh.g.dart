@@ -2614,6 +2614,7 @@ class Translations$detailPlayback$zh extends Translations$detailPlayback$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String versionCount({required Object n}) => '${n} 个版本';
 	@override String get version => '版本';
 	@override String get unavailable => '暂无可用选项';
 	@override String get loadFailed => '播放选项加载失败';
@@ -5790,6 +5791,7 @@ extension on TranslationsZh {
 			'casting.roomUnavailable' => '请先退出一起看房间，再投送给电视独立播放。',
 			'casting.success' => ({required Object device}) => '已在 ${device} 播放。可以退出 Velo，使用电视遥控器操作。',
 			'casting.successWithoutResume' => ({required Object device}) => '已在 ${device} 播放，电视未接受续播位置。可以退出 Velo，使用电视遥控器操作。',
+			'detailPlayback.versionCount' => ({required Object n}) => '${n} 个版本',
 			'detailPlayback.version' => '版本',
 			'detailPlayback.unavailable' => '暂无可用选项',
 			'detailPlayback.loadFailed' => '播放选项加载失败',

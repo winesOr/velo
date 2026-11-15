@@ -6581,6 +6581,9 @@ class Translations$detailPlayback$en {
 
 	// Translations
 
+	/// en: '${n} versions'
+	String versionCount({required Object n}) => '${n} versions';
+
 	/// en: 'Version'
 	String get version => 'Version';
 
@@ -10588,6 +10591,7 @@ extension on Translations {
 			'casting.roomUnavailable' => 'Leave Watch Together before casting independently to a TV.',
 			'casting.success' => ({required Object device}) => 'Playing on ${device}. You can close Velo and use your TV remote.',
 			'casting.successWithoutResume' => ({required Object device}) => 'Playing on ${device}. The TV did not accept the resume position. You can close Velo and use your TV remote.',
+			'detailPlayback.versionCount' => ({required Object n}) => '${n} versions',
 			'detailPlayback.version' => 'Version',
 			'detailPlayback.unavailable' => 'Not available',
 			'detailPlayback.loadFailed' => 'Could not load playback options',

@@ -34,6 +34,10 @@ class AppSelectField<T> extends StatefulWidget {
     this.busy = false,
     this.compact = false,
     this.focusNode,
+    this.leading,
+    this.selectedLabel,
+    this.selectedSubtitle,
+    this.showChevron = true,
   });
 
   final String label;
@@ -45,6 +49,13 @@ class AppSelectField<T> extends StatefulWidget {
   final bool busy;
   final bool compact;
   final FocusNode? focusNode;
+  final Widget? leading;
+
+  /// Optional closed-field presentation; menu options retain their own labels.
+  /// When supplied, [selectedSubtitle] replaces the option subtitle, even null.
+  final String? selectedLabel;
+  final String? selectedSubtitle;
+  final bool showChevron;
 
   @override
   State<AppSelectField<T>> createState() => _AppSelectFieldState<T>();
@@ -124,8 +135,13 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
         break;
       }
     }
-    final title = selected?.label ?? widget.placeholder ?? widget.label;
-    final subtitle = selected?.subtitle;
+    final title = widget.selectedLabel ?? selected?.label ?? widget.placeholder ?? widget.label;
+    final subtitle = widget.selectedLabel != null ? widget.selectedSubtitle : selected?.subtitle;
+    final semanticValue = widget.selectedLabel != null
+        ? subtitle == null
+              ? title
+              : '$title, $subtitle'
+        : selected?.semanticLabel ?? title;
     const radius = BorderRadius.all(Radius.circular(14));
     return FocusableWrapper(
       focusNode: _focusNode,
@@ -135,7 +151,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
       focusColor: accent,
       descendantsAreFocusable: false,
       semanticLabel: widget.label,
-      semanticValue: selected?.semanticLabel ?? title,
+      semanticValue: semanticValue,
       onSelect: _canOpen ? _open : null,
       onFocusChange: (focused) {
         if (!focused && _pressed) _setPressed(false);
@@ -177,6 +193,11 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Row(
                   children: [
+                    if (widget.leading != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: ExcludeSemantics(child: widget.leading!),
+                      ),
                     Expanded(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -202,10 +223,10 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    if (widget.busy || widget.showChevron) const SizedBox(width: 8),
                     if (widget.busy)
                       const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                    else
+                    else if (widget.showChevron)
                       AppIcon(_menuOpen ? Symbols.expand_less_rounded : Symbols.expand_more_rounded, size: 20),
                   ],
                 ),
