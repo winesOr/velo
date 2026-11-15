@@ -134,7 +134,7 @@ void main() {
     await tester.pump();
 
     final titleText = tester.widget<Text>(find.text(title));
-    final baseFontSize = 64 * TvLayoutConstants.scaleForSize(const Size(800, 480));
+    final baseFontSize = 36 * TvLayoutConstants.scaleForSize(const Size(800, 480));
     expect(titleText.style?.fontSize, baseFontSize);
     expect(titleText.maxLines, isNull);
     expect(find.byKey(const ValueKey('tv_detail_content_scroll')), findsOneWidget);
@@ -1811,6 +1811,11 @@ void main() {
     late PathProviderPlatform previousPathProvider;
 
     setUpAll(() async {
+      await loadTabletFonts();
+      await (FontLoader('DetailFixture')..addFont(rootBundle.load('assets/go-noto-current-regular.ttf'))).load();
+      // Deliver font notifications before any phone-layout widget fixture
+      // takes ownership of the frame scheduler.
+      await Future<void>.delayed(Duration.zero);
       artworkDirectory = Directory.systemTemp.createTempSync('detail-artwork-audit-');
       previousPathProvider = PathProviderPlatform.instance;
       PathProviderPlatform.instance = FakePathProvider(artworkDirectory);
@@ -2270,6 +2275,11 @@ void main() {
       await tester.pump();
       await tester.pumpAndSettle(const Duration(milliseconds: 50));
       final initialOffset = position.pixels;
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      await tester.pumpAndSettle(const Duration(milliseconds: 50));
+      expect(focus('detail_rating_source').hasFocus, isTrue);
+      expectVisibleAboveRail(find.byType(MediaRatingsStrip));
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pump();
       await tester.pumpAndSettle(const Duration(milliseconds: 50));
@@ -2871,7 +2881,6 @@ void main() {
 
     for (final size in [const Size(820, 1180), const Size(1180, 820), const Size(600, 960)]) {
       testWidgets('tablet detail retains the fusion header and episode selection at $size', (tester) async {
-        await loadTabletFonts();
         final show = buildShow();
         final boundary = GlobalKey();
         await pumpPhoneDetail(
@@ -2899,7 +2908,6 @@ void main() {
 
     for (final size in [const Size(960, 540), const Size(1280, 720)]) {
       testWidgets('TV detail lays out the hero and episode rail at $size', (tester) async {
-        await loadTabletFonts();
         final show = buildShow();
         final boundary = GlobalKey();
         await pumpPhoneDetail(
@@ -2923,10 +2931,6 @@ void main() {
       (name: 'narrow-large', dark: false, width: 320.0, scale: 2.0),
     ]) {
       testWidgets('actual detail fixture ${fixture.name} keeps title and play reachable', (tester) async {
-        await (FontLoader('DetailFixture')..addFont(rootBundle.load('assets/go-noto-current-regular.ttf'))).load();
-        await (FontLoader(
-          'packages/material_symbols_icons/MaterialSymbolsRounded',
-        )..addFont(rootBundle.load('packages/material_symbols_icons/lib/fonts/MaterialSymbolsRounded.ttf'))).load();
         final show = buildShow();
         final boundary = GlobalKey();
         final theme = monoTheme(dark: fixture.dark);
@@ -3049,10 +3053,6 @@ void main() {
     });
 
     testWidgets('actual detail fixture phone-show-cast keeps the prototype section rhythm', (tester) async {
-      await (FontLoader('DetailFixture')..addFont(rootBundle.load('assets/go-noto-current-regular.ttf'))).load();
-      await (FontLoader(
-        'packages/material_symbols_icons/MaterialSymbolsRounded',
-      )..addFont(rootBundle.load('packages/material_symbols_icons/lib/fonts/MaterialSymbolsRounded.ttf'))).load();
       final show = buildShow(summary: 'A concise overview that sits between the source card and the episode rail.')
           .copyWith(
             year: 2026,
@@ -3109,6 +3109,10 @@ void main() {
       Future<void> selectEpisodeAndVerifyPlay(int number) async {
         final card = find.byKey(ValueKey('detail_episode_season_1_episode_$number'));
         await tester.scrollUntilVisible(card, 250, scrollable: pageScroll);
+        // A built horizontal card can still extend beyond the touch viewport.
+        // Reveal it on both axes before tapping its actual visible target.
+        await tester.ensureVisible(card);
+        await tester.pumpAndSettle();
         await tester.tap(card);
         await tester.pump();
         // The visible outline proves the tap changed the actual selected
@@ -3140,11 +3144,11 @@ void main() {
       await selectEpisodeAndVerifyPlay(2);
       await tester.scrollUntilVisible(find.text('11–12'), 250, scrollable: pageScroll);
       await tester.tap(find.text('11–12'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       await selectEpisodeAndVerifyPlay(12);
       await tester.scrollUntilVisible(find.text('1–10'), 250, scrollable: pageScroll);
       await tester.tap(find.text('1–10'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       await selectEpisodeAndVerifyPlay(1);
       await tester.pump(const Duration(seconds: 1));
 
@@ -3859,12 +3863,12 @@ void main() {
 
       final titleFinder = find.byKey(const ValueKey('detail_natural_title'));
       final paragraph = tester.renderObject<RenderParagraph>(titleFinder);
-      expect(paragraph.constraints.maxWidth, lessThanOrEqualTo(720));
+      expect(paragraph.constraints.maxWidth, lessThanOrEqualTo(560));
       final text = tester.widget<Text>(titleFinder);
-      expect(text.style!.fontSize, 48);
+      expect(text.style!.fontSize, 36);
       expect(text.maxLines, isNull);
       expect(text.overflow, isNull);
-      expect(paragraph.size.height, greaterThan(48));
+      expect(paragraph.size.height, greaterThan(36));
     });
 
     testWidgets('portrait phone hero shows square art instead of the cropped backdrop', (tester) async {

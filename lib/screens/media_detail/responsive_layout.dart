@@ -72,7 +72,7 @@ extension _MediaDetailResponsiveLayout on _MediaDetailScreenState {
         child: Align(
           alignment: centered ? Alignment.bottomCenter : Alignment.bottomLeft,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
+            constraints: const BoxConstraints(maxWidth: 560),
             child: _buildCompactDetailHeader(context, metadata),
           ),
         ),

@@ -169,7 +169,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
         : () =>
               unawaited(navigateToVideoPlayer(context, metadata: primaryTrailer, isLaunchCurrent: () => _canUseDetail));
 
-    final gap = isTv ? 8.0 * tvScale : 12.0;
+    final gap = isTv ? 12.0 * tvScale : 12.0;
 
     final whitePlayStyle = FilledButton.styleFrom(
       backgroundColor: const Color(0xfff4f5f6),
@@ -529,7 +529,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                 child: Center(
                   child: FocusableActionBar(
                     actions: [?downloadAction, ?favoriteAction, watchedAction, ?moreActionsAction],
-                    spacing: maxWidth < 350 ? 8 : 16,
+                    spacing: 12,
                     onNavigateDown: _focusBelowActionRow,
                     onNavigateUp: () => _playButtonFocusNode.requestFocus(),
                   ),

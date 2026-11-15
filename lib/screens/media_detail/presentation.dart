@@ -184,11 +184,13 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
     bool tv = false,
     double scale = 1,
   }) {
+    final narrow = MediaQuery.sizeOf(context).width < ScreenBreakpoints.mobile;
+    final phone = PlatformDetector.isMobile(context) && !MonoPresentation.isTablet(context);
     final fontSize = tv
-        ? 64 * scale
-        : centered
-        ? 40.0
-        : 48.0;
+        ? 36 * scale
+        : narrow || phone
+        ? 32.0
+        : 36.0;
     Widget title(BuildContext context, String text) => Text(
       text,
       key: const ValueKey('detail_natural_title'),
@@ -196,7 +198,8 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
       style: Theme.of(context).textTheme.displaySmall?.copyWith(
         fontSize: fontSize,
         fontWeight: FontWeight.w600,
-        height: 1.12,
+        height: 1.15,
+        letterSpacing: -.6,
         color: Theme.of(context).colorScheme.onSurface,
       ),
     );
@@ -210,7 +213,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
         context,
         metadata,
         width: math.min(constraints.maxWidth, tv ? 640 * scale : 400),
-        height: tv ? 110 * scale : 100,
+        height: fontSize * 2,
         availableWidth: constraints.maxWidth,
         alignment: centered ? Alignment.center : Alignment.centerLeft,
         titleBuilder: (context, text) => FittedBox(fit: BoxFit.scaleDown, child: title(context, text)),
