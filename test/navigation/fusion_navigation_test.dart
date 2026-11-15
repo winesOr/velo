@@ -89,7 +89,10 @@ void main() {
         expect(tester.getSize(surface).height, MonoPresentation.navigationHeight);
         expect(tester.getSize(surface).width, MonoPresentation.navigationMaxWidth);
         final decoration = tester.widget<AnimatedContainer>(surface).decoration! as BoxDecoration;
-        expect(decoration.color, MonoPresentation.navigationSurface(dark ? Brightness.dark : Brightness.light));
+        expect(
+          decoration.color,
+          MonoPresentation.navigationSurface(dark ? Brightness.dark : Brightness.light, alpha: .88),
+        );
         expect(decoration.boxShadow, isNull);
         final labels = tester.widgetList<Text>(
           find.descendant(of: find.byType(FusionNavigation), matching: find.byType(Text)),

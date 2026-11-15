@@ -61,7 +61,10 @@ class FusionNavigation extends StatelessWidget {
     final navigationBody = AnimatedContainer(
       key: const ValueKey('fusion-navigation-surface'),
       duration: Duration.zero,
-      constraints: BoxConstraints(maxWidth: isTv ? 680 : MonoPresentation.navigationMaxWidth),
+      constraints: BoxConstraints(
+        minHeight: isTv ? 0 : MonoPresentation.navigationHeight,
+        maxWidth: isTv ? 680 : MonoPresentation.navigationMaxWidth,
+      ),
       padding: isTv ? const EdgeInsets.symmetric(horizontal: 6, vertical: 4) : const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: MonoPresentation.navigationSurface(
@@ -71,7 +74,7 @@ class FusionNavigation extends StatelessWidget {
               ? 1
               : isTv
               ? (dark ? .91 : .94)
-              : .94,
+              : .88,
         ),
         borderRadius: BorderRadius.circular(isTv ? 24 : 30),
         border: Border.all(color: dark ? const Color(0x40ffffff) : const Color(0x3d242c3b)),
@@ -91,7 +94,7 @@ class FusionNavigation extends StatelessWidget {
     return SafeArea(
       top: isTv,
       bottom: !isTv,
-      minimum: EdgeInsets.symmetric(horizontal: isTv ? 32 : 21, vertical: isTv ? 18 : 18),
+      minimum: EdgeInsets.symmetric(horizontal: isTv ? 32 : 16, vertical: 18),
       child: Center(
         heightFactor: 1,
         child: ClipRRect(

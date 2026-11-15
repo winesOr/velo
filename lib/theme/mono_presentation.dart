@@ -7,8 +7,8 @@ import 'velo_brand.dart';
 /// Artwork mapping is our implementation, independent of the server protocol.
 abstract final class MonoPresentation {
   static const artworkDuration = Duration(milliseconds: 560);
-  static const navigationHeight = 56.0;
-  static const navigationMaxWidth = 360.0;
+  static const navigationHeight = 58.0;
+  static const navigationMaxWidth = 336.0;
 
   /// Use the available touch viewport, so a tablet in split view can fall
   /// back to the phone layout without inheriting desktop presentation.
