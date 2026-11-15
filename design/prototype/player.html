@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"><script src="appearance.js?v=20261024velo"></script>
 <title>Velo Fusion 原型 · 播放界面</title>
 <link rel="stylesheet" href="proto.css?v=20261024velo">
-<link rel="stylesheet" href="cast.css?v=20261024velo"><link rel="stylesheet" href="ui.css?v=20261024velo"><link rel="stylesheet" href="appearance.css?v=final1">
+<link rel="stylesheet" href="cast.css?v=20261024velo"><link rel="stylesheet" href="ui.css?v=final5"><link rel="stylesheet" href="appearance.css?v=final5">
 <style>
   /* Fake picture: dark scene with two colour pools. */
   .scene { position: absolute; inset: 0; background:
@@ -137,7 +137,7 @@
   const st = document.createElement('style'); st.textContent = 'body{padding:16px}.nav,.page-intro,h2,table.map,.cap{display:none!important}.stage-row>div{display:none}.stage-row>div:has(#'+id+'){display:block!important}'; document.head.appendChild(st);
   st.textContent += '#'+id+'{}'; document.documentElement.dataset.shot = id; })();
 </script>
-<link rel="stylesheet" href="final-ui.css?v=final2"><link rel="stylesheet" href="toast.css?v=final4"><script src="final-ui.js?v=final4"></script><style id="tv-player-css">
+<link rel="stylesheet" href="final-ui.css?v=final5"><link rel="stylesheet" href="toast.css?v=final4"><script src="final-ui.js?v=final4"></script><style id="tv-player-css">
 /* ⑤ TV 播放界面：1920×1080 画布，整体 0.5 缩放进 960×540 预览帧（与其他页 TV 帧同尺寸）。画布按实机 DPR 2 取值：实机 16/600 的跳过按钮在此为 32/600。 */
 .tv-section{max-width:100%;overflow-x:auto;padding-bottom:6px}
 .tvp-frame{width:984px;height:574px;border:12px solid #111;border-bottom-width:22px;border-radius:10px;position:relative;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6);background:#000;flex:none}
@@ -165,7 +165,6 @@
 .tv.tvp .skip{right:64px;bottom:316px;padding:24px 32px;font-size:32px;line-height:40px;border-radius:16px;gap:16px;z-index:5;box-shadow:0 4px 16px rgba(0,0,0,.3);transition:bottom .2s ease-in-out,transform .12s}
 .tv.tvp .skip .icon{width:40px;height:40px}.tvp.hide-ui .skip{bottom:48px}
 .tvp .tv-osd{position:absolute;left:50%;bottom:340px;transform:translateX(-50%);padding:14px 30px;border-radius:999px;background:rgba(0,0,0,.62);font-size:32px;font-weight:600;opacity:0;transition:opacity .2s;z-index:6;pointer-events:none}.tvp .tv-osd.on{opacity:1}
-.tvp .toast{font-size:28px;padding:20px 32px;border-radius:28px;top:48px!important;max-width:1200px}
 /* 右侧抽屉：同手机的抽屉组件，整体放大 2× 后宽 580（≈画面 30%）；行内焦点用内描边 + 底色，避免被滚动区裁掉 */
 .tv.tvp.device.player-device :is(.drawer,.cast-sheet,.modal-sheet){zoom:2;width:290px!important}
 .ep-prog{position:absolute;left:30px;right:14px;bottom:3px;height:3px;border-radius:2px;background:rgba(127,127,127,.3)}.ep-prog i{display:block;height:100%;border-radius:2px;background:var(--velo-focus)}
@@ -245,7 +244,7 @@ html[data-shot] .tv-section{display:none}html[data-shot=ptv] .tv-section{display
 <div class="cap" style="max-width:984px">TV · 1920×1080 画面，整体 0.5 缩放进 960×540 预览帧。点一下画面或 Tab 进入后：方向键在控件间移动（↑↓换行：顶栏 / 跳过片头 / 进度条 / 底栏，←→同行）；快退 / 快进 10 秒按钮与进度条上的 ←→ 一致；Enter 确认。底栏左组按实机顺序：上一集、上一章、快退、播放、快进、下一章、下一集。「选集」与「队列」合并为一个入口：剧集播放时叫「选集」，抽屉顶部分季标签，列出本季（已看 / 当前进度 / 接下来播放），末尾衔接下一季；电影或从播放列表进入时同一按钮叫「播放列表」，显示当前项与接下来；上方「剧集 / 电影」开关可切换演示（手机横屏同步）。章节仍独立。面板都是同一右侧抽屉，抽屉内 ↑↓ 移动、←→ 在标签 / 步进器间移动、Enter 选择；返回（Esc / Backspace）先关抽屉（子列表先回上一层），再隐藏控件，控件隐藏时再按返回才退出播放；隐藏时按任意方向键唤出，10 秒无操作自动隐藏。TV 是接收端，不提供投屏；画中画、锁屏、截图、横竖屏同样不提供。</div>
 </section>
 
-<script src="ui.js?v=final4"></script><script src="toast.js?v=final4"></script>
+<script src="ui.js?v=final5"></script><script src="toast.js?v=final4"></script>
 <script>
 (() => {
   const I = (n) => UI.icon(n);

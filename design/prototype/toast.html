@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script src="appearance.js?v=20261024velo"></script><title>Velo · 提示条定稿</title><link rel="stylesheet" href="proto.css?v=20261024velo"><link rel="stylesheet" href="ui.css?v=20261024velo"><link rel="stylesheet" href="appearance.css?v=final1"><link rel="stylesheet" href="final-ui.css?v=final2"><link rel="stylesheet" href="toast.css?v=final4"></head><body class="vt-page">
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script src="appearance.js?v=20261024velo"></script><title>Velo · 提示条定稿</title><link rel="stylesheet" href="proto.css?v=20261024velo"><link rel="stylesheet" href="ui.css?v=final5"><link rel="stylesheet" href="appearance.css?v=final5"><link rel="stylesheet" href="final-ui.css?v=final5"><link rel="stylesheet" href="toast.css?v=final4"></head><body class="vt-page">
 <nav class="nav" aria-label="原型页面"></nav>
 <header class="page-intro"><h2>提示条 · 定稿（方案 A）</h2><p>SHARED-03 定稿：顶部居中磨砂胶囊。已替换原型所有页面的 <code>UI.toast</code>（首页、搜索、详情、一起看、设置、播放器共用 <code>toast.js</code> / <code>toast.css</code>），实机将用同一规格替换底部 SnackBar。按钮会同时在手机竖屏、横屏播放器、TV 三个画面里触发；用上方“浅色 / 深色”切换外观。方案 B、C 保留在页面下方的“未采用方案”中备查。</p></header>
 
@@ -78,5 +78,5 @@
 <p class="vt-recommend"><b>已选 A（2026-11-15 用户确认）。</b>它最符合 Velo“安静、海报优先、磨砂浮层”：与底部悬浮导航同材质同圆角，成为一套上下呼应的浮层；体积只取决于文字，海报和播放画面被遮挡最少；横屏和 TV 的位置规则最简单。实现成本最低，可直接替换 <code>snackbar_helper.dart</code> 的入口而保持调用签名。同时采纳：从 B 借用剩余时间细线（带操作 / 错误时显示）；TV 不抢焦点，撤销 / 重试提示“按菜单键”执行；播放器内在浅色模式下也保持深色。</p>
 </section>
 
-<script src="ui.js?v=final4"></script><script src="toast.js?v=final4"></script><script src="toast-page.js?v=final4"></script>
+<script src="ui.js?v=final5"></script><script src="toast.js?v=final4"></script><script src="toast-page.js?v=final4"></script>
 </body></html>

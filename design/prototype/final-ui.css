@@ -18,8 +18,6 @@
 .device .modal-sheet .choice-row{min-height:48px}.device .modal-sheet .icon-button{color:var(--velo-text);background:color-mix(in srgb,var(--velo-text) 7%,transparent)}
 .device .modal-sheet .btn.pri{background:var(--velo-accent)!important;color:white!important;border-radius:14px}.device .modal-sheet .btn.sec{background:color-mix(in srgb,var(--velo-text) 7%,transparent)!important;color:var(--velo-text)!important;border:1px solid var(--velo-edge);border-radius:14px}
 .device .anchored-popup .modal-sheet{border-radius:18px!important;max-width:calc(100% - 32px)}
-.device .toast{position:absolute!important;top:52px!important;bottom:auto!important;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);padding:12px 16px;border-radius:18px;background:var(--velo-overlay)!important;color:var(--velo-text)!important;border:1px solid var(--velo-edge);box-shadow:0 12px 32px #0004;backdrop-filter:blur(22px);z-index:65;font-size:13px;line-height:1.5;animation:velo-notice-in 180ms ease-out;pointer-events:none}
-.tv .toast,.land .toast{top:16px!important}
 /* DETAIL-01: ratings are part of the poster information group, never a separate card. */
 .detail-copy .detail-title{font-size:32px;line-height:1.15;font-weight:600;letter-spacing:-.6px}.detail-copy .detail-meta{font-size:12px;line-height:1.6}
 .detail-copy .hero-ratings{display:flex;justify-content:center;flex-wrap:wrap;row-gap:8px;margin:12px 0 4px;color:inherit}
@@ -43,7 +41,7 @@
 .device .cast-sheet :is(small,.cast-caption,.cast-note){color:var(--velo-caption)}.device .cast-sheet button{color:var(--velo-text)}
 .track-review{max-width:844px;margin:14px 0 24px;padding:14px 16px;border:1px solid var(--velo-edge);border-radius:18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--velo-caption);font-size:12px}.track-review strong{width:100%;font-size:13px;color:var(--velo-text)}.track-review button{min-height:34px;padding:5px 12px;border-radius:10px;border:1px solid var(--velo-edge);background:var(--velo-surface);color:var(--velo-text)}.track-review button.active{background:var(--velo-selected);color:var(--velo-focus)}
 .final-revision{font-size:11px;letter-spacing:1.8px;color:var(--velo-focus)}
-@keyframes velo-dialog-in{from{opacity:0;scale:.97}to{opacity:1;scale:1}}@keyframes velo-notice-in{from{opacity:0}to{opacity:1}}@keyframes velo-spin{to{transform:rotate(360deg)}}
+@keyframes velo-dialog-in{from{opacity:0;scale:.97}to{opacity:1;scale:1}}@keyframes velo-spin{to{transform:rotate(360deg)}}
 @media(max-width:700px){.detail-copy{left:24px;right:24px}.device .drawer{max-height:680px;width:calc(100% - 32px)}.track-review{margin:12px 16px}.device .modal-sheet{padding:18px!important}.device .app-nav{width:calc(100% - 32px)}.preview .track-review{display:none}}
 @media(prefers-reduced-motion:reduce){.device *{animation-duration:0s!important;transition-duration:0s!important;scroll-behavior:auto!important}.track-field:active{transform:none}}
 
