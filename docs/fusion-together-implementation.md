@@ -43,13 +43,13 @@
 
 ## 验证证据（2026-10-23）
 
-- `flutter analyze --no-pub lib/watch_together test/watch_together`：无问题，日志 `/tmp/fusion-together-analyze-final.log`。
-- `flutter test --no-pub --dart-define=CAPTURE_FUSION=true test/watch_together`：306 tests passed，日志 `/tmp/fusion-together-regression-final.log`。
+- `flutter analyze --no-pub lib/watch_together test/watch_together`：无问题，日志 `<local-artifacts>/fusion-together-analyze-final.log`。
+- `flutter test --no-pub --dart-define=CAPTURE_FUSION=true test/watch_together`：306 tests passed，日志 `<local-artifacts>/fusion-together-regression-final.log`。
 - 保留既有同步回归；新增真实 loopback WebSocket admission fixture 验证 64 位和 `_-` 标识原样通过协议、加入框粘贴不截断/不剥离字符、非法格式留在表单。
 - Provider fixture 验证 transport 断开/恢复、离开后解绑、终止房间提示和新房间清除旧提示。
 - Widget fixture 验证 390×844、960×540、320×640/2 倍字体、内容焦点进入/返回壳、缺资源不能开播、空入口创建取消与加入流程。
-- 新增 `test/watch_together/local_media_match_dialog_test.dart` 和 Provider 本地匹配回归：显式确认、服务器隔离、版本选择、过期查询/lease、旧 binding 退出保护、房主晋升保留协议身份。最终集中批次 443 项通过，另 8 项本地匹配 UI 测试全部通过（`/tmp/plezy-final-together-tests.log`、`/tmp/plezy-final-local-match-tests.log`；集中首轮的 4 项 spinner 超时已修复并由后者重跑覆盖）。
-- 最终版本校验补丁后 `test/screens/video_player/playback_reload_failure_test.dart` 与 `test/watch_together/watch_together_provider_test.dart` 共 73 项全部通过（`/tmp/plezy-final-local-version-tests.log`）。两条新增真实 Screen fixture 经 backend 初始化与 in-place reload，分别证明 source ID 重排仍可打开/重新绑定，以及剪辑回退在 native open 前被拒绝。对应 scoped analyze 无问题（`/tmp/fusion-local-reload-guard-analyze.log`）。
+- 新增 `test/watch_together/local_media_match_dialog_test.dart` 和 Provider 本地匹配回归：显式确认、服务器隔离、版本选择、过期查询/lease、旧 binding 退出保护、房主晋升保留协议身份。最终集中批次 443 项通过，另 8 项本地匹配 UI 测试全部通过（`<local-artifacts>/plezy-final-together-tests.log`、`<local-artifacts>/plezy-final-local-match-tests.log`；集中首轮的 4 项 spinner 超时已修复并由后者重跑覆盖）。
+- 最终版本校验补丁后 `test/screens/video_player/playback_reload_failure_test.dart` 与 `test/watch_together/watch_together_provider_test.dart` 共 73 项全部通过（`<local-artifacts>/plezy-final-local-version-tests.log`）。两条新增真实 Screen fixture 经 backend 初始化与 in-place reload，分别证明 source ID 重排仍可打开/重新绑定，以及剪辑回退在 native open 前被拒绝。对应 scoped analyze 无问题（`<local-artifacts>/fusion-local-reload-guard-analyze.log`）。
 - 截图：`docs/qa/fusion/together-phone.png`、`docs/qa/fusion/together-tv.png`。通过 `CAPTURE_FUSION=true` 重建，加载仓库字体，已人工查看；数据仅来自测试专用 Provider fixture，**不是实际中继/真实双端截图**。
 
 ## 未闭环与不可声称

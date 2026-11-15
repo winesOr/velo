@@ -1,6 +1,6 @@
 # Velo 2.23.8 合并交付记录
 
-日期：2026-10-24。基线 HEAD：`ba09c8f`，合并源为 `<repo>` 当前共享工作目录里的 Claude 与 Codex 未提交改动。检查时两边改动已在同一目录，不存在 Git 未合并条目。保留原有工作区，并在 `/tmp/plezy-merged-source-20261024-144906.tar.gz` 保存了打包前源码快照。
+日期：2026-10-24。基线 HEAD：`ba09c8f`，合并源为 `<repo>` 当前共享工作目录里的 Claude 与 Codex 未提交改动。检查时两边改动已在同一目录，不存在 Git 未合并条目。保留原有工作区，并在 `<local-artifacts>/plezy-merged-source-20261024-144906.tar.gz` 保存了打包前源码快照。
 
 ## 合并内容
 

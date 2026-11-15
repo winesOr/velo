@@ -19,11 +19,11 @@
 
 ## 本次续作最终通过与冻结证据
 
-`/tmp/velo-validation-20261111/resume-c-final-results.md`记录：square-art单例1/1后，最新C完整4文件 **137/137、exit0、15.575秒、无超时**。完整批137是当前计数，不能再加单例或早前定向项。日志与状态为`resume-c-final-tests.log`、`resume-c-final-tests-status.json`。容量、TV初始自动focus、有rail200严格全路径与rail移除均已通过；没有仍待修复的C源码/本地验收项。
+`<local-artifacts>/velo-validation-20261111/resume-c-final-results.md`记录：square-art单例1/1后，最新C完整4文件 **137/137、exit0、15.575秒、无超时**。完整批137是当前计数，不能再加单例或早前定向项。日志与状态为`resume-c-final-tests.log`、`resume-c-final-tests-status.json`。容量、TV初始自动focus、有rail200严格全路径与rail移除均已通过；没有仍待修复的C源码/本地验收项。
 
 容量根因与契约保持：fixture `fileSize=238_000_000`，source-1080/path S01E01-1080p.mkv；既有`MediaFilePart.fileSizeFormatted`→`ByteFormatter.formatBytes(decimals:2)`用1024²与两位小数得到226.97 MB。生产技术卡为单Text“本地化label: value”；仅修测试匹配真实文件卡的完整行，未改变产品单位、精度或locale行为。TV修正以实际rail遮挡后的可见区域作为guard与揭示目标，初始已可见不额外居中，保留真实严格几何/焦点路径。square-art旧fixture意外采用宽桌面条件；仅明确390×844 Android phone条件，原选择/旋转/宽图fallback断言完整保留，生产与共享图像helper未改。
 
-24张新图见`resume-c-current-images.json`，来自紧邻的上一完整测试进程；最后只改独立square fixture，生产、10配置矩阵和图像helper未变。validation逐张实看，独立review逐张查看，疑点以单张original复核闭环通过；批量显示导致的TV200列疑点经原图核对撤回，无代码/断言修改。`/tmp/velo-review-final-ui-20261111.md`保留过程并追加最终结论。
+24张新图见`resume-c-current-images.json`，来自紧邻的上一完整测试进程；最后只改独立square fixture，生产、10配置矩阵和图像helper未变。validation逐张实看，独立review逐张查看，疑点以单张original复核闭环通过；批量显示导致的TV200列疑点经原图核对撤回，无代码/断言修改。`<local-artifacts>/velo-review-final-ui-20261111.md`保留过程并追加最终结论。
 
 测试/实图冻结摘要`resume-final-freeze.json`保存2026-11-12 00:47:32 UTC的sourcehash；纯规范化修正后的`resume-build-freeze.json`记录2026-11-12 00:56:50 UTC、freeze ID `1cd00228646a7b35bcd10327a145e3dfe105689fa8462bfb60d34f5b19cb1ea0`。21JSON仅detailPlayback缩进6→4（非排序，added/removed/type_fixed=0），main补if花括号，137测试/24图结论保留；构建source_drift[]。未提交、推送或改用户旧报告。
 
@@ -31,11 +31,11 @@
 
 上一轮最后两例为1过/1败、exit1：TV有rail200路径过，phone-show-cast选中描边、Episode2/12/1、分页及文件路径过，仅裸容量finder未过。当时按两轮上限停止，当前APK未构建；这段记录不删除，也不再当作本次不能继续的指令。容量原因现在已定位为finder/合并标签不符，旧“原因未判断”仅适用于停止时点。
 
-历史证据：`/tmp/velo-validation-20261111/final-blocked-validation-report.md`、`phase3-detail-last-two-tests.log`/status；64文件账本与current-validation-state.json里的blocked_stopped/next_action也是上一轮快照。用户明确续作后的进度以本文件当前状态表和之后validator结果为准。独立review旧关闭项继续保留，新增TV guard须以新图/运行复核。
+历史证据：`<local-artifacts>/velo-validation-20261111/final-blocked-validation-report.md`、`phase3-detail-last-two-tests.log`/status；64文件账本与current-validation-state.json里的blocked_stopped/next_action也是上一轮快照。用户明确续作后的进度以本文件当前状态表和之后validator结果为准。独立review旧关闭项继续保留，新增TV guard须以新图/运行复核。
 
 ## 分批验证证据（重叠不累加）
 
-日志均位于 `/tmp/velo-validation-20261111/`，另有明确绝对路径的除外。
+日志均位于 `<local-artifacts>/velo-validation-20261111/`，另有明确绝对路径的除外。
 
 | 批次 | 真实结果与范围 | 证据 |
 |---|---|---|
@@ -45,7 +45,7 @@
 | P4 | 原15文件有通过证据；delta最后83/83覆盖原7失败及新10安全项；最后静态0诊断 | `phase2-p4-delta-r2-results.md`、`phase2-p4-lint-final-results.md` |
 | P6 | Plex96/96；UI35个独立用例在保留/最终批次通过，其中WhatsOn/Guide修复后27/27为重跑 | `phase3-p6-plex-results.md`、`phase3-p6-ui-results.md`、`phase3-p6-ui-r1-results.md` |
 | B功能/实图 | 容器分流2/2；最后导航/fixture32/32；六张真实字体/图像fixture已查看 | `phase3-f4-functional-r1-results.md`、`phase3-f4-nav-final-results.md` |
-| B生产窄屏滚动 | 最后1/1、format/static0；532px生产高度、两轮双向滚动、完整语义/按钮与点击、零误触，三张新图审查关闭 | `phase3-f4-line-metrics-r1-results.md`、`phase3-f4-title-diagnostic-results.md`、`/tmp/velo-review-final-ui-20261111.md` |
+| B生产窄屏滚动 | 最后1/1、format/static0；532px生产高度、两轮双向滚动、完整语义/按钮与点击、零误触，三张新图审查关闭 | `phase3-f4-line-metrics-r1-results.md`、`phase3-f4-title-diagnostic-results.md`、`<local-artifacts>/velo-review-final-ui-20261111.md` |
 | C恢复与较早运行 | 恢复后定向静态0；旧完整批次126/131，后续局部修正不构成完整批次重验；曾取消的矩阵外层exit0不算通过 | `phase3-resume-results.md`、`phase3-detail-final-full-results.md`、`phase3-detail-functional-r2-results.md` |
 | C较早实图/矩阵 | 深浅真实图片2/2及4图；后续定向7/9，桌面/narrow200/无rail TV200共6张新图中的旧问题审查关闭 | `phase3-detail-artwork-final-results.md`、`phase3-detail-matrix-r1-results.md`、`phase3-detail-matrix-r1-images.json` |
 | C续作前最后两例 | 1/2通过、exit1且未超时中断；TV有rail200路径过，phone仅最后精确容量断言失败 | `phase3-detail-last-two-tests.log`、`phase3-detail-last-two-status.json`；不与旧批次数相加 |
@@ -62,13 +62,13 @@
 | 原命令与环境 | flutter analyze --no-pub仍为LSP JSON/channel解析截断exit255，full machine替代exit0/零诊断；提交前原始codegen --check已实测exit0，不再属于当前失败项。两者各按真实命令/阶段报告，不将替代分析说成flutter analyze通过 |
 | 平台与设备 | 未验证登录后的Home/Library/Watch Together/Settings实机导航、真实服务器认证/播放/PiP/TV遥控/房间/投屏、相机授权成功扫码、5次冷启动/帧时/内存profile、Apple工具链；隔离fixture/smoke不能替代这些场景 |
 
-详情源码恢复证明 `/tmp/velo-detail-recovery/recovery-proof.json`：从首批APK debug source精确恢复5300行/218497字节主文件，再重放新改动。旧GlobalKey等后续已修；恢复本身不是业务交付，也不证明当前APK。共享字体helper `test/test_helpers/preview_fonts.dart` 由C所有、B消费，仅读已有字体资源；未提交、推送或改用户旧报告。
+详情源码恢复证明 `<local-artifacts>/velo-detail-recovery/recovery-proof.json`：从首批APK debug source精确恢复5300行/218497字节主文件，再重放新改动。旧GlobalKey等后续已修；恢复本身不是业务交付，也不证明当前APK。共享字体helper `test/test_helpers/preview_fonts.dart` 由C所有、B消费，仅读已有字体资源；未提交、推送或改用户旧报告。
 
 ## 当前构建产物与可复核证据
 
-当前APK：[velo-resume-debug-arm64.apk](/Volumes/外置SSD/dev/velo/build/validation/velo-resume-debug-arm64.apk)，**338,009,263 bytes**。SHA256：`a2022a998684e1b7fb84e588b3923efcc886cd4e889e3e19e55717b18215f0c9`。ZIP CRC通过、签名工具exit0/v2通过；package `com.wines.velo`，version 2.23.23/code4204。Gradle目标为android-arm64，但依赖另带其他ABI，不称arm64-only。当前构建属于上方build freeze，旧首批APK仅保留作历史与恢复来源。
+当前APK：velo-resume-debug-arm64.apk（历史本地资料未公开：`<repo>/build/validation/velo-resume-debug-arm64.apk`），**338,009,263 bytes**。SHA256：`a2022a998684e1b7fb84e588b3923efcc886cd4e889e3e19e55717b18215f0c9`。ZIP CRC通过、签名工具exit0/v2通过；package `com.wines.velo`，version 2.23.23/code4204。Gradle目标为android-arm64，但依赖另带其他ABI，不称arm64-only。当前构建属于上方build freeze，旧首批APK仅保留作历史与恢复来源。
 
-证据目录 `/tmp/velo-validation-20261111/`：`resume-android-build-status.json`（exit0、33.96秒、source_drift[]、local.properties恢复）、`resume-apk-verification.json`（路径/bytes/hash/ZIP/签名）、`resume-build-freeze.json`。原命令日志：`resume-final-flutter-analyze.log`（exit255）、`resume-final-codegen-standard.log`（历史未暂存exit1）、`commit-codegen-standard.log`/`commit-codegen-standard-status.json`（提交前标准检查exit0、62.78秒）；提交前摘要`commit-staged-validation-report.md`证明83生成物、157项暂存与index SHA均未变化。替代/复验日志：`resume-final-machine-analyzer-r1.log`、`resume-final-codegen-bytecheck.log`，状态见`resume-final-recheck-status.json`；先前隔离阶段真实index未动/暂存0见`resume-codegen-index-proof.json`。当前APK已用于下述隔离smoke，旧首批APK未充当当前交付。
+证据目录 `<local-artifacts>/velo-validation-20261111/`：`resume-android-build-status.json`（exit0、33.96秒、source_drift[]、local.properties恢复）、`resume-apk-verification.json`（路径/bytes/hash/ZIP/签名）、`resume-build-freeze.json`。原命令日志：`resume-final-flutter-analyze.log`（exit255）、`resume-final-codegen-standard.log`（历史未暂存exit1）、`commit-codegen-standard.log`/`commit-codegen-standard-status.json`（提交前标准检查exit0、62.78秒）；提交前摘要`commit-staged-validation-report.md`证明83生成物、157项暂存与index SHA均未变化。替代/复验日志：`resume-final-machine-analyzer-r1.log`、`resume-final-codegen-bytecheck.log`，状态见`resume-final-recheck-status.json`；先前隔离阶段真实index未动/暂存0见`resume-codegen-index-proof.json`。当前APK已用于下述隔离smoke，旧首批APK未充当当前交付。
 
 ## 隔离烟测与环境关闭
 
@@ -114,7 +114,7 @@ C另外在下方首批列出的同22个slang源文件中追加 `detailPlayback.v
 
 ## 首批检查证据（历史快照）
 
-独立检查日志目录：`/tmp/velo-validation-20261111/`；完整汇总 `final-validation.md`。下表文件名均相对此目录。检查由 validation 代理执行；实现代理未自行宣称通过。
+独立检查日志目录：`<local-artifacts>/velo-validation-20261111/`；完整汇总 `final-validation.md`。下表文件名均相对此目录。检查由 validation 代理执行；实现代理未自行宣称通过。
 
 | 检查 | 当前结果 | 证据 |
 |---|---|---|
@@ -131,11 +131,11 @@ C另外在下方首批列出的同22个slang源文件中追加 `detailPlayback.v
 | 完整工作区隔离重生成 | 退出0，83份产物逐字节零差异 | `codegen-bytecheck.log`、`codegen-bytecheck-result.json`；覆盖tracked改动及untracked非忽略源码，未改Git索引或项目脚本 |
 | Android Gradle arm64 debug 构建 | 退出0，成功 | `android-build-escaped-sdk.log`；原 `android-build.log` 为SDK路径编码失败，临时转义并恢复本机配置后重试 |
 | APK ZIP CRC / v2签名 | 通过 | `apk-result.json`、`apk-signature.log`；未安装运行 |
-| 独立最终审查 | 通过，无需追加修复的问题 | `/tmp/velo-review-final-20261111.md`；静态审查不代替测试与真机 |
+| 独立最终审查 | 通过，无需追加修复的问题 | `<local-artifacts>/velo-review-final-20261111.md`；静态审查不代替测试与真机 |
 
 环境准备已确认 Flutter 3.47.7 / Dart 3.13.5、Android SDK/NDK 和 JDK17 可用；生成器临时使用已有Python3.11。wakelock_plus包的旧缓存引用通过离线、锁文件约束的pub get恢复，依赖约束与lock未改。完整 Xcode 未安装，macOS/iOS/tvOS 构建没有执行。未运行全仓 `scripts/ci_checks.sh` 聚合命令、全库单测或额外unused-code扫描；已运行上述分项，不冒充全量CI。
 
-开发 APK：`/Users/wines/velo/build/app/outputs/flutter-apk/app-debug.apk`，287,218,219字节（约273.9MiB）；SHA-256：`01ad681a2ac1e070918c4c73c59345a2ef81670037630e4dd10ff8aff848d8e3`。包含arm64 Flutter引擎、Manifest与DEX；依赖附带部分其他ABI原生库，本次作为arm64 debug验证包。仅本机保留、不入库、不作为正式发布包。首次SDK路径错误来自 Java Properties 按 Latin1 解码未转义中文路径；临时转义已恢复，没有扩大项目源码改动。
+开发 APK：`<repo>/build/app/outputs/flutter-apk/app-debug.apk`，287,218,219字节（约273.9MiB）；SHA-256：`01ad681a2ac1e070918c4c73c59345a2ef81670037630e4dd10ff8aff848d8e3`。包含arm64 Flutter引擎、Manifest与DEX；依赖附带部分其他ABI原生库，本次作为arm64 debug验证包。仅本机保留、不入库、不作为正式发布包。首次SDK路径错误来自 Java Properties 按 Latin1 解码未转义中文路径；临时转义已恢复，没有扩大项目源码改动。
 
 ## 首批审查问题与修正（历史快照）
 
@@ -147,7 +147,7 @@ C另外在下方首批列出的同22个slang源文件中追加 `detailPlayback.v
 
 检查中另外修正：A 的全局队列跨 FakeAsync 夹具隔离；B 的 const 键集合与菜单动画临界帧；C 的异构偏好测试类型推断、TV个人入口导航及评分来源语义。B 菜单时序问题两轮修正后使用项目动画时长加1ms完成退出，保留 pending 无菜单/无重复请求/失败重试断言，不修改业务锁来迁就测试。
 
-初轮审查依据：`/tmp/velo-review-ab-20261111.md`、`/tmp/velo-review-c-20261111.md`；它们列的是修正前问题，不应当作最终仍未修复结论。
+初轮审查依据：`<local-artifacts>/velo-review-ab-20261111.md`、`<local-artifacts>/velo-review-c-20261111.md`；它们列的是修正前问题，不应当作最终仍未修复结论。
 
 ## 首批共享文件变更清单
 

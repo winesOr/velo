@@ -1,0 +1,1287 @@
+{
+  "name": "Velo Cinema Study 02",
+  "updated": "2026-11-13",
+  "scope": "Core only, per latest user instruction. Music, Live TV / DVR and remote pairing deferred.",
+  "claims": "Browser prototype only; no real network, media decoding, casting or room synchronization. Implemented-unverified denotes design reachability, not test results.",
+  "pages": [
+    {
+      "source_class": "SetupScreen",
+      "source": "lib/main.dart:2062",
+      "route": "#welcome",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "ProfileSessionScreen",
+      "source": "lib/navigation/profile_session_screen.dart:72",
+      "route": "#restore",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "ActorMediaScreen",
+      "source": "lib/screens/actor_media_screen.dart:25",
+      "route": "#actor",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "AuthScreen",
+      "source": "lib/screens/auth_screen.dart:43",
+      "route": "#connect",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "CatalogItemDetailScreen",
+      "source": "lib/screens/catalog_item_detail_screen.dart:64",
+      "route": "#catalog-detail",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "CatalogSearchScreen",
+      "source": "lib/screens/catalog_search_screen.dart:22",
+      "route": "#catalog-search",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "CollectionDetailScreen",
+      "source": "lib/screens/collection_detail_screen.dart:47",
+      "route": "#collection",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "DiscoverScreen",
+      "source": "lib/screens/discover_screen.dart:79",
+      "route": "#home",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "ExploreScreen",
+      "source": "lib/screens/explore_screen.dart:50",
+      "route": "#explore",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "HubDetailScreen",
+      "source": "lib/screens/hub_detail_screen.dart:38",
+      "route": "#history",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "LibrariesScreen",
+      "source": "lib/screens/libraries/libraries_screen.dart:48",
+      "route": "#libraries",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "MainScreen",
+      "source": "lib/screens/main_screen.dart:376",
+      "route": "#home",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "MediaDetailScreen",
+      "source": "lib/screens/media_detail_screen.dart:271",
+      "route": "#detail",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "MetadataEditScreen",
+      "source": "lib/screens/metadata_edit_screen.dart:34",
+      "route": "#metadata",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "PlaylistDetailScreen",
+      "source": "lib/screens/playlist/playlist_detail_screen.dart:39",
+      "route": "#playlist",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "PlexMatchScreen",
+      "source": "lib/screens/plex_match_screen.dart:29",
+      "route": "#plex-match",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "AddLocalProfileScreen",
+      "source": "lib/screens/profile/add_local_profile_screen.dart:25",
+      "route": "#profile/new",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "BorrowConnectionScreen",
+      "source": "lib/screens/profile/borrow_connection_screen.dart:43",
+      "route": "#profile/borrow",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "ProfileDetailScreen",
+      "source": "lib/screens/profile/profile_detail_screen.dart:43",
+      "route": "#profile/detail",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "ProfileSwitchScreen",
+      "source": "lib/screens/profile/profile_switch_screen.dart:38",
+      "route": "#profiles",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "SearchScreen",
+      "source": "lib/screens/search_screen.dart:40",
+      "route": "#search",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "AboutScreen",
+      "source": "lib/screens/settings/about_screen.dart:11",
+      "route": "#settings/about",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "AccountPreferencesDetailScreen",
+      "source": "lib/screens/settings/account_preferences_detail_screen.dart:51",
+      "route": "#profile/detail",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "AccountPreferencesScreen",
+      "source": "lib/screens/settings/account_preferences_screen.dart:21",
+      "route": "#settings/accounts",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "AddConnectionScreen",
+      "source": "lib/screens/settings/add_connection_screen.dart:27",
+      "route": "#connect",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "AddJellyfinScreen",
+      "source": "lib/screens/settings/add_jellyfin_screen.dart:87",
+      "route": "#connect/jellyfin",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "AddPlexAccountScreen",
+      "source": "lib/screens/settings/add_plex_account_screen.dart:37",
+      "route": "#connect/plex",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "AppearanceSettingsScreen",
+      "source": "lib/screens/settings/appearance_settings_screen.dart:23",
+      "route": "#settings/appearance",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "EditJellyfinConnectionScreen",
+      "source": "lib/screens/settings/edit_jellyfin_connection_screen.dart:19",
+      "route": "#settings/account-detail",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "ExternalPlayerScreen",
+      "source": "lib/screens/settings/external_player_screen.dart:24",
+      "route": "#settings/external",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "GeneralSettingsScreen",
+      "source": "lib/screens/settings/general_settings_screen.dart:22",
+      "route": "#settings/general",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "KeyboardShortcutsScreen",
+      "source": "lib/screens/settings/keyboard_shortcuts_screen.dart:18",
+      "route": "#settings/shortcuts",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "LicensesScreen",
+      "source": "lib/screens/settings/licenses_screen.dart:17",
+      "route": "#settings/licenses",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "_LicenseDetailScreen",
+      "source": "lib/screens/settings/licenses_screen.dart:100",
+      "route": "#settings/license",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "LogsScreen",
+      "source": "lib/screens/settings/logs_screen.dart:101",
+      "route": "#settings/logs",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "MpvConfigScreen",
+      "source": "lib/screens/settings/mpv_config_screen.dart:29",
+      "route": "#settings/mpv",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "PlaybackSettingsScreen",
+      "source": "lib/screens/settings/playback_settings_screen.dart:28",
+      "route": "#settings/playback",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "RatingSettingsScreen",
+      "source": "lib/screens/settings/rating_settings_screen.dart:19",
+      "route": "#settings/rating",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "SeerrConnectScreen",
+      "source": "lib/screens/settings/seerr_connect_screen.dart:36",
+      "route": "#settings/seerr",
+      "scope": "deferred-draft",
+      "status": "draft-not-in-core-acceptance",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)",
+      "notes": "Latest user scope prioritizes core cinema features; deep third-party integration settings are retained as optional design drafts only."
+    },
+    {
+      "source_class": "SeerrSettingsScreen",
+      "source": "lib/screens/settings/seerr_settings_screen.dart:18",
+      "route": "#settings/seerr",
+      "scope": "deferred-draft",
+      "status": "draft-not-in-core-acceptance",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)",
+      "notes": "Latest user scope prioritizes core cinema features; deep third-party integration settings are retained as optional design drafts only."
+    },
+    {
+      "source_class": "ServicesSettingsScreen",
+      "source": "lib/screens/settings/services_settings_screen.dart:25",
+      "route": "#settings/services",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "SettingsScreen",
+      "source": "lib/screens/settings/settings_screen.dart:85",
+      "route": "#settings",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "SubtitleStylingScreen",
+      "source": "lib/screens/settings/subtitle_styling_screen.dart:13",
+      "route": "#settings/subtitles",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "TrackerLibraryFilterScreen",
+      "source": "lib/screens/settings/tracker_library_filter_screen.dart:20",
+      "route": "#settings/tracker-filter",
+      "scope": "deferred-draft",
+      "status": "draft-not-in-core-acceptance",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)",
+      "notes": "Latest user scope prioritizes core cinema features; deep third-party integration settings are retained as optional design drafts only."
+    },
+    {
+      "source_class": "TrackerSettingsScreen",
+      "source": "lib/screens/settings/tracker_settings_screen.dart:162",
+      "route": "#settings/trakt",
+      "scope": "deferred-draft",
+      "status": "draft-not-in-core-acceptance",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)",
+      "notes": "Latest user scope prioritizes core cinema features; deep third-party integration settings are retained as optional design drafts only."
+    },
+    {
+      "source_class": "TraktSettingsScreen",
+      "source": "lib/screens/settings/trakt_settings_screen.dart:30",
+      "route": "#settings/trakt",
+      "scope": "deferred-draft",
+      "status": "draft-not-in-core-acceptance",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)",
+      "notes": "Latest user scope prioritizes core cinema features; deep third-party integration settings are retained as optional design drafts only."
+    },
+    {
+      "source_class": "VideoPlayerScreen",
+      "source": "lib/screens/video_player_screen.dart:482",
+      "route": "#player",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "WatchTogetherScreen",
+      "source": "lib/watch_together/screens/watch_together_screen.dart:44",
+      "route": "#together",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "states": [
+        "normal",
+        "loading",
+        "empty",
+        "error",
+        "offline",
+        "denied"
+      ],
+      "evidence": "VALIDATION.md (independent QA)"
+    },
+    {
+      "source_class": "FilterNumberPage",
+      "source": "lib/screens/libraries/filters/filter_range_page.dart:20",
+      "route": "#libraries",
+      "panel": "filters",
+      "trigger": "[data-action=\"modal:filters\"]",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "notes": "Mapped to unified filter panel; year chips represent date range proposal, search field handles text."
+    },
+    {
+      "source_class": "FilterDatePage",
+      "source": "lib/screens/libraries/filters/filter_range_page.dart:142",
+      "route": "#libraries",
+      "panel": "filters",
+      "trigger": "[data-action=\"modal:filters\"]",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "notes": "Mapped to unified filter panel; year chips represent date range proposal, search field handles text."
+    },
+    {
+      "source_class": "FilterTextPage",
+      "source": "lib/screens/libraries/filters/filter_text_page.dart:17",
+      "route": "#libraries",
+      "panel": "filters",
+      "trigger": "[data-action=\"modal:filters\"]",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "notes": "Mapped to unified filter panel; year chips represent date range proposal, search field handles text."
+    },
+    {
+      "source_class": "FilterValuePage",
+      "source": "lib/screens/libraries/filters/filter_value_page.dart:22",
+      "route": "#libraries",
+      "panel": "filters",
+      "trigger": "[data-action=\"modal:filters\"]",
+      "scope": "core",
+      "status": "implemented-unverified",
+      "notes": "Mapped to unified filter panel; year chips represent date range proposal, search field handles text."
+    }
+  ],
+  "panels": [
+    {
+      "source_class": "FiltersBottomSheet",
+      "route": "#libraries",
+      "panel": "filters",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "SortBottomSheet",
+      "route": "#libraries",
+      "panel": "sort",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "LibraryQuickPickerSheet",
+      "route": "#libraries",
+      "panel": "library-picker",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "PinEntryDialog",
+      "route": "#profiles",
+      "panel": "pin",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "JoinSessionDialog",
+      "route": "#together",
+      "panel": "join-room",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "LocalMediaMatchDialog",
+      "route": "#room",
+      "panel": "match-media",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "FileInfoBottomSheet",
+      "route": "#detail",
+      "panel": "file",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "MediaContextMenu",
+      "route": "#detail",
+      "panel": "media-more",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "RatingBottomSheet",
+      "route": "#detail",
+      "panel": "rating",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "SeerrRequestSheet",
+      "route": "#catalog-detail",
+      "panel": "request",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "TagEditDialog",
+      "route": "#metadata",
+      "panel": "tags",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "ChapterSheet",
+      "route": "#player",
+      "panel": "chapters",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "DanmakuSettingsSheet",
+      "route": "#player",
+      "panel": "player-settings",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "DanmakuSourcesSheet",
+      "route": "#player",
+      "panel": "sources",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "DanmakuSourceEditor",
+      "route": "#player",
+      "panel": "source-editor",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "DlnaCastSheet",
+      "route": "#player",
+      "panel": "cast",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "PlayerSpeedPopover",
+      "route": "#player",
+      "panel": "speed",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "PlayerEpisodesPopover",
+      "route": "#player",
+      "panel": "episodes",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "PlayerSettingsDrawer",
+      "route": "#player",
+      "panel": "player-settings",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "PlayerSubtitleAppearance",
+      "route": "#settings/subtitles",
+      "panel": null,
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "QueueSheet",
+      "route": "#player",
+      "panel": "queue",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "SubtitleSearchSheet",
+      "route": "#player",
+      "panel": "subtitle-search",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "TrackSheet",
+      "route": "#player",
+      "panel": "audio",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "VersionQualityPicker",
+      "route": "#player",
+      "panel": "versions",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "VideoSettingsSheet",
+      "route": "#player",
+      "panel": "player-settings",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "DeviceCodeDialog",
+      "route": "#connect/plex",
+      "panel": null,
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "PendingAuthDialog",
+      "route": "#connect/plex",
+      "panel": null,
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "CollectionSelectionDialog",
+      "route": "#detail",
+      "panel": "choose-collection",
+      "status": "implemented-unverified"
+    },
+    {
+      "source_class": "PlaylistSelectionDialog",
+      "route": "#detail",
+      "panel": "choose-collection",
+      "status": "implemented-unverified"
+    }
+  ],
+  "shared_components": {
+    "mapped_to": "#lab",
+    "components": [
+      "AppDialog",
+      "AppAlertDialog",
+      "AppMenu",
+      "AppSelectField",
+      "OverlaySheetHost",
+      "BottomSheetHeader",
+      "PlayerDrawerChoice",
+      "PlayerDrawerToggle",
+      "PlayerDrawerRange"
+    ],
+    "states": [
+      "hover",
+      "focus",
+      "pressed",
+      "selected",
+      "loading",
+      "disabled",
+      "error",
+      "success"
+    ]
+  },
+  "additional_routes": [
+    "#series",
+    "#connect/emby",
+    "#settings/danmaku",
+    "#atlas",
+    "#lab"
+  ],
+  "optional_drafts": [
+    {
+      "route": "#downloads",
+      "source_class": "DownloadsScreen",
+      "note": "Related draft; excluded from core acceptance."
+    },
+    {
+      "route": "#sync-rules",
+      "source_class": "SyncRulesScreen",
+      "note": "Related draft; excluded from core acceptance."
+    }
+  ],
+  "deferred": [
+    "MobileRemoteScreen",
+    "LiveTvScreen",
+    "LiveTvShowScheduleScreen",
+    "AlbumDetailScreen",
+    "ArtistDetailScreen",
+    "NowPlayingScreen",
+    "SyncReceiveScreen",
+    "SyncScanScreen",
+    "Live TV recording / guide / favorites sheets",
+    "music queue / mini player"
+  ],
+  "defaults": {
+    "config": "config.js",
+    "css": "styles.css",
+    "theme": "dark monochrome",
+    "optional_tint": "jade",
+    "network": "simulation only",
+    "motion": "TODO(PROTO-01) proposed, not physically measured"
+  },
+  "rating_revision": {
+    "status": "implemented-awaiting-independent-validation",
+    "sources": "Current rating policy and historical prototype brief; no external ratings service connected.",
+    "models": [
+      "rating: neutral headline fallback",
+      "ratings: named external source collection",
+      "userRating: per-film Plex-only personal value"
+    ],
+    "routes": [
+      "#home",
+      "#detail",
+      "#series",
+      "#libraries",
+      "#settings/rating"
+    ],
+    "limits": {
+      "hero": 2,
+      "detail": 4
+    },
+    "demonstrations": [
+      "service-default",
+      "no-rating",
+      "1-source",
+      "2-sources",
+      "4-sources",
+      "5-sources-capped-at-4",
+      "headline-fallback"
+    ],
+    "behavior": [
+      "source enable/disable and order affect hero/detail/poster",
+      "poster badge switch affects only poster badges",
+      "valid personal score preferred on poster",
+      "continue-watching has no rating badge",
+      "Plex per-film session rating save/edit/clear",
+      "JF/Emby retain external community/critic ratings and favorites only"
+    ],
+    "mobile_restored": [
+      "floating four-destination capsule with safe-area clearance",
+      "centered detail title and metadata",
+      "full-width pale primary play button",
+      "light secondary favorite/watched controls"
+    ],
+    "defaults": "config.js RATING_CONFIG; TODO(PROTO-RATING-01), TODO(PROTO-NAV-01)",
+    "deferred_difference": "Historical player center controls not changed in this revision."
+  },
+  "player_v4_revision": {
+    "status": "implemented-awaiting-independent-validation",
+    "scope": "Player only. No real playback, native gestures, DLNA, system orientation, screenshot or PiP APIs.",
+    "entry": "#player",
+    "module": "player.js",
+    "styles": "player.css",
+    "config": "config.js PLAYER_CONFIG",
+    "test_entry": "More → 原型演示状态: role, empty tracks, empty episodes, failed selections, screenshot/PiP capabilities; global toolbar: playback scenarios.",
+    "preservation": [
+      {
+        "id": "P01",
+        "retained": "Top left title/back; top right danmaku/cast/orientation/more",
+        "implementation": "player() / .p-top",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P02",
+        "retained": "Left lock, right screenshot/PiP; no permanent center controls",
+        "implementation": "player() / .p-left-edge / .p-right-edge",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P03",
+        "retained": "Long timeline plus one compact control row",
+        "implementation": "player() / .p-bottom",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P04",
+        "retained": "Anchored speed/subtitle/episode popovers",
+        "implementation": "pOpen / pPositionLayer",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P05",
+        "retained": "Episode titles, movie chapters and queue entry",
+        "implementation": "pLayerData episode-menu / queue",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P06",
+        "retained": "Subtitle selection, off, audio, search and import",
+        "implementation": "pLayerData subtitle-menu",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P07",
+        "retained": "Floating four-tab drawer; more=video, bottom danmaku=danmaku",
+        "implementation": "pLayerData player-settings / pAct drawer",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P08",
+        "retained": "Ratio/skip/core/quality/zoom/sleep",
+        "implementation": "pLayerData video",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P09",
+        "retained": "Audio/delay/gain/channel/reset",
+        "implementation": "pLayerData audio / pAct reset-audio",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P10",
+        "retained": "Primary/secondary/off/offset/size/position/search/import",
+        "implementation": "pLayerData subtitles / pFinishChoice",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P11",
+        "retained": "Danmaku matching/source/filter/style controls",
+        "implementation": "pLayerData danmaku; preserved app.js source handlers",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P12",
+        "retained": "Single HUD toggle, 3-zone double tap, horizontal seek, hold temporary speed",
+        "implementation": "Pointer capture handlers / pTap / pScheduleTap",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P13",
+        "retained": "Left brightness / right volume vertical gesture",
+        "implementation": "pointermove vertical / pFeedbackLevel",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P14",
+        "retained": "Smooth heat area, buffered/played/skip bands and head",
+        "implementation": "pHeatSvg / player timeline",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P15",
+        "retained": "Heat hover/hold preview, snap assistance vs precise drag, keyboard 5s/Enter",
+        "implementation": "pPreview / pCommitSeek / timeline keydown",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P16",
+        "retained": "DLNA-only preserved states and focus return",
+        "implementation": "pOpen cast; preserved app.js cast handlers",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P17",
+        "retained": "Rounded floating popovers and side drawer with layered return",
+        "implementation": "pRenderLayer / closeModal / pPositionLayer",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "P18",
+        "retained": "Always dark HUD, theme-aware menus, reduced motion/high contrast",
+        "implementation": "player.css / p-layer-panel",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "N01",
+        "retained": "History and stable focus, modal Tab trap, TV arrows",
+        "implementation": "nav/back wrappers / keydown / closeModal",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "N02",
+        "retained": "Play/pause/progress/seek/lock unified state",
+        "implementation": "pTogglePlay / pCommitSeek / pAct lock",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "N03",
+        "retained": "Buffer/end/failure/retry; restart resets progress",
+        "implementation": "pStatus / pAct recover",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "N04",
+        "retained": "Existing core/quality/audio/ratio/speed/chapter/queue/season preserved",
+        "implementation": "pLayerData / pChoose / pAct",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "N05",
+        "retained": "Subtitle state, service-gated search and local import retained",
+        "implementation": "pSubtitle / pLayerData subtitles / pFinishChoice",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "N06",
+        "retained": "Danmaku/source CRUD/filter state retained",
+        "implementation": "pLayerData danmaku + legacy action bridge",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "N07",
+        "retained": "DLNA scan/empty/failure/unavailable/handoff retained",
+        "implementation": "cast legacy body + player layer bridge",
+        "validation": "Pending independent QA in VALIDATION.md"
+      },
+      {
+        "id": "N08",
+        "retained": "Clickable levels, TV keyboard, theme/accessibility/global status",
+        "implementation": "pLayerData levels / keydown / player.css",
+        "validation": "Pending independent QA in VALIDATION.md"
+      }
+    ],
+    "differences": [
+      "Old V4 labels/static gesture states now have browser-local demonstrations, not native implementation claims.",
+      "Floating four-tab player drawer and anchored popovers take precedence over generic mobile bottom-sheet suggestions.",
+      "No permanent center transport control; transient feedback is not a control.",
+      "No two-finger gesture added.",
+      "Screenshot/PiP/orientation are explicit simulations; only DLNA handoff semantics retained."
+    ],
+    "defaults": [
+      "TODO(PROTO-PLAYER-01..06)",
+      "Touch/TV hide 5000ms, mouse 3000ms",
+      "Double tap 240ms; gesture threshold 8px",
+      "Hold temporary 2x at 450ms; release/cancel restores prior speed",
+      "Heat hold 450ms; precise drag does not snap; assisted clicks only inside hotspot",
+      "Press/release from existing config; reduced motion preserves feedback without movement"
+    ]
+  }
+}

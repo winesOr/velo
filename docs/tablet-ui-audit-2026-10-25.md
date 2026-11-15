@@ -23,15 +23,15 @@
 
 | 页面 | 竖屏 820 × 1180 | 横屏 1180 × 820 |
 | --- | --- | --- |
-| 首页 | [竖屏](fixtures/tablet/home-820.png) | [横屏](fixtures/tablet/home-1180.png) |
-| 详情 | [竖屏](fixtures/tablet/detail-820.png) | [横屏](fixtures/tablet/detail-1180.png) |
-| 媒体库 | [竖屏](fixtures/tablet/library-820.png) | [横屏](fixtures/tablet/library-1180.png) |
-| 搜索 | [竖屏](fixtures/tablet/search-820.png) | [横屏](fixtures/tablet/search-1180.png) |
-| 设置 | [竖屏](fixtures/tablet/settings-820.png) | [横屏](fixtures/tablet/settings-1180.png) |
-| 一起看 | [竖屏](fixtures/tablet/together-820.png) | [横屏](fixtures/tablet/together-1180.png) |
-| 播放器更多入口 | [竖屏](fixtures/tablet/player-settings-820.png) | [横屏](fixtures/tablet/player-settings-1180.png) |
+| 首页 | 竖屏（历史本地资料未公开：`fixtures/tablet/home-820.png`） | 横屏（历史本地资料未公开：`fixtures/tablet/home-1180.png`） |
+| 详情 | 竖屏（历史本地资料未公开：`fixtures/tablet/detail-820.png`） | 横屏（历史本地资料未公开：`fixtures/tablet/detail-1180.png`） |
+| 媒体库 | 竖屏（历史本地资料未公开：`fixtures/tablet/library-820.png`） | 横屏（历史本地资料未公开：`fixtures/tablet/library-1180.png`） |
+| 搜索 | 竖屏（历史本地资料未公开：`fixtures/tablet/search-820.png`） | 横屏（历史本地资料未公开：`fixtures/tablet/search-1180.png`） |
+| 设置 | 竖屏（历史本地资料未公开：`fixtures/tablet/settings-820.png`） | 横屏（历史本地资料未公开：`fixtures/tablet/settings-1180.png`） |
+| 一起看 | 竖屏（历史本地资料未公开：`fixtures/tablet/together-820.png`） | 横屏（历史本地资料未公开：`fixtures/tablet/together-1180.png`） |
+| 播放器更多入口 | 竖屏（历史本地资料未公开：`fixtures/tablet/player-settings-820.png`） | 横屏（历史本地资料未公开：`fixtures/tablet/player-settings-1180.png`） |
 
-另有 [600 dp 首页](fixtures/tablet/home-600.png) 和 [600 dp 详情](fixtures/tablet/detail-600.png)。播放器截图从真实“更多”按钮打开面板，覆盖外层限宽。
+另有 600 dp 首页（历史本地资料未公开：`fixtures/tablet/home-600.png`） 和 600 dp 详情（历史本地资料未公开：`fixtures/tablet/detail-600.png`）。播放器截图从真实“更多”按钮打开面板，覆盖外层限宽。
 
 ## 验证范围
 

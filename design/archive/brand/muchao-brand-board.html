@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>幕潮 · 品牌提案</title>
+<style>
+  :root { color-scheme: dark; --bg:#0b0d0f; --panel:#12161a; --panel2:#171c21; --line:rgba(255,255,255,.10); --text:#f2f4f5; --muted:#8f9aa2; --aqua:#9fe7dd; --cyan:#66c7c7; --sand:#e3b66d; }
+  * { box-sizing: border-box; }
+  html { background:var(--bg); }
+  body { margin:0; color:var(--text); font-family:"Hiragino Sans","PingFang SC",-apple-system,sans-serif; -webkit-font-smoothing:antialiased; }
+  .page { width:1440px; min-height:1000px; padding:50px 58px 54px; margin:0 auto; position:relative; overflow:hidden; background:
+    radial-gradient(900px 520px at 76% -10%, rgba(58,112,111,.20), transparent 70%),
+    radial-gradient(700px 500px at 12% 95%, rgba(132,95,48,.10), transparent 70%),
+    linear-gradient(145deg,#0a0c0e 0%,#0d1114 52%,#0a0c0e 100%); }
+  .page:before { content:""; position:absolute; inset:0; opacity:.20; pointer-events:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.24'/%3E%3C/svg%3E"); mix-blend-mode:soft-light; }
+  header { display:flex; justify-content:space-between; align-items:flex-start; position:relative; z-index:1; }
+  .eyebrow { color:var(--aqua); font-size:11px; font-weight:700; letter-spacing:.24em; text-transform:uppercase; }
+  h1 { margin:13px 0 0; font-size:54px; line-height:1.06; letter-spacing:-.055em; font-weight:700; }
+  h1 small { display:inline-block; color:var(--muted); font-size:15px; font-weight:400; letter-spacing:.02em; vertical-align:middle; margin-left:16px; transform:translateY(-4px); }
+  .lead { margin:15px 0 0; max-width:660px; color:#b5bec4; font-size:14px; line-height:1.75; }
+  .meta { text-align:right; color:#6f7a82; font-size:11px; line-height:1.9; letter-spacing:.06em; }
+  .meta b { color:#bdc7cd; font-weight:500; }
+  .section-head { margin:42px 0 17px; display:flex; align-items:center; gap:14px; }
+  .section-head h2 { font-size:12px; font-weight:700; letter-spacing:.16em; color:#cbd2d6; margin:0; text-transform:uppercase; }
+  .section-head:after { content:""; height:1px; flex:1; background:linear-gradient(90deg,var(--line),transparent); }
+  .names { display:grid; grid-template-columns:1.65fr repeat(4,1fr); gap:10px; }
+  .name { position:relative; background:linear-gradient(155deg,rgba(255,255,255,.055),rgba(255,255,255,.018)); border:1px solid var(--line); border-radius:14px; padding:18px 18px 16px; min-height:105px; overflow:hidden; }
+  .name.primary { border-color:rgba(159,231,221,.40); background:linear-gradient(145deg,rgba(83,161,153,.20),rgba(255,255,255,.025)); }
+  .name.primary:after { content:""; position:absolute; width:150px; height:150px; right:-70px; top:-80px; border-radius:50%; background:rgba(159,231,221,.15); filter:blur(25px); }
+  .name .zh { font-size:30px; font-weight:700; letter-spacing:.05em; line-height:1.1; }
+  .name.primary .zh { font-size:40px; letter-spacing:.07em; }
+  .name .en { margin-top:7px; font-size:10px; color:#7f8c94; letter-spacing:.16em; text-transform:uppercase; }
+  .name .tag { margin-top:9px; font-size:11px; color:#aeb9bf; }
+  .pick { position:absolute; right:12px; top:12px; border-radius:999px; border:1px solid rgba(159,231,221,.28); color:var(--aqua); font-size:9px; letter-spacing:.12em; padding:4px 7px; }
+  .marks { display:grid; grid-template-columns:1.15fr 1.15fr 1.15fr 1fr; gap:14px; }
+  .card { background:linear-gradient(160deg,rgba(255,255,255,.055),rgba(255,255,255,.018)); border:1px solid var(--line); border-radius:18px; padding:20px; min-height:318px; position:relative; overflow:hidden; }
+  .card .num { color:#6f7b83; font-size:10px; letter-spacing:.18em; font-weight:600; }
+  .card h3 { margin:7px 0 3px; font-size:17px; font-weight:600; letter-spacing:-.01em; }
+  .card p { margin:0; font-size:11px; color:#89969e; line-height:1.6; }
+  .art { height:196px; display:flex; align-items:center; justify-content:center; position:relative; margin:6px -8px 5px; }
+  .mark-svg { width:164px; height:164px; display:block; overflow:visible; }
+  .mono-strip { display:flex; align-items:center; gap:12px; justify-content:center; height:38px; margin-top:4px; }
+  .mini { width:28px; height:28px; border-radius:8px; background:#f3f4f5; display:flex; align-items:center; justify-content:center; }
+  .mini svg { width:20px; height:20px; }
+  .mini.dark { background:#1c1f23; border:1px solid rgba(255,255,255,.14); }
+  .mini.aqua { background:#a9e8df; }
+  .marknote { font-size:10px; color:#7f8c94; letter-spacing:.03em; text-align:center; }
+  .wordmark-card { background:linear-gradient(150deg,rgba(159,231,221,.09),rgba(255,255,255,.02)); }
+  .wordmark { font-family:"Songti SC","STSongti-SC-Bold",serif; font-size:58px; font-weight:700; line-height:1; letter-spacing:.18em; margin:31px 0 0 -4px; }
+  .wordmark-en { color:#7e8a91; font-size:12px; letter-spacing:.44em; margin-top:13px; text-transform:uppercase; }
+  .wordmark-rule { width:66px; height:2px; margin-top:25px; background:linear-gradient(90deg,var(--aqua),transparent); }
+  .tagline { color:#aab5bb; font-size:12px; line-height:1.8; margin-top:14px; }
+  .lockup { display:flex; align-items:center; gap:14px; margin-top:28px; }
+  .lockup .mark-svg { width:55px; height:55px; }
+  .lockup .zh { font-size:28px; font-weight:700; letter-spacing:.07em; }
+  .lockup .sub { color:#718089; font-size:8px; letter-spacing:.22em; margin-top:3px; }
+  .bottom { display:grid; grid-template-columns:1.35fr 1fr; gap:14px; margin-top:14px; }
+  .context { min-height:210px; padding:20px 22px; border:1px solid var(--line); border-radius:18px; overflow:hidden; position:relative; background:
+    radial-gradient(80% 130% at 80% 30%,rgba(55,125,119,.32),transparent 65%),
+    radial-gradient(70% 110% at 10% 80%,rgba(144,104,57,.18),transparent 70%),
+    linear-gradient(135deg,#0e1a1b,#080b0d); }
+  .context:before { content:""; position:absolute; inset:0; background:linear-gradient(90deg,rgba(6,8,9,.86),rgba(6,8,9,.12)); }
+  .context > * { position:relative; z-index:1; }
+  .context .kicker { font-size:9px; letter-spacing:.2em; color:#8fd7ce; }
+  .context .lockup { margin-top:24px; }
+  .context .lockup .mark-svg { width:64px; height:64px; }
+  .context .lockup .zh { font-size:34px; }
+  .context .caption { font-size:10px; color:#8f9da3; margin-top:20px; line-height:1.7; max-width:340px; }
+  .palette { padding:20px 22px; border:1px solid var(--line); border-radius:18px; background:rgba(255,255,255,.026); }
+  .palette h4 { font-size:11px; letter-spacing:.15em; color:#aeb8be; margin:0 0 14px; font-weight:600; }
+  .swatches { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; }
+  .swatch { height:55px; border-radius:9px; position:relative; border:1px solid rgba(255,255,255,.08); }
+  .swatch span { position:absolute; bottom:-19px; left:0; font-size:8px; color:#77838b; letter-spacing:.04em; }
+  .palette .note { margin-top:29px; color:#849198; font-size:10px; line-height:1.7; }
+  .footer { display:flex; justify-content:space-between; margin-top:23px; color:#566168; font-size:9px; letter-spacing:.09em; }
+  .footer b { color:#8d999f; font-weight:500; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div>
+      <div class="eyebrow">Naming & identity · 2026.10</div>
+      <h1>幕潮 <small>Mùcháo / MUCHAO</small></h1>
+      <p class="lead">幕，是银幕与剧场；潮，是弹幕的密度、观看的流速，也是热力图的起伏。它不把播放器说成工具箱，而把“很多人正在同一刻被同一画面打动”这件事，变成品牌本身。</p>
+    </div>
+    <div class="meta"><b>方向</b> 电影感 · 流动 · 克制<br><b>基底</b> 深灰玻璃 / 青绿潮光<br><b>状态</b> 初选提案 · 未查重</div>
+  </header>
+
+  <div class="section-head"><h2>01 · Naming shortlist</h2></div>
+  <div class="names">
+    <div class="name primary"><span class="pick">首选</span><div class="zh">幕潮</div><div class="en">MUCHAO</div><div class="tag">银幕之幕，弹幕之潮。两个核心能力各取一字。</div></div>
+    <div class="name"><div class="zh">映潮</div><div class="en">YINGCHAO</div><div class="tag">更偏“放映”，更柔和。</div></div>
+    <div class="name"><div class="zh">潮幕</div><div class="en">CHAOMU</div><div class="tag">更强调潮水先至，略实验。</div></div>
+    <div class="name"><div class="zh">幕光</div><div class="en">MUGUANG</div><div class="tag">安静、影院感，弹幕指向较弱。</div></div>
+    <div class="name"><div class="zh">流幕</div><div class="en">LIUMU</div><div class="tag">流动感强，但更像功能名。</div></div>
+  </div>
+
+  <div class="section-head"><h2>02 · Three mark directions</h2></div>
+  <div class="marks">
+    <div class="card">
+      <div class="num">01 / RECOMMENDED</div><h3>潮切光圈</h3><p>播放键被两道潮汐负空间切开，像光圈，也像弹幕轨道。</p>
+      <div class="art">
+        <svg class="mark-svg" viewBox="0 0 160 160" aria-label="潮切光圈">
+          <defs>
+            <linearGradient id="a1" x1="18" y1="140" x2="143" y2="20" gradientUnits="userSpaceOnUse"><stop stop-color="#4b9b96"/><stop offset=".55" stop-color="#86d8cf"/><stop offset="1" stop-color="#c7f5ed"/></linearGradient>
+            <clipPath id="c1"><path d="M33 21h94c7 0 12 5 12 12v94c0 7-5 12-12 12H33c-7 0-12-5-12-12V33c0-7 5-12 12-12Z"/></clipPath>
+          </defs>
+          <path d="M33 21h94c7 0 12 5 12 12v94c0 7-5 12-12 12H33c-7 0-12-5-12-12V33c0-7 5-12 12-12Z" fill="url(#a1)"/>
+          <g clip-path="url(#c1)" fill="#0c1114">
+            <path d="M-8 80c22-14 42-14 64 0s42 14 64 0 42-14 64 0v14c-22-14-42-14-64 0s-42 14-64 0-42-14-64 0Z"/>
+            <path d="M-8 113c22-14 42-14 64 0s42 14 64 0 42-14 64 0v14c-22-14-42-14-64 0s-42 14-64 0-42-14-64 0Z" opacity=".75"/>
+          </g>
+          <path d="M67 55.5 104 80 67 104.5Z" fill="#f5fffc"/>
+        </svg>
+      </div>
+      <div class="mono-strip"><div class="mini"><svg viewBox="0 0 160 160"><path d="M33 21h94c7 0 12 5 12 12v94c0 7-5 12-12 12H33c-7 0-12-5-12-12V33c0-7 5-12 12-12Z" fill="#121416"/><path d="M-8 80c22-14 42-14 64 0s42 14 64 0 42-14 64 0v14c-22-14-42-14-64 0s-42 14-64 0-42-14-64 0Z" fill="#f3f4f5"/><path d="M-8 113c22-14 42-14 64 0s42 14 64 0 42-14 64 0v14c-22-14-42-14-64 0s-42 14-64 0-42-14-64 0Z" fill="#f3f4f5" opacity=".72"/><path d="M67 55.5 104 80 67 104.5Z" fill="#a9e8df"/></svg></div><div class="mini dark"><svg viewBox="0 0 160 160"><path d="M33 21h94c7 0 12 5 12 12v94c0 7-5 12-12 12H33c-7 0-12-5-12-12V33c0-7 5-12 12-12Z" fill="#a9e8df"/><path d="M-8 80c22-14 42-14 64 0s42 14 64 0 42-14 64 0v14c-22-14-42-14-64 0s-42 14-64 0-42-14-64 0Z" fill="#121416"/><path d="M-8 113c22-14 42-14 64 0s42 14 64 0 42-14 64 0v14c-22-14-42-14-64 0s-42 14-64 0-42-14-64 0Z" fill="#121416" opacity=".75"/><path d="M67 55.5 104 80 67 104.5Z" fill="#f3f4f5"/></svg></div><div class="mini aqua"><svg viewBox="0 0 160 160"><path d="M33 21h94c7 0 12 5 12 12v94c0 7-5 12-12 12H33c-7 0-12-5-12-12V33c0-7 5-12 12-12Z" fill="#121416"/><path d="M-8 80c22-14 42-14 64 0s42 14 64 0 42-14 64 0v14c-22-14-42-14-64 0s-42 14-64 0-42-14-64 0Z" fill="#f3f4f5"/><path d="M-8 113c22-14 42-14 64 0s42 14 64 0 42-14 64 0v14c-22-14-42-14-64 0s-42 14-64 0-42-14-64 0Z" fill="#f3f4f5" opacity=".72"/><path d="M67 55.5 104 80 67 104.5Z" fill="#121416"/></svg></div></div>
+      <div class="marknote">16px 仍靠双波纹与三角方向识别</div>
+    </div>
+    <div class="card">
+      <div class="num">02</div><h3>弹幕折幕</h3><p>三条速度不同的轨道折成 M，右侧收束为播放方向。</p>
+      <div class="art">
+        <svg class="mark-svg" viewBox="0 0 160 160" aria-label="弹幕折幕">
+          <defs><linearGradient id="a2" x1="22" y1="132" x2="139" y2="26" gradientUnits="userSpaceOnUse"><stop stop-color="#5ba8a2"/><stop offset="1" stop-color="#c2eee7"/></linearGradient></defs>
+          <rect x="21" y="21" width="118" height="118" rx="27" fill="#152329"/>
+          <path d="M41 117V64l34 29 28-25 16 14v35" fill="none" stroke="url(#a2)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M41 44h78" stroke="#e8faf6" stroke-width="6" stroke-linecap="round" opacity=".92"/>
+          <path d="M91 72l29 18-29 18Z" fill="#e8faf6"/>
+        </svg>
+      </div>
+      <div class="mono-strip"><div class="mini"><svg viewBox="0 0 160 160"><rect x="21" y="21" width="118" height="118" rx="27" fill="#f3f4f5"/><path d="M41 117V64l34 29 28-25 16 14v35" fill="none" stroke="#121416" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M41 44h78" stroke="#121416" stroke-width="6" stroke-linecap="round"/><path d="M91 72l29 18-29 18Z" fill="#121416"/></svg></div><div class="mini dark"><svg viewBox="0 0 160 160"><rect x="21" y="21" width="118" height="118" rx="27" fill="#a9e8df"/><path d="M41 117V64l34 29 28-25 16 14v35" fill="none" stroke="#121416" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M41 44h78" stroke="#121416" stroke-width="6" stroke-linecap="round"/><path d="M91 72l29 18-29 18Z" fill="#121416"/></svg></div><div class="mini aqua"><svg viewBox="0 0 160 160"><rect x="21" y="21" width="118" height="118" rx="27" fill="#121416"/><path d="M41 117V64l34 29 28-25 16 14v35" fill="none" stroke="#f3f4f5" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M41 44h78" stroke="#f3f4f5" stroke-width="6" stroke-linecap="round"/><path d="M91 72l29 18-29 18Z" fill="#f3f4f5"/></svg></div></div>
+      <div class="marknote">更像产品名首字母，但小尺寸信息偏多</div>
+    </div>
+    <div class="card">
+      <div class="num">03</div><h3>帘隙播放</h3><p>一道斜切的帘缝，把画面与声音引向播放方向。</p>
+      <div class="art">
+        <svg class="mark-svg" viewBox="0 0 160 160" aria-label="帘隙播放">
+          <defs><linearGradient id="a3" x1="30" y1="137" x2="133" y2="21" gradientUnits="userSpaceOnUse"><stop stop-color="#487e7e"/><stop offset="1" stop-color="#d1f6ee"/></linearGradient></defs>
+          <path d="M44 23h72c12 0 21 9 21 21v72c0 12-9 21-21 21H44c-12 0-21-9-21-21V44c0-12 9-21 21-21Z" fill="#132126"/>
+          <path d="M59 35 104 80 59 125" fill="none" stroke="url(#a3)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M59 57 82 80 59 103" fill="none" stroke="#e9fbf7" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M111 48c7 4 12 11 12 19" fill="none" stroke="#9fded7" stroke-width="5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="mono-strip"><div class="mini"><svg viewBox="0 0 160 160"><path d="M44 23h72c12 0 21 9 21 21v72c0 12-9 21-21 21H44c-12 0-21-9-21-21V44c0-12 9-21 21-21Z" fill="#121416"/><path d="M59 35 104 80 59 125" fill="none" stroke="#f3f4f5" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/><path d="M59 57 82 80 59 103" fill="none" stroke="#a9e8df" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M111 48c7 4 12 11 12 19" fill="none" stroke="#f3f4f5" stroke-width="5" stroke-linecap="round"/></svg></div><div class="mini dark"><svg viewBox="0 0 160 160"><path d="M44 23h72c12 0 21 9 21 21v72c0 12-9 21-21 21H44c-12 0-21-9-21-21V44c0-12 9-21 21-21Z" fill="#a9e8df"/><path d="M59 35 104 80 59 125" fill="none" stroke="#121416" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/><path d="M59 57 82 80 59 103" fill="none" stroke="#121416" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M111 48c7 4 12 11 12 19" fill="none" stroke="#121416" stroke-width="5" stroke-linecap="round"/></svg></div><div class="mini aqua"><svg viewBox="0 0 160 160"><path d="M44 23h72c12 0 21 9 21 21v72c0 12-9 21-21 21H44c-12 0-21-9-21-21V44c0-12 9-21 21-21Z" fill="#121416"/><path d="M59 35 104 80 59 125" fill="none" stroke="#f3f4f5" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/><path d="M59 57 82 80 59 103" fill="none" stroke="#a9e8df" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M111 48c7 4 12 11 12 19" fill="none" stroke="#f3f4f5" stroke-width="5" stroke-linecap="round"/></svg></div></div>
+      <div class="marknote">更高级克制，但略像通用播放器</div>
+    </div>
+    <div class="card wordmark-card">
+      <div class="num">TYPE / WORDMARK</div><h3>字标与锁合</h3><p>中文用宋体骨架保留影院感，英文只作辅助，不抢主识别。</p>
+      <div class="wordmark">幕潮</div>
+      <div class="wordmark-en">MUCHAO</div>
+      <div class="wordmark-rule"></div>
+      <div class="tagline">让每一次播放，<br>都汇成一场潮。</div>
+      <div class="lockup">
+        <svg class="mark-svg" viewBox="0 0 160 160"><defs><linearGradient id="a4" x1="18" y1="140" x2="143" y2="20" gradientUnits="userSpaceOnUse"><stop stop-color="#4b9b96"/><stop offset=".55" stop-color="#86d8cf"/><stop offset="1" stop-color="#c7f5ed"/></linearGradient><clipPath id="c4"><path d="M33 21h94c7 0 12 5 12 12v94c0 7-5 12-12 12H33c-7 0-12-5-12-12V33c0-7 5-12 12-12Z"/></clipPath></defs><path d="M33 21h94c7 0 12 5 12 12v94c0 7-5 12-12 12H33c-7 0-12-5-12-12V33c0-7 5-12 12-12Z" fill="url(#a4)"/><g clip-path="url(#c4)" fill="#0c1114"><path d="M-8 80c22-14 42-14 64 0s42 14 64 0 42-14 64 0v14c-22-14-42-14-64 0s-42 14-64 0-42-14-64 0Z"/><path d="M-8 113c22-14 42-14 64 0s42 14 64 0 42-14 64 0v14c-22-14-42-14-64 0s-42 14-64 0-42-14-64 0Z" opacity=".75"/></g><path d="M67 55.5 104 80 67 104.5Z" fill="#f5fffc"/></svg>
+        <div><div class="zh">幕潮</div><div class="sub">MUCHAO</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="context">
+      <div class="kicker">IN CONTEXT / PLAYER HEADER</div>
+      <div class="lockup"><svg class="mark-svg" viewBox="0 0 160 160"><defs><linearGradient id="a5" x1="18" y1="140" x2="143" y2="20" gradientUnits="userSpaceOnUse"><stop stop-color="#4b9b96"/><stop offset=".55" stop-color="#86d8cf"/><stop offset="1" stop-color="#c7f5ed"/></linearGradient><clipPath id="c5"><path d="M33 21h94c7 0 12 5 12 12v94c0 7-5 12-12 12H33c-7 0-12-5-12-12V33c0-7 5-12 12-12Z"/></clipPath></defs><path d="M33 21h94c7 0 12 5 12 12v94c0 7-5 12-12 12H33c-7 0-12-5-12-12V33c0-7 5-12 12-12Z" fill="url(#a5)"/><g clip-path="url(#c5)" fill="#0c1114"><path d="M-8 80c22-14 42-14 64 0s42 14 64 0 42-14 64 0v14c-22-14-42-14-64 0s-42 14-64 0-42-14-64 0Z"/><path d="M-8 113c22-14 42-14 64 0s42 14 64 0 42-14 64 0v14c-22-14-42-14-64 0s-42 14-64 0-42-14-64 0Z" opacity=".75"/></g><path d="M67 55.5 104 80 67 104.5Z" fill="#f5fffc"/></svg><div><div class="zh">幕潮</div><div class="sub">MUCHAO</div></div></div>
+      <div class="caption">放在播放器左上角时，标记保持低饱和，文字用常规字重；不抢 Emby 片名 logo，不与画面海报色打架。</div>
+    </div>
+    <div class="palette">
+      <h4>COLOR SYSTEM</h4>
+      <div class="swatches">
+        <div class="swatch" style="background:#0b0d0f"><span>INK #0B0D0F</span></div>
+        <div class="swatch" style="background:#1c1f23"><span>SLATE #1C1F23</span></div>
+        <div class="swatch" style="background:#66c7c7"><span>TIDE #66C7C7</span></div>
+        <div class="swatch" style="background:#a9e8df"><span>FOAM #A9E8DF</span></div>
+        <div class="swatch" style="background:#e3b66d"><span>SAND #E3B66D</span></div>
+      </div>
+      <div class="note">主品牌只使用墨黑、石板灰与潮光青绿。沙金仅用于片头片尾、热力峰值等状态，不作为大面积品牌色。这样既保留弹幕的“光”，也不会与海报环境色冲突。</div>
+    </div>
+  </div>
+
+  <div class="footer"><span><b>MUCHAO</b> · BRAND EXPLORATION</span><span>NAME & TRADEMARK AVAILABILITY NOT YET VERIFIED</span></div>
+</div>
+</body>
+</html>

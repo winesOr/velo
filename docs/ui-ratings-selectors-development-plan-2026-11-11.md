@@ -12,13 +12,13 @@ P1–P8的当前交付、已验证范围和未完成项统一维护在 [验收�
 
 ## 历史停止事实与续作验收范围
 
-上一轮最后定向1过/1败、exit1，TV有rail200完整路径通过，phone-show-cast只在exact `226.97 MB` finder失败；当时依法停止，未构建当前APK。该失败现已定位为测试finder与真实合并标签不符，不能继续表述为未知产品容量bug。历史证据：`/tmp/velo-validation-20261111/final-blocked-validation-report.md`及`phase3-detail-last-two-*`。
+上一轮最后定向1过/1败、exit1，TV有rail200完整路径通过，phone-show-cast只在exact `226.97 MB` finder失败；当时依法停止，未构建当前APK。该失败现已定位为测试finder与真实合并标签不符，不能继续表述为未知产品容量bug。历史证据：`<local-artifacts>/velo-validation-20261111/final-blocked-validation-report.md`及`phase3-detail-last-two-*`。
 
-源码与实图门禁已闭合：`resume-c-final-results.md`记录C137/137，`resume-c-current-images.json`及独立review记录24图；最后square修正仅变更单独fixture，生产/矩阵/图像helper未变。规范化整理后的build freeze为`1cd00228646a7b35bcd10327a145e3dfe105689fa8462bfb60d34f5b19cb1ea0`，当前APK构建/ZIP/v2签名/hash核验及隔离smoke通过，source_drift[]、local.properties恢复。交付路径`/Volumes/外置SSD/dev/velo/build/validation/velo-resume-debug-arm64.apk`；原命令例外和具体测试范围见验收报告。
+源码与实图门禁已闭合：`resume-c-final-results.md`记录C137/137，`resume-c-current-images.json`及独立review记录24图；最后square修正仅变更单独fixture，生产/矩阵/图像helper未变。规范化整理后的build freeze为`1cd00228646a7b35bcd10327a145e3dfe105689fa8462bfb60d34f5b19cb1ea0`，当前APK构建/ZIP/v2签名/hash核验及隔离smoke通过，source_drift[]、local.properties恢复。交付路径`<repo>/build/validation/velo-resume-debug-arm64.apk`；原命令例外和具体测试范围见验收报告。
 
 64个唯一Dart测试文件账本用于逐文件归属/替代关系，不是去重通过用例总数。上一轮emulator-5586/PID3180关闭保留为历史；本次专用AVD新PID77431完成最新APK安装、未登录入口/Jellyfin与Emby添加页/空地址/相机权限拒绝恢复烟测。2026-11-12 01:06:38 UTC确认PID与ADB目标均不存在，临时AVD保留、用户AVD未触碰，证据`resume-emulator-stop-proof.json`；01:06:09的退出中瞬态另存，未被当作最终关闭。
 
-详情恢复保护保持：首批APK debug source精确恢复5300行/218497字节主文件后重放新改动，证明为 `/tmp/velo-detail-recovery/recovery-proof.json`；不再运行旧replay-main.py。恢复不等于当前业务或APK完成。`test/test_helpers/preview_fonts.dart`由C所有、B消费；字体来自现有SDK/项目/依赖。当前AGENTS保留Plex/Jellyfin/Emby、Watch Together、mpv/ExoPlayer及手机/TV；旧“可选VLC”不授权本批新增或替换核心。
+详情恢复保护保持：首批APK debug source精确恢复5300行/218497字节主文件后重放新改动，证明为 `<local-artifacts>/velo-detail-recovery/recovery-proof.json`；不再运行旧replay-main.py。恢复不等于当前业务或APK完成。`test/test_helpers/preview_fonts.dart`由C所有、B消费；字体来自现有SDK/项目/依赖。当前AGENTS保留Plex/Jellyfin/Emby、Watch Together、mpv/ExoPlayer及手机/TV；旧“可选VLC”不授权本批新增或替换核心。
 
 ## 第一批历史验证基线
 
@@ -46,7 +46,7 @@ P1–P8的当前交付、已验证范围和未完成项统一维护在 [验收�
 
 - 代码以本轮工作区与 `f955f2a` 为初始基线；现有实现要按具体位置改进，不按历史完成记录推断现状。
 - 远端任务说明：[界面、评分、选择器与性能改造方案](https://github.com/winesOr/velo/blob/92c7e72ee42140c88f7a7d231be819f5bc9d83b2/docs/ui-ratings-selectors-performance-plan-2026-11-11.md)。该分支尚未合入 main，只有文档提交；本计划不要求先合并该分支。
-- 用户设计稿：`/Users/wines/Downloads/Velo 界面改版设计稿.html`。包含手机详情、组件、手机首页、播放器展开菜单、桌面/TV 详情、交互反馈六个画板。原稿保留在用户 Downloads，本计划不把原稿、压缩资源或私有图片入库。
+- 用户设计稿：`<local-path> 界面改版设计稿.html`。包含手机详情、组件、手机首页、播放器展开菜单、桌面/TV 详情、交互反馈六个画板。原稿保留在用户 Downloads，本计划不把原稿、压缩资源或私有图片入库。
 - 设计稿是静态状态展示；轨道切换、TV 遥控器、真实评分保存、错误恢复必须由应用测试和设备验收证明。
 - 本轮网页调研与浏览器视觉核对的结论、来源和限制见后续“调研与设计审查”补充。未经过真机确认的常亮根因和性能收益均作为假设。
 
@@ -264,4 +264,4 @@ B 的局部组件验证后，逐控件核对现有 InkWell/Focusable 行为，�
 4. 加载占位随最终槽位变化；失败/重试、无轨/单轨、副字幕冲突、保存失败、禁用、未知来源、亮色/RTL/降级等未展示状态加入任务卡。
 5. “正在打开”属于 pending；“已保存”只能由真实成功驱动，失败恢复原值并提示，触感每个有效动作最多一次。
 
-本轮临时证据：网页简报 `/tmp/velo-web-research-20261111.md`，视觉简报 `/tmp/velo-design-visual-review-20261111.md`；六板截图分别为 `/tmp/velo-design-mobile-20261111.png`、`/tmp/velo-design-components-20261111.png`、`/tmp/velo-design-home-20261111.png`、`/tmp/velo-design-player-20261111.png`、`/tmp/velo-design-tv-20261111.png`、`/tmp/velo-design-feedback-20261111.png`。这些是本机审阅证据，不是应用真机截图，不随代码提交。
+本轮临时证据：网页简报 `<local-artifacts>/velo-web-research-20261111.md`，视觉简报 `<local-artifacts>/velo-design-visual-review-20261111.md`；六板截图分别为 `<local-artifacts>/velo-design-mobile-20261111.png`、`<local-artifacts>/velo-design-components-20261111.png`、`<local-artifacts>/velo-design-home-20261111.png`、`<local-artifacts>/velo-design-player-20261111.png`、`<local-artifacts>/velo-design-tv-20261111.png`、`<local-artifacts>/velo-design-feedback-20261111.png`。这些是本机审阅证据，不是应用真机截图，不随代码提交。

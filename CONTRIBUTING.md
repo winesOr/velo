@@ -19,7 +19,12 @@ configuration, signing keys, third-party APKs or copyrighted media. Redact logs 
 Use Python 3.10 or later (3.13 recommended) for repository scripts. The upstream release workflows remain disabled for
 Velo until independent application identifiers, signing and update channels are configured. The upstream marketing
 website, private QA screenshots, prototype reference artwork and local native archives are not included in this
-source-only publication; historical notes may refer to those local-only artifacts.
+source publication; historical notes may refer to those local-only artifacts.
+
+Reviewed design prototypes, original demo screenshots and redacted research notes are published through
+[the design archive](design/README.md) and [development notes](docs/README.md). Restricted reference artwork is
+replaced in public prototypes. Historical validation notes describe their original local source snapshot, not a
+new test run or functionality guaranteed by this documentation-only publication.
 
 ## Development
 

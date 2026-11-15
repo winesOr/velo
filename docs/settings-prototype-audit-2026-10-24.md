@@ -84,8 +84,8 @@
 
 | 深色设置 | 浅色设置 |
 |---|---|
-| ![修改后深色设置](<repo>/docs/qa/settings-audit-2026-10-24/settings_phone_dark.png) | ![修改后浅色设置](<repo>/docs/qa/settings-audit-2026-10-24/settings_phone_light.png) |
+| 修改后深色设置（历史本地资料未公开：`<repo>/docs/qa/settings-audit-2026-10-24/settings_phone_dark.png`） | 修改后浅色设置（历史本地资料未公开：`<repo>/docs/qa/settings-audit-2026-10-24/settings_phone_light.png`） |
 
-[320 宽、两倍文字缩放](<repo>/docs/qa/settings-audit-2026-10-24/settings_phone_narrow_large.png) · [TV 分类与弹幕参数](<repo>/docs/qa/settings-audit-2026-10-24/fusion_settings_tv.png) · [弹幕全页设置](<repo>/docs/qa/settings-audit-2026-10-24/danmaku_settings_phone.png)
+320 宽、两倍文字缩放（历史本地资料未公开：`<repo>/docs/qa/settings-audit-2026-10-24/settings_phone_narrow_large.png`） · TV 分类与弹幕参数（历史本地资料未公开：`<repo>/docs/qa/settings-audit-2026-10-24/fusion_settings_tv.png`） · 弹幕全页设置（历史本地资料未公开：`<repo>/docs/qa/settings-audit-2026-10-24/danmaku_settings_phone.png`）
 
-[浏览器原型深色](<repo>/docs/qa/settings-audit-2026-10-24/prototype-phone-dark.png) · [浏览器原型浅色](<repo>/docs/qa/settings-audit-2026-10-24/prototype-phone-light.png)
+浏览器原型深色（历史本地资料未公开：`<repo>/docs/qa/settings-audit-2026-10-24/prototype-phone-dark.png`） · 浏览器原型浅色（历史本地资料未公开：`<repo>/docs/qa/settings-audit-2026-10-24/prototype-phone-light.png`）

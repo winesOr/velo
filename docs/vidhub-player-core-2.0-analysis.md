@@ -117,7 +117,7 @@ mpv 核心走另一个 JNI 包装 `libplayer.so`（`com.omi.omimpv.wrapper.MPVLi
 
 ```bash
 # 解出 arm64 原生库（放到独立临时目录）
-D=$(mktemp -d /tmp/vidhub-libs.XXXX)
+D=$(mktemp -d <local-artifacts>/vidhub-libs.XXXX)
 unzip -q reference/apk/vidhub/vidhub-config-arm64-v8a.apk 'lib/arm64-v8a/*' -d "$D"
 
 # 版本
@@ -131,7 +131,7 @@ apktool d -s -o "$D/res" reference/apk/vidhub/vidhub-base.apk
 grep -o 'name="settings_\(playback\|player\)[^"]*">[^<]*' "$D/res/res/values/strings.xml"
 
 # Plezy 预编译 libmpv 是否带 libbluray
-P=$(mktemp -d /tmp/plezy-mpv.XXXX)
+P=$(mktemp -d <local-artifacts>/plezy-mpv.XXXX)
 tar -xzf prebuilt_mpv/libmpv-android-3ce46fbf5add-arm64-v8a.tar.gz -C "$P"
 strings "$P/lib/libmpv.so" | grep -iE 'bd://|libbluray|dvdnav'
 ```

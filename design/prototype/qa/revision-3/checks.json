@@ -1,0 +1,249 @@
+{
+  "date": "2026-10-23",
+  "checks": [
+    {
+      "name": "Carousel arrow buttons removed",
+      "passed": true
+    },
+    {
+      "name": "Home uses actual Emby logo",
+      "passed": true
+    },
+    {
+      "name": "Server menu anchored below trigger, not bottom",
+      "passed": true,
+      "data": {
+        "top": 103,
+        "bottom": 382.5,
+        "anchorBottom": 94,
+        "height": 844,
+        "radius": "16px"
+      }
+    },
+    {
+      "name": "Jellyfin selection updates home logo",
+      "passed": true
+    },
+    {
+      "name": "Server identity also updates TV",
+      "passed": true
+    },
+    {
+      "name": "Real pointer swipe changes carousel",
+      "passed": true
+    },
+    {
+      "name": "Title tap still opens detail after swipe",
+      "passed": true
+    },
+    {
+      "name": "Version source changes both text and logo",
+      "passed": true
+    },
+    {
+      "name": "Theme picker is centered and fully rounded",
+      "passed": true,
+      "data": {
+        "delta": 0,
+        "radius": "16px"
+      }
+    },
+    {
+      "name": "Settings selects light appearance",
+      "passed": true
+    },
+    {
+      "name": "Manual preference persists across pages",
+      "passed": true
+    },
+    {
+      "name": "Manual light overrides dark OS",
+      "passed": true
+    },
+    {
+      "name": "Manual dark selection works",
+      "passed": true
+    },
+    {
+      "name": "Dark navigation has distinct surface, edge, selection and text",
+      "passed": true,
+      "data": {
+        "bar": "rgba(47, 50, 59, 0.91)",
+        "edge": "rgba(255, 255, 255, 0.25)",
+        "page": "rgb(0, 0, 0)",
+        "active": "rgba(255, 255, 255, 0.18)",
+        "activeColor": "rgb(244, 245, 247)",
+        "idle": "rgb(195, 200, 209)"
+      }
+    },
+    {
+      "name": "System mode follows dark OS",
+      "passed": true
+    },
+    {
+      "name": "System mode reacts live to light OS",
+      "passed": true
+    },
+    {
+      "name": "System mode reacts live back to dark OS",
+      "passed": true
+    },
+    {
+      "name": "home renders in light without overflow or initial avatar",
+      "passed": true,
+      "data": {
+        "mode": "light",
+        "resolved": "light",
+        "overflow": false,
+        "broken": 0,
+        "initialAvatar": false
+      }
+    },
+    {
+      "name": "detail renders in light without overflow or initial avatar",
+      "passed": true,
+      "data": {
+        "mode": "light",
+        "resolved": "light",
+        "overflow": false,
+        "broken": 0,
+        "initialAvatar": false
+      }
+    },
+    {
+      "name": "library renders in light without overflow or initial avatar",
+      "passed": true,
+      "data": {
+        "mode": "light",
+        "resolved": "light",
+        "overflow": false,
+        "broken": 0,
+        "initialAvatar": false
+      }
+    },
+    {
+      "name": "together renders in light without overflow or initial avatar",
+      "passed": true,
+      "data": {
+        "mode": "light",
+        "resolved": "light",
+        "overflow": false,
+        "broken": 0,
+        "initialAvatar": false
+      }
+    },
+    {
+      "name": "settings renders in light without overflow or initial avatar",
+      "passed": true,
+      "data": {
+        "mode": "light",
+        "resolved": "light",
+        "overflow": false,
+        "broken": 0,
+        "initialAvatar": false
+      }
+    },
+    {
+      "name": "player renders in light without overflow or initial avatar",
+      "passed": true,
+      "data": {
+        "mode": "light",
+        "resolved": "light",
+        "overflow": false,
+        "broken": 0,
+        "initialAvatar": false
+      }
+    },
+    {
+      "name": "home renders in dark without overflow or initial avatar",
+      "passed": true,
+      "data": {
+        "mode": "dark",
+        "resolved": "dark",
+        "overflow": false,
+        "broken": 0,
+        "initialAvatar": false
+      }
+    },
+    {
+      "name": "detail renders in dark without overflow or initial avatar",
+      "passed": true,
+      "data": {
+        "mode": "dark",
+        "resolved": "dark",
+        "overflow": false,
+        "broken": 0,
+        "initialAvatar": false
+      }
+    },
+    {
+      "name": "library renders in dark without overflow or initial avatar",
+      "passed": true,
+      "data": {
+        "mode": "dark",
+        "resolved": "dark",
+        "overflow": false,
+        "broken": 0,
+        "initialAvatar": false
+      }
+    },
+    {
+      "name": "together renders in dark without overflow or initial avatar",
+      "passed": true,
+      "data": {
+        "mode": "dark",
+        "resolved": "dark",
+        "overflow": false,
+        "broken": 0,
+        "initialAvatar": false
+      }
+    },
+    {
+      "name": "settings renders in dark without overflow or initial avatar",
+      "passed": true,
+      "data": {
+        "mode": "dark",
+        "resolved": "dark",
+        "overflow": false,
+        "broken": 0,
+        "initialAvatar": false
+      }
+    },
+    {
+      "name": "player renders in dark without overflow or initial avatar",
+      "passed": true,
+      "data": {
+        "mode": "dark",
+        "resolved": "dark",
+        "overflow": false,
+        "broken": 0,
+        "initialAvatar": false
+      }
+    },
+    {
+      "name": "Touch swipe changes carousel on 390px viewport",
+      "passed": true
+    },
+    {
+      "name": "Mobile filter floats centrally inside device",
+      "passed": true,
+      "data": {
+        "docWidth": 390,
+        "inside": true,
+        "centerDelta": 0
+      }
+    },
+    {
+      "name": "TV arrow navigation stays inside floating dialog",
+      "passed": true,
+      "data": {
+        "inside": true,
+        "label": "跟随系统随系统外观自动切换"
+      }
+    },
+    {
+      "name": "Appearance preference synchronizes all six overview previews",
+      "passed": true
+    }
+  ]
+}

@@ -25,10 +25,10 @@ Flutter 截图使用实际 `DiscoverScreen`、`FusionHomeHero`、`HubSection`、
 
 | | 原型 | Flutter |
 | --- | --- | --- |
-| 深色 | [查看](fixtures/home-prototype-dark.png) | [查看](fixtures/home-audit-dark.png) |
-| 浅色 | [查看](fixtures/home-prototype-light.png) | [查看](fixtures/home-audit-light.png) |
-| 深色下滚 | — | [查看](fixtures/home-audit-dark-scrolled.png) |
-| 浅色下滚 | — | [查看](fixtures/home-audit-light-scrolled.png) |
+| 深色 | 查看（历史本地资料未公开：`fixtures/home-prototype-dark.png`） | 查看（历史本地资料未公开：`fixtures/home-audit-dark.png`） |
+| 浅色 | 查看（历史本地资料未公开：`fixtures/home-prototype-light.png`） | 查看（历史本地资料未公开：`fixtures/home-audit-light.png`） |
+| 深色下滚 | — | 查看（历史本地资料未公开：`fixtures/home-audit-dark-scrolled.png`） |
+| 浅色下滚 | — | 查看（历史本地资料未公开：`fixtures/home-audit-light-scrolled.png`） |
 
 复现截图：
 
@@ -50,7 +50,7 @@ flutter test --no-pub --dart-define=UPDATE_HOME_SCREENSHOTS=true test/screens/di
 
 同时发现详情页有了深色海报底色后，浅色外观仍使用深色文字和裸露的深色操作图标。首页与详情页现在共用 `artworkTextColors` 的对比度计算，详情页只适配文字、图标和标题阴影，不套用首页的字号、行高等布局样式；所选外观的亮度保持不变。
 
-新增真实 `MediaDetailScreen` 的海报测试：将《沙丘》原型海报注入图片缓存，验证深浅外观、文字与收藏/已看按钮对比度、共享渐变和接缝上下 9 行的颜色。预览使用测试媒体数据，不代表真实服务器状态：[浅色外观](fixtures/detail-artwork-light.png)、[深色外观](fixtures/detail-artwork-dark.png)。
+新增真实 `MediaDetailScreen` 的海报测试：将《沙丘》原型海报注入图片缓存，验证深浅外观、文字与收藏/已看按钮对比度、共享渐变和接缝上下 9 行的颜色。预览使用测试媒体数据，不代表真实服务器状态：浅色外观（历史本地资料未公开：`fixtures/detail-artwork-light.png`）、深色外观（历史本地资料未公开：`fixtures/detail-artwork-dark.png`）。
 
 最终集中回归覆盖详情页、首页、主视觉融合、主题、首页主题及海报取色，共 **126 项通过**；7 个本轮相关实现与测试文件静态检查无问题，相关差异空白检查通过。重新生成并复核了中文详情页截图。这是本轮相关范围的结果，不代表重新执行并通过全仓库 CI。
 

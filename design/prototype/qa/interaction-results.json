@@ -1,0 +1,237 @@
+{
+  "date": "2026-10-23",
+  "checks": [
+    {
+      "name": "Home last rapid selection wins",
+      "passed": true
+    },
+    {
+      "name": "Home has intermediate palette frames",
+      "passed": true
+    },
+    {
+      "name": "No fallback flash during carousel transition",
+      "passed": true
+    },
+    {
+      "name": "Detail full episode picker updates play action",
+      "passed": true
+    },
+    {
+      "name": "Detail version switch updates selected version",
+      "passed": true
+    },
+    {
+      "name": "Favorite state updates",
+      "passed": true
+    },
+    {
+      "name": "Movie detail has no episode controls",
+      "passed": true
+    },
+    {
+      "name": "Combined filters show empty state",
+      "passed": true
+    },
+    {
+      "name": "Reset restores all media",
+      "passed": true
+    },
+    {
+      "name": "Search filters movie and music",
+      "passed": true
+    },
+    {
+      "name": "First danmaku use starts with no built-in source",
+      "passed": true
+    },
+    {
+      "name": "Loopback source receives useful validation",
+      "passed": true
+    },
+    {
+      "name": "Custom source saved with path prefix",
+      "passed": true
+    },
+    {
+      "name": "Danmaku style range works by keyboard",
+      "passed": true
+    },
+    {
+      "name": "Invalid invite shows error",
+      "passed": true
+    },
+    {
+      "name": "Guest readiness toggles",
+      "passed": true
+    },
+    {
+      "name": "Player cast mock connects",
+      "passed": true
+    },
+    {
+      "name": "Player heatmap switch works",
+      "passed": true
+    },
+    {
+      "name": "Timeline supports keyboard seek",
+      "passed": true
+    },
+    {
+      "name": "TV spatial focus moves right",
+      "passed": true
+    },
+    {
+      "name": "home clean render and no horizontal overflow",
+      "passed": true,
+      "details": {
+        "errors": [],
+        "broken": [],
+        "width": [
+          [
+            374,
+            374
+          ],
+          [
+            1040,
+            1040
+          ]
+        ]
+      }
+    },
+    {
+      "name": "detail clean render and no horizontal overflow",
+      "passed": true,
+      "details": {
+        "errors": [],
+        "broken": [],
+        "width": [
+          [
+            374,
+            374
+          ],
+          [
+            1040,
+            1040
+          ]
+        ]
+      }
+    },
+    {
+      "name": "library clean render and no horizontal overflow",
+      "passed": true,
+      "details": {
+        "errors": [],
+        "broken": [],
+        "width": [
+          [
+            374,
+            374
+          ],
+          [
+            1040,
+            1040
+          ]
+        ]
+      }
+    },
+    {
+      "name": "together clean render and no horizontal overflow",
+      "passed": true,
+      "details": {
+        "errors": [],
+        "broken": [],
+        "width": [
+          [
+            374,
+            374
+          ],
+          [
+            1040,
+            1040
+          ]
+        ]
+      }
+    },
+    {
+      "name": "settings clean render and no horizontal overflow",
+      "passed": true,
+      "details": {
+        "errors": [],
+        "broken": [],
+        "width": [
+          [
+            374,
+            374
+          ],
+          [
+            1040,
+            1040
+          ]
+        ]
+      }
+    },
+    {
+      "name": "player clean render and no horizontal overflow",
+      "passed": true,
+      "details": {
+        "errors": [],
+        "broken": [],
+        "width": []
+      }
+    },
+    {
+      "name": "home fits 390px mobile viewport",
+      "passed": true,
+      "details": {
+        "width": 390,
+        "document": 390,
+        "phone": 390,
+        "nav": 348
+      }
+    },
+    {
+      "name": "detail fits 390px mobile viewport",
+      "passed": true,
+      "details": {
+        "width": 390,
+        "document": 390,
+        "phone": 390
+      }
+    },
+    {
+      "name": "library fits 390px mobile viewport",
+      "passed": true,
+      "details": {
+        "width": 390,
+        "document": 390,
+        "phone": 390,
+        "nav": 348
+      }
+    },
+    {
+      "name": "together fits 390px mobile viewport",
+      "passed": true,
+      "details": {
+        "width": 390,
+        "document": 390,
+        "phone": 390,
+        "nav": 348
+      }
+    },
+    {
+      "name": "settings fits 390px mobile viewport",
+      "passed": true,
+      "details": {
+        "width": 390,
+        "document": 390,
+        "phone": 390,
+        "nav": 348
+      }
+    },
+    {
+      "name": "Overview contains all six surfaces",
+      "passed": true
+    }
+  ]
+}
