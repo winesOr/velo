@@ -21,9 +21,9 @@
 
 ## 设计与研究档案
 
-用户指定的主交付是**最早 prototype 系列按后续要求迭代后的最终 UI 基准 V1**：[总览](design/prototype/index.html) · [首页](design/prototype/home.html) · [最终规范](design/prototype/final-ui-spec.html) · [UI 优化方案](design/prototype/ui-improvements.html) · [性能优化方案](design/prototype/performance-improvements.html) · [V1 脱敏冻结包](design/downloads/prototype-final-v1-sanitized.zip)。工作目录与冻结档案源自同一基准；本次恢复原始参考图、配色与截图，公开图仅遮罩一处敏感路径，图片尺寸及遮罩外像素保持不变，本地原件不改动。公开 ZIP 是脱敏重打包版，不与原冻结 ZIP 逐字节相同；不将替代插画版称作原视觉，也不声称找到了未经迭代的第一稿。V2 与竞品研究保留为其他档案。
+用户指定的主交付是**最早 prototype 系列按后续要求迭代后的最终 UI 基准 V1**：[总览](design/prototype/index.html) · [首页](design/prototype/home.html) · [最终规范](design/prototype/final-ui-spec.html) · [UI 优化方案](design/prototype/ui-improvements.html) · [性能优化方案](design/prototype/performance-improvements.html) · [V1 脱敏冻结包](design/downloads/prototype-final-v1-sanitized.zip)。工作目录与冻结档案源自同一基准；本次恢复原始参考图、配色与截图，公开图仅遮罩一处敏感路径，图片尺寸及遮罩外像素保持不变，本地原件不改动。公开 ZIP 是脱敏重打包版，不与原冻结 ZIP 逐字节相同；不将替代插画版称作原视觉，也不声称找到了未经迭代的第一稿。其他原型（V2、VidHub 研究原型及冻结副本）已移除，仓库只保留这一版原型。
 
-[设计总入口](design/README.md) · [研究、优化与验收文档](docs/README.md) · [完整设计研究归档](design/downloads/velo-design-and-research.zip)。原始参考素材与历史 QA / 预览图按本次明确要求仅在设计档案内保留，来源说明继续适用，不构成生产素材授权。原型交互不代表真实播放、投屏或房间功能已实现。资料快照为 `c350c4a`；本次发布分支仅携带文档与原型，不包含该本地快照前的 50 个产品开发提交。
+[设计总入口](design/README.md) · [研究、优化与验收文档](docs/README.md)。原始参考素材与历史 QA / 预览图按本次明确要求仅在设计档案内保留，来源说明继续适用，不构成生产素材授权。原型交互不代表真实播放、投屏或房间功能已实现。资料快照为 `c350c4a`；本次发布分支仅携带文档与原型，不包含该本地快照前的 50 个产品开发提交。
 
 ## 当前状态
 

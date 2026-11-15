@@ -24,8 +24,7 @@ source publication; historical notes may refer to those local-only artifacts.
 The main design handoff is the earlier prototype series iterated into its final UI baseline V1:
 [overview](design/prototype/index.html), [home](design/prototype/home.html),
 [specification](design/prototype/final-ui-spec.html) and [sanitized V1 archive](design/downloads/prototype-final-v1-sanitized.zip).
-The [complete design and research archive](design/downloads/velo-design-and-research.zip) includes the other studies.
-V2 and competitor studies remain separate research archives. This is not an untouched first draft.
+This is the only prototype kept in the repository; V2 and the other study prototypes were removed. This is not an untouched first draft.
 
 A narrow archive-only exception preserves the nine original reference JPGs and the original QA / preview PNGs
 for this explicitly requested V1 visual reference. One sensitive path is masked in the public screenshot; image
