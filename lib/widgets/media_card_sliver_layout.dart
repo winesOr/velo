@@ -52,6 +52,7 @@ class MediaCardSliverLayout extends StatelessWidget {
     this.listEpoch,
     this.gridEpochBuilder,
     this.minimumItemWidth,
+    this.columnCount,
   });
 
   final ViewMode viewMode;
@@ -68,6 +69,7 @@ class MediaCardSliverLayout extends StatelessWidget {
   final Object? listEpoch;
   final Object? Function(MediaGridGeometry geometry)? gridEpochBuilder;
   final double? minimumItemWidth;
+  final int? columnCount;
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +122,7 @@ class MediaCardSliverLayout extends StatelessWidget {
               fullBleedImage: fullBleedImage,
               shape: shape,
               minimumItemWidth: compactPosters ? null : minimumItemWidth,
-              columnCountOverride: compactPosters ? 3 : null,
+              columnCountOverride: columnCount ?? (compactPosters ? 3 : null),
               spacingOverride: compactPosters ? 10 : null,
             );
             onGridGeometry?.call(geometry);

@@ -328,7 +328,7 @@ void main() {
     // In place: no re-selection churn.
     expect(selected.length, selectionsBefore);
   });
-  testWidgets('switching through the TV Recommended backdrop keeps sibling tabs mounted', (tester) async {
+  testWidgets('TV replaces saved library sections with a search header and one wall', (tester) async {
     TvDetectionService.debugSetAppleTVOverride(true);
     final client = _HubClient();
     final harness = await _Harness.create(
@@ -342,22 +342,14 @@ void main() {
     addTearDown(harness.dispose);
     await harness.pump(tester, settle: false);
     await pumpRequestFrames(tester);
-    final controller = harness.controller(tester);
-    expect(controller.index, LibraryTabType.recommended.index);
-
-    controller.index = LibraryTabType.browse.index;
-    await pumpRequestFrames(tester);
-    final browse = tester.state(find.byType(LibraryBrowseTab));
-    final loads = client.pageRequestCount;
-    expect(loads, greaterThan(0));
-
-    controller.index = LibraryTabType.recommended.index;
-    await pumpRequestFrames(tester);
-    controller.index = LibraryTabType.browse.index;
-    await pumpRequestFrames(tester);
-
-    expect(tester.state(find.byType(LibraryBrowseTab)), same(browse));
-    expect(client.pageRequestCount, loads, reason: 'a kept-alive tab must not reload');
+    expect(find.byType(GroupedLibraryBrowse), findsOneWidget);
+    expect(find.byType(LibraryBrowseTab), findsNothing);
+    expect(find.byKey(const ValueKey('wall-types')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wall-years')), findsOneWidget);
+    expect(find.text(t.common.search), findsOneWidget);
+    expect(find.byTooltip(t.libraries.chooseServer), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Recommended keeps navigation and selection through pending, failed and successful refreshes', (

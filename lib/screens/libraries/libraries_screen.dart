@@ -6,6 +6,7 @@ import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import '../../focus/focusable_action_bar.dart';
+import '../../focus/focusable_text_field.dart';
 import '../../focus/dpad_navigator.dart';
 import '../../focus/input_mode_tracker.dart';
 import '../../mixins/tab_navigation_mixin.dart';
@@ -75,8 +76,10 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   final _groupedBrowseKey = GlobalKey<GroupedLibraryBrowseState>();
 
   String? _selectedLibraryGlobalKey;
-  String? _phoneServerId;
-  bool get _phoneWall => PlatformDetector.isMobile(context);
+  String? _wallServerId;
+  final _wallSearch = TextEditingController();
+  final _wallSearchFocus = FocusNode(debugLabel: 'library_wall_search');
+  bool get _filterWall => PlatformDetector.isMobile(context) || PlatformDetector.isTV();
 
   /// Flag to prevent onTabChanged from focusing when we're programmatically changing tabs
   bool _isRestoringTab = false;
@@ -195,7 +198,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     final savedLibraryKey = storage.getSelectedLibraryKey();
 
     String? libraryGlobalKeyToLoad;
-    if (_phoneWall) {
+    if (_filterWall) {
       libraryGlobalKeyToLoad = allLibrarySourcesKey;
     } else if (savedLibraryKey != null) {
       final libraryExists = visibleLibraries.any((lib) => lib.globalKey == savedLibraryKey);
@@ -389,6 +392,8 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   @override
   void dispose() {
     _outerScrollController.dispose();
+    _wallSearch.dispose();
+    _wallSearchFocus.dispose();
     for (final node in _tabFocusNodes) {
       node.dispose();
     }
@@ -534,7 +539,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   /// Public method to load a library by key (called from MainScreen side nav)
   @override
   void loadLibraryByKey(String libraryGlobalKey) {
-    _loadLibraryContent(_phoneWall ? allLibrarySourcesKey : libraryGlobalKey);
+    _loadLibraryContent(_filterWall ? allLibrarySourcesKey : libraryGlobalKey);
   }
 
   Future<void> _loadLibraryContent(String libraryGlobalKey) async {
@@ -675,7 +680,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     appLogger.d('LibrariesScreen.fullRefresh() called - reloading all content');
     setState(() {
       _selectedLibraryGlobalKey = null;
-      _phoneServerId = null;
+      _wallServerId = null;
     });
 
     // Reinitialize with current libraries from provider
@@ -732,7 +737,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           final hidden = sheetContext.watch<HiddenLibrariesProvider>();
           final servers = sheetContext.watch<MultiServerProvider>().serverIds;
           void selectServer(String? id) {
-            setState(() => _phoneServerId = id);
+            setState(() => _wallServerId = id);
             updateSheet(() {});
           }
 
@@ -760,7 +765,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                 FocusableListTile(
                   leading: const AppIcon(Symbols.dns_rounded),
                   title: Text(t.libraries.allServers),
-                  trailing: _phoneServerId == null ? const AppIcon(Symbols.check_rounded) : null,
+                  trailing: _wallServerId == null ? const AppIcon(Symbols.check_rounded) : null,
                   onTap: () => selectServer(null),
                 ),
                 for (final id in servers)
@@ -772,7 +777,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                             ? const AppIcon(Symbols.dns_rounded)
                             : BackendBadge(backend: client.backend, size: 24),
                         title: Text(client?.serverName ?? id),
-                        trailing: _phoneServerId == id ? const AppIcon(Symbols.check_rounded) : null,
+                        trailing: _wallServerId == id ? const AppIcon(Symbols.check_rounded) : null,
                         onTap: () => selectServer(id),
                       );
                     },
@@ -782,7 +787,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                   child: Text(t.libraries.title, style: Theme.of(sheetContext).textTheme.titleSmall),
                 ),
                 for (final library in libraries.where(
-                  (library) => _phoneServerId == null || library.serverId == _phoneServerId,
+                  (library) => _wallServerId == null || library.serverId == _wallServerId,
                 ))
                   SwitchListTile(
                     title: Text(library.title),
@@ -876,7 +881,12 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     MediaLibrary? selectedLibrary, {
     required bool groupByServer,
   }) {
-    if (_phoneWall) return Text(t.common.search, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700));
+    if (_filterWall) {
+      return Text(
+        t.common.search,
+        style: TextStyle(fontSize: PlatformDetector.isTV() ? 27 : 22, fontWeight: FontWeight.w700),
+      );
+    }
     // No selection at all, or visible list is empty AND we're not browsing a hidden library
     if (_selectedLibraryGlobalKey == null || (visibleLibraries.isEmpty && selectedLibrary == null)) {
       return Text(t.libraries.title);
@@ -996,7 +1006,8 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     final useSideNavigation = PlatformDetector.shouldUseSideNavigation(context);
     final currentTabIndex = _visibleTabs.isEmpty ? 0 : tabController.index.clamp(0, _visibleTabs.length - 1).toInt();
     final currentTabType = _visibleTabs.isEmpty ? null : _visibleTabs[currentTabIndex];
-    final useTvRecommendedBackdrop = PlatformDetector.isTV() && currentTabType == LibraryTabType.recommended;
+    final useTvRecommendedBackdrop =
+        !_filterWall && PlatformDetector.isTV() && currentTabType == LibraryTabType.recommended;
     final showBrowseOptionsAction =
         selectedLibrary != null && PlatformDetector.isMobile(context) && currentTabType == LibraryTabType.browse;
     final showMobileSectionBack =
@@ -1052,7 +1063,28 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       }
     }
 
-    List<FocusableAction> appBarActions() => _phoneWall
+    Widget tvSearchField() => SizedBox(
+      width: 340,
+      height: 40,
+      child: FocusableTextField(
+        focusNode: _wallSearchFocus,
+        tvTextInputAutoOpenBehavior: TvTextInputAutoOpenBehavior.never,
+        controller: _wallSearch,
+        decoration: InputDecoration(
+          hintText: t.libraries.searchHint,
+          prefixIcon: const AppIcon(Symbols.search_rounded, size: 18),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          isDense: true,
+          filled: true,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        ),
+        onChanged: (query) => _groupedBrowseKey.currentState?.updateSearchQuery(query),
+        onSubmitted: (query) => _groupedBrowseKey.currentState?.submitSearchQuery(query),
+        onBack: _focusCurrentTab,
+      ),
+    );
+
+    List<FocusableAction> appBarActions() => _filterWall
         ? [
             FocusableAction(
               icon: Symbols.dns_rounded,
@@ -1169,7 +1201,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           actions: [
             FocusableActionBar(
               key: _actionBarKey,
-              onNavigateLeft: _phoneWall ? null : () => getTabChipFocusNode(_visibleTabs.length - 1).requestFocus(),
+              onNavigateLeft: _filterWall ? null : () => getTabChipFocusNode(_visibleTabs.length - 1).requestFocus(),
               onNavigateDown: _focusCurrentTab,
               actions: appBarActions(),
             ),
@@ -1201,12 +1233,15 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                 actionIcon: Symbols.edit_rounded,
               ),
       );
-    } else if (_phoneWall || _selectedLibraryGlobalKey == allLibrarySourcesKey) {
+    } else if (_filterWall || _selectedLibraryGlobalKey == allLibrarySourcesKey) {
       body = buildSimpleScroll(
         body: GroupedLibraryBrowse(
           key: _groupedBrowseKey,
-          libraries: _phoneWall && _phoneServerId != null
-              ? visibleLibraries.where((library) => library.serverId == _phoneServerId).toList()
+          searchInHeader: PlatformDetector.isTV(),
+          searchController: PlatformDetector.isTV() ? _wallSearch : null,
+          searchFocusNode: PlatformDetector.isTV() ? _wallSearchFocus : null,
+          libraries: _filterWall && _wallServerId != null
+              ? visibleLibraries.where((library) => library.serverId == _wallServerId).toList()
               : visibleLibraries,
           onBack: () => _actionBarKey.currentState?.requestFocusOnFirst(),
         ),
@@ -1288,9 +1323,12 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           : DesktopPageAppBar(
               title: _buildAppBarTitle(visibleLibraries, selectedLibrary, groupByServer: groupByServerSetting),
               actions: [
+                if (PlatformDetector.isTV()) tvSearchField(),
                 FocusableActionBar(
                   key: _actionBarKey,
-                  onNavigateLeft: _phoneWall ? null : () => getTabChipFocusNode(_visibleTabs.length - 1).requestFocus(),
+                  onNavigateLeft: _filterWall
+                      ? null
+                      : () => getTabChipFocusNode(_visibleTabs.length - 1).requestFocus(),
                   onNavigateDown: _focusCurrentTab,
                   actions: appBarActions(),
                 ),

@@ -54,6 +54,9 @@ class GroupedLibraryBrowse extends StatefulWidget {
     this.fetchCollectionsPage,
     this.fetchPlaylistsPage,
     this.fetchPeople,
+    this.searchController,
+    this.searchFocusNode,
+    this.searchInHeader = false,
   });
 
   final List<MediaLibrary> libraries;
@@ -62,6 +65,9 @@ class GroupedLibraryBrowse extends StatefulWidget {
   final GroupedLibraryFetcher? fetchCollectionsPage;
   final GroupedPlaylistFetcher? fetchPlaylistsPage;
   final GroupedPeopleFetcher? fetchPeople;
+  final TextEditingController? searchController;
+  final FocusNode? searchFocusNode;
+  final bool searchInHeader;
 
   @override
   State<GroupedLibraryBrowse> createState() => GroupedLibraryBrowseState();
@@ -69,13 +75,14 @@ class GroupedLibraryBrowse extends StatefulWidget {
 
 class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
   late final GroupedLibraryController _controller;
-  final _search = TextEditingController();
+  late final _search = widget.searchController ?? TextEditingController();
   final _year = TextEditingController();
-  final _searchFocus = FocusNode(debugLabel: 'all_sources_search');
+  late final _searchFocus = widget.searchFocusNode ?? FocusNode(debugLabel: 'all_sources_search');
   final _scroll = ScrollController();
   final _contentFocus = FocusScopeNode(debugLabel: 'all_sources_content');
   final _filterFocus = FocusScopeNode(debugLabel: 'all_sources_filters');
   final Map<String, FocusNode> _nodes = {};
+  final Map<String, FocusScopeNode> _wallRows = {};
   final Map<String, int> _epochs = {};
   Timer? _debounce;
   MediaKind? _kind;
@@ -105,11 +112,29 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
 
   void focusSearchInput() => _searchFocus.requestFocus();
 
+  bool _pendingResultsFocus = false;
+
+  void updateSearchQuery(String query) {
+    _pendingResultsFocus = false;
+    if (_search.text != query) _search.text = query;
+    _queryChanged(debounce: true);
+  }
+
+  void _focusResultsWhenReady() {
+    if (!_pendingResultsFocus || _controller.groups.any((group) => group.loading)) return;
+    _pendingResultsFocus = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && TickerMode.valuesOf(context).enabled) focusContent();
+    });
+  }
+
   void submitSearchQuery(String query) {
     _debounce?.cancel();
     _search.text = query;
     refresh();
     _searchFocus.unfocus();
+    _pendingResultsFocus = true;
+    _focusResultsWhenReady();
   }
 
   @override
@@ -146,13 +171,14 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
           },
     );
     _controller.addListener(_onWallContentChanged);
+    _controller.addListener(_focusResultsWhenReady);
     _controller.reset(widget.libraries, _selection, load: false);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final touch = PlatformDetector.isMobile(context);
+    final touch = PlatformDetector.isMobile(context) || PlatformDetector.isTV();
     if (_controller.groups.every((group) => group.offset == 0 && !group.loading) || touch != _touchWall) {
       if (touch != _touchWall) _sort = touch ? GroupedLibrarySort.updated : GroupedLibrarySort.title;
       _touchWall = touch;
@@ -179,7 +205,10 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
   }
 
   void focusContent() {
-    final nodes = _nodes.values.where((node) => node.context != null && node.canRequestFocus);
+    final candidates = _touchWall
+        ? _controller.entries.map((entry) => _nodes['wall/${entry.library.backend.name}/${entry.globalKey}']).nonNulls
+        : _nodes.values;
+    final nodes = candidates.where((node) => node.parent != null && node.context != null && node.canRequestFocus);
     if (nodes.isNotEmpty) {
       nodes.first.requestFocus();
     } else {
@@ -591,8 +620,11 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
     child: SingleChildScrollView(
       key: ValueKey(key),
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 17),
-      child: Row(children: children),
+      padding: EdgeInsets.symmetric(horizontal: PlatformDetector.isTV() ? 34 : 17),
+      child: FocusScope(
+        node: _wallRows.putIfAbsent(key, () => FocusScopeNode(debugLabel: key)),
+        child: Row(children: children),
+      ),
     ),
   );
 
@@ -604,37 +636,39 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
   Widget _wallControls() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(17, 8, 17, 12),
-        child: SizedBox(
-          height: 40,
-          child: FocusableTextField(
-            controller: _search,
-            focusNode: _searchFocus,
-            decoration: InputDecoration(
-              hintText: t.libraries.searchHint,
-              prefixIcon: const AppIcon(Symbols.search_rounded, size: 18),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              isDense: true,
-              filled: true,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              suffixIcon: _search.text.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: t.common.clear,
-                      onPressed: () {
-                        _search.clear();
-                        _queryChanged();
-                      },
-                      icon: const AppIcon(Symbols.close_rounded, size: 18),
-                    ),
+      if (!widget.searchInHeader)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(17, 8, 17, 12),
+          child: SizedBox(
+            height: 40,
+            child: FocusableTextField(
+              controller: _search,
+              focusNode: _searchFocus,
+              tvTextInputAutoOpenBehavior: TvTextInputAutoOpenBehavior.never,
+              decoration: InputDecoration(
+                hintText: t.libraries.searchHint,
+                prefixIcon: const AppIcon(Symbols.search_rounded, size: 18),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                isDense: true,
+                filled: true,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                suffixIcon: _search.text.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: t.common.clear,
+                        onPressed: () {
+                          _search.clear();
+                          _queryChanged();
+                        },
+                        icon: const AppIcon(Symbols.close_rounded, size: 18),
+                      ),
+              ),
+              onChanged: (_) => _queryChanged(debounce: true),
+              onSubmitted: (_) => _queryChanged(),
+              onBack: widget.onBack,
             ),
-            onChanged: (_) => _queryChanged(debounce: true),
-            onSubmitted: (_) => _queryChanged(),
-            onBack: widget.onBack,
           ),
         ),
-      ),
       _wallRow('wall-types', [
         for (final type in LibraryWallType.values)
           _wallChip(_wallTypeLabel(type), _wallType == type, () {
@@ -740,8 +774,9 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
             viewMode: ViewMode.grid,
             density: 1,
             itemCount: entries.length,
-            padding: const EdgeInsets.symmetric(horizontal: 17),
+            padding: EdgeInsets.symmetric(horizontal: PlatformDetector.isTV() ? 34 : 17),
             minimumItemWidth: 107,
+            columnCount: PlatformDetector.isTV() ? 7 : null,
             itemBuilder: (context, position) {
               final entry = entries[position.index];
               return FocusableMediaCard(
@@ -750,8 +785,18 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
                 viewModeOverride: ViewMode.grid,
                 showServerName: true,
                 libraryName: entry.library.title,
+                focusNode: _node('wall/${entry.library.backend.name}/${entry.globalKey}'),
                 onRefresh: (_) => refresh(),
                 onBack: widget.onBack,
+                onNavigateLeft: position.isFirstColumn ? _searchFocus.requestFocus : null,
+                onNavigateUp: position.isFirstRow
+                    ? () {
+                        _wallRows['wall-years']?.descendants
+                            .where((node) => node.canRequestFocus && node.context != null)
+                            .firstOrNull
+                            ?.requestFocus();
+                      }
+                    : null,
               );
             },
           ),
@@ -936,13 +981,17 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
     _debounce?.cancel();
     _cancelPeople();
     _controller.removeListener(_onWallContentChanged);
+    _controller.removeListener(_focusResultsWhenReady);
     _controller.dispose();
-    _search.dispose();
+    if (widget.searchController == null) _search.dispose();
     _year.dispose();
-    _searchFocus.dispose();
+    if (widget.searchFocusNode == null) _searchFocus.dispose();
     _scroll.dispose();
     _contentFocus.dispose();
     _filterFocus.dispose();
+    for (final row in _wallRows.values) {
+      row.dispose();
+    }
     for (final node in _nodes.values) {
       node.dispose();
     }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/focus/focusable_text_field.dart';
@@ -152,7 +153,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('TV library lays out filters beside source rows without overflow', (tester) async {
+  testWidgets('TV library uses five horizontal filter rows and a seven-column wall', (tester) async {
     await pumpGrouped(
       tester,
       (library, query, abort) async => LibraryPage(
@@ -172,13 +173,34 @@ void main() {
       tv: true,
       size: const Size(960, 540),
     );
+    final grid = tester.widget<SliverGrid>(find.byType(SliverGrid).first);
+    final layout =
+        grid.gridDelegate.getLayout(
+              const SliverConstraints(
+                axisDirection: AxisDirection.down,
+                growthDirection: GrowthDirection.forward,
+                userScrollDirection: ScrollDirection.idle,
+                scrollOffset: 0,
+                precedingScrollExtent: 0,
+                overlap: 0,
+                remainingPaintExtent: 540,
+                crossAxisExtent: 892,
+                crossAxisDirection: AxisDirection.right,
+                viewportMainAxisExtent: 540,
+                remainingCacheExtent: 540,
+                cacheOrigin: 0,
+              ),
+            )
+            as SliverGridRegularTileLayout;
+    expect(layout.crossAxisCount, 7);
+    expect(find.byKey(const ValueKey('wall-years')), findsOneWidget);
     expect(tester.takeException(), isNull);
     await captureTv(tester, find.byKey(const ValueKey('tablet-library')), 'library');
     await tester.pumpWidget(const SizedBox());
     await tester.pump();
   });
 
-  testWidgets('TV source poster transfers left to filters and right to real content', (tester) async {
+  testWidgets('TV poster returns to the year row and remote search restores result focus', (tester) async {
     await pumpGrouped(
       tester,
       (library, query, abort) async => LibraryPage(
@@ -198,9 +220,9 @@ void main() {
     final first = tester.widget<FocusableMediaCard>(find.byType(FocusableMediaCard).first);
     first.focusNode!.requestFocus();
     await tester.pumpAndSettle();
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pumpAndSettle();
-    expect(FocusManager.instance.primaryFocus?.ancestors.any((n) => n.debugLabel == 'all_sources_filters'), isTrue);
+    expect(FocusManager.instance.primaryFocus?.ancestors.any((n) => n.debugLabel == 'wall-years'), isTrue);
     final search = tester.widget<FocusableTextField>(
       find.byWidgetPredicate(
         (widget) => widget is FocusableTextField && widget.focusNode?.debugLabel == 'all_sources_search',
@@ -208,9 +230,10 @@ void main() {
     );
     search.focusNode!.requestFocus();
     await tester.pump();
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    tester.state<GroupedLibraryBrowseState>(find.byType(GroupedLibraryBrowse)).submitSearchQuery('Film');
     await tester.pumpAndSettle();
-    expect(first.focusNode!.hasFocus, isTrue);
+    final result = tester.widget<FocusableMediaCard>(find.byType(FocusableMediaCard).first);
+    expect(result.focusNode!.hasFocus, isTrue);
     expect(tester.takeException(), isNull);
   });
 
