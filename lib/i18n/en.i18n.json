@@ -2700,6 +2700,7 @@
     "successWithoutResume": "Playing on ${device}. The TV did not accept the resume position. You can close Velo and use your TV remote."
   },
   "detailPlayback": {
+    "episodesCompleted": "${n} episodes · Completed",
     "selectVersion": "Select playback version",
     "originalQuality": "Original quality",
     "defaultRoute": "Default route",

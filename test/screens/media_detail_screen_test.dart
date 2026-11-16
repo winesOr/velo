@@ -657,6 +657,8 @@ void main() {
       kind: MediaKind.season,
       title: 'Season 1',
       index: 1,
+      leafCount: 12,
+      raw: {'Status': 'Ended'},
       parentId: show.id,
       serverId: show.serverId,
       serverName: show.serverName,
@@ -667,6 +669,8 @@ void main() {
       kind: MediaKind.season,
       title: 'Season 2',
       index: 2,
+      leafCount: 6,
+      raw: {'Status': 'Continuing'},
       parentId: show.id,
       serverId: show.serverId,
       serverName: show.serverName,
@@ -733,6 +737,9 @@ void main() {
     await _openTvSeasonPicker(tester);
     expect(find.text('Season 1'), findsNWidgets(2));
     expect(find.text('Season 2'), findsOneWidget);
+    expect(find.text(t.detailPlayback.episodesCompleted(n: 12)), findsOneWidget);
+    expect(find.text(t.detailPlayback.episodesAvailable(n: 6)), findsOneWidget);
+    expect(find.text(t.detailPlayback.episodesAvailable(n: 12)), findsNothing);
     final second = find.ancestor(of: find.text('Season 2'), matching: find.byType(FocusableWrapper)).first;
     expect(tester.widget<FocusableWrapper>(second).onLongPress, isNotNull);
     expect(tester.widget<FocusableWrapper>(second).enableLongPress, isTrue);
@@ -752,7 +759,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Season 2'), findsOneWidget);
     expect(find.byType(DetailEpisodeRail), findsOneWidget);
-    expect(find.text('1–1'), findsOneWidget);
+    expect(find.text('1–6'), findsOneWidget);
   });
   testWidgets('TV detail reveal still waits for the supplemental sections', (tester) async {
     // Counterpart to the test above: the early paint does NOT move the TV
@@ -2304,6 +2311,12 @@ void main() {
             )
             ..pendingRelated = Future.value([
               MediaHub(id: 'related', title: 'Related', type: 'movie', items: [recommendation]),
+              MediaHub(
+                id: 'other-server',
+                title: 'Other recommendations',
+                type: 'movie',
+                items: [recommendation.copyWith(serverId: 'server_2', title: 'Other server film')],
+              ),
             ]);
       await pumpPhoneDetail(
         tester,
@@ -2317,6 +2330,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 450));
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(DetailEpisodeRail), findsNothing);
+      expect(find.text(t.explore.detail.relatedMedia), findsOneWidget);
+      expect(find.text('Other recommendations'), findsNothing);
+      expect(find.byType(MediaCard), findsNWidgets(2));
+      expect(find.text('Other server film'), findsOneWidget);
       final foreground = find.byKey(const ValueKey('tv_detail_content_scroll'));
       final scrollable = find.descendant(of: foreground, matching: find.byType(Scrollable)).first;
       final position = tester.state<ScrollableState>(scrollable).position;
@@ -2359,7 +2376,7 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pump();
       await tester.pumpAndSettle(const Duration(milliseconds: 50));
-      expect(FocusManager.instance.primaryFocus?.debugLabel, 'hub_related');
+      expect(FocusManager.instance.primaryFocus?.debugLabel, 'hub_detail.related');
       final relatedCard = find.byType(MediaCard).first;
       expectVisibleAboveRail(relatedCard);
       expect(position.pixels, greaterThan(initialOffset), reason: 'focus reaches and reveals content below the hero');

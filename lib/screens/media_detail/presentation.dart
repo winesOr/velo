@@ -62,7 +62,9 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
                       Text(_seasonLabel(_seasons[index])),
                       if ((_seasons[index].leafCount ?? _seasons[index].childCount) case final count? when count > 0)
                         Text(
-                          t.detailPlayback.episodesAvailable(n: count),
+                          detailSeasonHasEnded(_seasons[index], show: _metadata, seasons: _seasons)
+                              ? t.detailPlayback.episodesCompleted(n: count)
+                              : t.detailPlayback.episodesAvailable(n: count),
                           style: Theme.of(
                             context,
                           ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),

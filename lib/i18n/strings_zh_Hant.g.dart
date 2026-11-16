@@ -2605,6 +2605,7 @@ class _Translations$detailPlayback$zh_Hant extends Translations$detailPlayback$z
 	final TranslationsZhHant _root; // ignore: unused_field
 
 	// Translations
+	@override String episodesCompleted({required Object n}) => '共 ${n} 集 · 已完結';
 	@override String get selectVersion => '選擇播放版本';
 	@override String get originalQuality => '原始畫質';
 	@override String get defaultRoute => '預設線路';
@@ -5851,6 +5852,7 @@ extension on TranslationsZhHant {
 			'danmaku.displayAreaDescription' => '滾動彈幕只出現在畫面頂部的指定行數內。行數設為 0 可關閉該類型，底部會保留字幕空間。',
 			'danmaku.topRows' => ({required Object n}) => '頂部 ${n} 行',
 			'danmaku.styleAndFilters' => '速度、密度與屏蔽',
+			'detailPlayback.episodesCompleted' => ({required Object n}) => '共 ${n} 集 · 已完結',
 			'detailPlayback.selectVersion' => '選擇播放版本',
 			'detailPlayback.originalQuality' => '原始畫質',
 			'detailPlayback.defaultRoute' => '預設線路',

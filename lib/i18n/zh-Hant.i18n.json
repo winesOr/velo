@@ -2631,6 +2631,7 @@
     "successWithoutResume": ""
   },
   "detailPlayback": {
+    "episodesCompleted": "共 ${n} 集 · 已完結",
     "selectVersion": "選擇播放版本",
     "originalQuality": "原始畫質",
     "defaultRoute": "預設線路",

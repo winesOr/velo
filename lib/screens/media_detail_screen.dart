@@ -37,6 +37,7 @@ import 'media_detail/playback_selection.dart';
 import 'media_detail/action_press.dart';
 import 'media_detail/episode_rail.dart';
 import 'media_detail/related_items.dart';
+import 'media_detail/season_status.dart';
 
 import '../focus/dpad_navigator.dart';
 import '../focus/focusable_action_bar.dart';
@@ -2013,21 +2014,19 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       apply: (relatedHubs) {
         _relatedHubSources = relatedHubs;
         final items = detailRelatedItems(relatedHubs);
-        _relatedHubs = PlatformDetector.isTV()
-            ? relatedHubs
-            : [
-                if (items.isNotEmpty)
-                  MediaHub(
-                    id: 'detail.related',
-                    title: t.explore.detail.relatedMedia,
-                    type: 'mixed',
-                    items: items,
-                    size: items.length,
-                    more: true,
-                    serverId: _metadata.serverId,
-                    serverName: _metadata.serverName,
-                  ),
-              ];
+        _relatedHubs = [
+          if (items.isNotEmpty)
+            MediaHub(
+              id: 'detail.related',
+              title: t.explore.detail.relatedMedia,
+              type: 'mixed',
+              items: items,
+              size: items.length,
+              more: true,
+              serverId: _metadata.serverId,
+              serverName: _metadata.serverName,
+            ),
+        ];
         _relatedHubKeys = List.generate(_relatedHubs.length, (_) => GlobalKey<HubSectionState>());
       },
       markLoaded: () => _hasLoadedRelatedHubs = true,

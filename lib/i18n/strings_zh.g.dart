@@ -2688,6 +2688,7 @@ class Translations$detailPlayback$zh extends Translations$detailPlayback$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String episodesCompleted({required Object n}) => '共 ${n} 集 · 已完结';
 	@override String get selectVersion => '选择播放版本';
 	@override String get originalQuality => '原始画质';
 	@override String get defaultRoute => '默认线路';
@@ -6042,6 +6043,7 @@ extension on TranslationsZh {
 			'casting.roomUnavailable' => '请先退出一起看房间，再投送给电视独立播放。',
 			'casting.success' => ({required Object device}) => '已在 ${device} 播放。可以退出 Velo，使用电视遥控器操作。',
 			'casting.successWithoutResume' => ({required Object device}) => '已在 ${device} 播放，电视未接受续播位置。可以退出 Velo，使用电视遥控器操作。',
+			'detailPlayback.episodesCompleted' => ({required Object n}) => '共 ${n} 集 · 已完结',
 			'detailPlayback.selectVersion' => '选择播放版本',
 			'detailPlayback.originalQuality' => '原始画质',
 			'detailPlayback.defaultRoute' => '默认线路',
