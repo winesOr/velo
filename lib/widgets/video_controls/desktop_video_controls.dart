@@ -7,6 +7,8 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/services.dart';
 
 import '../../focus/dpad_navigator.dart';
+import '../../focus/focus_theme.dart';
+import '../../focus/focusable_wrapper.dart';
 import '../../media/media_item.dart';
 import '../../media/stepped_seek.dart';
 import '../../mpv/mpv.dart';
@@ -35,6 +37,8 @@ import 'widgets/video_timeline_bar.dart';
 import 'widgets/volume_control.dart';
 import 'widgets/track_chapter_controls.dart';
 import 'widgets/player_track_summary.dart';
+import 'widgets/player_focus_disc.dart';
+import '../app_icon.dart';
 import 'video_control_button.dart';
 
 /// Desktop-specific video controls layout with top bar and bottom controls
@@ -781,8 +785,12 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
 
   Widget _buildBottomControlsContent(BuildContext _, {required bool hasFrame}) {
     final canInteract = _canControl && hasFrame;
+    final isTv = PlatformDetector.isTV();
+    final tvScale = FocusTheme.tvPlayerScale(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: isTv
+          ? EdgeInsets.symmetric(horizontal: 32 * tvScale, vertical: 22 * tvScale)
+          : const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
         children: [
           if (_isLive && widget.captureBuffer != null) ...[
@@ -819,12 +827,12 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
               previewPosition: _timelineSeek.pendingPosition,
             ),
           ],
-          PlayerTrackSummary(player: widget.player, isLive: _isLive),
+          if (isTv) SizedBox(height: 9 * tvScale) else PlayerTrackSummary(player: widget.player, isLive: _isLive),
           Focus(
             onFocusChange: _onButtonRowFocusChange,
             skipTraversal: true,
             child: Row(
-              crossAxisAlignment: PlatformDetector.isTV() ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               textDirection: PlatformDetector.isTV() ? TextDirection.ltr : null,
               children: [
                 if (!_isLive) ...[
@@ -849,7 +857,7 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
                         child: _buildFocusableButton(
                           focusNode: _prevChapterFocusNode,
                           index: 1,
-                          icon: Symbols.fast_rewind_rounded,
+                          icon: isTv ? Symbols.keyboard_double_arrow_left_rounded : Symbols.fast_rewind_rounded,
                           color: widget.chapters.isNotEmpty && _canControl ? Colors.white : Colors.white54,
                           onPressed: _canControl && widget.chapters.isNotEmpty ? widget.onSeekToPreviousChapter : null,
                           semanticLabel: t.videoControls.previousChapterButton,
@@ -925,7 +933,7 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
                         child: _buildFocusableButton(
                           focusNode: _nextChapterFocusNode,
                           index: 5,
-                          icon: Symbols.fast_forward_rounded,
+                          icon: isTv ? Symbols.keyboard_double_arrow_right_rounded : Symbols.fast_forward_rounded,
                           color: widget.chapters.isNotEmpty && _canControl ? Colors.white : Colors.white54,
                           onPressed: _canControl && widget.chapters.isNotEmpty ? widget.onSeekToNextChapter : null,
                           semanticLabel: t.videoControls.nextChapterButton,
@@ -948,7 +956,7 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
                   ),
                 ],
                 // Finish time (hidden for live TV, faded when too narrow)
-                if (_isLive)
+                if (_isLive || isTv)
                   const Spacer()
                 else
                   Expanded(
@@ -1036,6 +1044,38 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
     String? tooltip,
     Widget Function(Color color)? iconBuilder,
   }) {
+    if (PlatformDetector.isTV()) {
+      final scale = FocusTheme.tvPlayerScale(context);
+      final size = (index == 3 ? 54 : 48) * scale;
+      return Padding(
+        padding: EdgeInsets.only(right: index < 6 ? 6 * scale : 0),
+        child: FocusableWrapper(
+          focusNode: focusNode,
+          onSelect: onPressed,
+          onKeyEvent: (node, event) => _handleButtonKeyEvent(node, event, index),
+          onFocusChange: _onFocusChange,
+          semanticLabel: semanticLabel,
+          descendantsAreFocusable: false,
+          excludeChildSemantics: true,
+          autoScroll: false,
+          delegateFocusBorder: true,
+          focusScale: FocusTheme.playerControlFocusScale,
+          child: PlayerFocusDisc(
+            iconColor: color,
+            showIdleBackground: true,
+            builder: (context, foreground) => SizedBox.square(
+              dimension: size,
+              child: IconButton(
+                onPressed: onPressed,
+                tooltip: tooltip ?? semanticLabel,
+                padding: EdgeInsets.zero,
+                icon: iconBuilder?.call(foreground) ?? AppIcon(icon, color: foreground, size: iconSize * scale),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     return VideoControlButton(
       icon: icon,
       iconBuilder: iconBuilder,

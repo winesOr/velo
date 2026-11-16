@@ -1065,6 +1065,10 @@ class Translations$videoControls$zh extends Translations$videoControls$en {
 	@override String get noAudioTracksDescription => '此媒体没有可选择的音轨';
 	@override String get drawerSecondarySubtitle => '次字幕';
 	@override String get drawerAdjustments => '调整';
+	@override String get speedLabel => '倍速';
+	@override String get subtitleSimplifiedShort => '简中';
+	@override String get subtitleTraditionalShort => '繁中';
+	@override String get audioMandarinShort => '普通话';
 }
 
 // Path: messages
@@ -4349,6 +4353,10 @@ extension on TranslationsZh {
 			'videoControls.noAudioTracksDescription' => '此媒体没有可选择的音轨',
 			'videoControls.drawerSecondarySubtitle' => '次字幕',
 			'videoControls.drawerAdjustments' => '调整',
+			'videoControls.speedLabel' => '倍速',
+			'videoControls.subtitleSimplifiedShort' => '简中',
+			'videoControls.subtitleTraditionalShort' => '繁中',
+			'videoControls.audioMandarinShort' => '普通话',
 			'messages.addedToFavorites' => '已收藏',
 			'messages.removedFromFavorites' => '已取消收藏',
 			'messages.markedAsWatched' => '已标记为已观看',
@@ -4496,12 +4504,12 @@ extension on TranslationsZh {
 			'profiles.removePin' => '移除',
 			'profiles.connectionsLabel' => '连接',
 			'profiles.add' => '添加',
+			_ => null,
+		} ?? switch (path) {
 			'profiles.deleteProfileButton' => '删除用户资料',
 			'profiles.noConnectionsHint' => '没有连接 — 请添加连接以使用此用户资料。',
 			'profiles.noConnections' => '没有连接',
 			'profiles.plexHomeAccount' => 'Plex Home 账户',
-			_ => null,
-		} ?? switch (path) {
 			'profiles.plexAccountChip' => ({required Object account}) => 'Plex 账户：${account}',
 			'profiles.plexAccountUserChip' => ({required Object account, required Object user}) => '${account} 账户下的 ${user}',
 			'profiles.connectionDefault' => '默认',
@@ -5010,12 +5018,12 @@ extension on TranslationsZh {
 			'liveTv.now' => '现在',
 			'liveTv.today' => '今天',
 			'liveTv.tomorrow' => '明天',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.midnight' => '午夜',
 			'liveTv.overnight' => '凌晨',
 			'liveTv.morning' => '上午',
 			'liveTv.daytime' => '白天',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.evening' => '晚上',
 			'liveTv.lateNight' => '深夜',
 			'liveTv.whatsOn' => '正在播出',
@@ -5524,12 +5532,12 @@ extension on TranslationsZh {
 			'performanceOverlay.p7Conversion' => 'P7 转换',
 			'performanceOverlay.sampleRate' => '采样率',
 			'performanceOverlay.pixelFormat' => '像素格式',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.hwFormat' => '硬件格式',
 			'performanceOverlay.matrix' => '矩阵',
 			'performanceOverlay.primaries' => '基色',
 			'performanceOverlay.transfer' => '传递特性',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.renderFps' => '渲染 FPS',
 			'performanceOverlay.displayFps' => '显示 FPS',
 			'performanceOverlay.avSync' => 'A/V 同步',

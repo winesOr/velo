@@ -919,7 +919,11 @@
     "noAudioTracks": "No audio tracks available",
     "noAudioTracksDescription": "This media has no audio tracks to select.",
     "drawerSecondarySubtitle": "Secondary subtitle",
-    "drawerAdjustments": "Adjustments"
+    "drawerAdjustments": "Adjustments",
+    "speedLabel": "Playback speed",
+    "subtitleSimplifiedShort": "Simplified Chinese",
+    "subtitleTraditionalShort": "Traditional Chinese",
+    "audioMandarinShort": "Mandarin"
   },
   "userStatus": {},
   "messages": {

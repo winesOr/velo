@@ -916,7 +916,11 @@
     "noAudioTracks": "没有可用音轨",
     "noAudioTracksDescription": "此媒体没有可选择的音轨",
     "drawerSecondarySubtitle": "次字幕",
-    "drawerAdjustments": "调整"
+    "drawerAdjustments": "调整",
+    "speedLabel": "倍速",
+    "subtitleSimplifiedShort": "简中",
+    "subtitleTraditionalShort": "繁中",
+    "audioMandarinShort": "普通话"
   },
   "userStatus": {},
   "messages": {

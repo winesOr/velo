@@ -1033,6 +1033,10 @@ class _Translations$videoControls$zh_Hant extends Translations$videoControls$zh 
 	@override String get drawerPrimarySubtitle => '主字幕';
 	@override String get drawerSecondarySubtitle => '次字幕';
 	@override String get drawerAdjustments => '調整';
+	@override String get speedLabel => '倍速';
+	@override String get subtitleSimplifiedShort => '簡中';
+	@override String get subtitleTraditionalShort => '繁中';
+	@override String get audioMandarinShort => '國語';
 }
 
 // Path: messages
@@ -4241,6 +4245,10 @@ extension on TranslationsZhHant {
 			'videoControls.drawerPrimarySubtitle' => '主字幕',
 			'videoControls.drawerSecondarySubtitle' => '次字幕',
 			'videoControls.drawerAdjustments' => '調整',
+			'videoControls.speedLabel' => '倍速',
+			'videoControls.subtitleSimplifiedShort' => '簡中',
+			'videoControls.subtitleTraditionalShort' => '繁中',
+			'videoControls.audioMandarinShort' => '國語',
 			'messages.markedAsWatched' => '已標記為已觀看',
 			'messages.markedAsUnwatched' => '已標記為未觀看',
 			'messages.markedAsWatchedOffline' => '已標記為已觀看（將在連線時同步）',
@@ -4420,12 +4428,12 @@ extension on TranslationsZhHant {
 			'connections.sectionTitle' => '連線',
 			'connections.addConnection' => '新增連線',
 			'connections.addConnectionSubtitleNoProfile' => '使用 Plex 登入或連線至 Jellyfin 或 Emby 伺服器',
+			_ => null,
+		} ?? switch (path) {
 			'connections.addConnectionSubtitleScoped' => ({required Object displayName}) => '新增至 ${displayName}：Plex、Jellyfin、Emby 或其他設定檔連線',
 			'connections.sessionExpiredOne' => ({required Object name}) => '${name} 的工作階段已過期',
 			'connections.sessionExpiredMany' => ({required Object count}) => '${count} 個伺服器的工作階段已過期',
 			'connections.accessDeniedOne' => ({required Object name}) => '${name} 拒絕此帳戶存取',
-			_ => null,
-		} ?? switch (path) {
 			'connections.accessDeniedMany' => ({required Object count}) => '${count} 台伺服器拒絕此帳戶存取',
 			'connections.signInAgain' => '重新登入',
 			'connections.editMediaBrowserTitle' => ({required Object product}) => '編輯 ${product} 連線',
@@ -4934,12 +4942,12 @@ extension on TranslationsZhHant {
 			'liveTv.alreadyScheduled' => '此節目已安排排程錄製',
 			'liveTv.dvrAdminRequired' => 'DVR 設定需要管理員帳戶',
 			'liveTv.recordingFailed' => '無法安排錄製任務',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.recordingTargetMissing' => '無法確定錄製媒體庫',
 			'liveTv.recordNotAvailable' => '此節目無法錄製',
 			'liveTv.recordingCancelled' => '錄製已取消',
 			'liveTv.recordingRuleDeleted' => '錄製規則已刪除',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.processRecordingRules' => '重新評估規則',
 			'liveTv.recordingInProgress' => '正在錄製',
 			'liveTv.recordingsCount' => ({required Object count}) => '已排程 ${count} 個',
@@ -5448,12 +5456,12 @@ extension on TranslationsZhHant {
 			'metadataEdit.editMetadata' => '編輯…',
 			'metadataEdit.screenTitle' => '編輯中繼資料',
 			'metadataEdit.basicInfo' => '基本資訊',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.artwork' => '海報與背景',
 			'metadataEdit.advancedSettings' => '進階設定',
 			'metadataEdit.title' => '標題',
 			'metadataEdit.sortTitle' => '排序標題',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.originalTitle' => '原始標題',
 			'metadataEdit.releaseDate' => '上映日期',
 			'metadataEdit.contentRating' => '內容分級',

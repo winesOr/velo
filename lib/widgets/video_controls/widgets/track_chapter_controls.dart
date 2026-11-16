@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/services.dart';
 
 import '../../../focus/dpad_navigator.dart';
+import '../../../focus/focus_theme.dart';
 import '../../../danmaku/danmaku_session.dart';
 import '../../../mpv/mpv.dart';
 import '../../../media/media_source_info.dart';
@@ -419,6 +420,7 @@ class TrackChapterControls extends StatelessWidget {
         builder: (context, _) {
           final state = trackControlsState;
           final selection = selectionSnapshot.data ?? player.state.track;
+          final rate = rateSnapshot.data ?? player.state.rate;
           final buttons = <Widget>[];
           void open(WidgetBuilder builder) {
             state.onCancelAutoHide?.call();
@@ -456,11 +458,11 @@ class TrackChapterControls extends StatelessWidget {
 
           add(
             Symbols.speed_rounded,
-            t.videoSettings.playbackSpeed,
+            t.videoControls.speedLabel,
             state.canControl && !state.isLive
                 ? () => open((_) => VideoSettingsSheet(player: player, trackControlsState: state, openOnSpeed: true))
                 : null,
-            value: formatPlaybackRate(rateSnapshot.data ?? player.state.rate),
+            value: rate == rate.truncateToDouble() ? '${rate.toStringAsFixed(1)}x' : formatPlaybackRate(rate),
           );
           add(
             Symbols.subtitles_rounded,
@@ -470,7 +472,7 @@ class TrackChapterControls extends StatelessWidget {
           );
           add(
             Symbols.audiotrack_rounded,
-            t.videoControls.audioLabel,
+            t.videoControls.drawerAudioTracks,
             () => settings(PlayerDrawerTab.audio),
             value: _tvAudioValue(tracks, selection),
           );
@@ -491,20 +493,19 @@ class TrackChapterControls extends StatelessWidget {
                       onSeekCompleted: onSeekCompleted,
                     ),
                   ),
-            value: chapters.isEmpty && chaptersLoaded ? t.videoControls.noChaptersAvailable : null,
           );
-          add(
-            Symbols.forum_rounded,
-            t.danmaku.title,
-            () => settings(PlayerDrawerTab.danmaku),
-            value: DanmakuSession.instance.enabled ? t.videoControls.danmakuEnabledValue : t.common.off,
-          );
+          add(Symbols.forum_rounded, t.danmaku.title, () => settings(PlayerDrawerTab.danmaku));
           add(Symbols.tune_rounded, t.videoControls.settingsButton, () => settings(PlayerDrawerTab.video));
           return Row(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             textDirection: TextDirection.ltr,
-            children: buttons,
+            children: [
+              for (var i = 0; i < buttons.length; i++) ...[
+                if (i > 0) SizedBox(width: 6 * FocusTheme.tvPlayerScale(context)),
+                buttons[i],
+              ],
+            ],
           );
         },
       ),
@@ -519,21 +520,30 @@ class TrackChapterControls extends StatelessWidget {
     );
     if (sourceIndex >= 0) {
       final source = trackControlsState.sourceAudioTracks[sourceIndex];
-      return TrackLabelBuilder.audioLabel(
+      return _compactTrackValue(
+        TrackLabelBuilder.audioLabel(
+          title: source.title,
+          language: source.language,
+          languageCode: source.languageCode,
+          codec: source.codec,
+          index: sourceIndex,
+        ).primary,
         title: source.title,
-        language: source.language,
-        codec: source.codec,
-        index: sourceIndex,
-      ).primary;
+        language: source.languageCode ?? source.language,
+      );
     }
     if (audio == null || audio.id == AudioTrack.auto.id) return null;
     final index = tracks?.audio.indexWhere((track) => track.id == audio.id) ?? 0;
-    return TrackLabelBuilder.audioLabel(
+    return _compactTrackValue(
+      TrackLabelBuilder.audioLabel(
+        title: audio.title,
+        language: audio.language,
+        codec: audio.codec,
+        index: index < 0 ? 0 : index,
+      ).primary,
       title: audio.title,
       language: audio.language,
-      codec: audio.codec,
-      index: index < 0 ? 0 : index,
-    ).primary;
+    );
   }
 
   String? _tvSubtitleValue(Tracks? tracks, TrackSelection selection) {
@@ -543,24 +553,50 @@ class TrackChapterControls extends StatelessWidget {
       );
       if (index >= 0) {
         final source = trackControlsState.sourceSubtitleTracks[index];
-        return TrackLabelBuilder.subtitleLabel(
+        return _compactTrackValue(
+          TrackLabelBuilder.subtitleLabel(
+            title: source.title,
+            language: source.language,
+            languageCode: source.languageCode,
+            codec: source.codec,
+            index: index,
+          ).primary,
           title: source.title,
-          language: source.language,
-          codec: source.codec,
-          index: index,
-        ).primary;
+          language: source.languageCode ?? source.language,
+          subtitle: true,
+        );
       }
     }
     final subtitle = selection.subtitle;
     if (subtitle == null || subtitle.id == SubtitleTrack.off.id) return t.common.off;
     if (subtitle.id == SubtitleTrack.auto.id) return null;
     final index = tracks?.subtitle.indexWhere((track) => track.id == subtitle.id) ?? 0;
-    return TrackLabelBuilder.subtitleLabel(
+    return _compactTrackValue(
+      TrackLabelBuilder.subtitleLabel(
+        title: subtitle.title,
+        language: subtitle.language,
+        codec: subtitle.codec,
+        index: index < 0 ? 0 : index,
+      ).primary,
       title: subtitle.title,
       language: subtitle.language,
-      codec: subtitle.codec,
-      index: index < 0 ? 0 : index,
-    ).primary;
+      subtitle: true,
+    );
+  }
+
+  String _compactTrackValue(String fallback, {String? title, String? language, bool subtitle = false}) {
+    final metadata = '$title $language'.toLowerCase();
+    if (subtitle) {
+      if (RegExp(r'简体|簡體|简中|簡中|simplified|hans|\bchs\b').hasMatch(metadata)) {
+        return t.videoControls.subtitleSimplifiedShort;
+      }
+      if (RegExp(r'繁体|繁體|繁中|traditional|hant|\bcht\b').hasMatch(metadata)) {
+        return t.videoControls.subtitleTraditionalShort;
+      }
+    } else if (RegExp(r'普通话|普通話|国语|國語|mandarin|\bcmn\b').hasMatch(metadata)) {
+      return t.videoControls.audioMandarinShort;
+    }
+    return fallback;
   }
 
   String? _versionQualitySemanticValue() {

@@ -2708,6 +2708,18 @@ class Translations$videoControls$en {
 
 	/// en: 'Adjustments'
 	String get drawerAdjustments => 'Adjustments';
+
+	/// en: 'Playback speed'
+	String get speedLabel => 'Playback speed';
+
+	/// en: 'Simplified Chinese'
+	String get subtitleSimplifiedShort => 'Simplified Chinese';
+
+	/// en: 'Traditional Chinese'
+	String get subtitleTraditionalShort => 'Traditional Chinese';
+
+	/// en: 'Mandarin'
+	String get audioMandarinShort => 'Mandarin';
 }
 
 // Path: messages
@@ -9289,6 +9301,10 @@ extension on Translations {
 			'videoControls.noAudioTracksDescription' => 'This media has no audio tracks to select.',
 			'videoControls.drawerSecondarySubtitle' => 'Secondary subtitle',
 			'videoControls.drawerAdjustments' => 'Adjustments',
+			'videoControls.speedLabel' => 'Playback speed',
+			'videoControls.subtitleSimplifiedShort' => 'Simplified Chinese',
+			'videoControls.subtitleTraditionalShort' => 'Traditional Chinese',
+			'videoControls.audioMandarinShort' => 'Mandarin',
 			'messages.addedToFavorites' => 'Added to favorites',
 			'messages.removedFromFavorites' => 'Removed from favorites',
 			'messages.markedAsWatched' => 'Marked as watched',
@@ -9436,12 +9452,12 @@ extension on Translations {
 			'profiles.removePin' => 'Remove',
 			'profiles.connectionsLabel' => 'Connections',
 			'profiles.add' => 'Add',
+			_ => null,
+		} ?? switch (path) {
 			'profiles.deleteProfileButton' => 'Delete profile',
 			'profiles.noConnectionsHint' => 'No connections — add one to use this profile.',
 			'profiles.noConnections' => 'No connections',
 			'profiles.plexHomeAccount' => 'Plex Home account',
-			_ => null,
-		} ?? switch (path) {
 			'profiles.plexAccountChip' => ({required Object account}) => 'Plex account: ${account}',
 			'profiles.plexAccountUserChip' => ({required Object user, required Object account}) => '${user} via ${account}',
 			'profiles.connectionDefault' => 'Default',
@@ -9950,12 +9966,12 @@ extension on Translations {
 			'liveTv.now' => 'Now',
 			'liveTv.today' => 'Today',
 			'liveTv.tomorrow' => 'Tomorrow',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.midnight' => 'Midnight',
 			'liveTv.overnight' => 'Overnight',
 			'liveTv.morning' => 'Morning',
 			'liveTv.daytime' => 'Daytime',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.evening' => 'Evening',
 			'liveTv.lateNight' => 'Late Night',
 			'liveTv.whatsOn' => 'What\'s On',
@@ -10464,12 +10480,12 @@ extension on Translations {
 			'performanceOverlay.p7Conversion' => 'P7 Conv',
 			'performanceOverlay.sampleRate' => 'Sample Rate',
 			'performanceOverlay.pixelFormat' => 'Pixel Fmt',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.hwFormat' => 'HW Fmt',
 			'performanceOverlay.matrix' => 'Matrix',
 			'performanceOverlay.primaries' => 'Primaries',
 			'performanceOverlay.transfer' => 'Transfer',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.renderFps' => 'Render FPS',
 			'performanceOverlay.displayFps' => 'Display FPS',
 			'performanceOverlay.avSync' => 'A/V Sync',

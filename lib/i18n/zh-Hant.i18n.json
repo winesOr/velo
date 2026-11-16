@@ -884,7 +884,11 @@
     "drawerAudioTracks": "音軌",
     "drawerPrimarySubtitle": "主字幕",
     "drawerSecondarySubtitle": "次字幕",
-    "drawerAdjustments": "調整"
+    "drawerAdjustments": "調整",
+    "speedLabel": "倍速",
+    "subtitleSimplifiedShort": "簡中",
+    "subtitleTraditionalShort": "繁中",
+    "audioMandarinShort": "國語"
   },
   "userStatus": {},
   "messages": {

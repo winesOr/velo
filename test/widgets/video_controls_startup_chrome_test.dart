@@ -170,32 +170,42 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('a hidden start hands the remote to the hidden-chrome key layer', (tester) async {
-      await pumpControls(tester);
-      hasFirstFrame.value = true;
-      await tester.pump();
+    for (final key in [
+      LogicalKeyboardKey.arrowLeft,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.enter,
+    ]) {
+      testWidgets('a hidden start hands ${key.keyLabel} to the hidden-chrome key layer', (tester) async {
+        await pumpControls(tester);
+        hasFirstFrame.value = true;
+        await tester.pump();
 
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowRight);
-      await tester.pump();
+        await tester.sendKeyDownEvent(key);
+        await tester.pump();
 
-      // The player surface must own the wake-up direction rather than
-      // letting it reach the screen node's unrelated self-heal (#1765).
-      expect(
-        keysReachingScreen,
-        isEmpty,
-        reason: 'the hidden-chrome layer must own the remote, not the screen self-heal',
-      );
-      expect(chrome.controlsVisible, isTrue, reason: 'a TV direction raises the controls without seeking');
-      expect(find.byType(DesktopVideoControls), findsOneWidget);
-      expect(find.text('10s'), findsNothing);
+        // The player surface must own the wake-up direction rather than
+        // letting it reach the screen node's unrelated self-heal (#1765).
+        expect(
+          keysReachingScreen,
+          isEmpty,
+          reason: 'the hidden-chrome layer must own the remote, not the screen self-heal',
+        );
+        expect(chrome.controlsVisible, isTrue, reason: 'a TV direction raises the controls without seeking');
+        expect(find.byType(DesktopVideoControls), findsOneWidget);
+        expect(find.text('10s'), findsNothing);
+        await tester.pump();
+        expect(FocusManager.instance.primaryFocus?.debugLabel, 'PlayPause');
 
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowRight);
-      await tester.pump();
-      expect(player.seeks, isEmpty, reason: 'the wake-up direction must not also seek');
+        await tester.sendKeyUpEvent(key);
+        await tester.pump();
+        expect(player.seeks, isEmpty, reason: 'the wake-up direction must not also seek');
 
-      chrome.cancelAutoHide();
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
+        chrome.cancelAutoHide();
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    }
   });
 }
 

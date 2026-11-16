@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:plezy/focus/input_mode_tracker.dart';
 import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/media/media_source_info.dart';
+import 'package:plezy/mpv/mpv.dart';
 import 'package:plezy/services/settings_service.dart';
 import 'package:plezy/services/video_volume_controller.dart';
 import 'package:plezy/utils/platform_detector.dart';
@@ -25,6 +26,10 @@ import '../test_helpers/theme.dart';
 import '../test_helpers/watch_together_fakes.dart';
 
 void main() {
+  setUpAll(() async {
+    await LocaleSettings.setLocale(AppLocale.zh);
+  });
+
   setUp(() {
     resetSharedPreferencesForTest();
     LocaleSettings.setLocaleSync(AppLocale.en);
@@ -152,6 +157,18 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('TV actions show the current rate and compact selected track names', (tester) async {
+    TvDetectionService.debugSetAppleTVOverride(true);
+    LocaleSettings.setLocaleSync(AppLocale.zh);
+    final player = _SelectedTracksPlayer();
+    await _pump(tester, player: player);
+
+    final buttons = tester.widgetList<TvActionButton>(find.byType(TvActionButton)).toList();
+    expect(buttons[0].label, t.videoControls.speedLabel);
+    expect(buttons.take(3).map((button) => button.value), ['1.0x', '简中', '普通话']);
+    expect(buttons.skip(3).every((button) => button.value == null), isTrue);
+  });
+
   testWidgets('desktop parent supplies focus nodes for the complete nine-button row', (tester) async {
     PlatformDetector.debugSetIsDesktopOSOverride(true);
     await initializeDateFormatting('en');
@@ -242,6 +259,7 @@ Future<OverlaySheetController> _pump(
   TrackControlsState state = const TrackControlsState(),
   List<FocusNode>? focusNodes,
   List<MediaChapter> chapters = const [],
+  Player? player,
   VoidCallback? onNavigateLeft,
   VoidCallback? onNavigateUp,
   VoidCallback? onNavigateDown,
@@ -249,7 +267,7 @@ Future<OverlaySheetController> _pump(
   tester.view.physicalSize = const Size(1280, 900);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final player = FakeSyncPlayer();
+  player ??= FakeSyncPlayer();
   addTearDown(player.dispose);
   late OverlaySheetController controller;
   await tester.pumpWidget(
@@ -263,7 +281,7 @@ Future<OverlaySheetController> _pump(
                 builder: (context) {
                   controller = OverlaySheetController.of(context);
                   return TrackChapterControls(
-                    player: player,
+                    player: player!,
                     chapters: chapters,
                     chaptersLoaded: true,
                     trackControlsState: state,
@@ -282,4 +300,14 @@ Future<OverlaySheetController> _pump(
   );
   await tester.pumpAndSettle();
   return controller;
+}
+
+class _SelectedTracksPlayer extends FakeSyncPlayer {
+  @override
+  PlayerState get state => super.state.copyWith(
+    track: const TrackSelection(
+      audio: AudioTrack(id: '1', language: 'zh', title: '普通话 2.0'),
+      subtitle: SubtitleTrack(id: '2', language: 'zh-Hans', title: '简体中文'),
+    ),
+  );
 }
