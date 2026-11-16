@@ -673,7 +673,11 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
           bottom: 4,
           end: 5,
           child: IgnorePointer(
-            child: MediaCardRatingBadge(key: ValueKey('recommendation-score-${item.globalKey}'), rating: badgeRating),
+            child: MediaCardRatingBadge(
+              key: ValueKey('recommendation-score-${item.globalKey}'),
+              rating: badgeRating,
+              withUnit: Theme.of(context).extension<HomeTypography>() == null,
+            ),
           ),
         ),
       if (item is MediaItem && _showsWatchedIndicator(item))
@@ -709,7 +713,13 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
     final compactHome = homeType != null && !widget.isInContinueWatching && !PlatformDetector.isTV();
     final homeTitle = widget.showMediaKindSubtitle
         ? const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, height: 1.4)
-        : homeType?.cardTitle.copyWith(fontSize: compactHome ? 12 : 13);
+        : homeType?.cardTitle.copyWith(fontSize: compactHome ? 12 : 13) ??
+            const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontVariations: [FontVariation('wght', 650)],
+              fontSize: 14,
+              height: 1.1,
+            );
 
     // The focus border hugs the poster (captions stay outside it), matching
     // the full-bleed card treatment.
@@ -750,7 +760,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
               if (widget.onTap == null && item is MediaItem && !_impliesShowTitle(item) && _hasClickableTitle(item))
                 _ClickableText(
                   text: item.displayTitle,
-                  style: homeTitle ?? const TextStyle(fontWeight: .w600, fontSize: 13, height: 1.1),
+                  style: homeTitle,
                   onTap: () => _navigateToFocusedDetail(context, item, isOffline: widget.isOffline),
                 )
               else
@@ -763,7 +773,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
                     },
                     maxLines: 1,
                     overflow: .ellipsis,
-                    style: homeTitle ?? const TextStyle(fontWeight: .w600, fontSize: 13, height: 1.1),
+                    style: homeTitle,
                   ),
                 ),
               if (item is MediaPlaylist)
@@ -1290,21 +1300,20 @@ class _MediaCardHelpers {
         ].join(' · '),
       );
     }
-    if (compactHome && (mi.isMovie || mi.isShow)) {
+    if ((mi.isMovie || mi.isShow) && catalogItem == null) {
       return ExcludeSemantics(
         child: Row(
           children: [
-            BackendBadge(backend: mi.backend, size: 10, color: BackendBadge.brandColor(mi.backend)),
+            BackendBadge(backend: mi.backend, size: compactHome ? 10 : 11, color: BackendBadge.brandColor(mi.backend)),
             const SizedBox(width: 3),
             Flexible(
               child: Text(
-                [
-                  if (mi.year != null) '${mi.year}',
-                  mi.isMovie ? t.common.mediaKind.movie : t.common.mediaKind.show,
-                ].join(' · '),
+                mi.isShow && mi.childCount != null
+                    ? t.common.seasonCount(count: mi.childCount!)
+                    : mi.year?.toString() ?? '',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: _captionStyle(context, compactHome: true),
+                style: _captionStyle(context, compactHome: compactHome),
               ),
             ),
           ],

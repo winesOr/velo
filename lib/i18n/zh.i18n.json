@@ -58,6 +58,8 @@
     "personalExplanation": "你保存的评分 · ${scale}。"
   },
   "common": {
+    "seasonCount": "共 ${count} 季",
+    "ratingValue": "${value}分",
     "toastRepeated": "重复 ${count} 次",
     "toastMenu": "菜单",
     "cancel": "取消",

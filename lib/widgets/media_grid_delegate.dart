@@ -143,13 +143,17 @@ class MediaGridGeometry {
     bool fullBleedImage = false,
     CardShape? shape,
     double? minimumItemWidth,
+    int? columnCountOverride,
+    double? spacingOverride,
   }) {
-    final spacing = MediaGridDelegate.spacingFor(
-      context: context,
-      useWideAspectRatio: useWideAspectRatio,
-      fullBleedImage: fullBleedImage,
-      shape: shape,
-    );
+    final spacing =
+        spacingOverride ??
+        MediaGridDelegate.spacingFor(
+          context: context,
+          useWideAspectRatio: useWideAspectRatio,
+          fullBleedImage: fullBleedImage,
+          shape: shape,
+        );
     final aspectRatio = MediaGridDelegate.aspectRatioFor(
       useWideAspectRatio: useWideAspectRatio,
       fullBleedImage: fullBleedImage,
@@ -162,11 +166,13 @@ class MediaGridGeometry {
       shape: shape,
     );
 
-    var columnCount = GridSizeCalculator.getColumnCount(
-      crossAxisExtentForColumnCount ?? crossAxisExtent,
-      maxCrossAxisExtent,
-      crossAxisSpacing: spacing,
-    );
+    var columnCount =
+        columnCountOverride ??
+        GridSizeCalculator.getColumnCount(
+          crossAxisExtentForColumnCount ?? crossAxisExtent,
+          maxCrossAxisExtent,
+          crossAxisSpacing: spacing,
+        );
     if (minimumItemWidth != null) {
       final maxColumns = ((crossAxisExtent + spacing) / (minimumItemWidth + spacing)).floor().clamp(1, 100);
       columnCount = math.min(columnCount, maxColumns);
@@ -186,7 +192,8 @@ class MediaGridGeometry {
         // When the column count is pinned to a different basis width, the
         // delegate must pack exactly [columnCount] columns into the real
         // extent, so cap cells at the derived width instead.
-        maxCrossAxisExtent: crossAxisExtentForColumnCount != null || minimumItemWidth != null
+        maxCrossAxisExtent:
+            crossAxisExtentForColumnCount != null || minimumItemWidth != null || columnCountOverride != null
             ? itemWidth
             : maxCrossAxisExtent,
         childAspectRatio: aspectRatio,

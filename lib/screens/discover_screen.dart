@@ -1331,7 +1331,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         cardWidthOverride:
                             MediaQuery.sizeOf(context).width < 600 &&
                                 _hubs[i].items.every((item) => item.isMovie || item.isShow)
-                            ? math.min(111, MediaQuery.sizeOf(context).width * .33)
+                            ? 105
                             : null,
                         focusMemory: _hubFocusMemory,
                         icon: hubIconFor(_hubs[i]),

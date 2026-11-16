@@ -161,6 +161,8 @@ class _Translations$common$zh_Hant extends Translations$common$zh {
 	final TranslationsZhHant _root; // ignore: unused_field
 
 	// Translations
+	@override String seasonCount({required Object count}) => '共 ${count} 季';
+	@override String ratingValue({required Object value}) => '${value}分';
 	@override String get cancel => '取消';
 	@override String get save => '儲存';
 	@override String get close => '關閉';
@@ -3411,6 +3413,8 @@ extension on TranslationsZhHant {
 			'auth.quickConnectExpired' => '快速連線代碼已過期。請重試。',
 			'auth.localDataRecoveryRequired' => 'Velo 無法安全地復原本機登入資料與待處理的播放資料。請重新登入。',
 			'auth.pinCheckRejected' => 'Plex PIN 檢查遭到拒絕',
+			'common.seasonCount' => ({required Object count}) => '共 ${count} 季',
+			'common.ratingValue' => ({required Object value}) => '${value}分',
 			'common.cancel' => '取消',
 			'common.save' => '儲存',
 			'common.close' => '關閉',
@@ -3880,10 +3884,10 @@ extension on TranslationsZhHant {
 			'hotkeys.actions.seekForward' => ({required Object seconds}) => '快進（${seconds} 秒）',
 			'hotkeys.actions.seekBackward' => ({required Object seconds}) => '快退（${seconds} 秒）',
 			'hotkeys.actions.fullscreenToggle' => '切換全螢幕',
-			'hotkeys.actions.muteToggle' => '切換靜音',
-			'hotkeys.actions.subtitleToggle' => '切換字幕',
 			_ => null,
 		} ?? switch (path) {
+			'hotkeys.actions.muteToggle' => '切換靜音',
+			'hotkeys.actions.subtitleToggle' => '切換字幕',
 			'hotkeys.actions.audioTrackNext' => '下一個音軌',
 			'hotkeys.actions.subtitleTrackNext' => '下一個字幕軌',
 			'hotkeys.actions.chapterNext' => '下一個章節',
@@ -4394,10 +4398,10 @@ extension on TranslationsZhHant {
 			'connections.sessionExpiredMany' => ({required Object count}) => '${count} 個伺服器的工作階段已過期',
 			'connections.accessDeniedOne' => ({required Object name}) => '${name} 拒絕此帳戶存取',
 			'connections.accessDeniedMany' => ({required Object count}) => '${count} 台伺服器拒絕此帳戶存取',
-			'connections.signInAgain' => '重新登入',
-			'connections.editMediaBrowserTitle' => ({required Object product}) => '編輯 ${product} 連線',
 			_ => null,
 		} ?? switch (path) {
+			'connections.signInAgain' => '重新登入',
+			'connections.editMediaBrowserTitle' => ({required Object product}) => '編輯 ${product} 連線',
 			'connections.editMediaBrowserIntro' => ({required Object serverName}) => '為 ${serverName} 新增或移除 URL。Velo 將使用延遲最低且可連線的 URL。',
 			'accountPreferences.sectionTitle' => '帳戶偏好設定',
 			'accountPreferences.hubSubtitleSingle' => ({required Object account}) => '已在 ${account} 上儲存音訊、字幕與媒體庫選項',
@@ -4908,10 +4912,10 @@ extension on TranslationsZhHant {
 			'liveTv.processRecordingRules' => '重新評估規則',
 			'liveTv.recordingInProgress' => '正在錄製',
 			'liveTv.recordingsCount' => ({required Object count}) => '已排程 ${count} 個',
-			'liveTv.editRule' => '編輯規則',
-			'liveTv.editRuleAction' => '編輯',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.editRule' => '編輯規則',
+			'liveTv.editRuleAction' => '編輯',
 			'liveTv.recordingRuleUpdated' => '錄製規則已更新',
 			'liveTv.guideReloadRequested' => '已要求更新節目表指南',
 			'liveTv.guideReloadFailed' => '無法重新載入節目表指南',
@@ -5422,10 +5426,10 @@ extension on TranslationsZhHant {
 			'metadataEdit.summary' => '大綱簡介',
 			'metadataEdit.poster' => '海報',
 			'metadataEdit.background' => '背景圖',
-			'metadataEdit.logo' => '標誌（Logo）',
-			'metadataEdit.squareArt' => '方形圖片',
 			_ => null,
 		} ?? switch (path) {
+			'metadataEdit.logo' => '標誌（Logo）',
+			'metadataEdit.squareArt' => '方形圖片',
 			'metadataEdit.selectPoster' => '選擇海報',
 			'metadataEdit.selectBackground' => '選擇背景圖',
 			'metadataEdit.selectLogo' => '選擇標誌',

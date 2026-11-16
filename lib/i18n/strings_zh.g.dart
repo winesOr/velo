@@ -182,6 +182,8 @@ class Translations$common$zh extends Translations$common$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String seasonCount({required Object count}) => '共 ${count} 季';
+	@override String ratingValue({required Object value}) => '${value}分';
 	@override String toastRepeated({required Object count}) => '重复 ${count} 次';
 	@override String get toastMenu => '菜单';
 	@override String get cancel => '取消';
@@ -3508,6 +3510,8 @@ extension on TranslationsZh {
 			'ratingDetails.sourceExplanation' => ({required Object source, required Object scale}) => '${source} · ${scale}。',
 			'ratingDetails.serverExplanation' => ({required Object source, required Object scale}) => '由媒体服务器提供 · ${source} · ${scale}。',
 			'ratingDetails.personalExplanation' => ({required Object scale}) => '你保存的评分 · ${scale}。',
+			'common.seasonCount' => ({required Object count}) => '共 ${count} 季',
+			'common.ratingValue' => ({required Object value}) => '${value}分',
 			'common.toastRepeated' => ({required Object count}) => '重复 ${count} 次',
 			'common.toastMenu' => '菜单',
 			'common.cancel' => '取消',
@@ -3966,10 +3970,10 @@ extension on TranslationsZh {
 			'settings.serverAccounts' => '服务器与账户',
 			'settings.downloadsOffline' => '下载与离线',
 			'settings.connectionsIntegrations' => '连接与集成',
-			'settings.appearanceAndHome' => '外观与首页',
-			'settings.application' => '应用',
 			_ => null,
 		} ?? switch (path) {
+			'settings.appearanceAndHome' => '外观与首页',
+			'settings.application' => '应用',
 			'settings.noDanmakuSources' => '未添加源',
 			'search.hint' => '搜索电影、剧集、音乐…',
 			'search.tryDifferentTerm' => '尝试不同的搜索词',
@@ -4480,10 +4484,10 @@ extension on TranslationsZh {
 			'profiles.noConnections' => '没有连接',
 			'profiles.plexHomeAccount' => 'Plex Home 账户',
 			'profiles.plexAccountChip' => ({required Object account}) => 'Plex 账户：${account}',
-			'profiles.plexAccountUserChip' => ({required Object account, required Object user}) => '${account} 账户下的 ${user}',
-			'profiles.connectionDefault' => '默认',
 			_ => null,
 		} ?? switch (path) {
+			'profiles.plexAccountUserChip' => ({required Object account, required Object user}) => '${account} 账户下的 ${user}',
+			'profiles.connectionDefault' => '默认',
 			'profiles.connectionAs' => ({required Object displayName}) => '以 ${displayName} 身份',
 			'profiles.makeDefault' => '设为默认',
 			'profiles.removeConnection' => '移除',
@@ -4994,10 +4998,10 @@ extension on TranslationsZh {
 			'liveTv.evening' => '晚上',
 			'liveTv.lateNight' => '深夜',
 			'liveTv.whatsOn' => '正在播出',
-			'liveTv.watchChannel' => '观看频道',
-			'liveTv.favorites' => '收藏',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.watchChannel' => '观看频道',
+			'liveTv.favorites' => '收藏',
 			'liveTv.reorderFavorites' => '重新排序收藏',
 			'liveTv.noFavoriteChannels' => '没有收藏的频道',
 			'liveTv.noFavoriteChannelsHint' => '显示所有频道，然后长按某个频道将其加入收藏。',
@@ -5508,10 +5512,10 @@ extension on TranslationsZh {
 			'performanceOverlay.dvRpuAverage' => 'DV RPU 平均',
 			'performanceOverlay.dvSampleAverage' => 'DV 采样平均',
 			'performanceOverlay.maxLuma' => '最大亮度',
-			'performanceOverlay.minLuma' => '最小亮度',
-			'performanceOverlay.maxCll' => 'MaxCLL',
 			_ => null,
 		} ?? switch (path) {
+			'performanceOverlay.minLuma' => '最小亮度',
+			'performanceOverlay.maxCll' => 'MaxCLL',
 			'performanceOverlay.maxFall' => 'MaxFALL',
 			'performanceOverlay.cacheUsed' => '已用缓存',
 			'performanceOverlay.cacheLimit' => '缓存限制',

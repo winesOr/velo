@@ -150,7 +150,7 @@ void main() {
     );
     await pumpCard();
     expect(find.byType(MediaCardRatingBadge), findsOneWidget);
-    expect(find.text('9.0/10'), findsOneWidget);
+    expect(find.text('9.0'), findsOneWidget);
     await SettingsService.instance.write(SettingsService.showRatingBadges, false);
     await tester.pump();
     expect(find.byType(MediaCardRatingBadge), findsNothing);

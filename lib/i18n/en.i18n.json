@@ -58,6 +58,8 @@
     "personalExplanation": "Your saved rating · ${scale}."
   },
   "common": {
+    "seasonCount": "${count} seasons",
+    "ratingValue": "${value}",
     "toastRepeated": "Repeated ${count} times",
     "toastMenu": "Menu",
     "cancel": "Cancel",

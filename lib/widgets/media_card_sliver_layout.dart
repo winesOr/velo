@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../media/media_item.dart';
 import '../services/settings_service.dart';
+import '../utils/platform_detector.dart';
 import 'media_grid_delegate.dart';
 import 'settings_builder.dart';
 import 'sliver_cross_axis_layout_builder.dart';
@@ -102,19 +103,29 @@ class MediaCardSliverLayout extends StatelessWidget {
         padding: padding,
         sliver: SliverCrossAxisLayoutBuilder(
           builder: (context, crossAxisExtent) {
+            final compactPosters =
+                PlatformDetector.isMobile(context) &&
+                !PlatformDetector.isTV() &&
+                MediaQuery.sizeOf(context).width < 600 &&
+                !useWideAspectRatio &&
+                !fullBleedImage &&
+                (shape == null || shape == CardShape.poster);
+            final posterExtent = compactPosters ? crossAxisExtent.clamp(0.0, 341.0) : crossAxisExtent;
             final geometry = MediaGridGeometry.resolve(
               context: context,
-              crossAxisExtent: crossAxisExtent,
+              crossAxisExtent: posterExtent,
               crossAxisExtentForColumnCount: crossAxisExtentForColumnCount?.call(crossAxisExtent),
               density: density,
               useWideAspectRatio: useWideAspectRatio,
               fullBleedImage: fullBleedImage,
               shape: shape,
-              minimumItemWidth: minimumItemWidth,
+              minimumItemWidth: compactPosters ? null : minimumItemWidth,
+              columnCountOverride: compactPosters ? 3 : null,
+              spacingOverride: compactPosters ? 10 : null,
             );
             onGridGeometry?.call(geometry);
             final layoutEpoch = gridEpochBuilder?.call(geometry);
-            return SliverGrid.builder(
+            final grid = SliverGrid.builder(
               addAutomaticKeepAlives: false,
               addSemanticIndexes: false,
               gridDelegate: geometry.delegate,
@@ -131,6 +142,12 @@ class MediaCardSliverLayout extends StatelessWidget {
                 ),
               ),
             );
+            return compactPosters
+                ? SliverPadding(
+                    padding: EdgeInsets.symmetric(horizontal: (crossAxisExtent - posterExtent) / 2),
+                    sliver: grid,
+                  )
+                : grid;
           },
         ),
       ),

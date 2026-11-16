@@ -45,6 +45,8 @@
     "pinCheckRejected": "Plex PIN 檢查遭到拒絕"
   },
   "common": {
+    "seasonCount": "共 ${count} 季",
+    "ratingValue": "${value}分",
     "cancel": "取消",
     "save": "儲存",
     "close": "關閉",

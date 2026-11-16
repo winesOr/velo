@@ -289,6 +289,12 @@ class Translations$common$en {
 
 	// Translations
 
+	/// en: '${count} seasons'
+	String seasonCount({required Object count}) => '${count} seasons';
+
+	/// en: '${value}'
+	String ratingValue({required Object value}) => '${value}';
+
 	/// en: 'Repeated ${count} times'
 	String toastRepeated({required Object count}) => 'Repeated ${count} times';
 
@@ -8412,6 +8418,8 @@ extension on Translations {
 			'ratingDetails.sourceExplanation' => ({required Object source, required Object scale}) => '${source} · ${scale}.',
 			'ratingDetails.serverExplanation' => ({required Object source, required Object scale}) => 'Provided by the media server · ${source} · ${scale}.',
 			'ratingDetails.personalExplanation' => ({required Object scale}) => 'Your saved rating · ${scale}.',
+			'common.seasonCount' => ({required Object count}) => '${count} seasons',
+			'common.ratingValue' => ({required Object value}) => '${value}',
 			'common.toastRepeated' => ({required Object count}) => 'Repeated ${count} times',
 			'common.toastMenu' => 'Menu',
 			'common.cancel' => 'Cancel',
@@ -8870,10 +8878,10 @@ extension on Translations {
 			'settings.serverAccounts' => 'Servers & Accounts',
 			'settings.downloadsOffline' => 'Downloads & Offline',
 			'settings.connectionsIntegrations' => 'Connections & Integrations',
-			'settings.appearanceAndHome' => 'Appearance & Home',
-			'settings.application' => 'Application',
 			_ => null,
 		} ?? switch (path) {
+			'settings.appearanceAndHome' => 'Appearance & Home',
+			'settings.application' => 'Application',
 			'settings.noDanmakuSources' => 'No sources added',
 			'search.hint' => 'Search movies, shows, music...',
 			'search.tryDifferentTerm' => 'Try a different search term',
@@ -9384,10 +9392,10 @@ extension on Translations {
 			'profiles.noConnections' => 'No connections',
 			'profiles.plexHomeAccount' => 'Plex Home account',
 			'profiles.plexAccountChip' => ({required Object account}) => 'Plex account: ${account}',
-			'profiles.plexAccountUserChip' => ({required Object user, required Object account}) => '${user} via ${account}',
-			'profiles.connectionDefault' => 'Default',
 			_ => null,
 		} ?? switch (path) {
+			'profiles.plexAccountUserChip' => ({required Object user, required Object account}) => '${user} via ${account}',
+			'profiles.connectionDefault' => 'Default',
 			'profiles.connectionAs' => ({required Object displayName}) => 'as ${displayName}',
 			'profiles.makeDefault' => 'Make default',
 			'profiles.removeConnection' => 'Remove',
@@ -9898,10 +9906,10 @@ extension on Translations {
 			'liveTv.evening' => 'Evening',
 			'liveTv.lateNight' => 'Late Night',
 			'liveTv.whatsOn' => 'What\'s On',
-			'liveTv.watchChannel' => 'Watch Channel',
-			'liveTv.favorites' => 'Favorites',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.watchChannel' => 'Watch Channel',
+			'liveTv.favorites' => 'Favorites',
 			'liveTv.reorderFavorites' => 'Reorder Favorites',
 			'liveTv.noFavoriteChannels' => 'No favorite channels',
 			'liveTv.noFavoriteChannelsHint' => 'Show all channels, then long-press a channel to add it to your favorites.',
@@ -10412,10 +10420,10 @@ extension on Translations {
 			'performanceOverlay.dvRpuAverage' => 'DV RPU Avg',
 			'performanceOverlay.dvSampleAverage' => 'DV Sample Avg',
 			'performanceOverlay.maxLuma' => 'Max Luma',
-			'performanceOverlay.minLuma' => 'Min Luma',
-			'performanceOverlay.maxCll' => 'MaxCLL',
 			_ => null,
 		} ?? switch (path) {
+			'performanceOverlay.minLuma' => 'Min Luma',
+			'performanceOverlay.maxCll' => 'MaxCLL',
 			'performanceOverlay.maxFall' => 'MaxFALL',
 			'performanceOverlay.cacheUsed' => 'Cache Used',
 			'performanceOverlay.cacheLimit' => 'Cache Limit',

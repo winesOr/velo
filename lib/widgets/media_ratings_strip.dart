@@ -207,34 +207,23 @@ class _RatingScore extends StatelessWidget {
 
 /// One real score on artwork; personal values are explicitly identified as /10.
 class MediaCardRatingBadge extends StatelessWidget {
-  const MediaCardRatingBadge({super.key, required this.rating});
+  const MediaCardRatingBadge({super.key, required this.rating, this.withUnit = false});
 
   final MediaRatingSource rating;
+  final bool withUnit;
 
   @override
   Widget build(BuildContext context) {
-    final personal = rating.source == 'personal';
+    final value = rating.value.toStringAsFixed(1);
     return Semantics(
       label: ratingsSemanticLabel([rating]),
       excludeSemantics: true,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         decoration: BoxDecoration(color: const Color(0xcc000000), borderRadius: BorderRadius.circular(6)),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (personal) ...[
-              AppIcon(Symbols.person_rounded, size: 12, color: Colors.white),
-              const SizedBox(width: 3),
-              Text('${mediaRatingLabel(rating)}/10', style: const TextStyle(color: Colors.white, fontSize: 11)),
-            ] else
-              InlineRatingBadges(
-                ratings: [rating],
-                iconSize: 11,
-                foregroundColor: Colors.white,
-                textStyle: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
-              ),
-          ],
+        child: Text(
+          withUnit ? t.common.ratingValue(value: value) : value,
+          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
         ),
       ),
     );
