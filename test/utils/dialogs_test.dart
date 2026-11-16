@@ -11,6 +11,16 @@ void main() {
     TvDetectionService.setForceTVSync(false);
   });
 
+  testWidgets('irreversible deletion confirms once without an undo stage', (tester) async {
+    final context = await _pumpHost(tester);
+    final result = showDeleteConfirmation(context, title: 'Delete permanently', message: 'Cannot be undone');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.common.delete));
+    await tester.pumpAndSettle();
+    await expectLater(result, completion(isTrue));
+    expect(find.text(t.common.undo), findsNothing);
+  });
+
   testWidgets('owned dialog cancels before its first build without removing its page', (tester) async {
     final hostContext = await _pumpHost(tester);
     final owner = ModalRoute.of(hostContext)!;

@@ -24,6 +24,7 @@ AppToastHandle? showSnackBar(
   String? actionLabel,
   VoidCallback? onAction,
   VoidCallback? onDismiss,
+  VoidCallback? onExpire,
 }) {
   if (!context.mounted) return null;
   return AppToast.show(
@@ -39,6 +40,7 @@ AppToastHandle? showSnackBar(
     actionLabel: actionLabel,
     onAction: onAction,
     onDismiss: onDismiss,
+    onExpire: onExpire,
   );
 }
 
@@ -65,8 +67,8 @@ void showSuccessSnackBar(BuildContext context, String message, {String? actionLa
 }
 
 /// Gives the user the toast's full (pause-aware) action window before a
-/// destructive request starts. Replacing or dismissing the notice ends the
-/// window; Undo cancels it. Callers recheck their route/session before writing.
+/// destructive request starts. Other notices wait for this window; Undo cancels
+/// it. Callers recheck their route/session before writing.
 Future<bool> confirmUndoableAction(BuildContext context, String message) async {
   if (!context.mounted || Overlay.maybeOf(context, rootOverlay: true) == null) return false;
   final profiles = context.read<ActiveProfileProvider?>();
@@ -77,13 +79,17 @@ Future<bool> confirmUndoableAction(BuildContext context, String message) async {
   handle = showSnackBar(
     context,
     message,
+    dismissible: false,
     actionLabel: t.common.undo,
     onAction: () {
       if (!result.isCompleted) result.complete(false);
       handle?.dismiss();
     },
-    onDismiss: () {
+    onExpire: () {
       if (!result.isCompleted) result.complete(true);
+    },
+    onDismiss: () {
+      if (!result.isCompleted) result.complete(false);
     },
   );
   if (handle == null) result.complete(false);

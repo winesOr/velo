@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../widgets/app_dialog.dart';
+import 'dialogs.dart';
 import 'package:provider/provider.dart';
 import '../i18n/strings.g.dart';
 import '../providers/download_provider.dart';
@@ -43,24 +44,28 @@ class SmartDeletionHandler {
     String globalKey,
   ) {
     final navigator = Navigator.of(context);
-    final route = DialogRoute<void>(
+    final route = AppDialogRoute<void>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => Consumer<DownloadProvider>(
-        builder: (context, provider, child) {
-          final progress = provider.getDeletionProgress(globalKey);
+      builder: (_) => PopScope(
+        canPop: false,
+        child: Consumer<DownloadProvider>(
+          builder: (context, provider, child) {
+            final progress = provider.getDeletionProgress(globalKey);
 
-          if (progress == null) {
-            return AppAlertDialog(
-              content: Row(
-                mainAxisSize: .min,
-                children: [const CircularProgressIndicator(), const SizedBox(width: 20), Text(t.downloads.deleting)],
-              ),
-            );
-          }
+            if (progress == null) {
+              return AppAlertDialog(
+                showCloseButton: false,
+                content: Row(
+                  mainAxisSize: .min,
+                  children: [const CircularProgressIndicator(), const SizedBox(width: 20), Text(t.downloads.deleting)],
+                ),
+              );
+            }
 
-          return DeletionProgressDialog(progress: progress);
-        },
+            return DeletionProgressDialog(progress: progress);
+          },
+        ),
       ),
     );
     navigator.push(route);

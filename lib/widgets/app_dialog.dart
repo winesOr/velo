@@ -54,16 +54,16 @@ class AppDialogCloseButton extends StatelessWidget {
 }
 
 class AppDialogTitle extends StatelessWidget {
-  const AppDialogTitle({super.key, required this.title});
+  const AppDialogTitle({super.key, required this.title, this.showCloseButton = true});
 
   final Widget title;
+  final bool showCloseButton;
 
   @override
   Widget build(BuildContext context) => Row(
     children: [
       Expanded(child: title),
-      const SizedBox(width: 12),
-      const AppDialogCloseButton(),
+      if (showCloseButton) ...[const SizedBox(width: 12), const AppDialogCloseButton()],
     ],
   );
 }
@@ -168,7 +168,10 @@ class AppAlertDialog extends AlertDialog {
     super.alignment,
     super.constraints,
     super.scrollable,
+    this.showCloseButton = true,
   });
+
+  final bool showCloseButton;
 
   @override
   Widget build(BuildContext context) {
@@ -179,7 +182,7 @@ class AppAlertDialog extends AlertDialog {
               icon: icon,
               iconPadding: iconPadding,
               iconColor: iconColor,
-              title: AppDialogTitle(title: title ?? const SizedBox.shrink()),
+              title: AppDialogTitle(title: title ?? const SizedBox.shrink(), showCloseButton: showCloseButton),
               titlePadding: titlePadding ?? const EdgeInsets.fromLTRB(20, 20, 20, 0),
               titleTextStyle: titleTextStyle,
               content: content,

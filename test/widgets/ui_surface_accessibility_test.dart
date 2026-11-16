@@ -88,6 +88,102 @@ void main() {
     expect(await interrupted, isFalse, reason: 'overlay disposal cancels even during replacement');
   });
 
+  testWidgets('new notices and pending work wait for the full undo window', (tester) async {
+    final context = await _pumpHost(tester, size: const Size(390, 844), dark: true);
+    addTearDown(() => AppToast.dismiss(immediately: true));
+    bool? commit;
+    unawaited(notifications.confirmUndoableAction(context, 'Removal waiting').then((value) => commit = value));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    notifications.showSuccessSnackBar(context, 'Another notice');
+    final pending = AppToast.pending(context);
+    pending.update('Work finished');
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(commit, isNull);
+    expect(find.text('Removal waiting'), findsOneWidget);
+    expect(find.text('Another notice'), findsNothing);
+    expect(find.text('Work finished'), findsNothing);
+    await tester.pump(const Duration(seconds: 3));
+    expect(commit, isNull, reason: 'replacement must not shorten five seconds');
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(commit, isTrue);
+    expect(find.text('Another notice'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.byType(AppToast), findsNothing);
+  });
+
+  testWidgets('queued removals each retain their own cancellable undo window', (tester) async {
+    final context = await _pumpHost(tester, size: const Size(390, 844), dark: true);
+    addTearDown(() => AppToast.dismiss(immediately: true));
+    bool? first;
+    bool? second;
+    unawaited(notifications.confirmUndoableAction(context, 'First removal').then((v) => first = v));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    unawaited(notifications.confirmUndoableAction(context, 'Second removal').then((v) => second = v));
+    await tester.pump(const Duration(seconds: 3));
+    expect(first, isNull);
+    expect(second, isNull);
+    await tester.tap(find.text(t.common.undo));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pump();
+    expect(first, isFalse);
+    expect(second, isNull);
+    expect(find.text('Second removal'), findsOneWidget);
+    await tester.tap(find.text(t.common.undo));
+    await tester.pumpAndSettle();
+    expect(second, isFalse);
+  });
+
+  testWidgets('interleaved pending work cannot commit an undo that has not been displayed', (tester) async {
+    final context = await _pumpHost(tester, size: const Size(390, 844), dark: true);
+    addTearDown(() => AppToast.dismiss(immediately: true));
+    bool? first;
+    bool? second;
+    unawaited(notifications.confirmUndoableAction(context, 'A removal').then((v) => first = v));
+    await tester.pump();
+    notifications.showSuccessSnackBar(context, 'Ordinary notice');
+    unawaited(notifications.confirmUndoableAction(context, 'B removal').then((v) => second = v));
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pump();
+    expect(first, isTrue);
+    for (var frame = 0; frame < 20 && find.text('Ordinary notice').evaluate().isEmpty; frame++) {
+      await tester.pump(const Duration(milliseconds: 25));
+    }
+    expect(find.text('Ordinary notice'), findsOneWidget);
+    final pending = AppToast.pending(context);
+    pending.update('Pending complete');
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(second, isNull);
+    expect(find.text('B removal'), findsNothing);
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pump();
+    for (var frame = 0; frame < 20 && find.text('B removal').evaluate().isEmpty; frame++) {
+      await tester.pump(const Duration(milliseconds: 25));
+    }
+    expect(second, isNull);
+    expect(find.text('B removal'), findsOneWidget);
+    await tester.tap(find.text(t.common.undo));
+    await tester.pumpAndSettle();
+    expect(second, isFalse);
+  });
+
+  testWidgets('disposing the overlay cancels active and queued removals', (tester) async {
+    final context = await _pumpHost(tester, size: const Size(390, 844), dark: true);
+    final first = notifications.confirmUndoableAction(context, 'Active removal');
+    await tester.pump();
+    final second = notifications.confirmUndoableAction(context, 'Queued removal');
+    await tester.pumpWidget(const SizedBox());
+    expect(await first, isFalse);
+    expect(await second, isFalse);
+  });
+
   testWidgets('toast slot merges, pauses, replaces and keeps page focus', (tester) async {
     final context = await _pumpHost(tester, size: const Size(390, 844), dark: true);
     addTearDown(() => AppToast.dismiss(immediately: true));

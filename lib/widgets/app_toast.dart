@@ -30,7 +30,28 @@ class AppToastHandle {
     String? actionLabel,
     VoidCallback? onAction,
   }) {
-    if (_cancelled || AppToast._owner != _id) return;
+    if (_cancelled) return;
+    final queued = AppToast._queue.indexWhere((request) => request.id == _id);
+    if (queued >= 0) {
+      _pending?.cancel();
+      final request = AppToast._queue[queued];
+      AppToast._queue[queued] = (
+        id: _id,
+        source: request.source,
+        notice: _ToastNotice(
+          message,
+          type,
+          duration,
+          true,
+          actionLabel,
+          onAction,
+          request.notice.onDismiss,
+          request.notice.onExpire,
+        ),
+      );
+      return;
+    }
+    if (AppToast._owner != _id) return;
     _pending?.cancel();
     AppToast._present(_id, message, type: type, duration: duration, actionLabel: actionLabel, onAction: onAction);
   }
@@ -38,6 +59,8 @@ class AppToastHandle {
   void dismiss() {
     _cancelled = true;
     _pending?.cancel();
+    final queued = AppToast._queue.indexWhere((request) => request.id == _id);
+    if (queued >= 0) AppToast._queue.removeAt(queued).notice.finish();
     if (AppToast._owner == _id) AppToast.dismiss();
   }
 }
@@ -179,13 +202,16 @@ class _ToastNotice {
     this.actionLabel,
     this.onAction,
     this.onDismiss,
+    this.onExpire,
   );
   final VoidCallback? onDismiss;
+  final VoidCallback? onExpire;
   bool _finished = false;
 
-  void finish() {
+  void finish({bool expired = false}) {
     if (_finished) return;
     _finished = true;
+    if (expired) onExpire?.call();
     onDismiss?.call();
   }
 
@@ -210,6 +236,8 @@ class AppToast extends StatefulWidget {
   static WeakReference<BuildContext>? _source;
   static _ToastNotice? _next;
   static int _queuedCount = 1;
+  static final _queue = <({Object id, WeakReference<BuildContext> source, _ToastNotice notice})>[];
+  static bool get _undoWindowOpen => _next?.hasAction == true && _next?.onDismiss != null;
   static final _anchors = <_AppToastAnchorState>{};
   static final _players = <_AppToastPlayerRegionState>{};
 
@@ -222,9 +250,18 @@ class AppToast extends StatefulWidget {
     String? actionLabel,
     VoidCallback? onAction,
     VoidCallback? onDismiss,
+    VoidCallback? onExpire,
   }) {
     final id = Object();
     if (!context.mounted) return AppToastHandle._(id).._cancelled = true;
+    if (_undoWindowOpen || _queue.isNotEmpty) {
+      _queue.add((
+        id: id,
+        source: WeakReference(context),
+        notice: _ToastNotice(message, type, duration, dismissible, actionLabel, onAction, onDismiss, onExpire),
+      ));
+      return AppToastHandle._(id);
+    }
     final overlay = _host?._overlayKey.currentState ?? Overlay.maybeOf(context, rootOverlay: true);
     if (overlay == null) return AppToastHandle._(id).._cancelled = true;
     if (_overlay != null && _overlay != overlay) dismiss(immediately: true);
@@ -240,12 +277,15 @@ class AppToast extends StatefulWidget {
       actionLabel: actionLabel,
       onAction: onAction,
       onDismiss: onDismiss,
+      onExpire: onExpire,
     );
     return AppToastHandle._(id);
   }
 
   /// Delayed busy notice; complete using the returned handle, with no fake work.
   static AppToastHandle pending(BuildContext context, {String? message}) {
+    if (_undoWindowOpen || _queue.isNotEmpty)
+      return show(context, message ?? t.common.loading, type: AppToastType.loading);
     final id = Object();
     final handle = AppToastHandle._(id);
     if (!context.mounted) return handle.._cancelled = true;
@@ -275,10 +315,11 @@ class AppToast extends StatefulWidget {
     String? actionLabel,
     VoidCallback? onAction,
     VoidCallback? onDismiss,
+    VoidCallback? onExpire,
   }) {
     final overlay = _overlay;
     if (_owner != id || overlay == null || !overlay.mounted) return;
-    final notice = _ToastNotice(message, type, duration, dismissible, actionLabel, onAction, onDismiss);
+    final notice = _ToastNotice(message, type, duration, dismissible, actionLabel, onAction, onDismiss, onExpire);
     _next?.finish();
     if (_entry != null) {
       final state = _key?.currentState;
@@ -304,10 +345,10 @@ class AppToast extends StatefulWidget {
       state._dismiss();
       return;
     }
-    _remove();
+    _remove(clearQueue: immediately);
   }
 
-  static void _remove() {
+  static void _remove({bool clearQueue = false}) {
     _key?.currentState?._notice.finish();
     _next?.finish();
     final entry = _entry;
@@ -319,6 +360,39 @@ class AppToast extends StatefulWidget {
     _host?._announce('', null);
     entry?.remove();
     entry?.dispose();
+    if (clearQueue) {
+      final cancelled = List.of(_queue);
+      _queue.clear();
+      for (final request in cancelled) {
+        request.notice.finish();
+      }
+    } else if (_queue.isNotEmpty) {
+      final request = _queue.removeAt(0);
+      final context = request.source.target;
+      if (context != null && context.mounted) {
+        final notice = request.notice;
+        final overlay = _host?._overlayKey.currentState ?? Overlay.maybeOf(context, rootOverlay: true);
+        if (overlay != null) {
+          _overlay = overlay;
+          _owner = request.id;
+          _source = request.source;
+          _present(
+            request.id,
+            notice.message,
+            type: notice.type,
+            duration: notice.duration,
+            dismissible: notice.dismissible,
+            actionLabel: notice.actionLabel,
+            onAction: notice.onAction,
+            onDismiss: notice.onDismiss,
+            onExpire: notice.onExpire,
+          );
+          return;
+        }
+      }
+      request.notice.finish();
+      _remove();
+    }
   }
 
   /// Also consulted by the player's hardware handler, which runs outside Focus.
@@ -377,7 +451,10 @@ class _AppToastState extends State<AppToast> with TickerProviderStateMixin {
     _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 180));
     _remaining = AnimationController(vsync: this, animationBehavior: AnimationBehavior.preserve)
       ..addStatusListener((status) {
-        if (status == AnimationStatus.completed) _dismiss();
+        if (status == AnimationStatus.completed) {
+          _notice.finish(expired: true);
+          _dismiss();
+        }
       });
     _spinner = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
     FocusManager.instance.addEarlyKeyEventHandler(_earlyKey);
@@ -600,6 +677,11 @@ class _AppToastState extends State<AppToast> with TickerProviderStateMixin {
       AppToast._source = null;
       AppToast._next?.finish();
       AppToast._next = null;
+      final cancelled = List.of(AppToast._queue);
+      AppToast._queue.clear();
+      for (final request in cancelled) {
+        request.notice.finish();
+      }
     }
     _notice.finish();
     super.dispose();

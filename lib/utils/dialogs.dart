@@ -15,7 +15,6 @@ import '../widgets/dialog_action_button.dart';
 import '../widgets/focusable_list_tile.dart';
 import '../widgets/scroll_ink_boundary.dart';
 import 'focus_utils.dart';
-import 'snackbar_helper.dart';
 
 const _buttonPadding = EdgeInsets.symmetric(horizontal: 18, vertical: 14);
 const _buttonShape = RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(14)));
@@ -371,7 +370,7 @@ Future<bool> showDeleteConfirmation(
   String? confirmText,
   String? warning,
 }) async {
-  final confirmed = await showConfirmDialog(
+  return showConfirmDialog(
     context,
     title: title,
     message: message,
@@ -379,8 +378,6 @@ Future<bool> showDeleteConfirmation(
     isDestructive: true,
     warning: warning,
   );
-  if (!confirmed || !context.mounted) return false;
-  return confirmUndoableAction(context, t.messages.pendingRemoval);
 }
 
 /// Shows a confirmation whose destructive side effect is opt-in through one

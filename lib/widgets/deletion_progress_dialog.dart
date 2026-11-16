@@ -16,6 +16,7 @@ class DeletionProgressDialog extends StatelessWidget {
     return PopScope(
       canPop: false, // Prevent back button dismissal
       child: AppAlertDialog(
+        showCloseButton: false,
         content: Column(
           mainAxisSize: .min,
           children: [

@@ -264,13 +264,6 @@ class _ServerRouteListState extends State<_ServerRouteList> with AsyncFormStateM
                 onTap: busy
                     ? null
                     : () => _perform(() async {
-                        final confirmed = await showConfirmDialog(
-                          context,
-                          title: t.routes.deleteTitle,
-                          message: route.name,
-                          confirmText: t.common.delete,
-                        );
-                        if (!confirmed || !mounted) return;
                         if (!await confirmUndoableAction(this.context, t.messages.pendingRemoval) || !mounted) return;
                         final remaining = routes.where((r) => r.url != route.url).toList();
                         await _write(

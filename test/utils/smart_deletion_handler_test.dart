@@ -9,6 +9,8 @@ import 'package:plezy/services/download_manager_service.dart';
 import 'package:plezy/services/download_storage_service.dart';
 import 'package:plezy/services/plex_api_cache.dart';
 import 'package:plezy/utils/smart_deletion_handler.dart';
+import 'package:plezy/utils/dialogs.dart';
+import 'package:plezy/widgets/app_dialog.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -50,6 +52,61 @@ void main() {
       delayMs: 0,
     );
     await tester.pump();
+    provider.completeDeletion();
+    await deletion;
+    await tester.pump();
+
+    expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
+    expect(find.text('underlying page'), findsOneWidget);
+  });
+  testWidgets('progress uses the shared route and cannot close before deletion finishes', (tester) async {
+    final database = AppDatabase.forTesting(NativeDatabase.memory());
+    PlexApiCache.initialize(database);
+    final manager = DownloadManagerService(
+      database: database,
+      storageService: DownloadStorageService.instance,
+      clientResolver: (_, {clientScopeId}) => null,
+    )..recoveryFuture = Future<void>.value();
+    final provider = _GatedDeletionProvider(manager, database);
+    await provider.ensureInitialized();
+    addTearDown(() async {
+      provider.dispose();
+      manager.dispose();
+      await database.close();
+    });
+
+    late BuildContext actionContext;
+    await tester.pumpWidget(
+      ChangeNotifierProvider<DownloadProvider>.value(
+        value: provider,
+        child: MaterialApp(
+          home: Builder(
+            builder: (context) {
+              actionContext = context;
+              return const Scaffold(body: Text('underlying page'));
+            },
+          ),
+        ),
+      ),
+    );
+
+    final deletion = SmartDeletionHandler.deleteWithProgress(
+      context: actionContext,
+      provider: provider,
+      globalKey: 'srv:item',
+      delayMs: 0,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byType(AppAlertDialog), findsOneWidget);
+    expect(find.byType(AppDialogCloseButton), findsNothing);
+    final route = ModalRoute.of(tester.element(find.byType(AppAlertDialog)))!;
+    expect(route, isA<AppDialogRoute<void>>());
+    expect((route as AppDialogRoute<void>).filter, isNotNull);
+    expect(route.barrierDismissible, isFalse);
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    expect(find.byType(AppAlertDialog), findsOneWidget);
     provider.completeDeletion();
     await deletion;
     await tester.pump();
