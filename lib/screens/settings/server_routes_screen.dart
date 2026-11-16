@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
-import 'package:xml/xml.dart';
+
+import '../../exceptions/media_server_exceptions.dart';
 
 import '../../connection/connection.dart';
 import '../../connection/connection_registry.dart';
 import '../../connection/server_routes.dart';
+import '../../connection/server_route_identity.dart';
 import '../../database/app_database.dart';
 import '../../media/ids.dart';
 import '../../focus/focusable_button.dart';
@@ -111,11 +113,13 @@ class _ServerRouteListState extends State<_ServerRouteList> with AsyncFormStateM
       JellyfinConnection c => c.baseUrls,
       PlexAccountConnection c =>
         c.servers
-            .firstWhere((s) => s.clientIdentifier == widget.serverId)
-            .connections
-            .map((c) => c.uri)
-            .toSet()
-            .toList(),
+                .where((s) => s.clientIdentifier == widget.serverId)
+                .firstOrNull
+                ?.connections
+                .map((c) => c.uri)
+                .toSet()
+                .toList() ??
+            const <String>[],
     };
     return [for (final url in urls) ServerRoute(name: url, url: url)];
   }
@@ -156,7 +160,16 @@ class _ServerRouteListState extends State<_ServerRouteList> with AsyncFormStateM
     await binder.rebindActive();
   }
 
-  Future<void> _perform(Future<void> Function() body) => runAsync<void>(body, errorMapper: (_) => t.routes.saveFailed);
+  Future<void> _perform(Future<void> Function() body) => runAsync<void>(
+    body,
+    errorMapper: (error) => switch (error) {
+      ServerRouteIdentityMismatch() => t.routes.identityMismatch,
+      MediaServerAuthException() => t.routes.authenticationFailed,
+      MediaServerHttpException(statusCode: 401 || 403) => t.routes.authenticationFailed,
+      MediaServerHttpException() || MediaServerUrlException() => t.routes.unreachable,
+      _ => t.routes.saveFailed,
+    },
+  );
 
   Future<void> _add(Connection connection) async {
     final route = await showScopedDialog<ServerRoute>(context: context, builder: (_) => const _RouteForm());
@@ -170,16 +183,13 @@ class _ServerRouteListState extends State<_ServerRouteList> with AsyncFormStateM
         if (c.serverMachineId.isEmpty ||
             info.machineId != c.serverMachineId ||
             (info.dialect != null && info.dialect != c.dialect)) {
-          throw StateError('Server identity mismatch');
+          throw const ServerRouteIdentityMismatch();
         }
       } else {
         final http = MediaServerHttpClient(baseUrl: route.url);
         try {
           final response = await http.get('/identity', timeout: MediaServerTimeouts.plexProbe);
-          final document = XmlDocument.parse(response.data.toString());
-          if (document.rootElement.getAttribute('machineIdentifier') != widget.serverId) {
-            throw StateError('Server identity mismatch');
-          }
+          validatePlexRouteIdentity(response, widget.serverId);
         } finally {
           http.close();
         }
@@ -204,7 +214,9 @@ class _ServerRouteListState extends State<_ServerRouteList> with AsyncFormStateM
   @override
   Widget build(BuildContext context) {
     final connection = context.watch<ActiveProfileProvider>().connectionsById[widget.connectionId];
-    if (connection == null) {
+    if (connection == null ||
+        connection is PlexAccountConnection &&
+            !connection.servers.any((server) => server.clientIdentifier == widget.serverId)) {
       return SettingsPage(
         title: Text(widget.title),
         children: [PressFeedbackListTile(title: Text(t.routes.noServers))],
@@ -250,6 +262,7 @@ class _ServerRouteListState extends State<_ServerRouteList> with AsyncFormStateM
             children: [
               FocusableListTile(
                 title: Text(route.name),
+                selected: selected == route.url,
                 subtitle: Text(route.url),
                 trailing: selected == route.url ? const AppIcon(Symbols.check_rounded) : null,
                 onTap: busy
@@ -285,7 +298,8 @@ class _ServerRouteListState extends State<_ServerRouteList> with AsyncFormStateM
             SettingNavigationTile(
               icon: Symbols.add_rounded,
               title: t.routes.add,
-              onTap: busy ? () {} : () => _add(connection),
+              enabled: !busy,
+              onTap: busy ? null : () => _add(connection),
             ),
           ],
         ),

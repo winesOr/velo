@@ -94,6 +94,7 @@ class TranslationsZhHant extends TranslationsZh with BaseTranslations<AppLocale,
 	@override late final _Translations$addServer$zh_Hant addServer = _Translations$addServer$zh_Hant._(_root);
 	@override late final _Translations$danmaku$zh_Hant danmaku = _Translations$danmaku$zh_Hant._(_root);
 	@override late final _Translations$detailPlayback$zh_Hant detailPlayback = _Translations$detailPlayback$zh_Hant._(_root);
+	@override late final _Translations$routes$zh_Hant routes = _Translations$routes$zh_Hant._(_root);
 }
 
 // Path: app
@@ -2617,6 +2618,18 @@ class _Translations$detailPlayback$zh_Hant extends Translations$detailPlayback$z
 	@override String get version => '版本';
 	@override String get unavailable => '暫無可用選項';
 	@override String get loadFailed => '播放選項載入失敗';
+}
+
+// Path: routes
+class _Translations$routes$zh_Hant extends Translations$routes$zh {
+	_Translations$routes$zh_Hant._(TranslationsZhHant root) : this._root = root, super.internal(root);
+
+	final TranslationsZhHant _root; // ignore: unused_field
+
+	// Translations
+	@override String get unreachable => '無法連線至此線路，請檢查位址和連接埠。';
+	@override String get identityMismatch => '此位址屬於其他伺服器，請核對伺服器身分。';
+	@override String get authenticationFailed => '此線路驗證失敗，請檢查伺服器存取權限。';
 }
 
 // Path: common.ratingSource
@@ -5864,6 +5877,9 @@ extension on TranslationsZhHant {
 			'detailPlayback.version' => '版本',
 			'detailPlayback.unavailable' => '暫無可用選項',
 			'detailPlayback.loadFailed' => '播放選項載入失敗',
+			'routes.unreachable' => '無法連線至此線路，請檢查位址和連接埠。',
+			'routes.identityMismatch' => '此位址屬於其他伺服器，請核對伺服器身分。',
+			'routes.authenticationFailed' => '此線路驗證失敗，請檢查伺服器存取權限。',
 			_ => null,
 		};
 	}

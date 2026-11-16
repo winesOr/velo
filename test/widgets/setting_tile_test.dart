@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/theme/mono_theme.dart';
+import 'package:plezy/theme/settings_presentation.dart';
+import 'package:plezy/utils/platform_detector.dart';
 import 'package:plezy/widgets/focusable_list_tile.dart';
 import 'package:plezy/widgets/setting_tile.dart';
 import 'package:plezy/widgets/settings_section.dart';
@@ -8,6 +10,30 @@ import 'package:plezy/widgets/settings_section.dart';
 /// SettingsGroup gives navigation, switch and information rows the shared
 /// prototype scale. Other application lists keep their own presentation.
 void main() {
+  testWidgets('disabled navigation has no action and settings use device row heights', (tester) async {
+    addTearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
+    for (final tv in [false, true]) {
+      TvDetectionService.debugSetAppleTVOverride(tv);
+      await tester.pumpWidget(
+        MaterialApp(
+          key: ValueKey(tv),
+          theme: monoTheme(dark: true),
+          home: const Scaffold(
+            body: SettingsGroup(
+              children: [SettingNavigationTile(icon: Icons.route, title: 'Add route', enabled: false)],
+            ),
+          ),
+        ),
+      );
+      final tile = tester.widget<FocusableListTile>(find.byType(FocusableListTile));
+      expect(tile.onTap, isNull);
+      expect(tile.enabled, isFalse);
+      expect(SettingsPresentation.rowHeight, tv ? 55 : 51);
+      expect(ListTileTheme.of(tester.element(find.byType(FocusableListTile))).minTileHeight, tv ? 55 : 51);
+      expect(tester.getSize(find.byType(FocusableListTile)).height, tv ? 55 : 51);
+    }
+  });
+
   for (final platform in [TargetPlatform.android, TargetPlatform.macOS]) {
     testWidgets('settings rows share the prototype scale on $platform', (tester) async {
       await tester.pumpWidget(_harness(platform));

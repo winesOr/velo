@@ -82,7 +82,7 @@ class SettingsGroup extends StatelessWidget {
                   subtitleTextStyle: SettingsPresentation.description(context),
                   minTileHeight: SettingsPresentation.rowHeight,
                   minVerticalPadding: 4,
-                  contentPadding: EdgeInsets.symmetric(horizontal: tv ? 18 : 13, vertical: tv ? 4 : 0),
+                  contentPadding: EdgeInsets.symmetric(horizontal: tv ? 18 : 13),
                   horizontalTitleGap: tv ? 16 : 12,
                   minLeadingWidth: tv ? 25 : 19,
                   visualDensity: VisualDensity.standard,

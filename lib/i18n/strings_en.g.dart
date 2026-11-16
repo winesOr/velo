@@ -6846,6 +6846,15 @@ class Translations$routes$en {
 
 	// Translations
 
+	/// en: 'Could not connect to this route. Check the address and port.'
+	String get unreachable => 'Could not connect to this route. Check the address and port.';
+
+	/// en: 'This address belongs to a different server.'
+	String get identityMismatch => 'This address belongs to a different server.';
+
+	/// en: 'This route refused authentication. Check server access.'
+	String get authenticationFailed => 'This route refused authentication. Check server access.';
+
 	/// en: 'Routes'
 	String get title => 'Routes';
 
@@ -11113,6 +11122,9 @@ extension on Translations {
 			'detailPlayback.version' => 'Version',
 			'detailPlayback.unavailable' => 'Not available',
 			'detailPlayback.loadFailed' => 'Could not load playback options',
+			'routes.unreachable' => 'Could not connect to this route. Check the address and port.',
+			'routes.identityMismatch' => 'This address belongs to a different server.',
+			'routes.authenticationFailed' => 'This route refused authentication. Check server access.',
 			'routes.title' => 'Routes',
 			'routes.serverRoutes' => 'Server routes',
 			'routes.entryDescription' => 'Manage named routes for authorized servers',

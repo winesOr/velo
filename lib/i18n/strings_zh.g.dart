@@ -644,7 +644,7 @@ class Translations$settings$zh extends Translations$settings$en {
 	@override String get viewingExperience => '观看体验';
 	@override String get personalization => '为你定制';
 	@override String get resourcesServices => '资源与服务';
-	@override String serverSummary({required Object count}) => '${count} 个服务器';
+	@override String serverSummary({required Object count}) => '${count} 台服务器';
 	@override String get gestureHorizontalSeek => '滑动调节进度';
 	@override String get gestureHorizontalSeekDescription => '在视频上左右滑动以快进或快退';
 	@override String get longPressSpeed => '长按倍速';
@@ -2710,6 +2710,9 @@ class Translations$routes$zh extends Translations$routes$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String get unreachable => '无法连接此线路，请检查地址和端口。';
+	@override String get identityMismatch => '此地址属于其他服务器，请核对服务器身份。';
+	@override String get authenticationFailed => '此线路认证失败，请检查服务器访问权限。';
 	@override String get title => '线路';
 	@override String get serverRoutes => '服务器线路';
 	@override String get entryDescription => '管理已授权服务器的命名线路';
@@ -4069,7 +4072,7 @@ extension on TranslationsZh {
 			'settings.viewingExperience' => '观看体验',
 			'settings.personalization' => '为你定制',
 			'settings.resourcesServices' => '资源与服务',
-			'settings.serverSummary' => ({required Object count}) => '${count} 个服务器',
+			'settings.serverSummary' => ({required Object count}) => '${count} 台服务器',
 			'settings.gestureHorizontalSeek' => '滑动调节进度',
 			'settings.gestureHorizontalSeekDescription' => '在视频上左右滑动以快进或快退',
 			'settings.longPressSpeed' => '长按倍速',
@@ -6056,6 +6059,9 @@ extension on TranslationsZh {
 			'detailPlayback.version' => '版本',
 			'detailPlayback.unavailable' => '暂无可用选项',
 			'detailPlayback.loadFailed' => '播放选项加载失败',
+			'routes.unreachable' => '无法连接此线路，请检查地址和端口。',
+			'routes.identityMismatch' => '此地址属于其他服务器，请核对服务器身份。',
+			'routes.authenticationFailed' => '此线路认证失败，请检查服务器访问权限。',
 			'routes.title' => '线路',
 			'routes.serverRoutes' => '服务器线路',
 			'routes.entryDescription' => '管理已授权服务器的命名线路',

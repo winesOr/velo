@@ -1,30 +1,25 @@
-import '../connection/manual_plex_route.dart';
-
 import 'dart:async';
-
-import '../media/ids.dart';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../connection/connection.dart';
-import '../i18n/app_locale_utils.dart';
-import '../media/media_server_client.dart';
+import '../connection/manual_plex_route.dart';
 import '../exceptions/media_server_exceptions.dart';
-
+import '../i18n/app_locale_utils.dart';
+import '../media/ids.dart';
+import '../media/media_server_client.dart';
+import '../models/plex/plex_config.dart';
+import '../utils/active_client_scope.dart';
+import '../utils/app_logger.dart';
+import '../utils/future_extensions.dart';
+import '../utils/media_server_timeouts.dart';
 import 'connectivity_probe.dart';
 import 'jellyfin_client.dart';
 import 'jellyfin_endpoint_discovery.dart';
-import 'plex_client.dart';
-import '../models/plex/plex_config.dart';
-import '../utils/app_logger.dart';
-import '../utils/media_server_timeouts.dart';
-import '../utils/active_client_scope.dart';
-import '../utils/future_extensions.dart';
-
-import 'package:sentry_flutter/sentry_flutter.dart';
-
 import 'plex_auth_service.dart';
+import 'plex_client.dart';
 import 'settings_service.dart';
 import 'storage_service.dart';
 

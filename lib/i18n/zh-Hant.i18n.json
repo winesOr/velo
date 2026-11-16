@@ -2643,5 +2643,10 @@
     "version": "版本",
     "unavailable": "暫無可用選項",
     "loadFailed": "播放選項載入失敗"
+  },
+  "routes": {
+    "unreachable": "無法連線至此線路，請檢查位址和連接埠。",
+    "identityMismatch": "此位址屬於其他伺服器，請核對伺服器身分。",
+    "authenticationFailed": "此線路驗證失敗，請檢查伺服器存取權限。"
   }
 }

@@ -48,7 +48,7 @@ class _SettingRow extends StatelessWidget {
   final Widget? subtitle;
   final Widget? value;
   final Widget? trailing;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final FocusNode? focusNode;
 
   const _SettingRow({
@@ -99,6 +99,7 @@ class _SettingRow extends StatelessWidget {
             ],
           ),
           onTap: onTap,
+          enabled: onTap != null,
         );
       },
     );
@@ -153,6 +154,7 @@ class SettingNavigationTile extends StatelessWidget {
   final VoidCallback? onTap;
   final FocusNode? focusNode;
   final IconData trailingIcon;
+  final bool enabled;
 
   const SettingNavigationTile({
     super.key,
@@ -164,7 +166,8 @@ class SettingNavigationTile extends StatelessWidget {
     this.onTap,
     this.focusNode,
     this.trailingIcon = Symbols.chevron_right_rounded,
-  }) : assert(destinationBuilder != null || onTap != null);
+    this.enabled = true,
+  }) : assert(destinationBuilder != null || onTap != null || !enabled);
 
   @override
   Widget build(BuildContext context) {
@@ -175,7 +178,7 @@ class SettingNavigationTile extends StatelessWidget {
       subtitle: subtitle != null ? Text(subtitle!) : null,
       value: value != null ? Text(value!) : null,
       trailing: AppIcon(trailingIcon),
-      onTap: onTap ?? () => Navigator.push(context, MaterialPageRoute(builder: destinationBuilder!)),
+      onTap: enabled ? (onTap ?? () => Navigator.push(context, MaterialPageRoute(builder: destinationBuilder!))) : null,
     );
   }
 }

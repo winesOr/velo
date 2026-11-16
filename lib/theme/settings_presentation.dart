@@ -7,7 +7,7 @@ import 'velo_brand.dart';
 /// of media titles and the player's HUD. Keep the platform font and text scaler.
 abstract final class SettingsPresentation {
   static bool _dark(BuildContext context) => Theme.of(context).brightness == Brightness.dark;
-  static double get rowHeight => 51;
+  static double get rowHeight => PlatformDetector.isTV() ? 55 : 51;
   static double get rowFontSize => PlatformDetector.isTV() ? 17 : 15;
   static double get rowHorizontalPadding => PlatformDetector.isTV() ? 22 : 17;
   static double get groupRadius => 15;
@@ -96,7 +96,7 @@ class SettingsAppearance extends StatelessWidget {
             minTileHeight: SettingsPresentation.rowHeight,
             titleTextStyle: SettingsPresentation.title(context),
             subtitleTextStyle: SettingsPresentation.description(context),
-            contentPadding: EdgeInsets.symmetric(horizontal: tv ? 18 : 13, vertical: tv ? 7 : 2),
+            contentPadding: EdgeInsets.symmetric(horizontal: tv ? 18 : 13),
             horizontalTitleGap: tv ? 16 : 12,
             minLeadingWidth: tv ? 25 : 19,
             visualDensity: VisualDensity.standard,

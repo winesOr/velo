@@ -2715,6 +2715,9 @@
     "loadFailed": "Could not load playback options"
   },
   "routes": {
+    "unreachable": "Could not connect to this route. Check the address and port.",
+    "identityMismatch": "This address belongs to a different server.",
+    "authenticationFailed": "This route refused authentication. Check server access.",
     "title": "Routes",
     "serverRoutes": "Server routes",
     "entryDescription": "Manage named routes for authorized servers",

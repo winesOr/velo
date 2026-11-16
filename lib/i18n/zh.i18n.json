@@ -523,7 +523,7 @@
     "viewingExperience": "观看体验",
     "personalization": "为你定制",
     "resourcesServices": "资源与服务",
-    "serverSummary": "${count} 个服务器",
+    "serverSummary": "${count} 台服务器",
     "gestureHorizontalSeek": "滑动调节进度",
     "gestureHorizontalSeekDescription": "在视频上左右滑动以快进或快退",
     "longPressSpeed": "长按倍速",
@@ -2704,6 +2704,9 @@
     "loadFailed": "播放选项加载失败"
   },
   "routes": {
+    "unreachable": "无法连接此线路，请检查地址和端口。",
+    "identityMismatch": "此地址属于其他服务器，请核对服务器身份。",
+    "authenticationFailed": "此线路认证失败，请检查服务器访问权限。",
     "title": "线路",
     "serverRoutes": "服务器线路",
     "entryDescription": "管理已授权服务器的命名线路",
