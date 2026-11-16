@@ -959,6 +959,27 @@ class Translations$settings$en {
 	/// en: 'View application logs'
 	String get viewLogsDescription => 'View application logs';
 
+	/// en: 'Network & Cache'
+	String get networkCache => 'Network & Cache';
+
+	/// en: 'Home content'
+	String get homeCache => 'Home content';
+
+	/// en: 'Automatic home cache'
+	String get homeCacheAutomatic => 'Automatic home cache';
+
+	/// en: 'Home can reuse valid cached content for the current account and authorized online servers while refreshing it.'
+	String get homeCacheAutomaticDescription => 'Home can reuse valid cached content for the current account and authorized online servers while refreshing it.';
+
+	/// en: 'Image cache'
+	String get imageCache => 'Image cache';
+
+	/// en: 'Manage buffering and decoding in playback settings. Available options and their effect depend on the player core and device.'
+	String get playbackCacheDescription => 'Manage buffering and decoding in playback settings. Available options and their effect depend on the player core and device.';
+
+	/// en: 'Could not clear image cache. Try again.'
+	String get clearImageCacheFailed => 'Could not clear image cache. Try again.';
+
 	/// en: 'Clear Image Cache'
 	String get clearImageCache => 'Clear Image Cache';
 
@@ -8561,6 +8582,13 @@ extension on Translations {
 			'settings.debugLoggingDescription' => 'Enable detailed logging for troubleshooting',
 			'settings.viewLogs' => 'View Logs',
 			'settings.viewLogsDescription' => 'View application logs',
+			'settings.networkCache' => 'Network & Cache',
+			'settings.homeCache' => 'Home content',
+			'settings.homeCacheAutomatic' => 'Automatic home cache',
+			'settings.homeCacheAutomaticDescription' => 'Home can reuse valid cached content for the current account and authorized online servers while refreshing it.',
+			'settings.imageCache' => 'Image cache',
+			'settings.playbackCacheDescription' => 'Manage buffering and decoding in playback settings. Available options and their effect depend on the player core and device.',
+			'settings.clearImageCacheFailed' => 'Could not clear image cache. Try again.',
 			'settings.clearImageCache' => 'Clear Image Cache',
 			'settings.clearImageCacheDescription' => 'Clear cached artwork and thumbnails. Images may load slower until downloaded again.',
 			'settings.clearImageCacheSuccess' => 'Image cache cleared successfully',
@@ -8778,6 +8806,8 @@ extension on Translations {
 			'search.hint' => 'Search movies, shows, music...',
 			'search.tryDifferentTerm' => 'Try a different search term',
 			'search.searchYourMedia' => 'Search your media',
+			_ => null,
+		} ?? switch (path) {
 			'search.enterTitleActorOrKeyword' => 'Enter a title, actor, or keyword',
 			'search.people' => 'People',
 			'hotkeys.setShortcutFor' => ({required Object actionName}) => 'Set Shortcut for ${actionName}',
@@ -8785,8 +8815,6 @@ extension on Translations {
 			'hotkeys.noShortcutSet' => 'No shortcut set',
 			'hotkeys.currentShortcut' => 'Current shortcut:',
 			'hotkeys.pressToRecord' => 'Select to record a shortcut',
-			_ => null,
-		} ?? switch (path) {
 			'hotkeys.recordingShortcut' => 'Press the shortcut now',
 			'hotkeys.actions.playPause' => 'Play/Pause',
 			'hotkeys.actions.volumeUp' => 'Volume Up',
@@ -9292,6 +9320,8 @@ extension on Translations {
 			'profiles.borrowAddTo' => ({required Object displayName}) => 'Add to ${displayName}',
 			'profiles.borrowExplain' => 'Borrow another profile\'s connection. PIN-protected profiles require a PIN.',
 			'profiles.borrowEmpty' => 'Nothing to borrow yet.',
+			_ => null,
+		} ?? switch (path) {
 			'profiles.borrowEmptySubtitle' => 'Connect Plex, Jellyfin, or Emby to another profile first.',
 			'profiles.borrowLoadFailed' => 'Available connections could not be loaded. Try again.',
 			'profiles.borrowFromProfile' => ({required Object displayName}) => 'From ${displayName}',
@@ -9299,8 +9329,6 @@ extension on Translations {
 			'profiles.borrowFailed' => 'Failed to borrow connection.',
 			'profiles.incorrectPin' => 'Incorrect PIN.',
 			'profiles.incorrectPinTryAgain' => 'Incorrect PIN. Please try again.',
-			_ => null,
-		} ?? switch (path) {
 			'profiles.sourceProfileMissingParentAccount' => 'Source profile is missing its parent account.',
 			'profiles.failedToLoadHomeUsers' => 'Could not load your Plex Home users. Check your connection and try again.',
 			'profiles.failedToVerifyPin' => 'Failed to verify PIN.',
@@ -9806,6 +9834,8 @@ extension on Translations {
 			'liveTv.manageRecording' => 'Manage recording',
 			'liveTv.cancelRecording' => 'Cancel recording',
 			'liveTv.cancelRecordingTitle' => 'Cancel this recording?',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.cancelRecordingMessage' => ({required Object title}) => '${title} will no longer be recorded.',
 			'liveTv.deleteRule' => 'Delete rule',
 			'liveTv.deleteRuleTitle' => 'Delete recording rule?',
@@ -9813,8 +9843,6 @@ extension on Translations {
 			'liveTv.recordingScheduled' => 'Recording scheduled',
 			'liveTv.alreadyScheduled' => 'This program is already scheduled',
 			'liveTv.dvrAdminRequired' => 'DVR settings require an admin account',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordingFailed' => 'Couldn\'t schedule recording',
 			'liveTv.recordingTargetMissing' => 'Couldn\'t determine recording library',
 			'liveTv.recordNotAvailable' => 'Recording not available for this program',
@@ -10320,6 +10348,8 @@ extension on Translations {
 			'externalPlayer.useExternalPlayerDescription' => 'Open videos in another app',
 			'externalPlayer.selectPlayer' => 'Select Player',
 			'externalPlayer.customPlayers' => 'Custom Players',
+			_ => null,
+		} ?? switch (path) {
 			'externalPlayer.systemDefault' => 'System Default',
 			'externalPlayer.addCustomPlayer' => 'Add Custom Player',
 			'externalPlayer.playerName' => 'Player Name',
@@ -10327,8 +10357,6 @@ extension on Translations {
 			'externalPlayer.playerCommand' => 'Command',
 			'externalPlayer.playerPackage' => 'Package Name',
 			'externalPlayer.playerUrlScheme' => 'URL Scheme',
-			_ => null,
-		} ?? switch (path) {
 			'externalPlayer.off' => 'Off',
 			'externalPlayer.launchFailed' => 'Failed to open external player',
 			'externalPlayer.appNotInstalled' => ({required Object name}) => '${name} is not installed',

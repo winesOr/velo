@@ -424,6 +424,13 @@ class Translations$settings$zh extends Translations$settings$en {
 	@override String get debugLoggingDescription => '启用详细日志记录以便故障排除';
 	@override String get viewLogs => '查看日志';
 	@override String get viewLogsDescription => '查看应用日志';
+	@override String get networkCache => '网络与缓存';
+	@override String get homeCache => '首页内容';
+	@override String get homeCacheAutomatic => '自动缓存首页内容';
+	@override String get homeCacheAutomaticDescription => '首页加载时可复用当前账户与已授权在线服务器的有效缓存，并继续更新内容。';
+	@override String get imageCache => '图片缓存';
+	@override String get playbackCacheDescription => '在播放设置中管理缓冲与解码。可用选项与实际效果取决于播放核心和设备。';
+	@override String get clearImageCacheFailed => '无法清除图片缓存，请重试。';
 	@override String get clearImageCache => '清除图片缓存';
 	@override String get clearImageCacheDescription => '清除缓存的封面与缩略图。图片在重新下载前加载速度可能会变慢。';
 	@override String get clearImageCacheSuccess => '图片缓存已成功清除';
@@ -3715,6 +3722,13 @@ extension on TranslationsZh {
 			'settings.debugLoggingDescription' => '启用详细日志记录以便故障排除',
 			'settings.viewLogs' => '查看日志',
 			'settings.viewLogsDescription' => '查看应用日志',
+			'settings.networkCache' => '网络与缓存',
+			'settings.homeCache' => '首页内容',
+			'settings.homeCacheAutomatic' => '自动缓存首页内容',
+			'settings.homeCacheAutomaticDescription' => '首页加载时可复用当前账户与已授权在线服务器的有效缓存，并继续更新内容。',
+			'settings.imageCache' => '图片缓存',
+			'settings.playbackCacheDescription' => '在播放设置中管理缓冲与解码。可用选项与实际效果取决于播放核心和设备。',
+			'settings.clearImageCacheFailed' => '无法清除图片缓存，请重试。',
 			'settings.clearImageCache' => '清除图片缓存',
 			'settings.clearImageCacheDescription' => '清除缓存的封面与缩略图。图片在重新下载前加载速度可能会变慢。',
 			'settings.clearImageCacheSuccess' => '图片缓存已成功清除',
@@ -3932,6 +3946,8 @@ extension on TranslationsZh {
 			'search.hint' => '搜索电影、剧集、音乐…',
 			'search.tryDifferentTerm' => '尝试不同的搜索词',
 			'search.searchYourMedia' => '搜索媒体',
+			_ => null,
+		} ?? switch (path) {
 			'search.enterTitleActorOrKeyword' => '输入标题、演员或关键词',
 			'search.people' => '人物',
 			'hotkeys.setShortcutFor' => ({required Object actionName}) => '为 ${actionName} 设置快捷键',
@@ -3939,8 +3955,6 @@ extension on TranslationsZh {
 			'hotkeys.noShortcutSet' => '未设置快捷键',
 			'hotkeys.currentShortcut' => '当前快捷键：',
 			'hotkeys.pressToRecord' => '点击后录入快捷键',
-			_ => null,
-		} ?? switch (path) {
 			'hotkeys.recordingShortcut' => '请按下快捷键',
 			'hotkeys.actions.playPause' => '播放/暂停',
 			'hotkeys.actions.volumeUp' => '增大音量',
@@ -4446,6 +4460,8 @@ extension on TranslationsZh {
 			'profiles.borrowAddTo' => ({required Object displayName}) => '添加到 ${displayName}',
 			'profiles.borrowExplain' => '使用另一个用户资料的连接。受 PIN 保护的用户资料需要输入 PIN。',
 			'profiles.borrowEmpty' => '暂无可用连接。',
+			_ => null,
+		} ?? switch (path) {
 			'profiles.borrowEmptySubtitle' => '请先将 Plex、Jellyfin 或 Emby 连接到另一个用户资料。',
 			'profiles.borrowLoadFailed' => '无法加载可用连接。请重试。',
 			'profiles.borrowFromProfile' => ({required Object displayName}) => '来自 ${displayName}',
@@ -4453,8 +4469,6 @@ extension on TranslationsZh {
 			'profiles.borrowFailed' => '无法添加连接。',
 			'profiles.incorrectPin' => 'PIN 不正确。',
 			'profiles.incorrectPinTryAgain' => 'PIN 不正确。请重试。',
-			_ => null,
-		} ?? switch (path) {
 			'profiles.sourceProfileMissingParentAccount' => '源用户资料缺少关联的主账户。',
 			'profiles.failedToLoadHomeUsers' => '无法加载您的 Plex Home 用户。请检查网络连接后重试。',
 			'profiles.failedToVerifyPin' => '无法验证 PIN。',
@@ -4960,6 +4974,8 @@ extension on TranslationsZh {
 			'liveTv.manageRecording' => '管理录制',
 			'liveTv.cancelRecording' => '取消录制',
 			'liveTv.cancelRecordingTitle' => '取消此次录制？',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.cancelRecordingMessage' => ({required Object title}) => '将不再录制 ${title}。',
 			'liveTv.deleteRule' => '删除规则',
 			'liveTv.deleteRuleTitle' => '删除录制规则？',
@@ -4967,8 +4983,6 @@ extension on TranslationsZh {
 			'liveTv.recordingScheduled' => '录制已安排',
 			'liveTv.alreadyScheduled' => '此节目已安排录制',
 			'liveTv.dvrAdminRequired' => 'DVR 设置需要管理员账户',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordingFailed' => '无法安排录制',
 			'liveTv.recordingTargetMissing' => '无法确定录制库',
 			'liveTv.recordNotAvailable' => '此节目无法录制',
@@ -5474,6 +5488,8 @@ extension on TranslationsZh {
 			'externalPlayer.useExternalPlayerDescription' => '在其他应用中打开视频',
 			'externalPlayer.selectPlayer' => '选择播放器',
 			'externalPlayer.customPlayers' => '自定义播放器',
+			_ => null,
+		} ?? switch (path) {
 			'externalPlayer.systemDefault' => '系统默认',
 			'externalPlayer.addCustomPlayer' => '添加自定义播放器',
 			'externalPlayer.playerName' => '播放器名称',
@@ -5481,8 +5497,6 @@ extension on TranslationsZh {
 			'externalPlayer.playerCommand' => '命令',
 			'externalPlayer.playerPackage' => '包名',
 			'externalPlayer.playerUrlScheme' => 'URL 方案',
-			_ => null,
-		} ?? switch (path) {
 			'externalPlayer.off' => '关闭',
 			'externalPlayer.launchFailed' => '无法打开外部播放器',
 			'externalPlayer.appNotInstalled' => ({required Object name}) => '${name} 未安装',

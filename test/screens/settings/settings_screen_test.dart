@@ -26,6 +26,8 @@ import 'package:plezy/providers/seerr_account_provider.dart';
 import 'package:plezy/providers/theme_provider.dart';
 import 'package:plezy/providers/trackers_provider.dart';
 import 'package:plezy/screens/settings/settings_screen.dart';
+import 'package:plezy/screens/settings/network_cache_settings_screen.dart';
+import 'package:plezy/screens/settings/playback_settings_screen.dart';
 import 'package:plezy/services/background_work_diagnostics_service.dart';
 import 'package:plezy/services/crash_reporting_config.dart';
 import 'package:plezy/services/donation_service.dart';
@@ -107,6 +109,7 @@ void main() {
         'appearance',
         'downloads',
         'services',
+        'network',
         'about',
       ]);
       expect(categories[6].title, t.settings.downloadsOffline);
@@ -198,6 +201,7 @@ void main() {
       'settings_category_together',
       'settings_category_appearance',
       'settings_category_services',
+      'settings_category_network',
       'settings_category_about',
     });
     expect(find.text(t.settings.general), findsOneWidget);
@@ -411,6 +415,12 @@ void main() {
     if (!CrashReportingConfig.enabled) {
       expect(find.text(t.settings.crashReporting), findsNothing);
     }
+    expect(find.text(t.settings.clearImageCache), findsNothing);
+    Navigator.of(tester.element(find.text(t.settings.exportSettings))).pop();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.settings.networkCache));
+    await _pumpUi(tester);
+    expect(find.byType(NetworkCacheSettingsScreen), findsOneWidget);
     final cache = tester.widget<ListTile>(
       find.descendant(of: _focusableTileFor(t.settings.clearImageCache), matching: find.byType(ListTile)),
     );
@@ -418,6 +428,61 @@ void main() {
     await tester.tap(find.text(t.settings.clearImageCache));
     await _pumpUi(tester);
     expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
+  });
+
+  testWidgets('network cache navigation preserves confirmation, failures and retry', (tester) async {
+    final harness = await _pumpSettingsScreen(tester, openCategory: t.settings.networkCache);
+    addTearDown(() => harness.dispose(tester));
+    expect(find.byType(NetworkCacheSettingsScreen), findsOneWidget);
+    expect(find.text(t.settings.homeCacheAutomaticDescription), findsOneWidget);
+    expect(find.byType(SettingSwitchTile), findsNothing);
+    await tester.tap(find.text(t.settings.videoPlayback));
+    await _pumpUi(tester);
+    expect(find.byType(PlaybackSettingsScreen), findsOneWidget);
+    Navigator.of(tester.element(find.byType(PlaybackSettingsScreen))).pop();
+    await tester.pumpAndSettle();
+
+    var calls = 0;
+    final clearing = Completer<void>();
+    Navigator.of(tester.element(find.byType(NetworkCacheSettingsScreen))).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => NetworkCacheSettingsScreen(
+          imageCacheClearer: () {
+            calls++;
+            if (calls == 1) throw const FileSystemException('test cache failure');
+            return clearing.future;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.settings.clearImageCache));
+    await _pumpUi(tester);
+    await tester.tap(find.text(t.common.cancel));
+    await _pumpUi(tester);
+    expect(calls, 0);
+
+    await tester.tap(find.text(t.settings.clearImageCache));
+    await _pumpUi(tester);
+    await tester.tap(find.text(t.common.clear));
+    await _pumpUi(tester);
+    expect(calls, 1);
+    expect(find.text(t.settings.clearImageCacheFailed), findsOneWidget);
+    expect(find.text(t.settings.clearImageCacheSuccess), findsNothing);
+
+    await tester.tap(find.text(t.settings.clearImageCache));
+    await _pumpUi(tester);
+    await tester.tap(find.text(t.common.clear));
+    await _pumpUi(tester);
+    expect(find.text(t.common.loading), findsOneWidget);
+    await tester.tap(find.text(t.settings.clearImageCache));
+    await _pumpUi(tester);
+    expect(calls, 2);
+    expect(find.byType(AlertDialog), findsNothing);
+    clearing.complete();
+    await _pumpUi(tester);
+    expect(find.text(t.settings.clearImageCacheSuccess), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('special download and generic update rows keep rich content on the shared compact row', (tester) async {

@@ -78,8 +78,9 @@ import '../../widgets/loading_indicator_box.dart';
 import '../../widgets/video_controls/sheets/danmaku_settings_sheet.dart';
 import 'danmaku_settings_entry.dart';
 import 'settings_category_pane.dart';
+import 'network_cache_settings_screen.dart';
 
-enum _SettingsDestination { connections, downloads, integrations, application, together }
+enum _SettingsDestination { connections, downloads, integrations, network, application, together }
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -138,7 +139,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
   static const _kDebugLogging = 'debug_logging';
   static const _kAutoHidePerformanceOverlay = 'auto_hide_performance_overlay';
   static const _kViewLogs = 'view_logs';
-  static const _kClearImageCache = 'clear_image_cache';
   static const _kResetSettings = 'reset_settings';
   static const _kCheckForUpdates = 'check_for_updates';
   static const _kAutoCheckUpdatesOnStartup = 'auto_check_updates_on_startup';
@@ -282,6 +282,11 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
                       title: t.settings.connectionsIntegrations,
                       onTap: () => _openDestination(_SettingsDestination.integrations),
                     ),
+                    SettingNavigationTile(
+                      icon: Symbols.network_check_rounded,
+                      title: t.settings.networkCache,
+                      onTap: () => _openDestination(_SettingsDestination.network),
+                    ),
                   ],
                 ),
                 SettingsGroup(
@@ -320,10 +325,12 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
   }
 
   Widget _buildDestination(BuildContext context, _SettingsDestination destination, {required bool hasLibraries}) {
+    if (destination == _SettingsDestination.network) return const NetworkCacheSettingsScreen();
     final title = switch (destination) {
       _SettingsDestination.connections => t.settings.serverAccounts,
       _SettingsDestination.downloads => t.settings.downloadsOffline,
       _SettingsDestination.integrations => t.settings.connectionsIntegrations,
+      _SettingsDestination.network => t.settings.networkCache,
       _SettingsDestination.application => t.settings.about,
       _SettingsDestination.together => t.watchTogether.title,
     };
@@ -429,6 +436,12 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
           builder: (context) => _categoryList(
             _destinationSections(context, _SettingsDestination.integrations, hasLibraries: hasLibraries),
           ),
+        ),
+        SettingsCategory(
+          id: 'network',
+          title: t.settings.networkCache,
+          icon: Symbols.network_check_rounded,
+          builder: (_) => const NetworkCacheSettingsScreen(),
         ),
         SettingsCategory(
           id: 'about',
@@ -831,13 +844,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
           destinationBuilder: (context) => const LogsScreen(),
         ),
         SettingNavigationTile(
-          focusNode: _focusTracker.get(_kClearImageCache),
-          icon: Symbols.cleaning_services_rounded,
-          title: t.settings.clearImageCache,
-          subtitle: t.settings.clearImageCacheDescription,
-          onTap: () => _showClearImageCacheDialog(),
-        ),
-        SettingNavigationTile(
           focusNode: _focusTracker.get(_kResetSettings),
           icon: Symbols.restore_rounded,
           title: t.settings.resetSettings,
@@ -1103,18 +1109,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
       context: context,
       builder: (_) => _RelayUrlDialog(settingsService: _settingsService),
     );
-  }
-
-  Future<void> _showClearImageCacheDialog() async {
-    final confirmed = await showConfirmDialog(
-      context,
-      title: t.settings.clearImageCache,
-      message: t.settings.clearImageCacheDescription,
-      confirmText: t.common.clear,
-    );
-    if (!confirmed) return;
-    await _settingsService.clearImageCache();
-    if (mounted) showSuccessSnackBar(context, t.settings.clearImageCacheSuccess);
   }
 
   Future<void> _showResetSettingsDialog() async {
