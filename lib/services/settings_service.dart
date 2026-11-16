@@ -1089,6 +1089,9 @@ class SettingsService extends BaseSharedPreferencesService {
   @override
   Future<void> onInit() async {
     _assertCredentialsReadable();
+    if (read(startupSection) == NavigationTabId.search) {
+      await prefs.setString(startupSection.key, NavigationTabId.libraries.name);
+    }
 
     const legacyRecentRoomsKey = 'watch_together_recent_rooms';
     await prefs.remove(legacyRecentRoomsKey);

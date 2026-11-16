@@ -24,7 +24,7 @@ void main() {
       );
       expect(
         NavigationTab.resolveDefaultTab(isOffline: false, hasLiveTv: false, preferredStartup: NavigationTabId.search),
-        NavigationTabId.search,
+        NavigationTabId.libraries,
       );
     });
 
@@ -69,7 +69,7 @@ void main() {
       expect(ids, contains(NavigationTabId.explore));
       // Explore sits after Live TV, directly before Search.
       expect(ids.indexOf(NavigationTabId.explore), ids.indexOf(NavigationTabId.liveTv) + 1);
-      expect(ids.indexOf(NavigationTabId.explore), ids.indexOf(NavigationTabId.search) - 1);
+      expect(ids, isNot(contains(NavigationTabId.search)));
     });
 
     test('Explore is online-only', () {

@@ -5,7 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../i18n/strings.g.dart';
 import '../utils/platform_detector.dart';
 
-/// Navigation tab identifiers
+/// Navigation tab identifiers. `search` is a legacy alias for `libraries`.
 enum NavigationTabId { discover, explore, libraries, liveTv, search, downloads, settings, together }
 
 /// Stable IDs, not enum indices: stored startup preferences remain compatible.
@@ -68,6 +68,7 @@ class NavigationTab {
     bool hasExplore = false,
   }) {
     return allNavigationTabs.where((tab) {
+      if (tab.id == NavigationTabId.search) return false;
       if (isOffline && tab.onlineOnly) return false;
       if (tab.id == NavigationTabId.liveTv && !hasLiveTv) return false;
       if (tab.id == NavigationTabId.explore && !hasExplore) return false;
@@ -87,6 +88,7 @@ class NavigationTab {
     bool hasExplore = false,
     required NavigationTabId? preferredStartup,
   }) {
+    if (preferredStartup == NavigationTabId.search) preferredStartup = NavigationTabId.libraries;
     final tabs = getVisibleTabs(isOffline: isOffline, hasLiveTv: hasLiveTv, hasExplore: hasExplore);
     if (isOffline && tabs.any((t) => t.id == NavigationTabId.downloads)) {
       return NavigationTabId.downloads;
@@ -101,7 +103,7 @@ class NavigationTab {
 // Label getters (must be top-level for const constructor)
 String _getHomeLabel() => t.common.home;
 String _getExploreLabel() => t.navigation.explore;
-String _getLibrariesLabel() => t.navigation.libraries;
+String _getLibrariesLabel() => t.common.search;
 String _getLiveTvLabel() => t.navigation.liveTv;
 String _getSearchLabel() => t.common.search;
 String _getDownloadsLabel() => t.navigation.downloads;
@@ -111,12 +113,7 @@ String _getTogetherLabel() => t.watchTogether.title;
 /// All navigation tabs in display order
 const allNavigationTabs = [
   NavigationTab(id: NavigationTabId.discover, onlineOnly: true, icon: Symbols.home_rounded, getLabel: _getHomeLabel),
-  NavigationTab(
-    id: NavigationTabId.libraries,
-    onlineOnly: true,
-    icon: Symbols.video_library_rounded,
-    getLabel: _getLibrariesLabel,
-  ),
+  NavigationTab(id: NavigationTabId.libraries, onlineOnly: true, icon: Symbols.grid_view, getLabel: _getLibrariesLabel),
   NavigationTab(id: NavigationTabId.liveTv, onlineOnly: true, icon: Symbols.live_tv_rounded, getLabel: _getLiveTvLabel),
   NavigationTab(
     id: NavigationTabId.explore,
@@ -131,12 +128,7 @@ const allNavigationTabs = [
     icon: Symbols.download_rounded,
     getLabel: _getDownloadsLabel,
   ),
-  NavigationTab(
-    id: NavigationTabId.settings,
-    onlineOnly: false,
-    icon: Symbols.settings_rounded,
-    getLabel: _getSettingsLabel,
-  ),
+  NavigationTab(id: NavigationTabId.settings, onlineOnly: false, icon: Symbols.tune, getLabel: _getSettingsLabel),
   NavigationTab(
     id: NavigationTabId.together,
     onlineOnly: true,

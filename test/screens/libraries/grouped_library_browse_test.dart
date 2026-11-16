@@ -139,6 +139,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
     expect(requests.where((r) => r.$2 == 'new title').map((r) => r.$1), [libraryA.globalKey, libraryB.globalKey]);
+    tester.state<GroupedLibraryBrowseState>(find.byType(GroupedLibraryBrowse)).submitSearchQuery('remote title');
+    await tester.pumpAndSettle();
+    expect(requests.where((r) => r.$2 == 'remote title').map((r) => r.$1), [libraryA.globalKey, libraryB.globalKey]);
     expect(tester.takeException(), isNull);
   });
 

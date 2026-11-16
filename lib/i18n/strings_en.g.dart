@@ -3438,6 +3438,15 @@ class Translations$discover$en {
 
 	// Translations
 
+	/// en: 'Home options'
+	String get homeOptions => 'Home options';
+
+	/// en: 'Browse all media'
+	String get browseAllMedia => 'Browse all media';
+
+	/// en: 'Appearance & home layout'
+	String get appearanceAndHomeLayout => 'Appearance & home layout';
+
 	/// en: 'Discover'
 	String get title => 'Discover';
 
@@ -9471,6 +9480,9 @@ extension on Translations {
 			'accountPreferences.mediaReviewsOptions.usersOnly' => 'Users only',
 			'accountPreferences.mediaReviewsOptions.criticsOnly' => 'Critics only',
 			'accountPreferences.mediaReviewsOptions.nobody' => 'Hidden',
+			'discover.homeOptions' => 'Home options',
+			'discover.browseAllMedia' => 'Browse all media',
+			'discover.appearanceAndHomeLayout' => 'Appearance & home layout',
 			'discover.title' => 'Discover',
 			'discover.noContentAvailable' => 'No content available',
 			'discover.addMediaToLibraries' => 'Add some media to your libraries',
@@ -9888,11 +9900,11 @@ extension on Translations {
 			'liveTv.whatsOn' => 'What\'s On',
 			'liveTv.watchChannel' => 'Watch Channel',
 			'liveTv.favorites' => 'Favorites',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.reorderFavorites' => 'Reorder Favorites',
 			'liveTv.noFavoriteChannels' => 'No favorite channels',
 			'liveTv.noFavoriteChannelsHint' => 'Show all channels, then long-press a channel to add it to your favorites.',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.showAllChannels' => 'Show All Channels',
 			'liveTv.favoritesLoadFailed' => 'Could not load favorites. Check your connection and try again.',
 			'liveTv.favoritesUpdateFailed' => 'Could not update favorites. Check your connection and try again.',
@@ -10402,11 +10414,11 @@ extension on Translations {
 			'performanceOverlay.maxLuma' => 'Max Luma',
 			'performanceOverlay.minLuma' => 'Min Luma',
 			'performanceOverlay.maxCll' => 'MaxCLL',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.maxFall' => 'MaxFALL',
 			'performanceOverlay.cacheUsed' => 'Cache Used',
 			'performanceOverlay.cacheLimit' => 'Cache Limit',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.speed' => 'Speed',
 			'performanceOverlay.player' => 'Player',
 			'performanceOverlay.memory' => 'Memory',

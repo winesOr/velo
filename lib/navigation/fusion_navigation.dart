@@ -1,10 +1,9 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../focus/focusable_button.dart';
-import '../i18n/strings.g.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/app_toast.dart';
 import '../theme/mono_presentation.dart';
@@ -23,7 +22,6 @@ class FusionNavigation extends StatelessWidget {
     required this.tabs,
     required this.selectedTab,
     required this.onSelected,
-    required this.onSecondary,
     this.isTv = false,
     this.showLabels = true,
     this.focusNodes = const {},
@@ -34,7 +32,6 @@ class FusionNavigation extends StatelessWidget {
   final List<NavigationTab> tabs;
   final NavigationTabId selectedTab;
   final ValueChanged<NavigationTabId> onSelected;
-  final VoidCallback onSecondary;
   final bool isTv;
   final bool showLabels;
   final Map<NavigationTabId, FocusNode> focusNodes;
@@ -51,9 +48,6 @@ class FusionNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = tabs.any((tab) => tab.id == NavigationTabId.discover) ? primaryNavigationTabs(tabs) : tabs.toList();
-    if (isTv) {
-      primary.insertAll(primary.isNotEmpty ? primary.length - 1 : 0, tabs.where((t) => t.id == NavigationTabId.search));
-    }
     final color = HomeThemeScope.colorOf(context);
     final brightness = _brightness(context);
     final dark = brightness == Brightness.dark;
@@ -63,7 +57,7 @@ class FusionNavigation extends StatelessWidget {
       duration: Duration.zero,
       constraints: BoxConstraints(
         minHeight: isTv ? 0 : MonoPresentation.navigationHeight,
-        maxWidth: isTv ? 680 : MonoPresentation.navigationMaxWidth,
+        maxWidth: isTv ? 440 : MonoPresentation.navigationMaxWidth,
       ),
       padding: isTv ? const EdgeInsets.symmetric(horizontal: 6, vertical: 4) : const EdgeInsets.all(3),
       decoration: BoxDecoration(
@@ -83,10 +77,7 @@ class FusionNavigation extends StatelessWidget {
         type: MaterialType.transparency,
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final tab in primary) Expanded(child: _destination(context, tab)),
-            _options(context),
-          ],
+          children: [for (final tab in primary) Expanded(child: _destination(context, tab))],
         ),
       ),
     );
@@ -94,7 +85,7 @@ class FusionNavigation extends StatelessWidget {
     return SafeArea(
       top: isTv,
       bottom: !isTv,
-      minimum: EdgeInsets.symmetric(horizontal: isTv ? 32 : 16, vertical: 18),
+      minimum: EdgeInsets.symmetric(horizontal: isTv ? 28 : 16, vertical: 18),
       child: Center(
         heightFactor: 1,
         child: ClipRRect(
@@ -111,11 +102,7 @@ class FusionNavigation extends StatelessWidget {
     final selected = selectedTab == tab.id;
     final brightness = _brightness(context);
     final dark = brightness == Brightness.dark;
-    final foreground = selected
-        ? VeloBrand.foreground(brightness)
-        : selectedTab == NavigationTabId.discover && dark
-        ? Colors.white
-        : MonoPresentation.navigationForeground(brightness);
+    final foreground = selected ? VeloBrand.foreground(brightness) : MonoPresentation.navigationForeground(brightness);
     final focusColor = dark ? Colors.white : const Color(0xff46526b);
     return Semantics(
       selected: selected,
@@ -142,7 +129,7 @@ class FusionNavigation extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             child: Container(
               constraints: isTv
-                  ? const BoxConstraints(minHeight: 48, minWidth: 54, maxWidth: 136)
+                  ? const BoxConstraints(minHeight: 35, minWidth: 54, maxWidth: 136)
                   : const BoxConstraints(minHeight: 48),
               padding: EdgeInsets.symmetric(horizontal: isTv ? 12 : 2),
               decoration: BoxDecoration(
@@ -162,24 +149,14 @@ class FusionNavigation extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AppIcon(
-                            tab.icon,
-                            size: 17,
-                            color: foreground,
-                            fill: selected ? 1 : 0,
-                            weight: selected ? 500 : 400,
-                          ),
-                          const SizedBox(width: 7),
-                          _label(tab, foreground),
-                        ],
+                        children: [_icon(tab, foreground), const SizedBox(width: 7), _label(tab, foreground)],
                       ),
                     )
                   : Column(
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        AppIcon(tab.icon, size: 22, color: foreground, fill: 0, weight: selected ? 500 : 400),
+                        _icon(tab, foreground),
                         if (showLabels) ...[const SizedBox(height: 2), _label(tab, foreground)],
                       ],
                     ),
@@ -190,36 +167,24 @@ class FusionNavigation extends StatelessWidget {
     );
   }
 
-  Widget _options(BuildContext context) {
-    final brightness = _brightness(context);
-    final dark = brightness == Brightness.dark;
-    final foreground = MonoPresentation.navigationForeground(brightness);
-    return PressFeedbackBuilder(
-      pressedScale: InteractionTokens.navigationPressedScale,
-      borderRadius: BorderRadius.circular(24),
-      builder: (context, setPressed, confirm) => FocusableButton(
-        onPressed: () {
-          confirm();
-          onSecondary();
-        },
-        onNavigateDown: onNavigateDown,
-        focusColor: dark ? Colors.white : const Color(0xff46526b),
-        dimWhenUnfocused: false,
-        child: Tooltip(
-          message: t.common.options,
-          child: InkWell(
-            canRequestFocus: false,
-            onTap: onSecondary,
-            onHighlightChanged: setPressed,
-            borderRadius: BorderRadius.circular(24),
-            child: SizedBox(
-              width: 48,
-              height: 48,
-              child: Center(child: AppIcon(Symbols.more_horiz_rounded, size: 18, color: foreground)),
-            ),
-          ),
-        ),
-      ),
+  Widget _icon(NavigationTab tab, Color color) {
+    final paths = switch (tab.id) {
+      NavigationTabId.discover => '<path d="m3 10 9-7 9 7v10H14v-7h-4v7H3Z"/>',
+      NavigationTabId.libraries =>
+        '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+      NavigationTabId.together =>
+        '<circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 4v3"/>',
+      NavigationTabId.settings =>
+        '<path d="M3 7h18M3 17h18"/><circle cx="9" cy="7" r="3"/><circle cx="16" cy="17" r="3"/>',
+      _ => null,
+    };
+    if (paths == null) return AppIcon(tab.icon, size: 22, color: color, fill: 0);
+    return SvgPicture.string(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">$paths</svg>',
+      width: isTv ? 17 : 22,
+      height: isTv ? 17 : 22,
+      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+      excludeFromSemantics: true,
     );
   }
 

@@ -1315,6 +1315,9 @@ class _Translations$discover$zh_Hant extends Translations$discover$zh {
 	final TranslationsZhHant _root; // ignore: unused_field
 
 	// Translations
+	@override String get homeOptions => '首頁選項';
+	@override String get browseAllMedia => '瀏覽全部媒體';
+	@override String get appearanceAndHomeLayout => '外觀與首頁佈局';
 	@override String get title => '發現';
 	@override String get noContentAvailable => '沒有可用內容';
 	@override String get addMediaToLibraries => '請向您的媒體庫新增一些媒體內容';
@@ -4453,6 +4456,9 @@ extension on TranslationsZhHant {
 			'accountPreferences.mediaReviewsOptions.usersOnly' => '僅使用者',
 			'accountPreferences.mediaReviewsOptions.criticsOnly' => '僅影評人',
 			'accountPreferences.mediaReviewsOptions.nobody' => '隱藏',
+			'discover.homeOptions' => '首頁選項',
+			'discover.browseAllMedia' => '瀏覽全部媒體',
+			'discover.appearanceAndHomeLayout' => '外觀與首頁佈局',
 			'discover.title' => '發現',
 			'discover.noContentAvailable' => '沒有可用內容',
 			'discover.addMediaToLibraries' => '請向您的媒體庫新增一些媒體內容',
@@ -4904,11 +4910,11 @@ extension on TranslationsZhHant {
 			'liveTv.recordingsCount' => ({required Object count}) => '已排程 ${count} 個',
 			'liveTv.editRule' => '編輯規則',
 			'liveTv.editRuleAction' => '編輯',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.recordingRuleUpdated' => '錄製規則已更新',
 			'liveTv.guideReloadRequested' => '已要求更新節目表指南',
 			'liveTv.guideReloadFailed' => '無法重新載入節目表指南',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.rulesProcessRequested' => '已要求重新評估規則',
 			'liveTv.rulesProcessFailed' => '無法重新評估錄影規則',
 			'liveTv.recordShow' => '錄製節目',
@@ -5418,11 +5424,11 @@ extension on TranslationsZhHant {
 			'metadataEdit.background' => '背景圖',
 			'metadataEdit.logo' => '標誌（Logo）',
 			'metadataEdit.squareArt' => '方形圖片',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.selectPoster' => '選擇海報',
 			'metadataEdit.selectBackground' => '選擇背景圖',
 			'metadataEdit.selectLogo' => '選擇標誌',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.selectSquareArt' => '選擇方形圖片',
 			'metadataEdit.fromUrl' => '自訂網址',
 			'metadataEdit.uploadFile' => '上傳檔案',

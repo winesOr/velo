@@ -101,7 +101,6 @@ class GeneralSettingsScreen extends StatelessWidget {
     NavigationTabId.discover,
     NavigationTabId.libraries,
     NavigationTabId.liveTv,
-    NavigationTabId.search,
     NavigationTabId.together,
     NavigationTabId.settings,
     NavigationTabId.downloads,

@@ -62,6 +62,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         FullRefreshable,
         FocusableTab,
         LibraryLoadable,
+        SearchInputFocusable,
         TickerProviderStateMixin,
         TabNavigationMixin,
         TabVisibilityAware {
@@ -508,6 +509,21 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   void _notifyLibraryOrderChanged() {
     widget.onLibraryOrderChanged?.call();
   }
+
+  Future<void> _withSearch(void Function(GroupedLibraryBrowseState state) action) async {
+    await _loadLibraryContent(allLibrarySourcesKey);
+    if (!mounted) return;
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    final state = _groupedBrowseKey.currentState;
+    if (state != null) action(state);
+  }
+
+  @override
+  void focusSearchInput() => unawaited(_withSearch((state) => state.focusSearchInput()));
+
+  @override
+  void submitSearchQuery(String query) => unawaited(_withSearch((state) => state.submitSearchQuery(query)));
 
   /// Public method to load a library by key (called from MainScreen side nav)
   @override

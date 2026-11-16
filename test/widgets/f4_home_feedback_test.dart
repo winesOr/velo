@@ -52,7 +52,6 @@ void main() {
                 tabs: NavigationTab.getVisibleTabs(isOffline: false),
                 selectedTab: NavigationTabId.discover,
                 onSelected: (_) {},
-                onSecondary: () {},
               ),
             ),
           ),
@@ -65,13 +64,12 @@ void main() {
       expect(find.text('Content'), findsOneWidget);
       final surface = tester.widget<AnimatedContainer>(find.byKey(const ValueKey('fusion-navigation-surface')));
       expect((surface.decoration! as BoxDecoration).color!.a, 1);
-      expect(find.byTooltip(t.common.options), findsOneWidget);
+      expect(find.byTooltip(t.common.options), findsNothing);
     });
   }
 
-  testWidgets('phone options remains a single 48px target and cancelled navigation does not activate', (tester) async {
+  testWidgets('four phone destinations keep cancelled navigation inactive', (tester) async {
     var selected = 0;
-    var options = 0;
     await tester.pumpWidget(
       MaterialApp(
         theme: monoTheme(dark: true),
@@ -80,15 +78,11 @@ void main() {
             tabs: NavigationTab.getVisibleTabs(isOffline: false),
             selectedTab: NavigationTabId.discover,
             onSelected: (_) => selected++,
-            onSecondary: () => options++,
           ),
         ),
       ),
     );
-    final more = find.byTooltip(t.common.options);
-    expect(more, findsOneWidget);
-    expect(tester.getSize(more).width, greaterThanOrEqualTo(48));
-    expect(tester.getSize(more).height, greaterThanOrEqualTo(48));
+    expect(find.byTooltip(t.common.options), findsNothing);
     final target = find.text(t.watchTogether.title);
     final gesture = await tester.startGesture(tester.getCenter(target));
     await tester.pump(const Duration(milliseconds: 150));
@@ -99,9 +93,6 @@ void main() {
     await gesture.cancel();
     await tester.pumpAndSettle();
     expect(selected, 0);
-    await tester.tap(more);
-    await tester.pumpAndSettle();
-    expect(options, 1);
     await tester.tap(target);
     await tester.pumpAndSettle();
     expect(selected, 1);
@@ -128,7 +119,6 @@ void main() {
               isTv: true,
               focusNodes: {NavigationTabId.together: node},
               onSelected: (_) => selections++,
-              onSecondary: () {},
             ),
           ),
         ),
@@ -294,7 +284,6 @@ void main() {
                     selectedTab: NavigationTabId.discover,
                     isTv: fixture.tv,
                     onSelected: (_) {},
-                    onSecondary: () {},
                   ),
                 ),
               ),
@@ -306,7 +295,7 @@ void main() {
         expect(tester.widget<RawImage>(find.byKey(const ValueKey('decoded-home-artwork'))).image, same(artwork));
         expect(find.byKey(const ValueKey('home-hero-play-progress')), findsOneWidget);
         expect(tester.takeException(), isNull);
-        expect(find.byTooltip(t.common.options), findsOneWidget);
+        expect(find.byTooltip(t.common.options), findsNothing);
         if (fixture.scale > 1) {
           expect(tester.getSize(find.byType(FusionHomeHero)).height, 532);
           final scroll = find.descendant(of: find.byType(FusionHomeHero), matching: find.byType(SingleChildScrollView));

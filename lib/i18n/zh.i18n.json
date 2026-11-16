@@ -1191,6 +1191,9 @@
     }
   },
   "discover": {
+    "homeOptions": "首页选项",
+    "browseAllMedia": "浏览全部媒体",
+    "appearanceAndHomeLayout": "外观与首页布局",
     "title": "发现",
     "noContentAvailable": "没有可用内容",
     "addMediaToLibraries": "请向你的媒体库添加一些媒体",

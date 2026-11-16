@@ -65,6 +65,15 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
     sort: _sort,
   );
 
+  void focusSearchInput() => _searchFocus.requestFocus();
+
+  void submitSearchQuery(String query) {
+    _debounce?.cancel();
+    _search.text = query;
+    refresh();
+    _searchFocus.unfocus();
+  }
+
   @override
   void initState() {
     super.initState();

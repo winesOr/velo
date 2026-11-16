@@ -1059,13 +1059,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   Widget _buildOverlaidAppBar() {
     final mainScope = MainScreenFocusScope.of(context, listen: false);
-    if (mainScope?.hasTopNavigation == true) {
-      return ToolbarScrim(
-        overArtwork: true,
-        child: Row(children: [_buildUserMenuAction(context).child!, const Spacer()]),
-      );
-    }
-    if (!PlatformDetector.shouldUseSideNavigation(context)) {
+    if (mainScope?.hasTopNavigation == true || !PlatformDetector.shouldUseSideNavigation(context)) {
       return ToolbarScrim(
         overArtwork: true,
         child: Row(

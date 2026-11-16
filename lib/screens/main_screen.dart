@@ -77,7 +77,8 @@ import 'explore_screen.dart';
 import 'libraries/library_quick_picker_sheet.dart';
 import 'libraries/libraries_screen.dart';
 import 'livetv/live_tv_screen.dart';
-import 'search_screen.dart';
+import 'settings/appearance_settings_screen.dart';
+import 'libraries/grouped_library_browse.dart';
 import 'downloads/downloads_screen.dart';
 import 'settings/settings_screen.dart';
 import 'profile/profile_switch_screen.dart';
@@ -1110,7 +1111,7 @@ class _MainScreenState extends State<MainScreen>
       _selectTab(NavigationTabId.search, focusSearchInput: !hasQuery);
       if (hasQuery) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _onScreen<SearchInputFocusable>(NavigationTabId.search, (screen) => screen.submitSearchQuery(trimmed));
+          _onScreen<SearchInputFocusable>(NavigationTabId.libraries, (screen) => screen.submitSearchQuery(trimmed));
         });
       }
     };
@@ -1299,7 +1300,6 @@ class _MainScreenState extends State<MainScreen>
   }
 
   static const _tvContentBelowNavigation = {
-    NavigationTabId.settings,
     NavigationTabId.together,
     NavigationTabId.search,
     NavigationTabId.downloads,
@@ -1318,7 +1318,7 @@ class _MainScreenState extends State<MainScreen>
         onLibrarySelected: _handleLibrariesScreenSelected,
       ),
       NavigationTabId.liveTv => LiveTvScreen(key: _screenKeys[tab]),
-      NavigationTabId.search => SearchScreen(key: _screenKeys[tab]),
+      NavigationTabId.search => const SizedBox.shrink(),
       NavigationTabId.downloads => DownloadsScreen(key: _screenKeys[tab]),
       NavigationTabId.settings => SettingsScreen(key: _screenKeys[tab]),
       NavigationTabId.together => WatchTogetherScreen(key: _screenKeys[tab], embedded: true, onBack: _focusSidebar),
@@ -1520,6 +1520,9 @@ class _MainScreenState extends State<MainScreen>
   }
 
   void _focusSidebar() {
+    if (PlatformDetector.isTV() && _currentTab == NavigationTabId.settings) {
+      _selectTab(NavigationTabId.discover);
+    }
     // Capture target before requestFocus() auto-focuses a sidebar descendant
     // and overwrites lastFocusedKey (e.g. to the Libraries toggle button).
     final targetKey = _sideNavKey.currentState?.lastFocusedKey;
@@ -1768,7 +1771,7 @@ class _MainScreenState extends State<MainScreen>
     if (_isSidebarFocused) _focusContent();
     // Schedule focus after the frame so the search screen is visible in the IndexedStack
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _onScreen<SearchInputFocusable>(NavigationTabId.search, (screen) => screen.focusSearchInput());
+      _onScreen<SearchInputFocusable>(NavigationTabId.libraries, (screen) => screen.focusSearchInput());
     });
     return KeyEventResult.handled;
   }
@@ -1877,6 +1880,8 @@ class _MainScreenState extends State<MainScreen>
   }
 
   void _selectTab(NavigationTabId tab, {bool focusSearchInput = true}) {
+    final searchAction = tab == NavigationTabId.search;
+    if (searchAction) tab = NavigationTabId.libraries;
     // Guard: ignore if tab isn't available in current mode
     if (!_getVisibleTabs(_isOffline).any((t) => t.id == tab)) return;
 
@@ -1899,6 +1904,13 @@ class _MainScreenState extends State<MainScreen>
     });
     _updateTvosMenuPassthrough();
 
+    if (tab == NavigationTabId.libraries) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _currentTab != NavigationTabId.libraries) return;
+        _onScreen<LibraryLoadable>(tab, (screen) => screen.loadLibraryByKey(allLibrarySourcesKey));
+      });
+    }
+
     if (previousTab != tab) {
       // The previous tab is necessarily mounted because it was current.
       _onScreen<TabVisibilityAware>(previousTab, (screen) => screen.onTabHidden());
@@ -1913,7 +1925,7 @@ class _MainScreenState extends State<MainScreen>
         // A companion-remote search (focusSearchInput: false) must NOT focus the
         // search input, since focusing it auto-opens the on-screen keyboard; the
         // query submit focuses results instead.
-        if (!_isSidebarFocused && (tab != NavigationTabId.search || focusSearchInput)) {
+        if (!_isSidebarFocused && (!searchAction || focusSearchInput)) {
           _onScreen<FocusableTab>(tab, (screen) => screen.focusActiveTabIfReady());
         }
       }
@@ -1938,9 +1950,9 @@ class _MainScreenState extends State<MainScreen>
     // Focus search input after rebuild so IndexedStack has made it visible.
     // Skipped for a companion-remote search (focusSearchInput: false), whose
     // submit runs the search and focuses results without opening the keyboard.
-    if (tab == NavigationTabId.search && focusSearchInput) {
+    if (searchAction && focusSearchInput) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _onScreen<SearchInputFocusable>(NavigationTabId.search, (screen) => screen.focusSearchInput());
+        _onScreen<SearchInputFocusable>(NavigationTabId.libraries, (screen) => screen.focusSearchInput());
       });
     }
   }
@@ -2076,7 +2088,6 @@ class _MainScreenState extends State<MainScreen>
         tabs: _getVisibleTabs(false),
         selectedTab: _currentTab,
         onSelected: _selectTab,
-        onSecondary: _showSecondaryNavigation,
         showLabels: !hideLabels,
         onLibrariesLongPress: () => _showLibraryQuickPicker(context),
       );
@@ -2454,17 +2465,18 @@ class _MainScreenState extends State<MainScreen>
       context,
       position: Offset(size.width - 24, MediaQuery.paddingOf(context).top + 56),
       entries: [
-        AppMenuHeader(label: t.common.options),
-        if (_screenKeys[_currentTab]?.currentState is ManualRefreshable)
-          AppMenuItem(value: 'refresh', icon: Symbols.refresh_rounded, label: t.common.refresh),
-        for (final tab in visible)
-          AppMenuItem(value: tab.id.name, icon: tab.icon, label: tab.getLabel(), selected: tab.id == _currentTab),
+        AppMenuHeader(label: t.discover.homeOptions),
+        if (!_isOffline) AppMenuItem(value: 'libraries', icon: Symbols.grid_view, label: t.discover.browseAllMedia),
+        for (final id in [NavigationTabId.explore, NavigationTabId.liveTv, NavigationTabId.downloads])
+          for (final tab in visible.where((tab) => tab.id == id))
+            AppMenuItem(value: tab.id.name, icon: tab.icon, label: tab.getLabel(), selected: tab.id == _currentTab),
+        AppMenuItem(value: 'appearance', icon: Symbols.palette_rounded, label: t.discover.appearanceAndHomeLayout),
       ],
       focusFirstItem: PlatformDetector.isTV(),
     );
     if (!mounted || selected == null) return;
-    if (selected == 'refresh') {
-      _onScreen<ManualRefreshable>(_currentTab, (screen) => screen.manualRefresh());
+    if (selected == 'appearance') {
+      await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AppearanceSettingsScreen()));
       return;
     }
     _selectTab(NavigationTabId.values.byName(selected));
@@ -2489,7 +2501,7 @@ class _MainScreenState extends State<MainScreen>
       child: MainScreenFocusScope(
         focusSidebar: _focusSidebar,
         sideNavigationWidth: 0,
-        hasTopNavigation: true,
+        hasTopNavigation: _currentTab != NavigationTabId.settings,
         openNavigation: _showSecondaryNavigation,
         selectTab: _selectTab,
         openSettings: () => _selectTab(NavigationTabId.settings),
@@ -2503,27 +2515,27 @@ class _MainScreenState extends State<MainScreen>
                 ),
               ),
             ),
-            Align(
-              alignment: Alignment.topCenter,
-              child: FocusScope(
-                node: _sidebarFocusScope,
-                onFocusChange: (focused) {
-                  if (focused && !_isSidebarFocused) setState(() => _isSidebarFocused = true);
-                },
-                child: FusionNavigation(
-                  tabs: _getVisibleTabs(_isOffline),
-                  selectedTab: _currentTab,
-                  isTv: true,
-                  focusNodes: _topNavigationNodes,
-                  onSelected: (tab) {
-                    _selectTab(tab);
-                    _focusContent(restorePreviousFocus: true);
+            if (_currentTab != NavigationTabId.settings)
+              Align(
+                alignment: _currentTab == NavigationTabId.libraries ? Alignment.topRight : Alignment.topCenter,
+                child: FocusScope(
+                  node: _sidebarFocusScope,
+                  onFocusChange: (focused) {
+                    if (focused && !_isSidebarFocused) setState(() => _isSidebarFocused = true);
                   },
-                  onSecondary: _showSecondaryNavigation,
-                  onNavigateDown: _focusContent,
+                  child: FusionNavigation(
+                    tabs: _getVisibleTabs(_isOffline),
+                    selectedTab: _currentTab,
+                    isTv: true,
+                    focusNodes: _topNavigationNodes,
+                    onSelected: (tab) {
+                      _selectTab(tab);
+                      _focusContent(restorePreviousFocus: true);
+                    },
+                    onNavigateDown: _focusContent,
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),

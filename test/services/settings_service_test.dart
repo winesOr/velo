@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/models/audio_channel_limit.dart';
+import 'package:plezy/navigation/navigation_tabs.dart';
 import 'package:plezy/models/audio_quality_preset.dart';
 import 'package:plezy/models/transcode_quality_preset.dart';
 import 'package:plezy/services/base_shared_preferences_service.dart';
@@ -22,6 +23,13 @@ void main() {
   tearDown(() {
     TvDetectionService.debugSetAppleTVOverride(null);
     TvDetectionService.debugSetAutomotiveOverride(null);
+  });
+
+  test('legacy search startup preference opens the media wall and persists its stable ID', () async {
+    resetSharedPreferencesForTest(initialAsync: {'startup_section': 'search'});
+    final settings = await SettingsService.getInstance();
+    expect(settings.read(SettingsService.startupSection), NavigationTabId.libraries);
+    expect(settings.prefs.getString('startup_section'), 'libraries');
   });
 
   group('SettingsService.parseMpvConfigText', () {

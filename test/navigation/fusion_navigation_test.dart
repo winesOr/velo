@@ -51,7 +51,6 @@ void main() {
             tabs: NavigationTab.getVisibleTabs(isOffline: false),
             selectedTab: NavigationTabId.discover,
             onSelected: (_) {},
-            onSecondary: () {},
           ),
         ),
       ),
@@ -80,7 +79,6 @@ void main() {
                 tabs: NavigationTab.getVisibleTabs(isOffline: false),
                 selectedTab: fixture.selected,
                 onSelected: (_) {},
-                onSecondary: () {},
               ),
             ),
           ),
@@ -117,12 +115,7 @@ void main() {
   test('four primary destinations do not remove legacy online destinations', () {
     final visible = NavigationTab.getVisibleTabs(isOffline: false, hasLiveTv: true, hasExplore: true);
     expect(primaryNavigationTabs(visible).map((tab) => tab.id), primaryNavigationIds);
-    for (final id in [
-      NavigationTabId.downloads,
-      NavigationTabId.liveTv,
-      NavigationTabId.search,
-      NavigationTabId.explore,
-    ]) {
+    for (final id in [NavigationTabId.downloads, NavigationTabId.liveTv, NavigationTabId.explore]) {
       expect(visible.map((tab) => tab.id), contains(id));
       expect(
         NavigationTab.resolveDefaultTab(isOffline: false, hasLiveTv: true, hasExplore: true, preferredStartup: id),
@@ -146,7 +139,6 @@ void main() {
     });
     NavigationTabId? selected;
     var down = 0;
-    var options = 0;
     await tester.pumpWidget(
       MaterialApp(
         home: InputModeTracker(
@@ -157,7 +149,6 @@ void main() {
               isTv: true,
               focusNodes: nodes,
               onSelected: (id) => selected = id,
-              onSecondary: () => options++,
               onNavigateDown: () => down++,
             ),
           ),
@@ -170,8 +161,7 @@ void main() {
     expect(selected, NavigationTabId.together);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     expect(down, 1);
-    await tester.tap(find.byTooltip(t.common.options));
-    expect(options, 1);
+    expect(find.byTooltip(t.common.options), findsNothing);
     expect(find.text(t.common.search), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
@@ -235,7 +225,6 @@ void main() {
                           selectedTab: NavigationTabId.discover,
                           isTv: true,
                           onSelected: (id) => selected = id,
-                          onSecondary: () {},
                         ),
                       Expanded(
                         child: SingleChildScrollView(
@@ -251,7 +240,6 @@ void main() {
                           tabs: NavigationTab.getVisibleTabs(isOffline: false),
                           selectedTab: NavigationTabId.discover,
                           onSelected: (id) => selected = id,
-                          onSecondary: () {},
                         ),
                 ),
               ),

@@ -1359,6 +1359,9 @@ class Translations$discover$zh extends Translations$discover$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String get homeOptions => '首页选项';
+	@override String get browseAllMedia => '浏览全部媒体';
+	@override String get appearanceAndHomeLayout => '外观与首页布局';
 	@override String get title => '发现';
 	@override String get noContentAvailable => '没有可用内容';
 	@override String get addMediaToLibraries => '请向你的媒体库添加一些媒体';
@@ -4573,6 +4576,9 @@ extension on TranslationsZh {
 			'accountPreferences.mediaReviewsOptions.usersOnly' => '仅用户',
 			'accountPreferences.mediaReviewsOptions.criticsOnly' => '仅影评人',
 			'accountPreferences.mediaReviewsOptions.nobody' => '隐藏',
+			'discover.homeOptions' => '首页选项',
+			'discover.browseAllMedia' => '浏览全部媒体',
+			'discover.appearanceAndHomeLayout' => '外观与首页布局',
 			'discover.title' => '发现',
 			'discover.noContentAvailable' => '没有可用内容',
 			'discover.addMediaToLibraries' => '请向你的媒体库添加一些媒体',
@@ -4990,11 +4996,11 @@ extension on TranslationsZh {
 			'liveTv.whatsOn' => '正在播出',
 			'liveTv.watchChannel' => '观看频道',
 			'liveTv.favorites' => '收藏',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.reorderFavorites' => '重新排序收藏',
 			'liveTv.noFavoriteChannels' => '没有收藏的频道',
 			'liveTv.noFavoriteChannelsHint' => '显示所有频道，然后长按某个频道将其加入收藏。',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.showAllChannels' => '显示所有频道',
 			'liveTv.favoritesLoadFailed' => '无法加载收藏。请检查网络连接后重试。',
 			'liveTv.favoritesUpdateFailed' => '无法更新收藏。请检查网络连接后重试。',
@@ -5504,11 +5510,11 @@ extension on TranslationsZh {
 			'performanceOverlay.maxLuma' => '最大亮度',
 			'performanceOverlay.minLuma' => '最小亮度',
 			'performanceOverlay.maxCll' => 'MaxCLL',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.maxFall' => 'MaxFALL',
 			'performanceOverlay.cacheUsed' => '已用缓存',
 			'performanceOverlay.cacheLimit' => '缓存限制',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.speed' => '速度',
 			'performanceOverlay.player' => '播放器',
 			'performanceOverlay.memory' => '内存',

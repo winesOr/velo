@@ -1155,6 +1155,9 @@
     }
   },
   "discover": {
+    "homeOptions": "首頁選項",
+    "browseAllMedia": "瀏覽全部媒體",
+    "appearanceAndHomeLayout": "外觀與首頁佈局",
     "title": "發現",
     "noContentAvailable": "沒有可用內容",
     "addMediaToLibraries": "請向您的媒體庫新增一些媒體內容",

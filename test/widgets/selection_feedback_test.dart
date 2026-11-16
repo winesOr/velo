@@ -116,7 +116,6 @@ void main() {
             tabs: NavigationTab.getVisibleTabs(isOffline: false),
             selectedTab: selected,
             onSelected: (tab) => update(() => selected = tab),
-            onSecondary: () {},
           ),
         ),
       ),
@@ -124,11 +123,11 @@ void main() {
     await tester.tap(find.text(t.common.home));
     await tester.pumpAndSettle();
     expect(pulses, isEmpty);
-    await tester.tap(find.text(t.libraries.title));
+    await tester.tap(find.text(t.common.search));
     await tester.pumpAndSettle();
     expect(selected, NavigationTabId.libraries);
     expect(pulses, ['HapticFeedbackType.lightImpact']);
-    await tester.tap(find.text(t.libraries.title));
+    await tester.tap(find.text(t.common.search));
     await tester.pumpAndSettle();
     expect(pulses.length, 1);
     await tester.tap(find.text(t.common.home));

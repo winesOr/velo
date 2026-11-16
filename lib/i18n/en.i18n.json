@@ -1195,6 +1195,9 @@
     }
   },
   "discover": {
+    "homeOptions": "Home options",
+    "browseAllMedia": "Browse all media",
+    "appearanceAndHomeLayout": "Appearance & home layout",
     "title": "Discover",
     "noContentAvailable": "No content available",
     "addMediaToLibraries": "Add some media to your libraries",
