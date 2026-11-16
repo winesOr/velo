@@ -18,7 +18,7 @@ class HomeTypography extends ThemeExtension<HomeTypography> {
   final TextStyle caption;
 
   static double heroTitleSize({required bool tv, required bool tablet, double viewportWidth = double.infinity}) =>
-      tv || tablet ? 48 : (viewportWidth < 360 ? 37 : 42);
+      tv ? 48 : (viewportWidth < 360 ? 37 : 45);
 
   static ThemeData apply(ThemeData theme, {required bool tv, bool tablet = false, Color? artworkSurface}) {
     final body = theme.textTheme.bodyMedium!;

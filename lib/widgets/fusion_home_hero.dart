@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'dart:math' as math;
 
 import '../media/media_item.dart';
 import '../media/media_item_types.dart';
@@ -10,9 +9,7 @@ import '../theme/home_typography.dart';
 import '../theme/mono_presentation.dart';
 import '../theme/interaction_tokens.dart';
 import '../i18n/strings.g.dart';
-import '../utils/tone_mapped_logo_image.dart';
 import '../utils/platform_detector.dart';
-import 'optimized_media_image.dart';
 import 'hero_metadata_badges.dart';
 import 'app_icon.dart';
 import 'press_feedback.dart';
@@ -60,7 +57,7 @@ class FusionHomeHero extends StatelessWidget {
     final originalTitle = item.originalTitle?.trim();
     final metadataStyle = TextStyle(
       color: homeType?.caption.color ?? foreground,
-      fontSize: tablet ? 14 : 12,
+      fontSize: 12,
       fontWeight: FontWeight.w400,
       height: 1.5,
       letterSpacing: 0,
@@ -78,6 +75,8 @@ class FusionHomeHero extends StatelessWidget {
             tablet: tablet,
             viewportWidth: viewportWidth,
           ),
+          fontFamily: 'Kaiti SC',
+          fontFamilyFallback: const ['STKaiti', 'Go Noto Current', 'serif'],
           fontWeight: FontWeight.w600,
           color: heroForeground,
           shadows: [
@@ -92,8 +91,6 @@ class FusionHomeHero extends StatelessWidget {
         ),
       ),
     );
-    final titleSize = Theme.of(context).textTheme.displaySmall?.fontSize ?? 36;
-    final logoHeight = math.max(compact ? 64.0 : 100.0, MediaQuery.textScalerOf(context).scale(titleSize) * 2.2);
     return Semantics(
       label: title,
       button: true,
@@ -160,27 +157,15 @@ class FusionHomeHero extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                           ],
-                          if (item.clearLogoPath?.isNotEmpty ?? false)
-                            ClearLogoImage(
-                              client: client,
-                              logoPath: item.clearLogoPath,
-                              width: tablet ? 400 : 310,
-                              fallbackWidth: tablet ? 560 : 350,
-                              height: logoHeight,
-                              alignment: alignment,
-                              logoToneTarget: logoToneTargetFor(surface: color, foreground: heroForeground),
-                              fallbackBuilder: fallbackTitle,
-                            )
-                          else
-                            fallbackTitle(context),
+                          fallbackTitle(context),
                           const SizedBox(height: 14),
                           HeroMetadataBadges(
                             item: item,
                             foreground: metadataStyle.color!,
-                            fontSize: tablet ? 14 : 12,
+                            fontSize: 12,
                             alignment: leftAligned ? WrapAlignment.start : WrapAlignment.center,
                           ),
-                          if (playButton != null || detailsButton != null) ...[
+                          if (PlatformDetector.isTV() && (playButton != null || detailsButton != null)) ...[
                             const SizedBox(height: 12),
                             Wrap(
                               alignment: leftAligned ? WrapAlignment.start : WrapAlignment.center,

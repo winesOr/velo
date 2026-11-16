@@ -44,6 +44,9 @@
     "localDataRecoveryRequired": "Velo 無法安全地復原本機登入資料與待處理的播放資料。請重新登入。",
     "pinCheckRejected": "Plex PIN 檢查遭到拒絕"
   },
+  "ratingDetails": {
+    "sourceInfo": "評分來源說明"
+  },
   "common": {
     "seasonCount": "共 ${count} 季",
     "ratingValue": "${value}分",
@@ -1157,6 +1160,8 @@
     }
   },
   "discover": {
+    "togetherBannerTitle": "好故事，一起看",
+    "togetherBannerDescription": "建立房間，邀請朋友同步觀看",
     "homeOptions": "首頁選項",
     "browseAllMedia": "瀏覽全部媒體",
     "appearanceAndHomeLayout": "外觀與首頁佈局",

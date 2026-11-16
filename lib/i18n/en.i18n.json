@@ -45,6 +45,7 @@
     "pinCheckRejected": "The Plex PIN check was rejected"
   },
   "ratingDetails": {
+    "sourceInfo": "Rating sources explained",
     "title": "Ratings and sources",
     "viewSources": "View rating sources",
     "unattributedSource": "Source not specified",
@@ -1197,6 +1198,8 @@
     }
   },
   "discover": {
+    "togetherBannerTitle": "Good stories, together",
+    "togetherBannerDescription": "Create a room and invite friends to watch in sync",
     "homeOptions": "Home options",
     "browseAllMedia": "Browse all media",
     "appearanceAndHomeLayout": "Appearance & home layout",

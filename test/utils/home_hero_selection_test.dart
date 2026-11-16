@@ -16,13 +16,13 @@ void main() {
       episode,
       sameSeries,
       otherServer,
-      ...movies.take(4),
+      ...movies.take(2),
       testMediaItem(id: 'music', kind: MediaKind.track),
       testMediaItem(id: 'folder', kind: MediaKind.folder),
     ], random: Random(9));
     expect(
       selected.map((item) => item.globalKey),
-      unorderedEquals([episode.globalKey, otherServer.globalKey, ...movies.take(4).map((item) => item.globalKey)]),
+      unorderedEquals([episode.globalKey, otherServer.globalKey, ...movies.take(2).map((item) => item.globalKey)]),
     );
     expect(selectHomeHeroItems([]), isEmpty);
     expect(selectHomeHeroItems([movies.first, movies.first]), [movies.first]);
@@ -38,7 +38,7 @@ void main() {
       random: Random(3),
       previousKeys: first.map((item) => item.globalKey).toList(),
     );
-    expect(next.length, 6);
+    expect(next.length, 4);
     expect(next.any((item) => first.any((old) => old.globalKey == item.globalKey)), isFalse);
     expect(pool.first.id, 'movie-0', reason: 'sampling must not reorder the source rail');
   });
@@ -63,7 +63,7 @@ void main() {
     expect(selection.update([]), isEmpty);
     final first = selection.update(pool.take(2));
     expect(selection.update(pool).take(2), orderedEquals(first));
-    expect(selection.update(pool).length, 6);
+    expect(selection.update(pool).length, 4);
     final pair = selectHomeHeroItems(pool.take(2), random: Random(6));
     final next = selectHomeHeroItems(
       pool.take(2),

@@ -162,6 +162,7 @@ class Translations$ratingDetails$zh extends Translations$ratingDetails$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String get sourceInfo => '评分来源说明';
 	@override String get title => '评分与来源';
 	@override String get viewSources => '查看评分来源';
 	@override String get unattributedSource => '来源未标注';
@@ -1361,6 +1362,8 @@ class Translations$discover$zh extends Translations$discover$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String get togetherBannerTitle => '好故事，一起看';
+	@override String get togetherBannerDescription => '创建房间，邀请朋友同步观看';
 	@override String get homeOptions => '首页选项';
 	@override String get browseAllMedia => '浏览全部媒体';
 	@override String get appearanceAndHomeLayout => '外观与首页布局';
@@ -3504,6 +3507,7 @@ extension on TranslationsZh {
 			'auth.quickConnectExpired' => 'Quick Connect 已过期。请重试。',
 			'auth.localDataRecoveryRequired' => 'Velo 无法安全恢复本地登录状态和待处理的播放数据。请重新登录。',
 			'auth.pinCheckRejected' => 'Plex PIN 检查被拒绝',
+			'ratingDetails.sourceInfo' => '评分来源说明',
 			'ratingDetails.title' => '评分与来源',
 			'ratingDetails.viewSources' => '查看评分来源',
 			'ratingDetails.unattributedSource' => '来源未标注',
@@ -3974,9 +3978,9 @@ extension on TranslationsZh {
 			'settings.longPressSpeed' => '长按倍速',
 			'settings.serverAccounts' => '服务器与账户',
 			'settings.downloadsOffline' => '下载与离线',
-			'settings.connectionsIntegrations' => '连接与集成',
 			_ => null,
 		} ?? switch (path) {
+			'settings.connectionsIntegrations' => '连接与集成',
 			'settings.appearanceAndHome' => '外观与首页',
 			'settings.application' => '应用',
 			'settings.noDanmakuSources' => '未添加源',
@@ -4488,9 +4492,9 @@ extension on TranslationsZh {
 			'profiles.noConnectionsHint' => '没有连接 — 请添加连接以使用此用户资料。',
 			'profiles.noConnections' => '没有连接',
 			'profiles.plexHomeAccount' => 'Plex Home 账户',
-			'profiles.plexAccountChip' => ({required Object account}) => 'Plex 账户：${account}',
 			_ => null,
 		} ?? switch (path) {
+			'profiles.plexAccountChip' => ({required Object account}) => 'Plex 账户：${account}',
 			'profiles.plexAccountUserChip' => ({required Object account, required Object user}) => '${account} 账户下的 ${user}',
 			'profiles.connectionDefault' => '默认',
 			'profiles.connectionAs' => ({required Object displayName}) => '以 ${displayName} 身份',
@@ -4585,6 +4589,8 @@ extension on TranslationsZh {
 			'accountPreferences.mediaReviewsOptions.usersOnly' => '仅用户',
 			'accountPreferences.mediaReviewsOptions.criticsOnly' => '仅影评人',
 			'accountPreferences.mediaReviewsOptions.nobody' => '隐藏',
+			'discover.togetherBannerTitle' => '好故事，一起看',
+			'discover.togetherBannerDescription' => '创建房间，邀请朋友同步观看',
 			'discover.homeOptions' => '首页选项',
 			'discover.browseAllMedia' => '浏览全部媒体',
 			'discover.appearanceAndHomeLayout' => '外观与首页布局',
@@ -5000,11 +5006,11 @@ extension on TranslationsZh {
 			'liveTv.overnight' => '凌晨',
 			'liveTv.morning' => '上午',
 			'liveTv.daytime' => '白天',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.evening' => '晚上',
 			'liveTv.lateNight' => '深夜',
 			'liveTv.whatsOn' => '正在播出',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.watchChannel' => '观看频道',
 			'liveTv.favorites' => '收藏',
 			'liveTv.reorderFavorites' => '重新排序收藏',
@@ -5514,11 +5520,11 @@ extension on TranslationsZh {
 			'performanceOverlay.matrix' => '矩阵',
 			'performanceOverlay.primaries' => '基色',
 			'performanceOverlay.transfer' => '传递特性',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.renderFps' => '渲染 FPS',
 			'performanceOverlay.displayFps' => '显示 FPS',
 			'performanceOverlay.avSync' => 'A/V 同步',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.dropped' => '丢帧',
 			'performanceOverlay.dvRpus' => 'DV RPU',
 			'performanceOverlay.dvRpuAverage' => 'DV RPU 平均',

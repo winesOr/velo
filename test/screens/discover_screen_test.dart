@@ -327,7 +327,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 200));
     final pages = tester.widget<PageView>(find.byType(PageView));
-    expect(pages.childrenDelegate.estimatedChildCount, 6);
+    expect(pages.childrenDelegate.estimatedChildCount, 4);
     final provider = tester.element(find.byType(DiscoverScreen)).read<DiscoverProvider>();
     expect(provider.onDeck.length, 12, reason: 'only the banner is shortened');
     Finder dot(int index) => find.byKey(ValueKey('home-hero-dot-$index'));
@@ -337,10 +337,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
     expect(selected(1), isTrue);
     expect(selected(0), isFalse);
-    await tester.tap(dot(5));
+    await tester.tap(dot(3));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700));
-    expect(selected(5), isTrue);
+    expect(selected(3), isTrue);
     await tester.pump(const Duration(seconds: 8));
     await tester.pump(const Duration(milliseconds: 600));
     expect(selected(0), isTrue, reason: 'automatic wrap updates the same fixed dots');
@@ -360,7 +360,7 @@ void main() {
     await _pumpDiscoverShell(tester, isTv: false, size: const Size(390, 844), clients: [client]);
     await tester.pump(const Duration(milliseconds: 200));
     List<String> labels() =>
-        List.generate(6, (i) => tester.widget<Semantics>(find.byKey(ValueKey('home-hero-dot-$i'))).properties.label!);
+        List.generate(4, (i) => tester.widget<Semantics>(find.byKey(ValueKey('home-hero-dot-$i'))).properties.label!);
     final first = labels();
     final provider = tester.element(find.byType(DiscoverScreen)).read<DiscoverProvider>();
     expect(provider.onDeck, isEmpty, reason: 'recommendations also supply banners when Continue Watching is empty');
@@ -402,11 +402,18 @@ void main() {
           (i) => testMediaItem(id: 'fresh-$i', title: 'Fresh $i', serverId: 'server_1'),
         );
         final client = _SplitLoadingFakeClient(continueWatching: resume);
-        await _pumpDiscoverShell(tester, isTv: false, size: const Size(390, 844), clients: [client], settle: false);
+        await _pumpDiscoverShell(
+          tester,
+          isTv: false,
+          size: const Size(390, 844),
+          clients: [client],
+          settle: false,
+          heroRandom: math.Random(9),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
         List<String> labels() => List.generate(
-          6,
+          4,
           (i) => tester.widget<Semantics>(find.byKey(ValueKey('home-hero-dot-$i'))).properties.label!,
         );
         final initial = labels();
@@ -517,10 +524,8 @@ void main() {
         of: find.byType(FusionHomeHero).first,
         matching: find.byType(HomeHeroPrimaryButton),
       );
-      expect(action, findsOneWidget);
-      expect(tester.widget<HomeHeroPrimaryButton>(action).item.kind, kind);
-      expect(find.descendant(of: action, matching: find.text(t.mediaMenu.viewDetails)), findsOneWidget);
-      expect(find.descendant(of: action, matching: find.text(t.common.play)), findsNothing);
+      expect(action, findsNothing);
+      expect(hero.playButton, isNull);
       expect(tester.takeException(), isNull);
     });
   }
@@ -1420,7 +1425,7 @@ void main() {
           _FakeMediaServerClient(
             continueWatching: [movie],
             hubs: [
-              MediaHub(id: 'recommended', title: 'Recommended', type: 'movie', items: [movie]),
+              MediaHub(id: 'recent', title: 'Recently added', type: 'movie', items: [movie]),
             ],
           ),
         ],

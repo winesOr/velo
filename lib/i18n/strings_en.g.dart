@@ -247,6 +247,9 @@ class Translations$ratingDetails$en {
 
 	// Translations
 
+	/// en: 'Rating sources explained'
+	String get sourceInfo => 'Rating sources explained';
+
 	/// en: 'Ratings and sources'
 	String get title => 'Ratings and sources';
 
@@ -3443,6 +3446,12 @@ class Translations$discover$en {
 	final Translations _root; // ignore: unused_field
 
 	// Translations
+
+	/// en: 'Good stories, together'
+	String get togetherBannerTitle => 'Good stories, together';
+
+	/// en: 'Create a room and invite friends to watch in sync'
+	String get togetherBannerDescription => 'Create a room and invite friends to watch in sync';
 
 	/// en: 'Home options'
 	String get homeOptions => 'Home options';
@@ -8422,6 +8431,7 @@ extension on Translations {
 			'auth.quickConnectExpired' => 'Quick Connect expired. Try again.',
 			'auth.localDataRecoveryRequired' => 'Velo could not safely recover local sign-in and pending playback data. Please sign in again.',
 			'auth.pinCheckRejected' => 'The Plex PIN check was rejected',
+			'ratingDetails.sourceInfo' => 'Rating sources explained',
 			'ratingDetails.title' => 'Ratings and sources',
 			'ratingDetails.viewSources' => 'View rating sources',
 			'ratingDetails.unattributedSource' => 'Source not specified',
@@ -8892,9 +8902,9 @@ extension on Translations {
 			'settings.longPressSpeed' => 'Hold-to-Speed Rate',
 			'settings.serverAccounts' => 'Servers & Accounts',
 			'settings.downloadsOffline' => 'Downloads & Offline',
-			'settings.connectionsIntegrations' => 'Connections & Integrations',
 			_ => null,
 		} ?? switch (path) {
+			'settings.connectionsIntegrations' => 'Connections & Integrations',
 			'settings.appearanceAndHome' => 'Appearance & Home',
 			'settings.application' => 'Application',
 			'settings.noDanmakuSources' => 'No sources added',
@@ -9406,9 +9416,9 @@ extension on Translations {
 			'profiles.noConnectionsHint' => 'No connections — add one to use this profile.',
 			'profiles.noConnections' => 'No connections',
 			'profiles.plexHomeAccount' => 'Plex Home account',
-			'profiles.plexAccountChip' => ({required Object account}) => 'Plex account: ${account}',
 			_ => null,
 		} ?? switch (path) {
+			'profiles.plexAccountChip' => ({required Object account}) => 'Plex account: ${account}',
 			'profiles.plexAccountUserChip' => ({required Object user, required Object account}) => '${user} via ${account}',
 			'profiles.connectionDefault' => 'Default',
 			'profiles.connectionAs' => ({required Object displayName}) => 'as ${displayName}',
@@ -9503,6 +9513,8 @@ extension on Translations {
 			'accountPreferences.mediaReviewsOptions.usersOnly' => 'Users only',
 			'accountPreferences.mediaReviewsOptions.criticsOnly' => 'Critics only',
 			'accountPreferences.mediaReviewsOptions.nobody' => 'Hidden',
+			'discover.togetherBannerTitle' => 'Good stories, together',
+			'discover.togetherBannerDescription' => 'Create a room and invite friends to watch in sync',
 			'discover.homeOptions' => 'Home options',
 			'discover.browseAllMedia' => 'Browse all media',
 			'discover.appearanceAndHomeLayout' => 'Appearance & home layout',
@@ -9918,11 +9930,11 @@ extension on Translations {
 			'liveTv.overnight' => 'Overnight',
 			'liveTv.morning' => 'Morning',
 			'liveTv.daytime' => 'Daytime',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.evening' => 'Evening',
 			'liveTv.lateNight' => 'Late Night',
 			'liveTv.whatsOn' => 'What\'s On',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.watchChannel' => 'Watch Channel',
 			'liveTv.favorites' => 'Favorites',
 			'liveTv.reorderFavorites' => 'Reorder Favorites',
@@ -10432,11 +10444,11 @@ extension on Translations {
 			'performanceOverlay.matrix' => 'Matrix',
 			'performanceOverlay.primaries' => 'Primaries',
 			'performanceOverlay.transfer' => 'Transfer',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.renderFps' => 'Render FPS',
 			'performanceOverlay.displayFps' => 'Display FPS',
 			'performanceOverlay.avSync' => 'A/V Sync',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.dropped' => 'Dropped',
 			'performanceOverlay.dvRpus' => 'DV RPUs',
 			'performanceOverlay.dvRpuAverage' => 'DV RPU Avg',

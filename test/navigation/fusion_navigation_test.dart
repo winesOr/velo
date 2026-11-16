@@ -262,12 +262,8 @@ void main() {
       }
       await tester.tap(find.text(t.watchTogether.title));
       expect(selected, NavigationTabId.together);
-      await tester.ensureVisible(find.text(t.common.play));
-      if (!fixture.tv) {
-        await tester.drag(find.byType(SingleChildScrollView).first, const Offset(0, -100));
-        await tester.pumpAndSettle();
-      }
-      await tester.tap(find.text(t.common.play));
+      await tester.ensureVisible(find.text(item.displayTitle));
+      await tester.tap(find.text(item.displayTitle));
       expect(plays, 1);
       expect(tester.takeException(), isNull);
       final animations = tester.widgetList<AnimatedContainer>(find.byType(AnimatedContainer));
@@ -288,7 +284,7 @@ void main() {
     });
   }
 
-  testWidgets('hero badges show genres alongside rating, year and certification', (tester) async {
+  testWidgets('hero metadata joins genres with plain rating and year', (tester) async {
     final controller = HomeThemeController();
     addTearDown(controller.dispose);
     Future<void> pumpHero(List<String>? genres) => tester.pumpWidget(
@@ -306,16 +302,15 @@ void main() {
 
     await pumpHero(['Drama', 'Family', 'Romance']);
     expect(find.text('2026'), findsOneWidget);
-    expect(find.text('Drama'), findsOneWidget);
-    expect(find.text('Family'), findsOneWidget);
+    expect(find.text('Drama · Family'), findsOneWidget);
     expect(find.textContaining('Romance'), findsNothing);
-    expect(find.text('PG-13'), findsOneWidget);
+    expect(find.text('PG-13'), findsNothing);
 
     await pumpHero(const []);
     expect(find.text('2026'), findsOneWidget);
-    expect(find.text('PG-13'), findsOneWidget);
+    expect(find.text('PG-13'), findsNothing);
   });
-  testWidgets('hero labels wrap at large text and show only known quality', (tester) async {
+  testWidgets('hero labels wrap at large text and omit quality and classification', (tester) async {
     tester.view.physicalSize = const Size(320, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -336,7 +331,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('4K'), findsOneWidget);
+    expect(find.text('4K'), findsNothing);
     expect(find.text('HDR'), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(MaterialApp(home: HeroMetadataBadges(item: testMediaItem(year: null))));

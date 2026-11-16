@@ -170,7 +170,7 @@ void main() {
     final trigger = find.byKey(const ValueKey('hero-rating-sources'));
     final button = tester.widget<FocusableButton>(find.descendant(of: trigger, matching: find.byType(FocusableButton)));
     final returnFocus = button.focusNode!;
-    await tester.tap(find.text('92%'));
+    await tester.tap(find.text('9.2'));
     await tester.pumpAndSettle();
     expect(plays, 0);
     expect(find.byType(RatingSourceDialog), findsOneWidget);
@@ -222,15 +222,15 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('homepage shows at most two enabled sources and reacts to ordering', (tester) async {
+  testWidgets('homepage shows one enabled score and reacts to ordering', (tester) async {
     await _pump(tester, HeroMetadataBadges(item: _item(_scores)));
-    expect(find.text('92%'), findsOneWidget);
-    expect(find.text('88%'), findsOneWidget);
+    expect(find.text('9.2'), findsOneWidget);
+    expect(find.text('88%'), findsNothing);
     expect(find.text('8.1'), findsNothing);
     await SettingsService.instance.write(SettingsService.ratingSourceOrder, ['imdb', 'tmdb']);
     await tester.pump();
     expect(find.text('8.1'), findsOneWidget);
-    expect(find.text('79%'), findsOneWidget);
+    expect(find.text('79%'), findsNothing);
     expect(find.text('92%'), findsNothing);
   });
 }

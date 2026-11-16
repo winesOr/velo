@@ -6,6 +6,7 @@ import '../theme/mono_presentation.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../focus/dpad_navigator.dart';
+import '../focus/focusable_button.dart';
 import '../focus/dpad_select_long_press_controller.dart';
 import '../focus/focus_theme.dart';
 import '../focus/input_mode_tracker.dart';
@@ -32,6 +33,8 @@ import '../utils/scroll_utils.dart';
 import 'horizontal_scroll_with_arrows.dart';
 import 'tv_browse_rail.dart';
 import '../i18n/strings.g.dart';
+import '../utils/dialogs.dart';
+import 'rating_source_dialog.dart';
 
 enum HubCardSizing {
   /// Larger cards optimized for top-level TV shelves.
@@ -103,6 +106,8 @@ class HubSection extends StatefulWidget {
   /// Controls whether cards follow top-level shelf or grid geometry.
   final HubCardSizing cardSizing;
   final double? cardWidthOverride;
+  final bool showRatingSources;
+  final VoidCallback? onBrowseAll;
 
   /// Overrides the global episode artwork mode for this hub.
   final EpisodePosterMode? episodePosterModeOverride;
@@ -135,6 +140,8 @@ class HubSection extends StatefulWidget {
     this.inset = false,
     this.cardSizing = HubCardSizing.shelf,
     this.cardWidthOverride,
+    this.showRatingSources = false,
+    this.onBrowseAll,
     this.episodePosterModeOverride,
     this.focusScrollAlignment = 0.3,
   }) : usesContinueWatchingAction = usesContinueWatchingAction ?? isInContinueWatching;
@@ -458,6 +465,10 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
   }
 
   void _navigateToHubDetail(BuildContext context) {
+    if (widget.onBrowseAll != null) {
+      widget.onBrowseAll!();
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -469,6 +480,13 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
           onRemoveFromContinueWatching: widget.onRemoveFromContinueWatching,
         ),
       ),
+    );
+  }
+
+  Future<void> _showRatingSources() async {
+    await showScopedDialog<void>(
+      context: context,
+      builder: (_) => const RatingSourceDialog(ratings: []),
     );
   }
 
@@ -564,7 +582,7 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
                           ),
                         ),
                       ],
-                      if (widget.showServerName && widget.hub.serverName != null) ...[
+                      if (!homePhone && widget.showServerName && widget.hub.serverName != null) ...[
                         const SizedBox(width: 8),
                         Text(
                           '•',
@@ -609,6 +627,25 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
             ),
           ),
 
+          if (homePhone && widget.showRatingSources)
+            Padding(
+              padding: EdgeInsets.only(left: leadingPadding, bottom: 7),
+              child: FocusableButton(
+                onPressed: _showRatingSources,
+                dimWhenUnfocused: false,
+                child: GestureDetector(
+                  onTap: _showRatingSources,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .06),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(t.ratingDetails.sourceInfo, style: const TextStyle(fontSize: 10)),
+                  ),
+                ),
+              ),
+            ),
           if (homePhone) const SizedBox(height: 7),
           if (widget.hub.items.isNotEmpty)
             Focus(

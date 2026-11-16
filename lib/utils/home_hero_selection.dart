@@ -28,7 +28,7 @@ List<MediaItem> selectHomeHeroItems(Iterable<MediaItem> items, {Random? random, 
   final previous = previousKeys.toSet();
   final fresh = pool.where((item) => !previous.contains(_identity(item)));
   final recent = pool.where((item) => previous.contains(_identity(item)));
-  final result = fresh.followedBy(recent).take(6).toList()..shuffle(rng);
+  final result = fresh.followedBy(recent).take(4).toList()..shuffle(rng);
   if (result.length > 1 &&
       result.length == previousKeys.length &&
       Iterable<int>.generate(result.length).every((i) => _identity(result[i]) == previousKeys[i])) {
@@ -66,7 +66,7 @@ class HomeHeroSelection {
         pool.values.where((item) => !keptKeys.contains(_identity(item))),
         random: _random,
       );
-      _items = List.unmodifiable([...kept, ...extra.take(6 - kept.length)]);
+      _items = List.unmodifiable([...kept, ...extra.take(4 - kept.length)]);
     }
     return _items;
   }

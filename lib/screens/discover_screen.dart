@@ -22,13 +22,12 @@ import '../media/media_item_types.dart';
 import '../media/media_server_client.dart';
 import '../media/media_hub.dart';
 import '../utils/home_hero_selection.dart';
+import '../utils/home_recent_hubs.dart';
 import '../utils/media_image_helper.dart';
 import '../widgets/cycling_media_backdrop.dart';
 import '../widgets/vidhub_ambient_backdrop.dart';
 import '../utils/ambient_palette_extractor.dart';
 import '../widgets/fusion_home_hero.dart';
-import '../widgets/press_feedback.dart';
-import '../theme/interaction_tokens.dart';
 import '../widgets/hero_metadata_badges.dart';
 import '../widgets/backend_badge.dart';
 import '../navigation/home_theme.dart';
@@ -102,7 +101,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   ).copyWith(scaffoldBackgroundColor: HomeThemeScope.colorOf(context));
 
   static const Duration _heroAutoScrollDuration = Duration(seconds: 8);
-  static const Duration _indicatorUpdateInterval = Duration(milliseconds: 200);
 
   /// Data + refresh policy live in [DiscoverProvider]; this state keeps only
   /// UI concerns (hero carousel, focus, spotlight). The proxy getters keep
@@ -123,6 +121,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   HomeHeroSelection get _heroSelection =>
       _heroSelections.putIfAbsent(_selectedHomeServerId, () => HomeHeroSelection(random: widget.heroRandom));
   List<MediaHub> _sourceHubs = const [];
+  bool _usesPhoneHubs = false;
+  List<MediaHub>? _recentHubsInput;
+  AppLocale? _recentHubsLocale;
+  List<MediaHub> _recentHubs = const [];
   void _syncSourceLists() {
     if (_sourceSnapshotId == _selectedHomeServerId &&
         identical(_sourceItemsInput, _discover.onDeck) &&
@@ -154,7 +156,18 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   List<MediaHub> get _hubs {
     _syncSourceLists();
-    return _sourceHubs;
+    if (!_usesPhoneHubs) return _sourceHubs;
+    final locale = LocaleSettings.currentLocale;
+    if (!identical(_recentHubsInput, _sourceHubs) || _recentHubsLocale != locale) {
+      _recentHubsInput = _sourceHubs;
+      _recentHubsLocale = locale;
+      _recentHubs = homeRecentHubs(
+        _sourceHubs,
+        movieTitle: '${t.common.mediaKind.movie} · ${t.discover.recentlyAdded}',
+        showTitle: '${t.common.mediaKind.show} · ${t.discover.recentlyAdded}',
+      );
+    }
+    return _recentHubs;
   }
 
   bool get _hasMoreContinueWatching => _discover.hasMoreContinueWatching;
@@ -170,8 +183,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   /// Last decoded hero artwork per item, kept for items not yet selected.
   final Map<String, ImageProvider> _heroReadyImages = {};
   Timer? _autoScrollTimer;
-  Timer? _indicatorTimer;
-  final ValueNotifier<double> _indicatorProgress = ValueNotifier(0.0);
   bool _isAutoScrollPaused = false;
   bool _reduceMotion = false;
   bool _heroFocusPausedAutoScroll = false;
@@ -334,6 +345,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final usesPhoneHubs = PlatformDetector.isMobile(context);
+    if (_usesPhoneHubs != usesPhoneHubs) {
+      _usesPhoneHubs = usesPhoneHubs;
+      _updateHubKeys();
+    }
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final changed = reduceMotion != _reduceMotion;
     _reduceMotion = reduceMotion;
@@ -346,7 +362,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       }
       if (_reduceMotion) {
         _autoScrollTimer?.cancel();
-        _stopIndicatorProgress();
       } else if (changed && _isTabVisible) {
         _startAutoScroll();
       }
@@ -621,7 +636,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     if (_heroFocusNode.hasFocus) {
       _heroFocusPausedAutoScroll = true;
       _autoScrollTimer?.cancel();
-      _stopIndicatorProgress();
       return;
     }
 
@@ -668,9 +682,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     _discover.removeListener(_onDiscoverChanged);
     WidgetsBinding.instance.removeObserver(this);
     _autoScrollTimer?.cancel();
-    _indicatorTimer?.cancel();
     _spotlight.dispose();
-    _indicatorProgress.dispose();
     _heroIndex.dispose();
     _heroController.dispose();
     _scrollController.dispose();
@@ -698,7 +710,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     } else if (state == AppLifecycleState.inactive || state == AppLifecycleState.hidden) {
       // Stop animations to prevent scroll state corruption while backgrounded
       _autoScrollTimer?.cancel();
-      _stopIndicatorProgress();
     }
   }
 
@@ -708,7 +719,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     if (_reduceMotion) return;
     if (_isAutoScrollPaused) return;
 
-    _startIndicatorProgress();
     _autoScrollTimer = Timer.periodic(_heroAutoScrollDuration, (timer) {
       if (_heroItems.isEmpty || !_heroController.hasClients || _isAutoScrollPaused) {
         return;
@@ -718,32 +728,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       if (_heroIndex.value >= _heroItems.length) _heroIndex.value = 0;
 
       final nextPage = (_heroIndex.value + 1) % _heroItems.length;
-      // onPageChanged restarts the timer and the progress fill.
+      // onPageChanged restarts the carousel timer.
       _heroController.animateToPage(nextPage, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
     });
-  }
-
-  void _startIndicatorProgress() {
-    if (!mounted) return;
-    _indicatorTimer?.cancel();
-    _indicatorProgress.value = 0.0;
-    final totalSteps = _heroAutoScrollDuration.inMilliseconds ~/ _indicatorUpdateInterval.inMilliseconds;
-    int step = 0;
-    _indicatorTimer = Timer.periodic(_indicatorUpdateInterval, (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      step++;
-      _indicatorProgress.value = (step / totalSteps).clamp(0.0, 1.0);
-      if (step >= totalSteps) {
-        timer.cancel();
-      }
-    });
-  }
-
-  void _stopIndicatorProgress() {
-    _indicatorTimer?.cancel();
   }
 
   void _resetAutoScrollTimer() {
@@ -756,7 +743,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       _isAutoScrollPaused = true;
     });
     _autoScrollTimer?.cancel();
-    _stopIndicatorProgress();
   }
 
   void _resumeAutoScroll() {
@@ -771,7 +757,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     _isTabVisible = false;
     _pendingTvBrowseRailFocus = false;
     _autoScrollTimer?.cancel();
-    _stopIndicatorProgress();
   }
 
   @override
@@ -1257,9 +1242,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       );
     }
 
-    final showServerNameOnHubs = svc.read(SettingsService.showServerNameOnHubs);
-    final hubsSpanMultipleServers = _hubsSpanMultipleServers();
-
     final bottomPadding = MediaQuery.paddingOf(context).bottom + 100;
     final continueWatchingHub = _onDeck.isEmpty ? null : _continueWatchingHub;
     return Theme(
@@ -1328,14 +1310,19 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         showRatingBadge: true,
                         key: i < _orderedHubKeys.length ? _orderedHubKeys[i] : null,
                         hub: _hubs[i],
-                        cardWidthOverride:
-                            MediaQuery.sizeOf(context).width < 600 &&
-                                _hubs[i].items.every((item) => item.isMovie || item.isShow)
+                        cardWidthOverride: _usesPhoneHubs
+                            ? 105
+                            : MediaQuery.sizeOf(context).width < 600 &&
+                                  _hubs[i].items.every((item) => item.isMovie || item.isShow)
                             ? 105
                             : null,
                         focusMemory: _hubFocusMemory,
                         icon: hubIconFor(_hubs[i]),
-                        showServerName: showServerNameOnHubs || hubsSpanMultipleServers,
+                        showServerName: false,
+                        showRatingSources: _hubs[i].type == 'movie',
+                        onBrowseAll: () =>
+                            MainScreenFocusScope.of(context, listen: false)?.selectTab?.call(NavigationTabId.libraries),
+                        episodePosterModeOverride: _hubs[i].type == 'show' ? EpisodePosterMode.seriesPoster : null,
                         onRefresh: _discover.updateItem,
                         // Hub index is i + 1 if continue watching exists, otherwise i
                         onVerticalNavigation: (isUp) => _handleVerticalNavigation(_onDeck.isNotEmpty ? i + 1 : i, isUp),
@@ -1354,6 +1341,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       icon: Symbols.movie_rounded,
                     ),
 
+                  SliverToBoxAdapter(child: _buildTogetherBanner()),
+
                   SliverToBoxAdapter(child: SizedBox(height: 24 + bottomPadding)),
                 ],
               ],
@@ -1365,6 +1354,76 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               Positioned(top: 0, left: 0, right: 0, child: ExcludeFocusTraversal(child: _buildOverlaidAppBar())),
             if (_switchingProfile) const ProfileSwitchingOverlay(),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTogetherBanner() {
+    void openTogether() {
+      final scope = MainScreenFocusScope.of(context, listen: false);
+      if (scope?.selectTab != null) {
+        scope!.selectTab!(NavigationTabId.together);
+      } else {
+        Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WatchTogetherScreen()));
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(17, 20, 17, 0),
+      child: Align(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 340),
+          child: FocusableButton(
+            onPressed: openTogether,
+            dimWhenUnfocused: false,
+            child: Material(
+              color: Colors.white.withValues(alpha: .045),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: Colors.white.withValues(alpha: .08)),
+              ),
+              child: InkWell(
+                onTap: openTogether,
+                canRequestFocus: false,
+                borderRadius: BorderRadius.circular(16),
+                child: SizedBox(
+                  height: 80,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        const AppIcon(Symbols.group, size: 28),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                t.discover.togetherBannerTitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                t.discover.togetherBannerDescription,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const AppIcon(Symbols.chevron_right, size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -1539,13 +1598,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   },
                 ),
               ),
-              // Page indicators with animated progress.
+              // Fixed page indicators; the carousel timer stays independent.
               // Hidden on TV only (issue #600: pointer-only control unreachable
               // via d-pad) — never gated on transient input mode, which back-key
               // events, BT keyboards, and gamepads can flip on phones/desktop.
               if (!isTv)
                 Positioned(
-                  bottom: 0,
+                  bottom: 5,
                   left: 0,
                   right: 0,
                   // The visible pause toggle was dropped to match the prototype;
@@ -1574,32 +1633,19 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                                 final isActive = heroIndex == index;
                                 // One widget type for every state so the selected pill
                                 // animates its width instead of swapping in a new box.
-                                final dotColor = _cinemaTheme.colorScheme.onSurface;
+                                const dotColor = Colors.white;
                                 final dot = AnimatedContainer(
                                   key: ValueKey(index),
                                   duration: _reduceMotion ? Duration.zero : tokens(context).slow,
                                   curve: Curves.easeOutCubic,
                                   margin: const EdgeInsets.symmetric(horizontal: 3.5),
-                                  width: isActive ? 18 : 6,
+                                  width: isActive ? 15 : 6,
                                   height: 6,
                                   clipBehavior: Clip.antiAlias,
                                   decoration: BoxDecoration(
-                                    color: dotColor.withValues(alpha: isActive ? .38 : .24),
+                                    color: dotColor.withValues(alpha: isActive ? 1 : .29),
                                     borderRadius: BorderRadius.circular(3),
                                   ),
-                                  child: isActive
-                                      ? ValueListenableBuilder<double>(
-                                          valueListenable: _indicatorProgress,
-                                          // Ticks arrive every 200ms; tween between them so the
-                                          // fill moves smoothly, but snap back on reset.
-                                          builder: (context, progress, _) => AnimatedFractionallySizedBox(
-                                            duration: progress == 0 ? Duration.zero : _indicatorUpdateInterval,
-                                            alignment: Alignment.centerLeft,
-                                            widthFactor: _isAutoScrollPaused || _reduceMotion ? 1 : progress,
-                                            child: ColoredBox(color: dotColor),
-                                          ),
-                                        )
-                                      : null,
                                 );
                                 return Semantics(
                                   key: ValueKey('home-hero-dot-$index'),
@@ -1678,42 +1724,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         client: heroClient,
         compact: heroHeight < 450,
         onPlay: () => _openHero(heroItem),
-        playButton: _buildSmartPlayButton(heroItem),
-        detailsButton: canPlayHomeHeroDirectly(heroItem)
-            ? PressFeedbackBuilder(
-                pressedScale: InteractionTokens.secondaryPressedScale,
-                enabled: !_heroNavigationPending,
-                borderRadius: BorderRadius.circular(24),
-                builder: (context, setPressed, confirm) => FocusableButton(
-                  onPressed: _heroNavigationPending
-                      ? null
-                      : () {
-                          confirm();
-                          _openHero(heroItem);
-                        },
-                  dimWhenUnfocused: false,
-                  child: Material(
-                    color: Colors.transparent,
-                    shape: StadiumBorder(
-                      side: BorderSide(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .4)),
-                    ),
-                    child: InkWell(
-                      onTap: _heroNavigationPending ? null : () => _openHero(heroItem),
-                      onHighlightChanged: setPressed,
-                      canRequestFocus: false,
-                      borderRadius: BorderRadius.circular(24),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                          child: Text(t.mediaMenu.viewDetails),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              )
-            : null,
         backdrop: CyclingMediaBackdrop(
           mediaKey: heroItem.globalKey,
           imagePaths: heroArtPaths.take(1).toList(),

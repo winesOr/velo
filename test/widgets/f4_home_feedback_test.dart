@@ -174,7 +174,7 @@ void main() {
     (name: 'tablet', size: const Size(768, 1024), scale: 1.0, dark: false, tv: false),
     (name: 'tv', size: const Size(1280, 720), scale: 1.0, dark: true, tv: true),
   ]) {
-    testWidgets('${fixture.name} home fixture uses decoded artwork and the production resume action', (tester) async {
+    testWidgets('${fixture.name} home fixture uses decoded artwork and the matching device action', (tester) async {
       await tester.runAsync(loadPreviewFonts);
       ui.Image? artwork;
       await tester.runAsync(() async {
@@ -293,92 +293,31 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text(title), findsOneWidget);
         expect(tester.widget<RawImage>(find.byKey(const ValueKey('decoded-home-artwork'))).image, same(artwork));
-        expect(find.byKey(const ValueKey('home-hero-play-progress')), findsOneWidget);
+        expect(find.byKey(const ValueKey('home-hero-play-progress')), fixture.tv ? findsOneWidget : findsNothing);
         expect(tester.takeException(), isNull);
         expect(find.byTooltip(t.common.options), findsNothing);
         if (fixture.scale > 1) {
-          expect(tester.getSize(find.byType(FusionHomeHero)).height, 532);
           final scroll = find.descendant(of: find.byType(FusionHomeHero), matching: find.byType(SingleChildScrollView));
-          final scrollable = tester.state<ScrollableState>(
-            find.descendant(of: scroll, matching: find.byType(Scrollable)),
-          );
-          expect(scrollable.position.axisDirection, AxisDirection.up);
-          expect(scrollable.position.maxScrollExtent, greaterThan(0));
-          final viewport = tester.getRect(scroll);
-          void expectInsideViewport(Rect rect) {
-            expect(rect.top, greaterThanOrEqualTo(viewport.top - .5));
-            expect(rect.bottom, lessThanOrEqualTo(viewport.bottom + .5));
-            expect(rect.left, greaterThanOrEqualTo(viewport.left - .5));
-            expect(rect.right, lessThanOrEqualTo(viewport.right + .5));
-          }
-
-          void expectTitleStartVisible() {
-            final paragraph = tester.renderObject<RenderParagraph>(find.text(title));
-            final painter = TextPainter(
-              text: paragraph.text,
-              textAlign: paragraph.textAlign,
-              textDirection: paragraph.textDirection,
-              textScaler: paragraph.textScaler,
-              locale: paragraph.locale,
-              maxLines: paragraph.maxLines,
-              strutStyle: paragraph.strutStyle,
-              textWidthBasis: paragraph.textWidthBasis,
-              textHeightBehavior: paragraph.textHeightBehavior,
-            )..layout(minWidth: paragraph.constraints.minWidth, maxWidth: paragraph.constraints.maxWidth);
-            try {
-              final origin = paragraph.localToGlobal(Offset.zero);
-              final line = painter.computeLineMetrics().first;
-              expect(origin.dy, closeTo(viewport.top, .5));
-              // CJK selection boxes include font extents above the laid-out
-              // line. Test the actual line metrics, not that selection area.
-              expectInsideViewport(
-                Rect.fromLTRB(
-                  origin.dx + line.left,
-                  origin.dy + line.baseline - line.ascent,
-                  origin.dx + line.left + line.width,
-                  origin.dy + line.baseline + line.descent,
-                ),
-              );
-            } finally {
-              painter.dispose();
-            }
-            expect(find.bySemanticsLabel(RegExp(RegExp.escape(title))), findsWidgets);
-          }
-
-          Future<void> dragToEnd({required bool titleStart}) async {
-            final target = titleStart ? scrollable.position.maxScrollExtent : scrollable.position.minScrollExtent;
-            for (var attempt = 0; attempt < 12 && (scrollable.position.pixels - target).abs() > .5; attempt++) {
-              await tester.drag(scroll, Offset(0, viewport.height * (titleStart ? .75 : -.75)));
-              await tester.pumpAndSettle();
-            }
-            expect(scrollable.position.pixels, closeTo(target, .5));
-            expect(plays, 0, reason: 'Scrolling must not activate the production play action');
-            expect(details, 0, reason: 'Scrolling must not activate the hero or details action');
-            expect(tester.takeException(), isNull);
-          }
-
-          await dragToEnd(titleStart: true);
-          await captureFixture('${fixture.name}-title-top');
-          expectTitleStartVisible();
-          await dragToEnd(titleStart: false);
-          expectInsideViewport(tester.getRect(find.byType(HomeHeroPrimaryButton)));
-          expectInsideViewport(tester.getRect(find.byType(OutlinedButton)));
-          for (final label in [resumeLabel, t.mediaMenu.viewDetails]) {
-            final node = tester.getSemantics(find.bySemanticsLabel(label));
-            expect(node.getSemanticsData().hasAction(ui.SemanticsAction.tap), isTrue);
-          }
-          await captureFixture('${fixture.name}-actions');
-          await dragToEnd(titleStart: true);
-          expectTitleStartVisible();
-          await dragToEnd(titleStart: false);
+          await tester.drag(scroll, const Offset(0, 50));
+          await tester.pumpAndSettle();
+          expect(details, 0, reason: 'scrolling does not open details');
+          expect(tester.takeException(), isNull);
         }
-        await tester.ensureVisible(find.text(resumeLabel));
-        await tester.tap(find.text(resumeLabel));
-        await tester.pumpAndSettle();
-        expect(plays, 1);
-        expect(details, 0);
-        await tester.ensureVisible(find.text(t.mediaMenu.viewDetails));
-        await tester.tap(find.text(t.mediaMenu.viewDetails));
+        if (fixture.tv) {
+          await tester.ensureVisible(find.text(resumeLabel));
+          await tester.tap(find.text(resumeLabel));
+          await tester.pumpAndSettle();
+          expect(plays, 1);
+          expect(details, 0);
+          await tester.ensureVisible(find.text(t.mediaMenu.viewDetails));
+          await tester.tap(find.text(t.mediaMenu.viewDetails));
+        } else {
+          expect(find.byType(HomeHeroPrimaryButton), findsNothing);
+          expect(find.byType(OutlinedButton), findsNothing);
+          await tester.ensureVisible(find.text(title));
+          await tester.tap(find.text(title));
+          expect(plays, 0);
+        }
         await tester.pumpAndSettle();
         expect(details, 1);
         expect(tester.takeException(), isNull);

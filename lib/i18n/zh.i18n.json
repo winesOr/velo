@@ -45,6 +45,7 @@
     "pinCheckRejected": "Plex PIN 检查被拒绝"
   },
   "ratingDetails": {
+    "sourceInfo": "评分来源说明",
     "title": "评分与来源",
     "viewSources": "查看评分来源",
     "unattributedSource": "来源未标注",
@@ -1193,6 +1194,8 @@
     }
   },
   "discover": {
+    "togetherBannerTitle": "好故事，一起看",
+    "togetherBannerDescription": "创建房间，邀请朋友同步观看",
     "homeOptions": "首页选项",
     "browseAllMedia": "浏览全部媒体",
     "appearanceAndHomeLayout": "外观与首页布局",

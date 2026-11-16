@@ -42,6 +42,7 @@ class TranslationsZhHant extends TranslationsZh with BaseTranslations<AppLocale,
 	// Translations
 	@override late final _Translations$app$zh_Hant app = _Translations$app$zh_Hant._(_root);
 	@override late final _Translations$auth$zh_Hant auth = _Translations$auth$zh_Hant._(_root);
+	@override late final _Translations$ratingDetails$zh_Hant ratingDetails = _Translations$ratingDetails$zh_Hant._(_root);
 	@override late final _Translations$common$zh_Hant common = _Translations$common$zh_Hant._(_root);
 	@override late final _Translations$screens$zh_Hant screens = _Translations$screens$zh_Hant._(_root);
 	@override late final _Translations$update$zh_Hant update = _Translations$update$zh_Hant._(_root);
@@ -152,6 +153,16 @@ class _Translations$auth$zh_Hant extends Translations$auth$zh {
 	@override String get quickConnectExpired => '快速連線代碼已過期。請重試。';
 	@override String get localDataRecoveryRequired => 'Velo 無法安全地復原本機登入資料與待處理的播放資料。請重新登入。';
 	@override String get pinCheckRejected => 'Plex PIN 檢查遭到拒絕';
+}
+
+// Path: ratingDetails
+class _Translations$ratingDetails$zh_Hant extends Translations$ratingDetails$zh {
+	_Translations$ratingDetails$zh_Hant._(TranslationsZhHant root) : this._root = root, super.internal(root);
+
+	final TranslationsZhHant _root; // ignore: unused_field
+
+	// Translations
+	@override String get sourceInfo => '評分來源說明';
 }
 
 // Path: common
@@ -1317,6 +1328,8 @@ class _Translations$discover$zh_Hant extends Translations$discover$zh {
 	final TranslationsZhHant _root; // ignore: unused_field
 
 	// Translations
+	@override String get togetherBannerTitle => '好故事，一起看';
+	@override String get togetherBannerDescription => '建立房間，邀請朋友同步觀看';
 	@override String get homeOptions => '首頁選項';
 	@override String get browseAllMedia => '瀏覽全部媒體';
 	@override String get appearanceAndHomeLayout => '外觀與首頁佈局';
@@ -3418,6 +3431,7 @@ extension on TranslationsZhHant {
 			'auth.quickConnectExpired' => '快速連線代碼已過期。請重試。',
 			'auth.localDataRecoveryRequired' => 'Velo 無法安全地復原本機登入資料與待處理的播放資料。請重新登入。',
 			'auth.pinCheckRejected' => 'Plex PIN 檢查遭到拒絕',
+			'ratingDetails.sourceInfo' => '評分來源說明',
 			'common.seasonCount' => ({required Object count}) => '共 ${count} 季',
 			'common.ratingValue' => ({required Object value}) => '${value}分',
 			'common.cancel' => '取消',
@@ -3888,9 +3902,9 @@ extension on TranslationsZhHant {
 			'hotkeys.actions.volumeDown' => '調小音量',
 			'hotkeys.actions.seekForward' => ({required Object seconds}) => '快進（${seconds} 秒）',
 			'hotkeys.actions.seekBackward' => ({required Object seconds}) => '快退（${seconds} 秒）',
-			'hotkeys.actions.fullscreenToggle' => '切換全螢幕',
 			_ => null,
 		} ?? switch (path) {
+			'hotkeys.actions.fullscreenToggle' => '切換全螢幕',
 			'hotkeys.actions.muteToggle' => '切換靜音',
 			'hotkeys.actions.subtitleToggle' => '切換字幕',
 			'hotkeys.actions.audioTrackNext' => '下一個音軌',
@@ -4402,9 +4416,9 @@ extension on TranslationsZhHant {
 			'connections.sessionExpiredOne' => ({required Object name}) => '${name} 的工作階段已過期',
 			'connections.sessionExpiredMany' => ({required Object count}) => '${count} 個伺服器的工作階段已過期',
 			'connections.accessDeniedOne' => ({required Object name}) => '${name} 拒絕此帳戶存取',
-			'connections.accessDeniedMany' => ({required Object count}) => '${count} 台伺服器拒絕此帳戶存取',
 			_ => null,
 		} ?? switch (path) {
+			'connections.accessDeniedMany' => ({required Object count}) => '${count} 台伺服器拒絕此帳戶存取',
 			'connections.signInAgain' => '重新登入',
 			'connections.editMediaBrowserTitle' => ({required Object product}) => '編輯 ${product} 連線',
 			'connections.editMediaBrowserIntro' => ({required Object serverName}) => '為 ${serverName} 新增或移除 URL。Velo 將使用延遲最低且可連線的 URL。',
@@ -4465,6 +4479,8 @@ extension on TranslationsZhHant {
 			'accountPreferences.mediaReviewsOptions.usersOnly' => '僅使用者',
 			'accountPreferences.mediaReviewsOptions.criticsOnly' => '僅影評人',
 			'accountPreferences.mediaReviewsOptions.nobody' => '隱藏',
+			'discover.togetherBannerTitle' => '好故事，一起看',
+			'discover.togetherBannerDescription' => '建立房間，邀請朋友同步觀看',
 			'discover.homeOptions' => '首頁選項',
 			'discover.browseAllMedia' => '瀏覽全部媒體',
 			'discover.appearanceAndHomeLayout' => '外觀與首頁佈局',
@@ -4914,11 +4930,11 @@ extension on TranslationsZhHant {
 			'liveTv.recordNotAvailable' => '此節目無法錄製',
 			'liveTv.recordingCancelled' => '錄製已取消',
 			'liveTv.recordingRuleDeleted' => '錄製規則已刪除',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.processRecordingRules' => '重新評估規則',
 			'liveTv.recordingInProgress' => '正在錄製',
 			'liveTv.recordingsCount' => ({required Object count}) => '已排程 ${count} 個',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.editRule' => '編輯規則',
 			'liveTv.editRuleAction' => '編輯',
 			'liveTv.recordingRuleUpdated' => '錄製規則已更新',
@@ -5428,11 +5444,11 @@ extension on TranslationsZhHant {
 			'metadataEdit.advancedSettings' => '進階設定',
 			'metadataEdit.title' => '標題',
 			'metadataEdit.sortTitle' => '排序標題',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.originalTitle' => '原始標題',
 			'metadataEdit.releaseDate' => '上映日期',
 			'metadataEdit.contentRating' => '內容分級',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.studio' => '製片商',
 			'metadataEdit.tagline' => '宣傳標語',
 			'metadataEdit.summary' => '大綱簡介',
