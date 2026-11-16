@@ -301,7 +301,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(t.danmaku.noSourcesTitle), findsOneWidget);
     final cancel = find.ancestor(of: find.text(t.common.cancel), matching: find.byType(DanmakuActionButton));
-    final cancelFocus = tester.widget<Focus>(find.descendant(of: cancel, matching: find.byType(Focus)).first);
+    final cancelFocus = tester.widget<Focus>(
+      find.descendant(
+        of: cancel,
+        matching: find.byWidgetPredicate(
+          (widget) => widget is Focus && widget.focusNode?.debugLabel == 'FocusableWrapper',
+        ),
+      ),
+    );
     cancelFocus.focusNode!.requestFocus();
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);

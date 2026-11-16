@@ -147,7 +147,7 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
     expect(find.text(t.watchTogether.createSession), findsOneWidget);
-    expect(find.text(t.watchTogether.joinSession), findsOneWidget);
+    expect(find.text(t.watchTogether.joinByCode), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });

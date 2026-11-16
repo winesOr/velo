@@ -1,3 +1,4 @@
+import 'package:plezy/widgets/app_glass_surface.dart';
 import 'package:plezy/widgets/app_toast.dart';
 import 'dart:async';
 
@@ -710,8 +711,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(menu, findsOneWidget);
     expect(
-      tester.widget<AppMenuList<Object?>>(menu).entries.whereType<AppMenuHeader<Object?>>().single.label,
-      contains('Item 1'),
+      find.descendant(
+        of: find.ancestor(of: menu, matching: find.byType(AppGlassSurface)).first,
+        matching: find.text('Item 1'),
+      ),
+      findsOneWidget,
     );
     expect(find.text(t.mediaMenu.markAsWatched), findsOneWidget);
     expect(find.text(t.mediaMenu.rate), findsOneWidget);
@@ -729,8 +733,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(menu, findsOneWidget);
     expect(
-      tester.widget<AppMenuList<Object?>>(menu).entries.whereType<AppMenuHeader<Object?>>().single.label,
-      contains('Item 1'),
+      find.descendant(
+        of: find.ancestor(of: menu, matching: find.byType(AppGlassSurface)).first,
+        matching: find.text('Item 1'),
+      ),
+      findsOneWidget,
     );
   });
 

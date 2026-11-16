@@ -49,6 +49,7 @@ void main() {
 
       await tester.tap(find.text(t.settings.cellularQualityTitle));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text(qualityPresetLabel(TranscodeQualityPreset.p720_2mbps)).last);
       await tester.tap(find.text(qualityPresetLabel(TranscodeQualityPreset.p720_2mbps)).last);
       await tester.pumpAndSettle();
 

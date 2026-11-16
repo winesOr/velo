@@ -12,7 +12,7 @@ void main() {
     addTearDown(TvDetectionService.debugReset);
   });
 
-  final tabs = allNavigationTabs.where((tab) => tab.id != NavigationTabId.settings).toList();
+  final tabs = primaryNavigationTabs(allNavigationTabs);
 
   Widget wrap(Widget rail, {TextDirection direction = TextDirection.ltr}) {
     return MaterialApp(
@@ -44,7 +44,7 @@ void main() {
     );
 
     await tester.tap(find.text(t.common.search));
-    expect(selected, NavigationTabId.search);
+    expect(selected, NavigationTabId.libraries);
   });
 
   testWidgets('labels follow the nav bar label setting', (tester) async {
@@ -59,7 +59,7 @@ void main() {
       ),
     );
     // The rail keeps the label for semantics, but gives it no space.
-    expect(tester.getSize(find.text(t.navigation.libraries)), Size.zero);
+    expect(tester.getSize(find.text(t.common.search)), Size.zero);
 
     await tester.pumpWidget(
       wrap(
@@ -71,12 +71,12 @@ void main() {
         ),
       ),
     );
-    expect(tester.getSize(find.text(t.navigation.libraries)).width, greaterThan(0));
+    expect(tester.getSize(find.text(t.common.search)).width, greaterThan(0));
   });
 
   testWidgets('labels give way on a viewport too short to show every destination', (tester) async {
-    // A landscape phone: ~410dp tall, six labelled destinations need ~430.
-    tester.view.physicalSize = const Size(900, 410);
+    // Four primary destinations need 288dp with labels; retain icons at 240dp.
+    tester.view.physicalSize = const Size(900, 240);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
@@ -89,17 +89,17 @@ void main() {
         ),
       ),
     );
-    expect(tester.getSize(find.text(t.navigation.libraries)), Size.zero);
+    expect(tester.getSize(find.text(t.common.search)), Size.zero);
     expect(tester.takeException(), isNull);
     // Every destination is still reachable without scrolling.
-    expect(tester.getBottomLeft(find.byType(NavigationRail)).dy, lessThanOrEqualTo(410));
+    expect(tester.getBottomLeft(find.byType(NavigationRail)).dy, lessThanOrEqualTo(240));
 
-    expect(MobileNavigationRail.labelsFit(destinations: 6, hasLeading: false, height: 410), isFalse);
-    expect(MobileNavigationRail.labelsFit(destinations: 6, hasLeading: false, height: 600), isTrue);
+    expect(MobileNavigationRail.labelsFit(destinations: tabs.length, hasLeading: false, height: 240), isFalse);
+    expect(MobileNavigationRail.labelsFit(destinations: tabs.length, hasLeading: false, height: 600), isTrue);
     expect(MobileNavigationRail.labelsFit(destinations: 7, hasLeading: true, height: 500), isFalse);
   });
 
-  testWidgets('long-pressing Libraries opens the quick picker; a tap still selects it', (tester) async {
+  testWidgets('long-pressing Search opens the quick picker; a tap selects the library destination', (tester) async {
     NavigationTabId? selected;
     var quickPicks = 0;
     await tester.pumpWidget(

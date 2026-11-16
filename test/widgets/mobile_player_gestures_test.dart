@@ -118,7 +118,7 @@ void main() {
       await pumpPlayer(tester, size: size);
       await tester.tap(find.byTooltip(t.videoControls.moreButton));
       await tester.pumpAndSettle();
-      expect(tester.getSize(find.byType(PlayerSettingsDrawer)).width, 340);
+      expect(tester.getSize(find.byType(PlayerSettingsDrawer)).width, 400);
       expect(tester.takeException(), isNull);
       await captureTablet(tester, find.byKey(const ValueKey('tablet-player')), 'player-settings-${size.width.toInt()}');
       await _finish(tester);
@@ -206,7 +206,6 @@ void main() {
               onSubtitlesTap: (_) => taps.add('subs'),
               onEpisodesTap: (_) => taps.add('eps'),
               onDanmakuTap: (_) => taps.add('dm'),
-              onChapters: () => taps.add('chapters'),
               onDanmakuToggle: () => taps.add('dmToggle'),
               onCast: () => taps.add('cast'),
               onToggleOrientation: () => taps.add('orient'),
@@ -223,9 +222,9 @@ void main() {
     expect(find.byIcon(Symbols.replay_10_rounded), findsNothing, reason: 'double taps replace the centre buttons');
     expect(find.byIcon(Symbols.forward_10_rounded), findsNothing);
     expect(find.byIcon(Symbols.skip_previous_rounded), findsNothing);
+    expect(find.bySemanticsLabel(t.videoControls.chapters), findsNothing);
 
     for (final label in [
-      t.videoControls.chapters,
       t.videoControls.danmakuToggle,
       t.videoControls.castButton,
       t.videoControls.orientationButton,
@@ -236,7 +235,7 @@ void main() {
     ]) {
       await tester.tap(find.bySemanticsLabel(label).last);
     }
-    expect(taps, ['chapters', 'dmToggle', 'cast', 'orient', 'more', 'shot', 'pip', 'next']);
+    expect(taps, ['dmToggle', 'cast', 'orient', 'more', 'shot', 'pip', 'next']);
 
     taps.clear();
     await tester.tap(find.widgetWithText(PlayerChip, '1x'));

@@ -149,7 +149,7 @@ void main() {
     expect(uploadedBody, contains('widget upload seed'));
 
     final dialog = find.byWidgetPredicate((widget) => widget is AlertDialog);
-    final copyButton = find.descendant(of: dialog, matching: find.byType(IconButton));
+    final copyButton = find.descendant(of: dialog, matching: find.byTooltip(t.startup.copyDetails));
     expect(copyButton, findsOneWidget);
     await tester.tap(copyButton);
     await tester.pump();

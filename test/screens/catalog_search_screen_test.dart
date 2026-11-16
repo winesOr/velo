@@ -1,3 +1,4 @@
+import 'package:plezy/widgets/app_glass_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -147,22 +148,26 @@ void main() {
     });
   }
 
-  testWidgets('catalog result menu uses an anchored desktop popup and dispatches its result', (tester) async {
+  testWidgets('catalog result menu uses the fixed width desktop popup and dispatches its result', (tester) async {
     final source = _FakeSearchSource();
     await _pumpMenuSearch(tester, source, platform: TargetPlatform.macOS);
     await _searchForMenuResult(tester);
 
     final card = find.byType(MediaCard);
     expect(card, findsOneWidget);
-    final cardRect = tester.getRect(card);
     tester.state<MediaCardState>(card).showContextMenu();
     await tester.pumpAndSettle();
 
     expect(_adaptiveMenuSheet(), findsNothing);
     expect(_appMenuList(), findsOneWidget);
-    final menuRect = tester.getRect(_appMenuList());
-    expect(menuRect.left, closeTo(cardRect.left, 0.01));
-    expect(menuRect.top, closeTo(cardRect.bottom + 4, 0.01));
+    final surface = find.ancestor(of: _appMenuList(), matching: find.byType(AppGlassSurface)).first;
+    final menuRect = tester.getRect(surface);
+    final screenSize = tester.view.physicalSize / tester.view.devicePixelRatio;
+    expect(menuRect.width, 286);
+    expect(menuRect.left, greaterThanOrEqualTo(16));
+    expect(menuRect.right, lessThanOrEqualTo(screenSize.width - 16));
+    expect(menuRect.top, greaterThanOrEqualTo(16));
+    expect(menuRect.bottom, lessThanOrEqualTo(screenSize.height - 16));
 
     await tester.tap(find.text(t.mediaMenu.viewDetails));
     await tester.pumpAndSettle();

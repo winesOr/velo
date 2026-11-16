@@ -49,7 +49,9 @@ Future<void> _capture(WidgetTester tester, Finder finder, String path) async {
   await tester.runAsync(() async {
     final picture = await boundary.toImage(pixelRatio: 1);
     final bytes = await picture.toByteData(format: ui.ImageByteFormat.png);
-    final file = File(path);
+    const outputDirectory = String.fromEnvironment('UI_CAPTURE_DIR');
+    final outputPath = outputDirectory.isEmpty ? path : '$outputDirectory/${path.replaceFirst('docs/fixtures/', '')}';
+    final file = File(outputPath);
     await file.parent.create(recursive: true);
     await file.writeAsBytes(bytes!.buffer.asUint8List());
     picture.dispose();

@@ -120,7 +120,7 @@ void main() {
       find.descendant(of: find.byType(MediaCard), matching: find.byType(PressFeedback)),
     );
     expect(feedback.pressed, isTrue);
-    expect(feedback.pressedScale, .96);
+    expect(feedback.pressedScale, .97);
     expect(tester.getRect(find.byType(MediaCard)), bounds);
     expect(taps, 1);
     await tester.pumpAndSettle();

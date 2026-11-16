@@ -387,6 +387,8 @@ void main() {
       expect(find.text(t.mediaMenu.deleteEpisodeFromServer), findsOneWidget);
       expect(find.text(t.mediaMenu.deleteShowFromServer), findsNothing);
 
+      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
+
       await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.pumpAndSettle();
 
@@ -424,6 +426,8 @@ void main() {
       expect(find.text(t.mediaMenu.deleteShowFromServer), findsOneWidget);
       expect(find.text(t.mediaMenu.deleteEpisodeFromServer), findsNothing);
 
+      await tester.ensureVisible(find.text(t.mediaMenu.deleteShowFromServer));
+
       await tester.tap(find.text(t.mediaMenu.deleteShowFromServer));
       await tester.pumpAndSettle();
 
@@ -449,6 +453,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
+      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.pumpAndSettle();
       await tester.tap(find.text(t.common.cancel));
@@ -498,6 +503,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
+      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.pumpAndSettle();
 
@@ -528,6 +534,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
+      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.pumpAndSettle();
 
@@ -562,6 +569,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
+      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -614,6 +622,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
+      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.pumpAndSettle();
 
@@ -641,6 +650,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
+      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.pumpAndSettle();
 
@@ -685,6 +695,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
+      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.pumpAndSettle();
 
@@ -713,6 +724,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
+      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.pumpAndSettle();
 
@@ -730,6 +742,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
+      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
       await tester.pumpAndSettle();
 
@@ -1788,6 +1801,7 @@ Future<http.Response> Function(http.Request) _deleteFlowHandler({
 
 Future<void> _confirmDelete(WidgetTester tester, GlobalKey<MediaContextMenuState> menuKey, String confirmLabel) async {
   await _openMenu(tester, menuKey);
+  await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
   await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
   await tester.pumpAndSettle();
   await tester.tap(find.text(confirmLabel));
