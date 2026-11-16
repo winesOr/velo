@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -50,6 +52,7 @@ Future<void> pumpGrouped(
   Size? size,
   double textScale = 1,
   GroupedPeopleFetcher? fetchPeople,
+  FocusNode? headerSearchFocus,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = size ?? (tv ? const Size(960, 540) : const Size(390, 844));
@@ -57,6 +60,16 @@ Future<void> pumpGrouped(
   TvDetectionService.debugSetAppleTVOverride(tv ? true : null);
   addTearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
   final servers = testMultiServer();
+  final searchController = headerSearchFocus == null ? null : TextEditingController();
+  if (searchController != null) addTearDown(searchController.dispose);
+  final browser = GroupedLibraryBrowse(
+    libraries: const [libraryA, libraryB],
+    fetchPage: fetcher,
+    fetchPeople: fetchPeople ?? (_, _, _, _) async => [],
+    searchController: searchController,
+    searchFocusNode: headerSearchFocus,
+    searchInHeader: headerSearchFocus != null,
+  );
   await tester.pumpWidget(
     ChangeNotifierProvider<MultiServerProvider>.value(
       value: servers.provider,
@@ -74,11 +87,21 @@ Future<void> pumpGrouped(
               key: const ValueKey("tablet-library"),
               child: ColoredBox(
                 color: const Color(0xff000000),
-                child: GroupedLibraryBrowse(
-                  libraries: const [libraryA, libraryB],
-                  fetchPage: fetcher,
-                  fetchPeople: fetchPeople ?? (_, _, _, _) async => [],
-                ),
+                child: headerSearchFocus == null
+                    ? browser
+                    : Column(
+                        children: [
+                          SizedBox(
+                            height: 48,
+                            child: FocusableTextField(
+                              controller: searchController!,
+                              focusNode: headerSearchFocus,
+                              tvTextInputAutoOpenBehavior: TvTextInputAutoOpenBehavior.never,
+                            ),
+                          ),
+                          Expanded(child: browser),
+                        ],
+                      ),
               ),
             ),
           ),
@@ -220,6 +243,13 @@ void main() {
     final first = tester.widget<FocusableMediaCard>(find.byType(FocusableMediaCard).first);
     first.focusNode!.requestFocus();
     await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    expect(
+      first.focusNode!.hasFocus,
+      isTrue,
+      reason: 'the last partial row retains its real card rather than the footer',
+    );
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pumpAndSettle();
     expect(FocusManager.instance.primaryFocus?.ancestors.any((n) => n.debugLabel == 'wall-years'), isTrue);
@@ -236,6 +266,101 @@ void main() {
     expect(result.focusNode!.hasFocus, isTrue);
     expect(tester.takeException(), isNull);
   });
+
+  for (final reset in ['none', 'query', 'facet', 'refresh', 'leave-search']) {
+    testWidgets('TV delayed wall paging preserves focus across twenty frames with $reset reset', (tester) async {
+      final persistentSearch = reset == 'leave-search' ? FocusNode(debugLabel: 'all_sources_search') : null;
+      if (persistentSearch != null) addTearDown(persistentSearch.dispose);
+      final gate = Completer<LibraryPage<MediaItem>>();
+      final offsets = <int>[];
+      var resetting = false;
+      LibraryPage<MediaItem> page(int start, int end) => LibraryPage(
+        items: [
+          for (var index = start; index < end; index++)
+            MediaItem(
+              id: 'film-${index.toString().padLeft(3, '0')}',
+              backend: libraryA.backend,
+              kind: MediaKind.movie,
+              title: 'Film ${index.toString().padLeft(3, '0')}',
+              year: 2025,
+              serverId: libraryA.serverId,
+            ),
+        ],
+        totalCount: 43,
+      );
+      await pumpGrouped(
+        tester,
+        (library, query, abort) async {
+          if (library.serverId != libraryA.serverId) return const LibraryPage(items: [], totalCount: 0);
+          offsets.add(query.offset);
+          if (query.offset == 0) return page(0, resetting ? 43 : 36);
+          return gate.future;
+        },
+        tv: true,
+        headerSearchFocus: persistentSearch,
+      );
+      final search = tester
+          .widget<FocusableTextField>(
+            find.byWidgetPredicate(
+              (widget) => widget is FocusableTextField && widget.focusNode?.debugLabel == 'all_sources_search',
+            ),
+          )
+          .focusNode!;
+      final selectYear = tester
+          .widget<TextButton>(
+            find.descendant(
+              of: find.byKey(const ValueKey('wall-years')),
+              matching: find.widgetWithText(TextButton, '2025'),
+            ),
+          )
+          .onPressed!;
+      final wall = find.byKey(const PageStorageKey('all_sources_merged_wall'));
+      final scroll = tester.widget<CustomScrollView>(wall).controller!;
+      scroll.jumpTo(scroll.position.maxScrollExtent);
+      await tester.pump();
+      FocusableMediaCard card(int index) => tester.widget<FocusableMediaCard>(
+        find.byKey(ValueKey('wall/plex/server-a:film-${index.toString().padLeft(3, '0')}')),
+      );
+      final origin = card(35).focusNode!;
+      origin.requestFocus();
+      await tester.pump();
+      expect(offsets, [0, 36], reason: 'automatic pagination is already waiting before the key is pressed');
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      for (var frame = 0; frame < 20; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(origin.hasFocus, isTrue, reason: 'loading must preserve the real card on frame $frame');
+      }
+      if (reset == 'leave-search') {
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+        await tester.pump();
+        expect(search.hasFocus, isTrue, reason: 'left returns to the actual persistent header search');
+        expect(origin.hasFocus, isFalse);
+      } else if (reset != 'none') {
+        scroll.jumpTo(0);
+        await tester.pump();
+        search.requestFocus();
+        resetting = true;
+        final state = tester.state<GroupedLibraryBrowseState>(find.byType(GroupedLibraryBrowse));
+        switch (reset) {
+          case 'query':
+            state.updateSearchQuery('Film');
+          case 'facet':
+            selectYear();
+          case 'refresh':
+            state.refresh();
+        }
+        await tester.pump(const Duration(milliseconds: 400));
+      }
+      gate.complete(page(36, 43));
+      await tester.pumpAndSettle();
+      if (reset == 'none') {
+        expect(card(42).focusNode!.hasFocus, isTrue, reason: 'the delayed next row resumes the original request');
+      } else {
+        expect(search.hasFocus, isTrue, reason: 'a stale wall index must not steal focus from $reset results');
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('large text keeps all five inline facet rows scrollable', (tester) async {
     await pumpGrouped(tester, (_, query, _) async => const LibraryPage(items: [], totalCount: 0), textScale: 2);

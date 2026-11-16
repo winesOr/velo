@@ -30,6 +30,7 @@ import 'package:plezy/screens/libraries/alpha_scroll_handle.dart';
 import 'package:plezy/screens/libraries/sort_bottom_sheet.dart';
 import 'package:plezy/screens/libraries/state_messages.dart';
 import 'package:plezy/screens/libraries/tabs/library_browse_tab.dart';
+import 'package:plezy/screens/libraries/grouped_library_browse.dart';
 import 'package:plezy/screens/libraries/library_quick_filters.dart';
 import 'package:plezy/services/jellyfin_mappers.dart';
 import 'package:plezy/services/multi_server_manager.dart';
@@ -51,6 +52,7 @@ import '../../test_helpers/library_tab_scaffold.dart';
 import '../../test_helpers/media_items.dart';
 import '../../test_helpers/multi_server_fixtures.dart';
 import '../../test_helpers/prefs.dart';
+import '../../test_helpers/tablet_screenshots.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -530,6 +532,7 @@ void main() {
 
   for (final scale in [1.0, 2.0]) {
     testWidgets('phone poster fixture fits at text scale $scale', (tester) async {
+      await loadTabletFonts(loadDefaultFont: true);
       final font = FontLoader('FusionFixture')..addFont(rootBundle.load('assets/go-noto-current-regular.ttf'));
       await font.load();
       await (FontLoader(
@@ -555,7 +558,7 @@ void main() {
               ).copyWith(textTheme: monoTheme(dark: true).textTheme.apply(fontFamily: 'FusionFixture')),
               child: DefaultTextStyle.merge(
                 style: const TextStyle(fontFamily: 'FusionFixture'),
-                child: LibraryBrowseTab(library: harness.library, canGroupByFolders: true, isActive: true),
+                child: GroupedLibraryBrowse(libraries: [harness.library], fetchPeople: (_, _, _, _) async => []),
               ),
             ),
           ),
@@ -570,6 +573,13 @@ void main() {
           .toList();
       final firstRow = cards.where((rect) => (rect.top - cards.first.top).abs() < 1).toList();
       expect(firstRow.length, 3);
+      expect(firstRow.first.left, greaterThanOrEqualTo(0));
+      expect(firstRow.last.right, lessThanOrEqualTo(390));
+      for (final key in ['wall-types', 'wall-sort', 'wall-genres', 'wall-countries', 'wall-years']) {
+        expect(find.byKey(ValueKey(key)), findsOneWidget);
+      }
+      expect(find.byType(LibraryQuickFilters), findsNothing);
+      expect(find.byType(AlphaScrollHandle), findsNothing);
       expect(tester.takeException(), isNull);
       await expectLater(find.byKey(boundary), matchesGoldenFile('goldens/fusion_library_phone_${scale.toInt()}x.png'));
       debugDefaultTargetPlatformOverride = null;
@@ -624,9 +634,10 @@ void main() {
     });
   }
 
-  testWidgets('TV source sidebar and poster wall keep focus on a real item across paging', (tester) async {
+  testWidgets('TV five-row filter wall keeps seven columns and real-item focus across paging', (tester) async {
     TvDetectionService.debugSetAppleTVOverride(true);
     addTearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
+    await loadTabletFonts(loadDefaultFont: true);
     await (FontLoader('FusionFixture')..addFont(rootBundle.load('assets/go-noto-current-regular.ttf'))).load();
     await (FontLoader(
       'packages/material_symbols_icons/MaterialSymbolsRounded',
@@ -646,26 +657,52 @@ void main() {
           ).copyWith(textTheme: monoTheme(dark: true).textTheme.apply(fontFamily: 'FusionFixture')),
           child: DefaultTextStyle.merge(
             style: const TextStyle(fontFamily: 'FusionFixture'),
-            child: LibraryBrowseTab(library: harness.library, canGroupByFolders: true, isActive: true),
+            child: GroupedLibraryBrowse(libraries: [harness.library], fetchPeople: (_, _, _, _) async => []),
           ),
         ),
       ),
     );
     await pumpRequestFrames(tester);
     await tester.pumpAndSettle();
-    final category = tester.widget<FocusableListTile>(
+    final rows = ['wall-types', 'wall-sort', 'wall-genres', 'wall-countries', 'wall-years'];
+    for (var index = 0; index < rows.length; index++) {
+      final row = find.byKey(ValueKey(rows[index]));
+      expect(row, findsOneWidget);
+      if (index > 0) {
+        expect(tester.getRect(row).top, greaterThan(tester.getRect(find.byKey(ValueKey(rows[index - 1]))).bottom));
+      }
+    }
+    expect(
       find.byWidgetPredicate((w) => w is FocusableListTile && w.focusNode?.debugLabel == 'grouping_chip'),
+      findsNothing,
     );
-    category.focusNode!.requestFocus();
+    final cards = find
+        .byType(FocusableMediaCard)
+        .evaluate()
+        .map((element) => tester.getRect(find.byWidget(element.widget)))
+        .toList();
+    expect(cards.where((rect) => (rect.top - cards.first.top).abs() < 1), hasLength(7));
+    final yearRow = find.byKey(const ValueKey('wall-years'));
+    final yearFocus = tester
+        .widget<FocusScope>(find.descendant(of: yearRow, matching: find.byType(FocusScope)))
+        .focusNode!;
+    final firstYearButton = find.descendant(of: yearRow, matching: find.byType(TextButton)).first;
+    final firstYearFocus = Focus.of(
+      tester.element(find.descendant(of: firstYearButton, matching: find.byType(Text)).first),
+    );
+    firstYearFocus.requestFocus();
     await tester.pumpAndSettle();
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pumpAndSettle();
     expect(_cardFor(tester, 'Movie 0').focusNode!.hasFocus, isTrue);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pumpAndSettle();
-    expect(category.focusNode!.hasFocus, isTrue);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    expect(yearFocus.hasFocus, isTrue);
+    firstYearFocus.requestFocus();
     await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    expect(_cardFor(tester, 'Movie 0').focusNode!.hasFocus, isTrue);
     for (var i = 0; i < 14; i++) {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pump(const Duration(milliseconds: 150));
@@ -673,7 +710,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(harness.pageRequestCount, greaterThan(1));
     expect(FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<FocusableMediaCard>(), isNotNull);
-    category.focusNode!.requestFocus();
+    final scroll = tester
+        .widget<CustomScrollView>(find.byKey(const PageStorageKey('all_sources_merged_wall')))
+        .controller!;
+    scroll.jumpTo(0);
+    firstYearFocus.requestFocus();
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     await expectLater(find.byKey(boundary), matchesGoldenFile('goldens/fusion_library_tv.png'));

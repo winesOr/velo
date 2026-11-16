@@ -127,6 +127,20 @@ void main() {
       FocusManager.instance.primaryFocus?.ancestors.any((n) => n.debugLabel == 'settings_category_details'),
       isTrue,
     );
+    expect(
+      FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<FocusableSwitchListTile>()?.key,
+      const ValueKey('danmaku-enabled'),
+    );
+    expect(ListTileTheme.of(tester.element(find.byKey(const ValueKey('danmaku-enabled')))).minTileHeight, 55);
+    final heatmap = find.byKey(const ValueKey('danmaku-heatmap'));
+    Focus.of(tester.element(find.descendant(of: heatmap, matching: find.byType(Text)).first)).requestFocus();
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(session.heatmapEnabled, isFalse);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(session.heatmapEnabled, isTrue);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
     await tester.pumpAndSettle();
     expect(category.focusNode!.hasFocus, isTrue);
@@ -145,6 +159,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(DanmakuSettingsPage), findsOneWidget);
     expect(find.text(t.settings.noDanmakuSources), findsNothing);
+    expect(find.byKey(const ValueKey('danmaku-enabled')), findsOneWidget);
+    expect(find.byKey(const ValueKey('danmaku-manage-sources')), findsOneWidget);
+    expect(find.byKey(const ValueKey('danmaku-heatmap')), findsOneWidget);
+    expect(ListTileTheme.of(tester.element(find.byKey(const ValueKey('danmaku-enabled')))).minTileHeight, 51);
     await expectLater(find.byType(DanmakuSettingsPage), matchesGoldenFile('goldens/danmaku_settings_phone.png'));
     await tester.tap(find.byKey(const ValueKey('danmaku-manage-sources')));
     await tester.pumpAndSettle();

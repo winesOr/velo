@@ -177,6 +177,23 @@ void main() {
         ],
       );
       expect(tester.takeException(), isNull);
+      expect(find.text('37:18 / 1:06:43'), findsOneWidget);
+      expect(find.text('0:00 / 1:06:43'), findsOneWidget);
+      final bars = find.byType(LinearProgressIndicator);
+      expect(bars, findsNWidgets(2));
+      expect(
+        tester.widget<LinearProgressIndicator>(bars.at(0)).value,
+        closeTo(_episode.viewOffsetMs! / _episode.durationMs!, .0001),
+      );
+      expect(tester.widget<LinearProgressIndicator>(bars.at(1)).value, 0);
+      expect(find.byType(MediaProgressBar), findsNothing);
+      for (var index = 0; index < 2; index++) {
+        final bar = bars.at(index);
+        final artwork = find.ancestor(of: bar, matching: find.byType(WatchedIndicator));
+        expect(tester.getRect(bar).left, greaterThan(tester.getRect(artwork).left));
+        expect(tester.getRect(bar).right, lessThan(tester.getRect(artwork).right));
+        expect(tester.getRect(bar).bottom, lessThan(tester.getRect(artwork).bottom));
+      }
       await expectLater(
         find.byKey(const ValueKey('continue-shelf-preview')),
         matchesGoldenFile('goldens/continue_watching_${fixture.name}.png'),

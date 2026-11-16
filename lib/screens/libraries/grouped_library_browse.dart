@@ -97,6 +97,9 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
   final List<AbortController> _peopleAborts = [];
   int _peopleGeneration = 0;
   bool _paginationScheduled = false;
+  int? _pendingWallFocusIndex;
+  FocusNode? _wallFocusOrigin;
+  int _wallFocusGeneration = 0;
 
   GroupedLibrarySelection get _selection => GroupedLibrarySelection(
     search: _search.text,
@@ -172,6 +175,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
     );
     _controller.addListener(_onWallContentChanged);
     _controller.addListener(_focusResultsWhenReady);
+    _controller.addListener(_resumeWallFocusWhenReady);
     _controller.reset(widget.libraries, _selection, load: false);
   }
 
@@ -217,6 +221,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
   }
 
   void _queryChanged({bool debounce = false}) {
+    _cancelWallFocus();
     _debounce?.cancel();
     // Invalidate now, not after the typing delay: an old page must not commit.
     _controller.reset(widget.libraries, _selection, load: !debounce);
@@ -259,6 +264,69 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
     final forward = index > 0;
     _scroll.jumpTo((_scroll.offset + (forward ? 240 : -240)).clamp(0.0, _scroll.position.maxScrollExtent));
     WidgetsBinding.instance.addPostFrameCallback((_) => _focusItem(group, index, attempt: attempt + 1));
+  }
+
+  void _cancelWallFocus() {
+    _pendingWallFocusIndex = null;
+    _wallFocusOrigin = null;
+    _wallFocusGeneration++;
+  }
+
+  void _resumeWallFocusWhenReady() {
+    final index = _pendingWallFocusIndex;
+    if (index == null || _controller.groups.any((group) => group.loading)) return;
+    if (!identical(FocusManager.instance.primaryFocus, _wallFocusOrigin)) {
+      _cancelWallFocus();
+      return;
+    }
+    final generation = _wallFocusGeneration;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || generation != _wallFocusGeneration) return;
+      if (!identical(FocusManager.instance.primaryFocus, _wallFocusOrigin)) {
+        _cancelWallFocus();
+        return;
+      }
+      _focusWallItem(index, generation: generation);
+    });
+  }
+
+  void _focusWallItem(int index, {int attempt = 0, int? generation}) {
+    if (!mounted || index < 0) return;
+    if (generation == null) {
+      generation = ++_wallFocusGeneration;
+      _pendingWallFocusIndex = index;
+      _wallFocusOrigin = FocusManager.instance.primaryFocus;
+    }
+    if (generation != _wallFocusGeneration || _pendingWallFocusIndex != index) return;
+    final entries = _controller.entries;
+    String keyFor(LibraryWallEntry entry) => 'wall/${entry.library.backend.name}/${entry.globalKey}';
+    if (index >= entries.length) {
+      // Existing pagination can take arbitrarily many frames. Its completion
+      // listener resumes this request without spending the render retry budget.
+      if (_controller.groups.any((group) => group.loading)) return;
+      if (!_controller.groups.any((group) => group.error == null && group.hasMore)) {
+        _cancelWallFocus();
+        return;
+      }
+      unawaited(_loadNextWallPages());
+      return;
+    }
+    final node = _node(keyFor(entries[index]));
+    if (node.context != null) {
+      _cancelWallFocus();
+      node.requestFocus();
+      return;
+    }
+    if (!_scroll.hasClients || attempt >= 12) {
+      _cancelWallFocus();
+      return;
+    }
+    final focusedIndex = entries.indexWhere((entry) => _nodes[keyFor(entry)]?.hasFocus ?? false);
+    final forward = focusedIndex < 0 || index > focusedIndex;
+    _scroll.jumpTo((_scroll.offset + (forward ? 240 : -240)).clamp(0.0, _scroll.position.maxScrollExtent));
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _focusWallItem(index, attempt: attempt + 1, generation: generation),
+    );
   }
 
   Widget _choice<T>(String label, List<AppMenuEntry<T>> entries, ValueChanged<T> onSelected) => AppMenuButton<T>(
@@ -550,13 +618,14 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
   }
 
   void _onScroll() {
-    if (_touchWall && _scroll.hasClients && _scroll.position.extentAfter < 400) _loadNextWallPages();
+    if (_touchWall && _scroll.hasClients && _scroll.position.extentAfter < 400) unawaited(_loadNextWallPages());
   }
 
-  void _loadNextWallPages() {
-    for (final group in _controller.groups) {
-      if (group.error == null && !group.loading && group.hasMore) unawaited(_controller.loadMore(group));
-    }
+  Future<void> _loadNextWallPages() async {
+    await Future.wait([
+      for (final group in _controller.groups)
+        if (group.error == null && !group.loading && group.hasMore) _controller.loadMore(group),
+    ]);
   }
 
   void _onWallContentChanged() {
@@ -568,7 +637,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
       // Genre categories can have no match in the first page. Keep reading
       // each independent source until a result or the real end is reached.
       if (_controller.entries.isEmpty || (_scroll.hasClients && _scroll.position.extentAfter < 240)) {
-        _loadNextWallPages();
+        unawaited(_loadNextWallPages());
       }
     });
   }
@@ -603,7 +672,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
             backgroundColor: selected ? VeloBrand.selection(brightness) : Colors.transparent,
             foregroundColor: selected ? VeloBrand.foreground(brightness) : VeloPalette.caption(brightness),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            textStyle: TextStyle(
+            textStyle: Theme.of(context).textTheme.labelLarge!.copyWith(
               fontSize: 15,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               fontVariations: selected ? const [FontVariation('wght', 650)] : null,
@@ -622,13 +691,17 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
       scrollDirection: Axis.horizontal,
       padding: EdgeInsets.symmetric(horizontal: PlatformDetector.isTV() ? 34 : 17),
       child: FocusScope(
-        node: _wallRows.putIfAbsent(key, () => FocusScopeNode(debugLabel: key)),
+        node: _wallRows.putIfAbsent(
+          key,
+          () => FocusScopeNode(debugLabel: key, directionalTraversalEdgeBehavior: TraversalEdgeBehavior.parentScope),
+        ),
         child: Row(children: children),
       ),
     ),
   );
 
   void _localFacetChanged() {
+    _cancelWallFocus();
     _controller.updateLocalSelection(_selection);
     if (_scroll.hasClients) _scroll.jumpTo(0);
   }
@@ -789,6 +862,9 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
                 onRefresh: (_) => refresh(),
                 onBack: widget.onBack,
                 onNavigateLeft: position.isFirstColumn ? _searchFocus.requestFocus : null,
+                onNavigateDown: PlatformDetector.isTV()
+                    ? () => _focusWallItem(position.index + position.columnCount)
+                    : null,
                 onNavigateUp: position.isFirstRow
                     ? () {
                         _wallRows['wall-years']?.descendants
@@ -796,6 +872,8 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
                             .firstOrNull
                             ?.requestFocus();
                       }
+                    : PlatformDetector.isTV()
+                    ? () => _focusWallItem(position.index - position.columnCount)
                     : null,
               );
             },
@@ -982,6 +1060,8 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
     _cancelPeople();
     _controller.removeListener(_onWallContentChanged);
     _controller.removeListener(_focusResultsWhenReady);
+    _controller.removeListener(_resumeWallFocusWhenReady);
+    _cancelWallFocus();
     _controller.dispose();
     if (widget.searchController == null) _search.dispose();
     _year.dispose();

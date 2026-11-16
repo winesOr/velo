@@ -48,6 +48,7 @@ import 'package:plezy/widgets/dialog_action_button.dart';
 import 'package:plezy/widgets/focusable_list_tile.dart';
 import 'package:plezy/widgets/loading_indicator_box.dart';
 import 'package:plezy/widgets/setting_tile.dart';
+import 'package:plezy/widgets/settings_section.dart';
 import 'package:provider/provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -278,6 +279,34 @@ void main() {
       addTearDown(() => harness.dispose(tester));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      expect(find.byKey(const ValueKey('settings-identity-summary')), findsOneWidget);
+      expect(find.text('Emby · 1 台服务器'), findsOneWidget);
+      final groups = tester.widgetList<SettingsGroup>(find.byType(SettingsGroup)).toList();
+      final delegate =
+          tester
+                  .widget<SliverList>(
+                    find.descendant(of: find.byType(SettingsScreen), matching: find.byType(SliverList)).first,
+                  )
+                  .delegate
+              as SliverChildListDelegate;
+      expect(delegate.children.whereType<SettingsGroup>().map((group) => group.title), [
+        t.settings.viewingExperience,
+        t.settings.personalization,
+        t.settings.resourcesServices,
+        t.settings.application,
+      ]);
+      for (var index = 1; index < groups.length; index++) {
+        expect(
+          tester.getRect(find.byWidget(groups[index])).top,
+          greaterThan(tester.getRect(find.byWidget(groups[index - 1])).top),
+        );
+      }
+      if (fixture.scale == 1) {
+        final subtitles = find.byWidgetPredicate(
+          (widget) => widget is SettingNavigationTile && widget.title == t.settings.subtitles,
+        );
+        expect(tester.getSize(subtitles).height, 51);
+      }
       await expectLater(find.byType(SettingsScreen), matchesGoldenFile('goldens/settings_phone_${fixture.name}.png'));
     });
   }
