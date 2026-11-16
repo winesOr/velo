@@ -38,3 +38,16 @@
 ## C. 全量测试
 
 见文末“全量测试结果”。
+
+## 全量测试结果（a3a67b6，Linux，Flutter 3.50）
+
+`flutter analyze lib test` 无错误/警告；`scripts/ci_guard_checks.sh` 通过；`flutter test` 8863 通过 / 8 跳过 / 12 失败：
+
+| 编号 | 测试文件 | 失败用例 |
+|---|---|---|
+| R2-23 | `test/screens/libraries/library_browse_tab_test.dart` | phone poster fixture fits at text scale 1.0 / 2.0；TV source sidebar and poster wall keep focus on a real item across paging（TV 侧栏已按原型去掉，用例需按新筛选墙改写） |
+| R2-24 | `test/screens/settings/settings_screen_test.dart` | settings overview visual fixture dark / light / narrow_large |
+| R2-25 | `test/screens/settings/fusion_settings_test.dart` | TV categories hand focus right to real controls and left back to selected category；compact entry opens grouped settings and system back returns from sources to the settings page |
+| R2-26 | `test/widgets/continue_watching_progress_test.dart` | Continue Watching retains progress in the phone / phone_light / phone_large / tv layout |
+
+处理原则：先判断是实现回归还是用例过时。实现回归修代码；用例跟随已确认的新设计改写断言；golden 只在确认新画面符合原型后重生成。不得删除用例或放宽断言来通过。
