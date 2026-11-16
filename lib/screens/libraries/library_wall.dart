@@ -1,4 +1,6 @@
 import '../../media/media_item.dart';
+import '../../media/ids.dart';
+import '../../utils/global_key_utils.dart';
 import '../../media/media_kind.dart';
 import '../../media/media_library.dart';
 import '../../media/media_playlist.dart';
@@ -15,7 +17,12 @@ class LibraryWallEntry {
 
   MediaItem? get media => item is MediaItem ? item as MediaItem : null;
   MediaPlaylist? get playlist => item is MediaPlaylist ? item as MediaPlaylist : null;
-  String get globalKey => media?.globalKey ?? playlist!.globalKey;
+  String get globalKey {
+    final server = media?.serverId ?? playlist?.serverId ?? library.serverId;
+    final id = media?.id ?? playlist!.id;
+    return server == null ? '${library.globalKey}/$id' : buildGlobalKey(ServerId(server), id);
+  }
+
   String get title => media?.displayTitle ?? playlist!.displayTitle;
   int? get updatedAt => media?.updatedAt ?? playlist?.updatedAt ?? media?.addedAt ?? playlist?.addedAt;
   int? get releasedAt =>

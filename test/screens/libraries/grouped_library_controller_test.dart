@@ -55,6 +55,40 @@ void main() {
     expect(controller.groups.last.offset, 1);
   });
 
+  test('merged types retain unscoped items from each server and union their facets', () async {
+    final controller = GroupedLibraryController(
+      fetchPage: (library, query, abort) async => LibraryPage(
+        items: [
+          MediaItem(
+            id: 'shared-id',
+            backend: library.backend,
+            kind: MediaKind.movie,
+            title: library.title,
+            genres: [library.title],
+            year: library.serverId == 'a' ? 2025 : 2026,
+          ).copyWith(countries: [library.serverId!]),
+        ],
+        totalCount: 1,
+      ),
+    );
+    addTearDown(controller.dispose);
+    // Two same-backend servers may return records without a server ID.
+    const second = MediaLibrary(
+      id: 'movies',
+      backend: MediaBackend.plex,
+      title: 'Movies C',
+      kind: MediaKind.movie,
+      serverId: 'c',
+    );
+    controller.reset([a, second], const GroupedLibrarySelection(wallType: LibraryWallType.movies), load: false);
+    await Future.wait(controller.groups.map(controller.loadMore));
+    expect(controller.entries.map((entry) => entry.globalKey).toSet(), {'a:shared-id', 'c:shared-id'});
+    expect(controller.groups.map((group) => group.items.single.serverId), ['a', 'c']);
+    expect(controller.genres, ['Movies A', 'Movies C']);
+    expect(controller.countries, ['a', 'c']);
+    expect(controller.years.toSet(), {2025, 2026});
+  });
+
   test('query reset aborts every old group and discards delayed responses', () async {
     final oldPage = Completer<LibraryPage<MediaItem>>();
     final aborts = <AbortController>[];
@@ -320,6 +354,23 @@ void main() {
     expect(const GroupedLibrarySelection(wallType: LibraryWallType.music).queryFor(mixed, 0, 36).includeKinds, [
       MediaKind.album,
     ]);
+    const musicPrimaryMixed = MediaLibrary(
+      id: 'mixed-known',
+      backend: MediaBackend.emby,
+      title: 'Mixed',
+      kind: MediaKind.album,
+      defaultBrowseKinds: [MediaKind.album, MediaKind.movie],
+      serverId: 'mixed-server',
+    );
+    const anime = GroupedLibrarySelection(wallType: LibraryWallType.anime);
+    expect(anime.includesLibrary(musicPrimaryMixed), isTrue);
+    expect(anime.queryFor(musicPrimaryMixed, 0, 36).kind, MediaKind.movie);
+    expect(anime.queryFor(musicPrimaryMixed, 0, 36).includeKinds, [MediaKind.movie]);
+    const music = GroupedLibrarySelection(wallType: LibraryWallType.music);
+    expect(music.queryFor(mixed, 0, 36).kind, MediaKind.album);
+    const all = GroupedLibrarySelection(wallType: LibraryWallType.all);
+    expect(all.queryFor(musicPrimaryMixed, 0, 36).kind, isNull);
+    expect(all.queryFor(musicPrimaryMixed, 0, 36).includeKinds, [MediaKind.album, MediaKind.movie]);
     expect(const GroupedLibrarySelection(wallType: LibraryWallType.movies).queryFor(a, 0, 36).kind, MediaKind.movie);
   });
 }

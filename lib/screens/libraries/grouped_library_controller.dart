@@ -47,53 +47,52 @@ class GroupedLibrarySelection {
   final String? genre;
   final String? country;
 
-  bool includesLibrary(MediaLibrary library) {
-    final requested =
-        kind ??
-        switch (wallType) {
-          LibraryWallType.movies => MediaKind.movie,
-          LibraryWallType.series => MediaKind.show,
-          _ => null,
-        };
-    if (requested != null &&
-        library.kind != MediaKind.unknown &&
-        library.kind != requested &&
-        !library.defaultBrowseKinds.contains(requested)) {
-      return false;
-    }
-    if (wallType == LibraryWallType.music) {
-      return library.kind.isMusic ||
-          (library.kind == MediaKind.unknown &&
-              (library.defaultBrowseKinds.isEmpty || library.defaultBrowseKinds.any((k) => k.isMusic))) ||
-          library.defaultBrowseKinds.any((k) => k.isMusic);
-    }
-    if ([
-      LibraryWallType.anime,
-      LibraryWallType.variety,
-      LibraryWallType.concert,
-      LibraryWallType.documentary,
-    ].contains(wallType)) {
-      return !library.kind.isMusic;
-    }
-    return true;
-  }
+  Set<MediaKind> _rootKinds(MediaLibrary library) => library.defaultBrowseKinds.isNotEmpty
+      ? library.defaultBrowseKinds.toSet()
+      : {if (library.kind != MediaKind.unknown) library.kind};
 
-  MediaKind? _queryKind(MediaLibrary library) =>
+  MediaKind? get _requestedKind =>
       kind ??
       switch (wallType) {
         LibraryWallType.movies => MediaKind.movie,
         LibraryWallType.series => MediaKind.show,
-        _ => library.kind == MediaKind.unknown ? null : library.kind,
+        _ => null,
       };
 
+  bool get _videoCategory => const [
+    LibraryWallType.anime,
+    LibraryWallType.variety,
+    LibraryWallType.concert,
+    LibraryWallType.documentary,
+  ].contains(wallType);
+
+  bool includesLibrary(MediaLibrary library) {
+    final kinds = _rootKinds(library);
+    // An untyped view remains queryable; no type is inferred from its name.
+    if (kinds.isEmpty) return true;
+    if (_requestedKind case final requested?) return kinds.contains(requested);
+    if (wallType == LibraryWallType.music) return kinds.any((kind) => kind.isMusic);
+    if (_videoCategory) return kinds.any((kind) => !kind.isMusic);
+    return true;
+  }
+
+  MediaKind? _queryKind(MediaLibrary library) {
+    if (_requestedKind case final requested?) return requested;
+    final kinds = _queryKinds(library);
+    if (kinds.length == 1) return kinds.single;
+    if (kinds.isNotEmpty) return null;
+    return library.kind == MediaKind.unknown ? null : library.kind;
+  }
+
   List<MediaKind> _queryKinds(MediaLibrary library) {
-    if (kind != null || wallType == LibraryWallType.movies || wallType == LibraryWallType.series) return const [];
+    if (_requestedKind != null) return const [];
+    final kinds = _rootKinds(library);
     if (wallType == LibraryWallType.music) {
-      final kinds = library.defaultBrowseKinds.where((kind) => kind.isMusic).toList();
-      return kinds.isEmpty && library.kind == MediaKind.unknown
+      return kinds.isEmpty
           ? const [MediaKind.artist, MediaKind.album, MediaKind.track]
-          : kinds;
+          : kinds.where((kind) => kind.isMusic).toList();
     }
+    if (_videoCategory) return kinds.where((kind) => !kind.isMusic).toList();
     return library.defaultBrowseKinds;
   }
 
@@ -144,7 +143,7 @@ class LibraryBrowseGroup {
   bool get hasMore => offset < total;
 }
 
-/// Each library owns its cursor, cancellation and failure state. The mobile
+/// Each library owns its cursor, cancellation and failure state. The search
 /// wall merges the loaded pages without conflating server-local identities.
 class GroupedLibraryController extends ChangeNotifier {
   GroupedLibraryController({
@@ -290,7 +289,13 @@ class GroupedLibraryController extends ChangeNotifier {
         page = await fetcher(group.library, query, abort);
       }
       if (_disposed || generation != _generation || abort.isAborted) return;
-      group.items.addAll(page.items.whereType<MediaItem>());
+      group.items.addAll(
+        page.items.whereType<MediaItem>().map(
+          (item) => item.serverId == null && group.library.serverId != null
+              ? item.copyWith(serverId: group.library.serverId, serverName: item.serverName ?? group.library.serverName)
+              : item,
+        ),
+      );
       group.playlists.addAll(page.items.whereType<MediaPlaylist>());
       group.offset += page.items.length;
       // A backend can omit an exact count. Do not display total as a claim.
