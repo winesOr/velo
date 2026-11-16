@@ -918,6 +918,10 @@ class _Translations$videoControls$zh_Hant extends Translations$videoControls$zh 
 	final TranslationsZhHant _root; // ignore: unused_field
 
 	// Translations
+	@override String get speedLabel => '倍速';
+	@override String get subtitleSimplifiedShort => '簡中';
+	@override String get subtitleTraditionalShort => '繁中';
+	@override String get audioMandarinShort => '國語';
 	@override String get playbackSettings => '播放設定';
 	@override String seasonEpisodeShort({required Object season, required Object episode}) => 'S${season} · E${episode}';
 	@override String episodeShort({required Object n}) => 'E${n}';
@@ -1033,10 +1037,6 @@ class _Translations$videoControls$zh_Hant extends Translations$videoControls$zh 
 	@override String get drawerPrimarySubtitle => '主字幕';
 	@override String get drawerSecondarySubtitle => '次字幕';
 	@override String get drawerAdjustments => '調整';
-	@override String get speedLabel => '倍速';
-	@override String get subtitleSimplifiedShort => '簡中';
-	@override String get subtitleTraditionalShort => '繁中';
-	@override String get audioMandarinShort => '國語';
 }
 
 // Path: messages
@@ -1448,7 +1448,7 @@ class _Translations$libraries$zh_Hant extends Translations$libraries$zh {
 	@override late final _Translations$libraries$filterCategories$zh_Hant filterCategories = _Translations$libraries$filterCategories$zh_Hant._(_root);
 	@override late final _Translations$libraries$sortLabels$zh_Hant sortLabels = _Translations$libraries$sortLabels$zh_Hant._(_root);
 	@override late final _Translations$libraries$advancedFilters$zh_Hant advancedFilters = _Translations$libraries$advancedFilters$zh_Hant._(_root);
-	@override String get searchHint => '搜尋此媒體庫';
+	@override String get searchHint => '輸入影片名稱搜尋';
 	@override String get countryUnavailable => '此來源不支援依地區篩選，也不會在本頁另行篩選。';
 	@override String get unsupportedFiltersRemoved => '已為此來源停用不支援的已儲存篩選條件。';
 	@override String get filterDiscoveryFailed => '無法載入篩選選項。現有的受支援條件仍然有效。';
@@ -1461,6 +1461,13 @@ class _Translations$libraries$zh_Hant extends Translations$libraries$zh {
 	@override String get watched => '已看';
 	@override String get groupedLoadFailed => '無法載入此來源，其他分組仍可使用。';
 	@override String get groupedFacetUnavailable => '請選擇一個媒體庫後再依類型或地區篩選。這些條件無法在多個來源間可靠合併。';
+	@override String get chooseServer => '選擇伺服器';
+	@override String get allServers => '所有伺服器';
+	@override String get refreshLibraries => '重新整理媒體庫';
+	@override String get unrestricted => '不限';
+	@override String get wallActors => '演員';
+	@override late final _Translations$libraries$wallTypes$zh_Hant wallTypes = _Translations$libraries$wallTypes$zh_Hant._(_root);
+	@override late final _Translations$libraries$wallSort$zh_Hant wallSort = _Translations$libraries$wallSort$zh_Hant._(_root);
 }
 
 // Path: about
@@ -2897,6 +2904,35 @@ class _Translations$libraries$advancedFilters$zh_Hant extends Translations$libra
 	@override String get dateOlderThanYear => '一年以前';
 }
 
+// Path: libraries.wallTypes
+class _Translations$libraries$wallTypes$zh_Hant extends Translations$libraries$wallTypes$zh {
+	_Translations$libraries$wallTypes$zh_Hant._(TranslationsZhHant root) : this._root = root, super.internal(root);
+
+	final TranslationsZhHant _root; // ignore: unused_field
+
+	// Translations
+	@override String get all => '全部';
+	@override String get series => '電視劇';
+	@override String get movies => '電影';
+	@override String get anime => '動漫';
+	@override String get variety => '綜藝';
+	@override String get concert => '演唱會';
+	@override String get documentary => '紀錄';
+	@override String get music => '音樂';
+}
+
+// Path: libraries.wallSort
+class _Translations$libraries$wallSort$zh_Hant extends Translations$libraries$wallSort$zh {
+	_Translations$libraries$wallSort$zh_Hant._(TranslationsZhHant root) : this._root = root, super.internal(root);
+
+	final TranslationsZhHant _root; // ignore: unused_field
+
+	// Translations
+	@override String get updated => '最新更新';
+	@override String get released => '最新上映';
+	@override String get rating => '影片評分';
+}
+
 // Path: explore.rows
 class _Translations$explore$rows$zh_Hant extends Translations$explore$rows$zh {
 	_Translations$explore$rows$zh_Hant._(TranslationsZhHant root) : this._root = root, super.internal(root);
@@ -4123,6 +4159,10 @@ extension on TranslationsZhHant {
 			'tooltips.markAsWatched' => '標記為已觀看',
 			'tooltips.markAsUnwatched' => '標記為未觀看',
 			'audioTracks.track' => ({required Object n}) => '音軌 ${n}',
+			'videoControls.speedLabel' => '倍速',
+			'videoControls.subtitleSimplifiedShort' => '簡中',
+			'videoControls.subtitleTraditionalShort' => '繁中',
+			'videoControls.audioMandarinShort' => '國語',
 			'videoControls.playbackSettings' => '播放設定',
 			'videoControls.seasonEpisodeShort' => ({required Object season, required Object episode}) => 'S${season} · E${episode}',
 			'videoControls.episodeShort' => ({required Object n}) => 'E${n}',
@@ -4245,10 +4285,6 @@ extension on TranslationsZhHant {
 			'videoControls.drawerPrimarySubtitle' => '主字幕',
 			'videoControls.drawerSecondarySubtitle' => '次字幕',
 			'videoControls.drawerAdjustments' => '調整',
-			'videoControls.speedLabel' => '倍速',
-			'videoControls.subtitleSimplifiedShort' => '簡中',
-			'videoControls.subtitleTraditionalShort' => '繁中',
-			'videoControls.audioMandarinShort' => '國語',
 			'messages.markedAsWatched' => '已標記為已觀看',
 			'messages.markedAsUnwatched' => '已標記為未觀看',
 			'messages.markedAsWatchedOffline' => '已標記為已觀看（將在連線時同步）',
@@ -4657,7 +4693,7 @@ extension on TranslationsZhHant {
 			'libraries.advancedFilters.dateLastYear' => '最近一年',
 			'libraries.advancedFilters.dateOlderThanDays' => ({required Object count}) => '${count} 天以前',
 			'libraries.advancedFilters.dateOlderThanYear' => '一年以前',
-			'libraries.searchHint' => '搜尋此媒體庫',
+			'libraries.searchHint' => '輸入影片名稱搜尋',
 			'libraries.countryUnavailable' => '此來源不支援依地區篩選，也不會在本頁另行篩選。',
 			'libraries.unsupportedFiltersRemoved' => '已為此來源停用不支援的已儲存篩選條件。',
 			'libraries.filterDiscoveryFailed' => '無法載入篩選選項。現有的受支援條件仍然有效。',
@@ -4670,6 +4706,22 @@ extension on TranslationsZhHant {
 			'libraries.watched' => '已看',
 			'libraries.groupedLoadFailed' => '無法載入此來源，其他分組仍可使用。',
 			'libraries.groupedFacetUnavailable' => '請選擇一個媒體庫後再依類型或地區篩選。這些條件無法在多個來源間可靠合併。',
+			'libraries.chooseServer' => '選擇伺服器',
+			'libraries.allServers' => '所有伺服器',
+			'libraries.refreshLibraries' => '重新整理媒體庫',
+			'libraries.unrestricted' => '不限',
+			'libraries.wallActors' => '演員',
+			'libraries.wallTypes.all' => '全部',
+			'libraries.wallTypes.series' => '電視劇',
+			'libraries.wallTypes.movies' => '電影',
+			'libraries.wallTypes.anime' => '動漫',
+			'libraries.wallTypes.variety' => '綜藝',
+			'libraries.wallTypes.concert' => '演唱會',
+			'libraries.wallTypes.documentary' => '紀錄',
+			'libraries.wallTypes.music' => '音樂',
+			'libraries.wallSort.updated' => '最新更新',
+			'libraries.wallSort.released' => '最新上映',
+			'libraries.wallSort.rating' => '影片評分',
 			'about.title' => '關於',
 			'about.openSourceLicenses' => '開源授權條款',
 			'about.versionLabel' => ({required Object version}) => '版本 ${version}',
@@ -4926,6 +4978,8 @@ extension on TranslationsZhHant {
 			'liveTv.recordEpisode' => '錄製單集',
 			'liveTv.recordSeries' => '錄製整部影集',
 			'liveTv.recordOptions' => '錄製選項',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.saveTo' => '儲存至',
 			'liveTv.recordings' => '已錄製內容',
 			'liveTv.scheduledRecordings' => '已排程錄製',
@@ -4942,8 +4996,6 @@ extension on TranslationsZhHant {
 			'liveTv.alreadyScheduled' => '此節目已安排排程錄製',
 			'liveTv.dvrAdminRequired' => 'DVR 設定需要管理員帳戶',
 			'liveTv.recordingFailed' => '無法安排錄製任務',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordingTargetMissing' => '無法確定錄製媒體庫',
 			'liveTv.recordNotAvailable' => '此節目無法錄製',
 			'liveTv.recordingCancelled' => '錄製已取消',
@@ -5440,6 +5492,8 @@ extension on TranslationsZhHant {
 			'externalPlayer.title' => '外部播放器',
 			'externalPlayer.useExternalPlayer' => '使用外部播放器',
 			'externalPlayer.useExternalPlayerDescription' => '在其他應用程式中開啟影片',
+			_ => null,
+		} ?? switch (path) {
 			'externalPlayer.selectPlayer' => '選擇播放器',
 			'externalPlayer.customPlayers' => '自訂播放器',
 			'externalPlayer.systemDefault' => '系統預設',
@@ -5456,8 +5510,6 @@ extension on TranslationsZhHant {
 			'metadataEdit.editMetadata' => '編輯…',
 			'metadataEdit.screenTitle' => '編輯中繼資料',
 			'metadataEdit.basicInfo' => '基本資訊',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.artwork' => '海報與背景',
 			'metadataEdit.advancedSettings' => '進階設定',
 			'metadataEdit.title' => '標題',

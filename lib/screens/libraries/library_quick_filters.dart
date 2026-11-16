@@ -9,7 +9,7 @@ import '../../theme/mono_presentation.dart';
 import '../../theme/velo_brand.dart';
 
 /// Inline prototype rows use the same backend fields and persisted clauses as
-/// the full editor. Never infer genres, countries or years from a loaded page.
+/// the full editor. Server facet IDs remain unchanged when a tag is selected.
 class LibraryQuickFilters extends StatelessWidget {
   const LibraryQuickFilters({
     super.key,
@@ -43,6 +43,14 @@ class LibraryQuickFilters extends StatelessWidget {
     if (MediaQuery.sizeOf(context).height < 500 || MediaQuery.viewInsetsOf(context).bottom > 0) {
       return const SizedBox.shrink();
     }
+    final quickSorts = <(MediaSort, String)>[
+      for (final (key, label) in [
+        ('addedAt', t.libraries.wallSort.updated),
+        ('originallyAvailableAt', t.libraries.wallSort.released),
+        ('rating', t.libraries.wallSort.rating),
+      ])
+        for (final sort in sorts.where((sort) => sort.key == key).take(1)) (sort, label),
+    ];
     final quickFilters = [
       for (final field in ['genre', 'country', 'year'])
         ...filters.where((filter) => filter.filter.split('.').last == field && filter.hasValueList),
@@ -51,12 +59,12 @@ class LibraryQuickFilters extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (sorts.isNotEmpty)
+        if (quickSorts.isNotEmpty)
           _TagRow(
             children: [
-              for (final sort in sorts)
+              for (final (sort, label) in quickSorts)
                 _Tag(
-                  label: sort.title,
+                  label: label,
                   selected: selectedSort?.key == sort.key,
                   onPressed: () =>
                       onSortChanged(sort, selectedSort?.key == sort.key ? !descending : sort.isDefaultDescending),
@@ -115,18 +123,11 @@ class _QuickFilterValuesState extends State<_QuickFilterValues> {
     Widget row(List<MediaFilterValue> values) {
       if (values.isEmpty) return const SizedBox.shrink();
       final clauses = widget.selection.where((clause) => clause.field == widget.filter.filter);
-      final title = widget.filter.title.isNotEmpty
-          ? widget.filter.title
-          : switch (widget.filter.filter.split('.').last) {
-              'genre' => t.libraries.filterCategories.genre,
-              'year' => t.libraries.filterCategories.year,
-              _ => t.metadataEdit.country,
-            };
       bool selected(String id) =>
           clauses.any((clause) => clause.op == LibraryFilterOperator.is_ && clause.values.contains(id));
       return _TagRow(
         children: [
-          _Tag(label: title, selected: clauses.isEmpty, onPressed: () => _select(null)),
+          _Tag(label: t.libraries.unrestricted, selected: clauses.isEmpty, onPressed: () => _select(null)),
           for (final value in values.take(24))
             _Tag(
               label: value.title,
@@ -136,7 +137,6 @@ class _QuickFilterValuesState extends State<_QuickFilterValues> {
                 _select(selected(id) ? null : id);
               },
             ),
-          _Tag(label: t.common.options, selected: false, onPressed: widget.onMore),
         ],
       );
     }
@@ -156,7 +156,7 @@ class _TagRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
     scrollDirection: Axis.horizontal,
-    padding: EdgeInsets.symmetric(horizontal: MonoPresentation.isTablet(context) ? 32 : 12),
+    padding: EdgeInsets.symmetric(horizontal: MonoPresentation.isTablet(context) ? 32 : 17),
     child: Row(children: children),
   );
 }
@@ -177,7 +177,7 @@ class _Tag extends StatelessWidget {
       child: FocusableButton(
         onPressed: onPressed,
         child: SizedBox(
-          height: (MediaQuery.textScalerOf(context).scale(12) * 1.5 + 12).clamp(40, double.infinity),
+          height: (MediaQuery.textScalerOf(context).scale(15) * 1.2 + 12).clamp(32, double.infinity),
           child: Center(
             child: Material(
               color: selected ? VeloBrand.selection(theme.brightness) : Colors.transparent,
@@ -186,7 +186,7 @@ class _Tag extends StatelessWidget {
                 onTap: onPressed,
                 borderRadius: BorderRadius.circular(100),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * .65),
                     child: Text(
@@ -194,7 +194,10 @@ class _Tag extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 12,
+                        fontSize: 15,
+                        height: 1.2,
+                        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                        fontVariations: selected ? const [FontVariation('wght', 650)] : null,
                         color: selected ? VeloBrand.foreground(theme.brightness) : theme.colorScheme.onSurfaceVariant,
                       ),
                     ),

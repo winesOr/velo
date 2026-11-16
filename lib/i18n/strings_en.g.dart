@@ -2329,6 +2329,18 @@ class Translations$videoControls$en {
 
 	// Translations
 
+	/// en: 'Playback speed'
+	String get speedLabel => 'Playback speed';
+
+	/// en: 'Simplified Chinese'
+	String get subtitleSimplifiedShort => 'Simplified Chinese';
+
+	/// en: 'Traditional Chinese'
+	String get subtitleTraditionalShort => 'Traditional Chinese';
+
+	/// en: 'Mandarin'
+	String get audioMandarinShort => 'Mandarin';
+
 	/// en: 'Playback Settings'
 	String get playbackSettings => 'Playback Settings';
 
@@ -2708,18 +2720,6 @@ class Translations$videoControls$en {
 
 	/// en: 'Adjustments'
 	String get drawerAdjustments => 'Adjustments';
-
-	/// en: 'Playback speed'
-	String get speedLabel => 'Playback speed';
-
-	/// en: 'Simplified Chinese'
-	String get subtitleSimplifiedShort => 'Simplified Chinese';
-
-	/// en: 'Traditional Chinese'
-	String get subtitleTraditionalShort => 'Traditional Chinese';
-
-	/// en: 'Mandarin'
-	String get audioMandarinShort => 'Mandarin';
 }
 
 // Path: messages
@@ -3759,8 +3759,8 @@ class Translations$libraries$en {
 	late final Translations$libraries$sortLabels$en sortLabels = Translations$libraries$sortLabels$en.internal(_root);
 	late final Translations$libraries$advancedFilters$en advancedFilters = Translations$libraries$advancedFilters$en.internal(_root);
 
-	/// en: 'Search this library'
-	String get searchHint => 'Search this library';
+	/// en: 'Enter a title to search'
+	String get searchHint => 'Enter a title to search';
 
 	/// en: 'Region filtering is not supported by this source. No local page filtering is applied.'
 	String get countryUnavailable => 'Region filtering is not supported by this source. No local page filtering is applied.';
@@ -3797,6 +3797,24 @@ class Translations$libraries$en {
 
 	/// en: 'Choose one library to filter by its genres or regions. These facets cannot be combined reliably across sources.'
 	String get groupedFacetUnavailable => 'Choose one library to filter by its genres or regions. These facets cannot be combined reliably across sources.';
+
+	/// en: 'Choose server'
+	String get chooseServer => 'Choose server';
+
+	/// en: 'All servers'
+	String get allServers => 'All servers';
+
+	/// en: 'Refresh libraries'
+	String get refreshLibraries => 'Refresh libraries';
+
+	/// en: 'Any'
+	String get unrestricted => 'Any';
+
+	/// en: 'Actors'
+	String get wallActors => 'Actors';
+
+	late final Translations$libraries$wallTypes$en wallTypes = Translations$libraries$wallTypes$en.internal(_root);
+	late final Translations$libraries$wallSort$en wallSort = Translations$libraries$wallSort$en.internal(_root);
 }
 
 // Path: about
@@ -7383,6 +7401,57 @@ class Translations$libraries$advancedFilters$en {
 	String get dateOlderThanYear => 'Older than a year';
 }
 
+// Path: libraries.wallTypes
+class Translations$libraries$wallTypes$en {
+	Translations$libraries$wallTypes$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'All'
+	String get all => 'All';
+
+	/// en: 'TV shows'
+	String get series => 'TV shows';
+
+	/// en: 'Movies'
+	String get movies => 'Movies';
+
+	/// en: 'Anime'
+	String get anime => 'Anime';
+
+	/// en: 'Variety'
+	String get variety => 'Variety';
+
+	/// en: 'Concerts'
+	String get concert => 'Concerts';
+
+	/// en: 'Documentaries'
+	String get documentary => 'Documentaries';
+
+	/// en: 'Music'
+	String get music => 'Music';
+}
+
+// Path: libraries.wallSort
+class Translations$libraries$wallSort$en {
+	Translations$libraries$wallSort$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Recently updated'
+	String get updated => 'Recently updated';
+
+	/// en: 'Recently released'
+	String get released => 'Recently released';
+
+	/// en: 'Film rating'
+	String get rating => 'Film rating';
+}
+
 // Path: explore.rows
 class Translations$explore$rows$en {
 	Translations$explore$rows$en.internal(this._root);
@@ -9167,6 +9236,10 @@ extension on Translations {
 			'tooltips.markAsWatched' => 'Mark as watched',
 			'tooltips.markAsUnwatched' => 'Mark as unwatched',
 			'audioTracks.track' => ({required Object n}) => 'Audio Track ${n}',
+			'videoControls.speedLabel' => 'Playback speed',
+			'videoControls.subtitleSimplifiedShort' => 'Simplified Chinese',
+			'videoControls.subtitleTraditionalShort' => 'Traditional Chinese',
+			'videoControls.audioMandarinShort' => 'Mandarin',
 			'videoControls.playbackSettings' => 'Playback Settings',
 			'videoControls.seasonEpisodeShort' => ({required Object season, required Object episode}) => 'S${season} · E${episode}',
 			'videoControls.episodeShort' => ({required Object n}) => 'E${n}',
@@ -9301,10 +9374,6 @@ extension on Translations {
 			'videoControls.noAudioTracksDescription' => 'This media has no audio tracks to select.',
 			'videoControls.drawerSecondarySubtitle' => 'Secondary subtitle',
 			'videoControls.drawerAdjustments' => 'Adjustments',
-			'videoControls.speedLabel' => 'Playback speed',
-			'videoControls.subtitleSimplifiedShort' => 'Simplified Chinese',
-			'videoControls.subtitleTraditionalShort' => 'Traditional Chinese',
-			'videoControls.audioMandarinShort' => 'Mandarin',
 			'messages.addedToFavorites' => 'Added to favorites',
 			'messages.removedFromFavorites' => 'Removed from favorites',
 			'messages.markedAsWatched' => 'Marked as watched',
@@ -9715,7 +9784,7 @@ extension on Translations {
 			'libraries.advancedFilters.dateLastYear' => 'Past year',
 			'libraries.advancedFilters.dateOlderThanDays' => ({required Object count}) => 'Older than ${count} days',
 			'libraries.advancedFilters.dateOlderThanYear' => 'Older than a year',
-			'libraries.searchHint' => 'Search this library',
+			'libraries.searchHint' => 'Enter a title to search',
 			'libraries.countryUnavailable' => 'Region filtering is not supported by this source. No local page filtering is applied.',
 			'libraries.unsupportedFiltersRemoved' => 'Unsupported saved filters were disabled for this source.',
 			'libraries.filterDiscoveryFailed' => 'Could not load filter options. Existing supported conditions still apply.',
@@ -9728,6 +9797,22 @@ extension on Translations {
 			'libraries.watched' => 'Watched',
 			'libraries.groupedLoadFailed' => 'Could not load this source. Other groups remain available.',
 			'libraries.groupedFacetUnavailable' => 'Choose one library to filter by its genres or regions. These facets cannot be combined reliably across sources.',
+			'libraries.chooseServer' => 'Choose server',
+			'libraries.allServers' => 'All servers',
+			'libraries.refreshLibraries' => 'Refresh libraries',
+			'libraries.unrestricted' => 'Any',
+			'libraries.wallActors' => 'Actors',
+			'libraries.wallTypes.all' => 'All',
+			'libraries.wallTypes.series' => 'TV shows',
+			'libraries.wallTypes.movies' => 'Movies',
+			'libraries.wallTypes.anime' => 'Anime',
+			'libraries.wallTypes.variety' => 'Variety',
+			'libraries.wallTypes.concert' => 'Concerts',
+			'libraries.wallTypes.documentary' => 'Documentaries',
+			'libraries.wallTypes.music' => 'Music',
+			'libraries.wallSort.updated' => 'Recently updated',
+			'libraries.wallSort.released' => 'Recently released',
+			'libraries.wallSort.rating' => 'Film rating',
 			'about.title' => 'About',
 			'about.openSourceLicenses' => 'Open Source Licenses',
 			'about.versionLabel' => ({required Object version}) => 'Version ${version}',
@@ -9950,6 +10035,8 @@ extension on Translations {
 			'liveTv.serverUnavailable' => 'Live TV server is not available.',
 			'liveTv.serverNotConnected' => 'Live TV server is not connected.',
 			'liveTv.noPrograms' => 'No program data available',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.liveStreamFailed' => 'Live stream failed',
 			'liveTv.unknownProgram' => 'Unknown Program',
 			'liveTv.unknownHub' => 'Unknown',
@@ -9966,8 +10053,6 @@ extension on Translations {
 			'liveTv.now' => 'Now',
 			'liveTv.today' => 'Today',
 			'liveTv.tomorrow' => 'Tomorrow',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.midnight' => 'Midnight',
 			'liveTv.overnight' => 'Overnight',
 			'liveTv.morning' => 'Morning',
@@ -10464,6 +10549,8 @@ extension on Translations {
 			'performanceOverlay.app' => 'App',
 			'performanceOverlay.decoder' => 'Decoder',
 			'performanceOverlay.rawDecoder' => 'Raw Decoder',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.tunneling' => 'Tunneling',
 			'performanceOverlay.passthrough' => 'Passthrough',
 			'performanceOverlay.aspect' => 'Aspect',
@@ -10480,8 +10567,6 @@ extension on Translations {
 			'performanceOverlay.p7Conversion' => 'P7 Conv',
 			'performanceOverlay.sampleRate' => 'Sample Rate',
 			'performanceOverlay.pixelFormat' => 'Pixel Fmt',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.hwFormat' => 'HW Fmt',
 			'performanceOverlay.matrix' => 'Matrix',
 			'performanceOverlay.primaries' => 'Primaries',

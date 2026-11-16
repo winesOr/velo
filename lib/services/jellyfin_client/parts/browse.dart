@@ -362,12 +362,16 @@ mixin _JellyfinBrowseMethods on _JellyfinClientInternals {
     String libraryId,
     LibraryQuery query, {
     AbortController? abort,
+    bool includeFacetMetadata = false,
   }) async {
-    final fields = switch (query.kind) {
+    final baseFields = switch (query.kind) {
       MediaKind.album => _musicAlbumRowFields,
       MediaKind.track => _musicTrackRowFields,
       _ => _browseFields,
     };
+    final fields = includeFacetMetadata
+        ? {...baseFields.split(','), 'Genres', 'ProductionLocations', 'DateLastSaved'}.join(',')
+        : baseFields;
     final translator = JellyfinLibraryQueryTranslator(userId: connection.userId, parentId: libraryId, fields: fields);
     final params = translator.toQueryParameters(query);
     // MusicAlbum is a folder-like DTO. Asking for UserData makes Jellyfin
@@ -688,6 +692,7 @@ mixin _JellyfinBrowseMethods on _JellyfinClientInternals {
     String libraryId, {
     required LibraryQuery query,
     MediaKind? libraryKind,
+    bool includeFacetMetadata = false,
     AbortController? abort,
   }) async {
     // [libraryKind] is only a fallback for library-default browsing. Explicit
@@ -696,7 +701,7 @@ mixin _JellyfinBrowseMethods on _JellyfinClientInternals {
         (query.kind == null && query.includeKinds.isEmpty && libraryKind != null && libraryKind != MediaKind.unknown)
         ? query.copyWith(kind: libraryKind)
         : query;
-    return _fetchLibraryContent(libraryId, effective, abort: abort);
+    return _fetchLibraryContent(libraryId, effective, abort: abort, includeFacetMetadata: includeFacetMetadata);
   }
 
   /// Queue a metadata refresh for the library. Jellyfin treats a library

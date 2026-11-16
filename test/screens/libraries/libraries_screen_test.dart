@@ -176,37 +176,38 @@ void main() {
     expect(selected, [_libraryA.globalKey]);
   });
 
-  testWidgets('phones hide section chips and open sections from library options', (tester) async {
+  testWidgets('phones use one search wall and manage visibility from the server drawer', (tester) async {
     final harness = await _Harness.create(
       _GatedPreferences({'selected_library_key': _libraryA.globalKey}),
       libraryOrder: const [_libraryA],
     );
     addTearDown(harness.dispose);
-
     await harness.pump(tester, platform: TargetPlatform.android, size: const Size(400, 860));
-    expect(harness.controller(tester).index, LibraryTabType.browse.index);
+    expect(find.byType(GroupedLibraryBrowse), findsOneWidget);
     expect(find.byType(FocusableTabChip), findsNothing);
-
-    // Phones show a single "…" action; manage / refresh live in its menu.
-    expect(find.byTooltip(t.libraries.manageLibraries), findsNothing);
-    expect(find.byTooltip(t.common.refresh), findsNothing);
-    await tester.tap(find.byTooltip(t.common.options));
+    expect(find.byType(BaseLibraryTab), findsNothing);
+    expect(find.text(t.common.search), findsOneWidget);
+    expect(find.byTooltip(t.common.options), findsNothing);
+    await tester.tap(find.byTooltip(t.libraries.chooseServer));
     await tester.pumpAndSettle();
+    expect(find.text(t.libraries.allServers), findsOneWidget);
     expect(find.text(t.libraries.manageLibraries), findsOneWidget);
-    expect(find.text(t.common.refresh), findsOneWidget);
-    await tester.tap(find.text(t.libraries.libraryOptions));
+    expect(find.text(t.libraries.refreshLibraries), findsOneWidget);
+    await tester.tap(find.byType(SwitchListTile).first);
     await tester.pumpAndSettle();
-    expect(find.text(t.libraries.tabs.recommended), findsOneWidget);
-    expect(find.text(t.libraries.tabs.collections), findsOneWidget);
-    await tester.tap(find.text(t.libraries.tabs.playlists));
+    expect(harness.hiddenLibraries.hiddenLibraryKeys, contains(_libraryA.globalKey));
+    await tester.tap(find.byTooltip(t.common.close));
     await tester.pumpAndSettle();
-
-    expect(harness.controller(tester).index, LibraryTabType.playlists.index);
-    await tester.tap(find.byTooltip(t.common.options));
+    expect(find.text(t.libraries.allLibrariesHidden), findsOneWidget);
+    await tester.tap(find.byTooltip(t.libraries.chooseServer));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(t.libraries.tabs.browse));
+    await tester.tap(find.byType(SwitchListTile).first);
     await tester.pumpAndSettle();
-    expect(harness.controller(tester).index, LibraryTabType.browse.index);
+    expect(harness.hiddenLibraries.hiddenLibraryKeys, isNot(contains(_libraryA.globalKey)));
+    await tester.tap(find.byTooltip(t.common.close));
+    await tester.pumpAndSettle();
+    expect(find.byType(GroupedLibraryBrowse), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('stale saved tab cannot replace the current library tab', (tester) async {
@@ -611,7 +612,7 @@ final class _Harness {
     bool settle = true,
     VoidCallback? onFirstPostFrame,
     ValueListenable<bool>? enabled,
-    TargetPlatform? platform,
+    TargetPlatform platform = TargetPlatform.macOS,
     Size size = const Size(1280, 720),
   }) async {
     final downloads = NoSyncRulesDownloadProvider();
@@ -734,6 +735,7 @@ class _PagedClient implements MediaServerClient {
     required LibraryQuery query,
     MediaKind? libraryKind,
     AbortController? abort,
+    bool includeFacetMetadata = false,
   }) async {
     pageRequestCount++;
     return LibraryPage<MediaItem>(

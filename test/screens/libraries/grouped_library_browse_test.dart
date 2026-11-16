@@ -8,6 +8,9 @@ import 'package:plezy/media/library_query.dart';
 import 'package:plezy/media/media_backend.dart';
 import 'package:plezy/media/media_item.dart';
 import 'package:plezy/media/media_kind.dart';
+import 'package:plezy/media/media_person.dart';
+import 'package:plezy/media/ids.dart';
+import 'package:plezy/widgets/person_search_row.dart';
 import 'package:plezy/media/media_library.dart';
 import 'package:plezy/providers/multi_server_provider.dart';
 import 'package:plezy/screens/libraries/grouped_library_browse.dart';
@@ -45,6 +48,7 @@ Future<void> pumpGrouped(
   bool tv = false,
   Size? size,
   double textScale = 1,
+  GroupedPeopleFetcher? fetchPeople,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = size ?? (tv ? const Size(960, 540) : const Size(390, 844));
@@ -57,7 +61,9 @@ Future<void> pumpGrouped(
       value: servers.provider,
       child: InputModeTracker(
         child: MaterialApp(
-          theme: size != null ? tabletFixtureTheme(monoTheme(dark: true)) : monoTheme(dark: true),
+          theme: (size != null ? tabletFixtureTheme(monoTheme(dark: true)) : monoTheme(dark: true)).copyWith(
+            platform: TargetPlatform.android,
+          ),
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
             child: child!,
@@ -67,7 +73,11 @@ Future<void> pumpGrouped(
               key: const ValueKey("tablet-library"),
               child: ColoredBox(
                 color: const Color(0xff000000),
-                child: GroupedLibraryBrowse(libraries: const [libraryA, libraryB], fetchPage: fetcher),
+                child: GroupedLibraryBrowse(
+                  libraries: const [libraryA, libraryB],
+                  fetchPage: fetcher,
+                  fetchPeople: fetchPeople ?? (_, _, _, _) async => [],
+                ),
               ),
             ),
           ),
@@ -89,7 +99,7 @@ void main() {
   });
 
   for (final size in [const Size(820, 1180), const Size(1180, 820)]) {
-    testWidgets('tablet library preserves touch filters and source grids at $size', (tester) async {
+    testWidgets('tablet library uses the merged wall and inline facets at $size', (tester) async {
       await pumpGrouped(
         tester,
         (library, query, abort) async => LibraryPage(
@@ -107,12 +117,11 @@ void main() {
         ),
         size: size,
       );
-      expect(find.byKey(const ValueKey('grouped-library-filter-button')), findsOneWidget);
+      expect(find.byKey(const ValueKey('wall-types')), findsOneWidget);
       expect(tester.takeException(), isNull);
       await captureTablet(tester, find.byKey(const ValueKey('tablet-library')), 'library-${size.width.toInt()}');
-      await tester.tap(find.byKey(const ValueKey('grouped-library-filter-button')));
-      await tester.pumpAndSettle();
-      expect(find.text(t.libraries.allYears), findsOneWidget);
+      expect(find.byKey(const ValueKey('grouped-library-filter-button')), findsNothing);
+      expect(find.byKey(const ValueKey('wall-years')), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
@@ -126,12 +135,10 @@ void main() {
       if (library.serverId == libraryA.serverId) throw StateError('offline');
       return const LibraryPage(items: [], totalCount: 0);
     });
-    expect(find.text('Library A'), findsOneWidget);
-    expect(find.text('Library B'), findsOneWidget);
-    expect(find.text('Source A'), findsOneWidget);
-    expect(find.text('Source B'), findsOneWidget);
+    expect(find.text('Library A'), findsNothing);
+    expect(find.text('Library B'), findsNothing);
     expect(find.text(t.libraries.groupedLoadFailed), findsOneWidget);
-    expect(find.text(t.libraries.groupedFacetUnavailable), findsOneWidget);
+    expect(find.text(t.libraries.groupedFacetUnavailable), findsNothing);
     final search = find.byWidgetPredicate(
       (widget) => widget is FocusableTextField && widget.focusNode?.debugLabel == 'all_sources_search',
     );
@@ -207,59 +214,79 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('large text keeps type tabs scrollable and detailed filters in a centered panel', (tester) async {
+  testWidgets('large text keeps all five inline facet rows scrollable', (tester) async {
     await pumpGrouped(tester, (_, query, _) async => const LibraryPage(items: [], totalCount: 0), textScale: 2);
-    expect(find.text(t.libraries.allYears), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('grouped-library-filter-button')));
-    await tester.pumpAndSettle();
-    expect(find.text(t.libraries.allYears), findsOneWidget);
-    final panel = tester.getRect(
-      find.descendant(of: find.byKey(const ValueKey('grouped-library-filters')), matching: find.byType(Material)).first,
-    );
-    expect(panel.top, greaterThan(12));
-    expect(panel.bottom, lessThan(844 - 12));
+    expect(find.byKey(const ValueKey('wall-types')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wall-sort')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wall-genres')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wall-countries')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wall-years')), findsOneWidget);
+    expect(find.byKey(const ValueKey('grouped-library-filter-button')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('phone keeps combined conditions when reopening filters and clears every source', (tester) async {
+  testWidgets('phone combines real facets, reverses sorting and filters keywords in the wall', (tester) async {
     final requests = <LibraryQuery>[];
-    await pumpGrouped(tester, (_, query, _) async {
-      requests.add(query);
-      return const LibraryPage(items: [], totalCount: 0);
-    });
+    await pumpGrouped(
+      tester,
+      (library, query, _) async {
+        requests.add(query);
+        return LibraryPage(
+          items: [
+            MediaItem(
+              id: 'film',
+              backend: library.backend,
+              serverId: library.serverId,
+              kind: MediaKind.movie,
+              title: 'Film',
+              year: 2025,
+              genres: ['Drama'],
+            ).copyWith(countries: ['US']),
+            MediaItem(
+              id: 'other',
+              backend: library.backend,
+              serverId: library.serverId,
+              kind: MediaKind.movie,
+              title: 'Other',
+              year: 2024,
+              genres: ['Comedy'],
+            ).copyWith(countries: ['Japan']),
+          ],
+          totalCount: 2,
+        );
+      },
+      fetchPeople: (library, query, excluded, abort) async => [
+        MediaPerson(id: 'actor', name: query, backend: library.backend, serverId: ServerId(library.serverId!)),
+      ],
+    );
     final search = find.byWidgetPredicate(
       (widget) => widget is FocusableTextField && widget.focusNode?.debugLabel == 'all_sources_search',
     );
     await tester.enterText(find.descendant(of: search, matching: find.byType(TextField)), 'film');
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('grouped-library-filter-button')));
-    await tester.pumpAndSettle();
-    final year = find.byWidgetPredicate(
-      (widget) => widget is TextField && widget.decoration?.labelText == t.libraries.allYears,
-    );
-    await tester.enterText(year, '2025');
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(t.libraries.allWatchStates));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(t.libraries.watched));
-    await tester.pumpAndSettle();
     expect(requests.last.search, 'film');
-    expect(requests.last.filters.map((filter) => filter.field), ['year', 'unwatched']);
-    expect(requests.last.filters.first.values, ['2025']);
-    expect(requests.last.filters.last.op, LibraryFilterOperator.isNot);
-    await tester.tap(find.text(t.common.close));
+    expect(find.byType(PersonSearchRow), findsWidgets);
+    await tester.tap(find.text('Drama'));
     await tester.pumpAndSettle();
-    expect(find.text('2025 · ${t.libraries.watched}'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('grouped-library-filter-button')));
+    await tester.tap(find.text('US'));
     await tester.pumpAndSettle();
-    expect(tester.widget<TextField>(year).controller!.text, '2025');
-    await tester.tap(find.text(t.libraries.resetFilters));
+    await tester.tap(find.descendant(of: find.byKey(const ValueKey('wall-years')), matching: find.text('2025')));
+    await tester.pumpAndSettle();
+    final cards = tester.widgetList<FocusableMediaCard>(find.byType(FocusableMediaCard));
+    expect(cards.every((card) => (card.item as MediaItem).id == 'film'), isTrue);
+    expect(requests.last.filters, isEmpty, reason: 'local facets must keep independent server cursors stable');
+
+    await tester.tap(find.byKey(const ValueKey('wall-sort-updated')));
+    await tester.pumpAndSettle();
+    expect(requests.last.sort?.direction, LibrarySortDirection.ascending);
+    await tester.tap(find.byKey(const ValueKey('wall-sort-updated')));
+    await tester.pumpAndSettle();
+    expect(requests.last.sort?.direction, LibrarySortDirection.descending);
+    await tester.tap(find.byTooltip(t.common.clear));
     await tester.pumpAndSettle();
     expect(requests.last.search, isNull);
-    expect(requests.last.filters, isEmpty);
-    expect(find.text(t.libraries.groupedFacetUnavailable), findsWidgets);
+    expect(find.byType(PersonSearchRow), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

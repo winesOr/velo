@@ -784,6 +784,10 @@
     "track": "Audio Track ${n}"
   },
   "videoControls": {
+    "speedLabel": "Playback speed",
+    "subtitleSimplifiedShort": "Simplified Chinese",
+    "subtitleTraditionalShort": "Traditional Chinese",
+    "audioMandarinShort": "Mandarin",
     "playbackSettings": "Playback Settings",
     "seasonEpisodeShort": "S${season} · E${episode}",
     "episodeShort": "E${n}",
@@ -919,11 +923,7 @@
     "noAudioTracks": "No audio tracks available",
     "noAudioTracksDescription": "This media has no audio tracks to select.",
     "drawerSecondarySubtitle": "Secondary subtitle",
-    "drawerAdjustments": "Adjustments",
-    "speedLabel": "Playback speed",
-    "subtitleSimplifiedShort": "Simplified Chinese",
-    "subtitleTraditionalShort": "Traditional Chinese",
-    "audioMandarinShort": "Mandarin"
+    "drawerAdjustments": "Adjustments"
   },
   "userStatus": {},
   "messages": {
@@ -1381,7 +1381,7 @@
       "dateOlderThanDays": "Older than ${count} days",
       "dateOlderThanYear": "Older than a year"
     },
-    "searchHint": "Search this library",
+    "searchHint": "Enter a title to search",
     "countryUnavailable": "Region filtering is not supported by this source. No local page filtering is applied.",
     "unsupportedFiltersRemoved": "Unsupported saved filters were disabled for this source.",
     "filterDiscoveryFailed": "Could not load filter options. Existing supported conditions still apply.",
@@ -1393,7 +1393,27 @@
     "allWatchStates": "All Watch States",
     "watched": "Watched",
     "groupedLoadFailed": "Could not load this source. Other groups remain available.",
-    "groupedFacetUnavailable": "Choose one library to filter by its genres or regions. These facets cannot be combined reliably across sources."
+    "groupedFacetUnavailable": "Choose one library to filter by its genres or regions. These facets cannot be combined reliably across sources.",
+    "chooseServer": "Choose server",
+    "allServers": "All servers",
+    "refreshLibraries": "Refresh libraries",
+    "unrestricted": "Any",
+    "wallActors": "Actors",
+    "wallTypes": {
+      "all": "All",
+      "series": "TV shows",
+      "movies": "Movies",
+      "anime": "Anime",
+      "variety": "Variety",
+      "concert": "Concerts",
+      "documentary": "Documentaries",
+      "music": "Music"
+    },
+    "wallSort": {
+      "updated": "Recently updated",
+      "released": "Recently released",
+      "rating": "Film rating"
+    }
   },
   "about": {
     "title": "About",

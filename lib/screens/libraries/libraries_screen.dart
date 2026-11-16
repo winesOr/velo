@@ -26,6 +26,8 @@ import '../../widgets/backend_badge.dart';
 import '../../widgets/desktop_app_bar.dart';
 import '../../widgets/focusable_tab_chip.dart';
 import '../../widgets/library_management_sheet.dart';
+import '../../widgets/overlay_sheet.dart';
+import '../../widgets/focusable_list_tile.dart';
 import '../../services/storage_service.dart';
 import '../../mixins/refreshable.dart';
 import '../../i18n/strings.g.dart';
@@ -73,6 +75,8 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   final _groupedBrowseKey = GlobalKey<GroupedLibraryBrowseState>();
 
   String? _selectedLibraryGlobalKey;
+  String? _phoneServerId;
+  bool get _phoneWall => PlatformDetector.isMobile(context);
 
   /// Flag to prevent onTabChanged from focusing when we're programmatically changing tabs
   bool _isRestoringTab = false;
@@ -191,7 +195,9 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     final savedLibraryKey = storage.getSelectedLibraryKey();
 
     String? libraryGlobalKeyToLoad;
-    if (savedLibraryKey != null) {
+    if (_phoneWall) {
+      libraryGlobalKeyToLoad = allLibrarySourcesKey;
+    } else if (savedLibraryKey != null) {
       final libraryExists = visibleLibraries.any((lib) => lib.globalKey == savedLibraryKey);
       if (libraryExists || savedLibraryKey == allLibrarySourcesKey) {
         libraryGlobalKeyToLoad = savedLibraryKey;
@@ -528,7 +534,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   /// Public method to load a library by key (called from MainScreen side nav)
   @override
   void loadLibraryByKey(String libraryGlobalKey) {
-    _loadLibraryContent(libraryGlobalKey);
+    _loadLibraryContent(_phoneWall ? allLibrarySourcesKey : libraryGlobalKey);
   }
 
   Future<void> _loadLibraryContent(String libraryGlobalKey) async {
@@ -669,6 +675,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     appLogger.d('LibrariesScreen.fullRefresh() called - reloading all content');
     setState(() {
       _selectedLibraryGlobalKey = null;
+      _phoneServerId = null;
     });
 
     // Reinitialize with current libraries from provider
@@ -709,6 +716,102 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       onOrderChanged: _notifyLibraryOrderChanged,
       onToggleVisibility: _toggleLibraryVisibility,
     );
+  }
+
+  Future<void> _showServerSheet() async {
+    final action = await OverlaySheetController.showAdaptive<String>(
+      context,
+      alignment: Alignment.centerRight,
+      constraints: BoxConstraints(
+        maxWidth: MonoPresentation.isTablet(context) ? 400 : 340,
+        maxHeight: MediaQuery.sizeOf(context).height - MediaQuery.paddingOf(context).vertical - 24,
+      ),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, updateSheet) {
+          final libraries = sheetContext.watch<LibrariesProvider>().libraries;
+          final hidden = sheetContext.watch<HiddenLibrariesProvider>();
+          final servers = sheetContext.watch<MultiServerProvider>().serverIds;
+          void selectServer(String? id) {
+            setState(() => _phoneServerId = id);
+            updateSheet(() {});
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 12, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(t.libraries.chooseServer, style: Theme.of(sheetContext).textTheme.titleMedium),
+                      ),
+                      IconButton(
+                        tooltip: t.common.close,
+                        onPressed: () => OverlaySheetController.closeAdaptive(sheetContext),
+                        icon: const AppIcon(Symbols.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                FocusableListTile(
+                  leading: const AppIcon(Symbols.dns_rounded),
+                  title: Text(t.libraries.allServers),
+                  trailing: _phoneServerId == null ? const AppIcon(Symbols.check_rounded) : null,
+                  onTap: () => selectServer(null),
+                ),
+                for (final id in servers)
+                  Builder(
+                    builder: (context) {
+                      final client = context.read<MultiServerProvider>().getClientForServer(ServerId(id));
+                      return FocusableListTile(
+                        leading: client == null
+                            ? const AppIcon(Symbols.dns_rounded)
+                            : BackendBadge(backend: client.backend, size: 24),
+                        title: Text(client?.serverName ?? id),
+                        trailing: _phoneServerId == id ? const AppIcon(Symbols.check_rounded) : null,
+                        onTap: () => selectServer(id),
+                      );
+                    },
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+                  child: Text(t.libraries.title, style: Theme.of(sheetContext).textTheme.titleSmall),
+                ),
+                for (final library in libraries.where(
+                  (library) => _phoneServerId == null || library.serverId == _phoneServerId,
+                ))
+                  SwitchListTile(
+                    title: Text(library.title),
+                    secondary: BackendBadge(backend: library.backend, size: 20),
+                    value: !hidden.hiddenLibraryKeys.contains(library.globalKey),
+                    onChanged: (visible) async {
+                      await hidden.setLibraryHidden(library.globalKey, !visible);
+                    },
+                  ),
+                FocusableListTile(
+                  leading: const AppIcon(Symbols.edit_rounded),
+                  title: Text(t.libraries.manageLibraries),
+                  onTap: () => OverlaySheetController.closeAdaptive(sheetContext, 'manage'),
+                ),
+                FocusableListTile(
+                  leading: const AppIcon(Symbols.refresh_rounded),
+                  title: Text(t.libraries.refreshLibraries),
+                  onTap: () {
+                    unawaited(context.read<LibrariesProvider>().refresh());
+                    _groupedBrowseKey.currentState?.refresh();
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+    if (mounted && action == 'manage') _showLibraryManagementSheet();
   }
 
   AppMenuHeader<String> _buildLibraryServerHeaderMenuItem(MediaLibrary library, String serverKey) {
@@ -773,6 +876,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     MediaLibrary? selectedLibrary, {
     required bool groupByServer,
   }) {
+    if (_phoneWall) return Text(t.common.search, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700));
     // No selection at all, or visible list is empty AND we're not browsing a hidden library
     if (_selectedLibraryGlobalKey == null || (visibleLibraries.isEmpty && selectedLibrary == null)) {
       return Text(t.libraries.title);
@@ -948,7 +1052,15 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       }
     }
 
-    List<FocusableAction> appBarActions() => collapseActions
+    List<FocusableAction> appBarActions() => _phoneWall
+        ? [
+            FocusableAction(
+              icon: Symbols.dns_rounded,
+              tooltip: t.libraries.chooseServer,
+              onPressed: () => unawaited(_showServerSheet()),
+            ),
+          ]
+        : collapseActions
         ? [
             FocusableAction(
               icon: Symbols.more_horiz_rounded,
@@ -1057,7 +1169,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
           actions: [
             FocusableActionBar(
               key: _actionBarKey,
-              onNavigateLeft: () => getTabChipFocusNode(_visibleTabs.length - 1).requestFocus(),
+              onNavigateLeft: _phoneWall ? null : () => getTabChipFocusNode(_visibleTabs.length - 1).requestFocus(),
               onNavigateDown: _focusCurrentTab,
               actions: appBarActions(),
             ),
@@ -1089,11 +1201,13 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                 actionIcon: Symbols.edit_rounded,
               ),
       );
-    } else if (_selectedLibraryGlobalKey == allLibrarySourcesKey) {
+    } else if (_phoneWall || _selectedLibraryGlobalKey == allLibrarySourcesKey) {
       body = buildSimpleScroll(
         body: GroupedLibraryBrowse(
           key: _groupedBrowseKey,
-          libraries: visibleLibraries,
+          libraries: _phoneWall && _phoneServerId != null
+              ? visibleLibraries.where((library) => library.serverId == _phoneServerId).toList()
+              : visibleLibraries,
           onBack: () => _actionBarKey.currentState?.requestFocusOnFirst(),
         ),
       );
@@ -1176,7 +1290,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
               actions: [
                 FocusableActionBar(
                   key: _actionBarKey,
-                  onNavigateLeft: () => getTabChipFocusNode(_visibleTabs.length - 1).requestFocus(),
+                  onNavigateLeft: _phoneWall ? null : () => getTabChipFocusNode(_visibleTabs.length - 1).requestFocus(),
                   onNavigateDown: _focusCurrentTab,
                   actions: appBarActions(),
                 ),

@@ -781,6 +781,10 @@
     "track": "音轨 ${n}"
   },
   "videoControls": {
+    "speedLabel": "倍速",
+    "subtitleSimplifiedShort": "简中",
+    "subtitleTraditionalShort": "繁中",
+    "audioMandarinShort": "普通话",
     "playbackSettings": "播放设置",
     "seasonEpisodeShort": "S${season} · E${episode}",
     "episodeShort": "E${n}",
@@ -916,11 +920,7 @@
     "noAudioTracks": "没有可用音轨",
     "noAudioTracksDescription": "此媒体没有可选择的音轨",
     "drawerSecondarySubtitle": "次字幕",
-    "drawerAdjustments": "调整",
-    "speedLabel": "倍速",
-    "subtitleSimplifiedShort": "简中",
-    "subtitleTraditionalShort": "繁中",
-    "audioMandarinShort": "普通话"
+    "drawerAdjustments": "调整"
   },
   "userStatus": {},
   "messages": {
@@ -1376,7 +1376,7 @@
       "dateOlderThanDays": "${count} 天以前",
       "dateOlderThanYear": "一年以前"
     },
-    "searchHint": "搜索此媒体库",
+    "searchHint": "输入影片名称搜索",
     "countryUnavailable": "此来源不支持地区筛选，不会用当前页过滤冒充全库筛选。",
     "unsupportedFiltersRemoved": "已停用此来源不支持的已保存筛选条件。",
     "filterDiscoveryFailed": "无法加载筛选选项，现有受支持条件仍然生效。",
@@ -1388,7 +1388,27 @@
     "allWatchStates": "全部观看状态",
     "watched": "已观看",
     "groupedLoadFailed": "此来源加载失败，其他分组仍可使用。",
-    "groupedFacetUnavailable": "请选择单个媒体库以按其类型或地区筛选；不同来源的这些选项无法可靠合并。"
+    "groupedFacetUnavailable": "请选择单个媒体库以按其类型或地区筛选；不同来源的这些选项无法可靠合并。",
+    "chooseServer": "选择服务器",
+    "allServers": "所有服务器",
+    "refreshLibraries": "刷新媒体库",
+    "unrestricted": "不限",
+    "wallActors": "演员",
+    "wallTypes": {
+      "all": "全部",
+      "series": "电视剧",
+      "movies": "电影",
+      "anime": "动漫",
+      "variety": "综艺",
+      "concert": "演唱会",
+      "documentary": "纪录",
+      "music": "音乐"
+    },
+    "wallSort": {
+      "updated": "最新更新",
+      "released": "最新上映",
+      "rating": "影片评分"
+    }
   },
   "about": {
     "title": "关于",

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/focus/input_mode_tracker.dart';
+import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/media/library_query.dart';
 import 'package:plezy/media/media_filter.dart';
 import 'package:plezy/media/media_sort.dart';
@@ -82,7 +83,7 @@ void main() {
       ],
       onChanged: (next) => result = next,
     );
-    await tester.tap(find.text('Genre'));
+    await tester.tap(find.text(t.libraries.unrestricted));
     expect(result, [year]);
   });
 
@@ -113,10 +114,10 @@ void main() {
   testWidgets('sort uses backend default direction and toggles the active field', (tester) async {
     bool? direction;
     await pump(tester, onSort: (_, next) => direction = next);
-    await tester.tap(find.text('Added'));
+    await tester.tap(find.text(t.libraries.wallSort.updated));
     expect(direction, isTrue);
     await pump(tester, selectedSort: sorts.first, onSort: (_, next) => direction = next);
-    await tester.tap(find.text('Added'));
+    await tester.tap(find.text(t.libraries.wallSort.updated));
     expect(direction, isFalse);
   });
 

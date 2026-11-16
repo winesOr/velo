@@ -50,7 +50,6 @@ import '../../../widgets/overlay_sheet.dart';
 import '../../../mixins/library_tab_focus_mixin.dart';
 import '../folder_tree_view.dart';
 import '../filters_bottom_sheet.dart';
-import '../filters/filter_summary.dart';
 import '../sort_bottom_sheet.dart';
 import '../../../widgets/app_icon.dart';
 import '../../../widgets/focusable_list_tile.dart';
@@ -1853,10 +1852,6 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaItem, LibraryBrows
                 _applySortSelection(sort: sort, descending: descending, cleared: false),
             onMore: _showFiltersBottomSheet,
           ),
-          // Grouping lives in the library options menu on phones; only the
-          // filter / sort row stays inline (prototype library toolbar).
-          SingleChildScrollView(scrollDirection: Axis.horizontal, child: _buildChipsBar()),
-          if (_selectedFilters.isNotEmpty) _buildConditionSummary(),
           if ((_selectedFilters.isNotEmpty || _search.isNotEmpty) &&
               _selectedGrouping != 'folders' &&
               !isLoading &&
@@ -1895,9 +1890,9 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaItem, LibraryBrows
     bottom: false,
     child: Padding(
       padding: EdgeInsets.fromLTRB(
-        MonoPresentation.isTablet(context) ? 32 : 12,
+        MonoPresentation.isTablet(context) ? 32 : 17,
         8,
-        MonoPresentation.isTablet(context) ? 32 : 12,
+        MonoPresentation.isTablet(context) ? 32 : 17,
         8,
       ),
       child: FocusableTextField(
@@ -1905,6 +1900,8 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaItem, LibraryBrows
         focusNode: _searchFocusNode,
         decoration: InputDecoration(
           hintText: t.libraries.searchHint,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           prefixIcon: const AppIcon(Symbols.search_rounded),
           suffixIcon: _search.isEmpty
               ? null
@@ -2182,40 +2179,6 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaItem, LibraryBrows
       (_filters.isNotEmpty || _selectedFilters.isNotEmpty) && _selectedGrouping != 'folders';
 
   bool get _isSortChipVisible => _sortOptions.isNotEmpty && _selectedGrouping != 'folders';
-
-  Widget _buildConditionSummary() {
-    final summaries = [
-      for (final filter in _filters)
-        if (filterFieldSummary(
-              filter: filter,
-              clauses: _selectedFilters,
-              serverId: widget.library.serverId!,
-              libraryKey: widget.library.globalKey,
-            )
-            case final summary?)
-          '${filter.title}: $summary',
-    ];
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              summaries.join(' · '),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ),
-          IconButton(
-            onPressed: _resetFilters,
-            tooltip: t.libraries.resetFilters,
-            icon: const AppIcon(Symbols.filter_alt_off_rounded, size: 18),
-          ),
-        ],
-      ),
-    );
-  }
 
   /// Builds the chips bar widget
   Widget _buildChipsBar() {

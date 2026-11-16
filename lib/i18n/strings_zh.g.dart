@@ -938,6 +938,10 @@ class Translations$videoControls$zh extends Translations$videoControls$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String get speedLabel => '倍速';
+	@override String get subtitleSimplifiedShort => '简中';
+	@override String get subtitleTraditionalShort => '繁中';
+	@override String get audioMandarinShort => '普通话';
 	@override String get playbackSettings => '播放设置';
 	@override String seasonEpisodeShort({required Object season, required Object episode}) => 'S${season} · E${episode}';
 	@override String episodeShort({required Object n}) => 'E${n}';
@@ -1065,10 +1069,6 @@ class Translations$videoControls$zh extends Translations$videoControls$en {
 	@override String get noAudioTracksDescription => '此媒体没有可选择的音轨';
 	@override String get drawerSecondarySubtitle => '次字幕';
 	@override String get drawerAdjustments => '调整';
-	@override String get speedLabel => '倍速';
-	@override String get subtitleSimplifiedShort => '简中';
-	@override String get subtitleTraditionalShort => '繁中';
-	@override String get audioMandarinShort => '普通话';
 }
 
 // Path: messages
@@ -1482,7 +1482,7 @@ class Translations$libraries$zh extends Translations$libraries$en {
 	@override late final Translations$libraries$filterCategories$zh filterCategories = Translations$libraries$filterCategories$zh.internal(_root);
 	@override late final Translations$libraries$sortLabels$zh sortLabels = Translations$libraries$sortLabels$zh.internal(_root);
 	@override late final Translations$libraries$advancedFilters$zh advancedFilters = Translations$libraries$advancedFilters$zh.internal(_root);
-	@override String get searchHint => '搜索此媒体库';
+	@override String get searchHint => '输入影片名称搜索';
 	@override String get countryUnavailable => '此来源不支持地区筛选，不会用当前页过滤冒充全库筛选。';
 	@override String get unsupportedFiltersRemoved => '已停用此来源不支持的已保存筛选条件。';
 	@override String get filterDiscoveryFailed => '无法加载筛选选项，现有受支持条件仍然生效。';
@@ -1495,6 +1495,13 @@ class Translations$libraries$zh extends Translations$libraries$en {
 	@override String get watched => '已观看';
 	@override String get groupedLoadFailed => '此来源加载失败，其他分组仍可使用。';
 	@override String get groupedFacetUnavailable => '请选择单个媒体库以按其类型或地区筛选；不同来源的这些选项无法可靠合并。';
+	@override String get chooseServer => '选择服务器';
+	@override String get allServers => '所有服务器';
+	@override String get refreshLibraries => '刷新媒体库';
+	@override String get unrestricted => '不限';
+	@override String get wallActors => '演员';
+	@override late final Translations$libraries$wallTypes$zh wallTypes = Translations$libraries$wallTypes$zh.internal(_root);
+	@override late final Translations$libraries$wallSort$zh wallSort = Translations$libraries$wallSort$zh.internal(_root);
 }
 
 // Path: about
@@ -2973,6 +2980,35 @@ class Translations$libraries$advancedFilters$zh extends Translations$libraries$a
 	@override String get dateOlderThanYear => '一年以前';
 }
 
+// Path: libraries.wallTypes
+class Translations$libraries$wallTypes$zh extends Translations$libraries$wallTypes$en {
+	Translations$libraries$wallTypes$zh.internal(TranslationsZh root) : this._root = root, super.internal(root);
+
+	final TranslationsZh _root; // ignore: unused_field
+
+	// Translations
+	@override String get all => '全部';
+	@override String get series => '电视剧';
+	@override String get movies => '电影';
+	@override String get anime => '动漫';
+	@override String get variety => '综艺';
+	@override String get concert => '演唱会';
+	@override String get documentary => '纪录';
+	@override String get music => '音乐';
+}
+
+// Path: libraries.wallSort
+class Translations$libraries$wallSort$zh extends Translations$libraries$wallSort$en {
+	Translations$libraries$wallSort$zh.internal(TranslationsZh root) : this._root = root, super.internal(root);
+
+	final TranslationsZh _root; // ignore: unused_field
+
+	// Translations
+	@override String get updated => '最新更新';
+	@override String get released => '最新上映';
+	@override String get rating => '影片评分';
+}
+
 // Path: explore.rows
 class Translations$explore$rows$zh extends Translations$explore$rows$en {
 	Translations$explore$rows$zh.internal(TranslationsZh root) : this._root = root, super.internal(root);
@@ -4219,6 +4255,10 @@ extension on TranslationsZh {
 			'tooltips.markAsWatched' => '标记为已观看',
 			'tooltips.markAsUnwatched' => '标记为未观看',
 			'audioTracks.track' => ({required Object n}) => '音轨 ${n}',
+			'videoControls.speedLabel' => '倍速',
+			'videoControls.subtitleSimplifiedShort' => '简中',
+			'videoControls.subtitleTraditionalShort' => '繁中',
+			'videoControls.audioMandarinShort' => '普通话',
 			'videoControls.playbackSettings' => '播放设置',
 			'videoControls.seasonEpisodeShort' => ({required Object season, required Object episode}) => 'S${season} · E${episode}',
 			'videoControls.episodeShort' => ({required Object n}) => 'E${n}',
@@ -4353,10 +4393,6 @@ extension on TranslationsZh {
 			'videoControls.noAudioTracksDescription' => '此媒体没有可选择的音轨',
 			'videoControls.drawerSecondarySubtitle' => '次字幕',
 			'videoControls.drawerAdjustments' => '调整',
-			'videoControls.speedLabel' => '倍速',
-			'videoControls.subtitleSimplifiedShort' => '简中',
-			'videoControls.subtitleTraditionalShort' => '繁中',
-			'videoControls.audioMandarinShort' => '普通话',
 			'messages.addedToFavorites' => '已收藏',
 			'messages.removedFromFavorites' => '已取消收藏',
 			'messages.markedAsWatched' => '已标记为已观看',
@@ -4767,7 +4803,7 @@ extension on TranslationsZh {
 			'libraries.advancedFilters.dateLastYear' => '最近一年',
 			'libraries.advancedFilters.dateOlderThanDays' => ({required Object count}) => '${count} 天以前',
 			'libraries.advancedFilters.dateOlderThanYear' => '一年以前',
-			'libraries.searchHint' => '搜索此媒体库',
+			'libraries.searchHint' => '输入影片名称搜索',
 			'libraries.countryUnavailable' => '此来源不支持地区筛选，不会用当前页过滤冒充全库筛选。',
 			'libraries.unsupportedFiltersRemoved' => '已停用此来源不支持的已保存筛选条件。',
 			'libraries.filterDiscoveryFailed' => '无法加载筛选选项，现有受支持条件仍然生效。',
@@ -4780,6 +4816,22 @@ extension on TranslationsZh {
 			'libraries.watched' => '已观看',
 			'libraries.groupedLoadFailed' => '此来源加载失败，其他分组仍可使用。',
 			'libraries.groupedFacetUnavailable' => '请选择单个媒体库以按其类型或地区筛选；不同来源的这些选项无法可靠合并。',
+			'libraries.chooseServer' => '选择服务器',
+			'libraries.allServers' => '所有服务器',
+			'libraries.refreshLibraries' => '刷新媒体库',
+			'libraries.unrestricted' => '不限',
+			'libraries.wallActors' => '演员',
+			'libraries.wallTypes.all' => '全部',
+			'libraries.wallTypes.series' => '电视剧',
+			'libraries.wallTypes.movies' => '电影',
+			'libraries.wallTypes.anime' => '动漫',
+			'libraries.wallTypes.variety' => '综艺',
+			'libraries.wallTypes.concert' => '演唱会',
+			'libraries.wallTypes.documentary' => '纪录',
+			'libraries.wallTypes.music' => '音乐',
+			'libraries.wallSort.updated' => '最新更新',
+			'libraries.wallSort.released' => '最新上映',
+			'libraries.wallSort.rating' => '影片评分',
 			'about.title' => '关于',
 			'about.openSourceLicenses' => '开源许可证',
 			'about.versionLabel' => ({required Object version}) => '版本 ${version}',
@@ -5002,6 +5054,8 @@ extension on TranslationsZh {
 			'liveTv.serverUnavailable' => '直播电视服务器不可用。',
 			'liveTv.serverNotConnected' => '直播电视服务器未连接。',
 			'liveTv.noPrograms' => '没有可用的节目数据',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.liveStreamFailed' => '直播流失败',
 			'liveTv.unknownProgram' => '未知节目',
 			'liveTv.unknownHub' => '未知',
@@ -5018,8 +5072,6 @@ extension on TranslationsZh {
 			'liveTv.now' => '现在',
 			'liveTv.today' => '今天',
 			'liveTv.tomorrow' => '明天',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.midnight' => '午夜',
 			'liveTv.overnight' => '凌晨',
 			'liveTv.morning' => '上午',
@@ -5516,6 +5568,8 @@ extension on TranslationsZh {
 			'performanceOverlay.app' => '应用',
 			'performanceOverlay.decoder' => '解码器',
 			'performanceOverlay.rawDecoder' => '原始解码器',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.tunneling' => '隧道',
 			'performanceOverlay.passthrough' => '直通',
 			'performanceOverlay.aspect' => '宽高比',
@@ -5532,8 +5586,6 @@ extension on TranslationsZh {
 			'performanceOverlay.p7Conversion' => 'P7 转换',
 			'performanceOverlay.sampleRate' => '采样率',
 			'performanceOverlay.pixelFormat' => '像素格式',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.hwFormat' => '硬件格式',
 			'performanceOverlay.matrix' => '矩阵',
 			'performanceOverlay.primaries' => '基色',

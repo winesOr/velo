@@ -14,6 +14,12 @@ import '../../focus/focusable_text_field.dart';
 import '../../i18n/strings.g.dart';
 import '../../media/media_item.dart';
 import '../../media/media_kind.dart';
+import '../../media/library_query.dart';
+import '../../media/media_person.dart';
+import '../../utils/media_server_http_client.dart';
+import '../../theme/velo_brand.dart';
+import '../../widgets/person_search_row.dart';
+import 'library_wall.dart';
 import '../../media/media_library.dart';
 import '../../providers/libraries_provider.dart';
 import '../../services/settings_service.dart';
@@ -29,14 +35,33 @@ import '../../widgets/settings_builder.dart';
 import 'grouped_library_controller.dart';
 import 'library_server_label.dart';
 
+typedef GroupedPeopleFetcher =
+    Future<List<MediaPerson>> Function(
+      MediaLibrary library,
+      String query,
+      Set<String> excludedLibraryIds,
+      AbortController abort,
+    );
+
 const allLibrarySourcesKey = '__plezy_all_library_sources__';
 
 class GroupedLibraryBrowse extends StatefulWidget {
-  const GroupedLibraryBrowse({super.key, required this.libraries, this.onBack, this.fetchPage});
+  const GroupedLibraryBrowse({
+    super.key,
+    required this.libraries,
+    this.onBack,
+    this.fetchPage,
+    this.fetchCollectionsPage,
+    this.fetchPlaylistsPage,
+    this.fetchPeople,
+  });
 
   final List<MediaLibrary> libraries;
   final VoidCallback? onBack;
   final GroupedLibraryFetcher? fetchPage;
+  final GroupedLibraryFetcher? fetchCollectionsPage;
+  final GroupedPlaylistFetcher? fetchPlaylistsPage;
+  final GroupedPeopleFetcher? fetchPeople;
 
   @override
   State<GroupedLibraryBrowse> createState() => GroupedLibraryBrowseState();
@@ -56,6 +81,15 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
   MediaKind? _kind;
   bool? _watched;
   GroupedLibrarySort _sort = GroupedLibrarySort.title;
+  bool _touchWall = false;
+  LibraryWallType _wallType = LibraryWallType.all;
+  LibrarySortDirection _direction = LibrarySortDirection.descending;
+  String? _genre;
+  String? _country;
+  List<MediaPerson> _people = [];
+  final List<AbortController> _peopleAborts = [];
+  int _peopleGeneration = 0;
+  bool _paginationScheduled = false;
 
   GroupedLibrarySelection get _selection => GroupedLibrarySelection(
     search: _search.text,
@@ -63,6 +97,10 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
     kind: _kind,
     watched: _watched,
     sort: _sort,
+    direction: _touchWall ? _direction : null,
+    wallType: _touchWall ? _wallType : null,
+    genre: _touchWall ? _genre : null,
+    country: _touchWall ? _country : null,
   );
 
   void focusSearchInput() => _searchFocus.requestFocus();
@@ -77,7 +115,18 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
   @override
   void initState() {
     super.initState();
+    _scroll.addListener(_onScroll);
     _controller = GroupedLibraryController(
+      fetchCollectionsPage:
+          widget.fetchCollectionsPage ??
+          (library, query, abort) => context
+              .getMediaClientForLibrary(library)
+              .fetchCollectionsPage(library.id, start: query.offset, size: query.limit, abort: abort),
+      fetchPlaylistsPage:
+          widget.fetchPlaylistsPage ??
+          (library, query, abort, playlistType) => context
+              .getMediaClientForLibrary(library)
+              .fetchPlaylistsPage(playlistType: playlistType, start: query.offset, size: query.limit, abort: abort),
       fetchPage:
           widget.fetchPage ??
           (library, query, abort) async {
@@ -85,12 +134,30 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
             final epoch = provider?.libraryContentEpoch(library.globalKey);
             final page = await context
                 .getMediaClientForLibrary(library)
-                .fetchLibraryPagedContent(library.id, query: query, libraryKind: library.kind, abort: abort);
+                .fetchLibraryPagedContent(
+                  library.id,
+                  query: query,
+                  libraryKind: library.kind,
+                  includeFacetMetadata: _touchWall,
+                  abort: abort,
+                );
             if (!abort.isAborted && epoch != null && query.offset == 0) _epochs[library.globalKey] = epoch;
             return page;
           },
     );
-    _controller.reset(widget.libraries, _selection);
+    _controller.addListener(_onWallContentChanged);
+    _controller.reset(widget.libraries, _selection, load: false);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final touch = PlatformDetector.isMobile(context);
+    if (_controller.groups.every((group) => group.offset == 0 && !group.loading) || touch != _touchWall) {
+      if (touch != _touchWall) _sort = touch ? GroupedLibrarySort.updated : GroupedLibrarySort.title;
+      _touchWall = touch;
+      _queryChanged();
+    }
   }
 
   @override
@@ -125,7 +192,15 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
     // Invalidate now, not after the typing delay: an old page must not commit.
     _controller.reset(widget.libraries, _selection, load: !debounce);
     if (_scroll.hasClients) _scroll.jumpTo(0);
-    if (debounce) _debounce = Timer(const Duration(milliseconds: 350), _controller.loadAll);
+    _cancelPeople();
+    if (debounce) {
+      _debounce = Timer(const Duration(milliseconds: 350), () {
+        _controller.loadAll();
+        _loadPeople();
+      });
+    } else {
+      _loadPeople();
+    }
   }
 
   void _reset() {
@@ -133,7 +208,11 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
     _year.clear();
     _kind = null;
     _watched = null;
-    _sort = GroupedLibrarySort.title;
+    _sort = _touchWall ? GroupedLibrarySort.updated : GroupedLibrarySort.title;
+    _direction = LibrarySortDirection.descending;
+    _wallType = LibraryWallType.all;
+    _genre = null;
+    _country = null;
     _queryChanged();
   }
 
@@ -236,6 +315,8 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
     _choice<GroupedLibrarySort>(
       '${t.libraries.sort}: ${switch (_sort) {
         GroupedLibrarySort.title => t.libraries.sortLabels.title,
+        GroupedLibrarySort.updated => t.libraries.wallSort.updated,
+        GroupedLibrarySort.released => t.libraries.wallSort.released,
         GroupedLibrarySort.year => t.libraries.sortLabels.productionYear,
         GroupedLibrarySort.rating => t.libraries.sortLabels.rating,
       }}',
@@ -314,7 +395,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
     ),
   );
 
-  Widget _mobileControls() {
+  Widget _legacyTouchControls() {
     final controls = _controls(false);
     return Padding(
       padding: EdgeInsets.fromLTRB(MonoPresentation.pageInset(context), 8, MonoPresentation.pageInset(context), 0),
@@ -383,6 +464,319 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
       ),
     );
   }
+
+  void _cancelPeople() {
+    _peopleGeneration++;
+    for (final abort in _peopleAborts) {
+      abort.abort();
+    }
+    _peopleAborts.clear();
+    _people = [];
+  }
+
+  void _loadPeople() {
+    if (!_touchWall ||
+        _search.text.trim().isEmpty ||
+        _wallType == LibraryWallType.collections ||
+        _wallType == LibraryWallType.playlists) {
+      return;
+    }
+    final generation = _peopleGeneration;
+    final query = _search.text.trim();
+    final servers = <String>{};
+    final allLibraries = Provider.of<LibrariesProvider?>(context, listen: false)?.libraries ?? widget.libraries;
+    for (final library in widget.libraries) {
+      final server = library.serverId ?? library.globalKey;
+      if (!servers.add(server)) continue;
+      final abort = AbortController();
+      _peopleAborts.add(abort);
+      final visible = widget.libraries
+          .where((entry) => entry.serverId == library.serverId)
+          .map((entry) => entry.id)
+          .toSet();
+      final excluded = allLibraries
+          .where((entry) => entry.serverId == library.serverId && !visible.contains(entry.id))
+          .map((entry) => entry.id)
+          .toSet();
+      unawaited(() async {
+        try {
+          final results =
+              await (widget.fetchPeople?.call(library, query, excluded, abort) ??
+                  context
+                      .getMediaClientForLibrary(library)
+                      .searchPeople(query, excludedLibraryIds: excluded, abort: abort));
+          if (!mounted || abort.isAborted || generation != _peopleGeneration) return;
+          setState(() {
+            final unique = {for (final person in _people) person.globalKey: person};
+            for (final person in results) {
+              unique[person.globalKey] = person;
+            }
+            _people = unique.values.toList();
+          });
+        } catch (_) {
+          // A missing/offline people endpoint must not hide the media wall.
+        }
+      }());
+    }
+  }
+
+  void _onScroll() {
+    if (_touchWall && _scroll.hasClients && _scroll.position.extentAfter < 400) _loadNextWallPages();
+  }
+
+  void _loadNextWallPages() {
+    for (final group in _controller.groups) {
+      if (group.error == null && !group.loading && group.hasMore) unawaited(_controller.loadMore(group));
+    }
+  }
+
+  void _onWallContentChanged() {
+    if (!_touchWall || _paginationScheduled) return;
+    _paginationScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _paginationScheduled = false;
+      if (!mounted || !_touchWall || _controller.groups.any((group) => group.loading)) return;
+      // Genre categories can have no match in the first page. Keep reading
+      // each independent source until a result or the real end is reached.
+      if (_controller.entries.isEmpty || (_scroll.hasClients && _scroll.position.extentAfter < 240)) {
+        _loadNextWallPages();
+      }
+    });
+  }
+
+  String _wallTypeLabel(LibraryWallType type) => switch (type) {
+    LibraryWallType.all => t.libraries.wallTypes.all,
+    LibraryWallType.series => t.libraries.wallTypes.series,
+    LibraryWallType.movies => t.libraries.wallTypes.movies,
+    LibraryWallType.anime => t.libraries.wallTypes.anime,
+    LibraryWallType.variety => t.libraries.wallTypes.variety,
+    LibraryWallType.concert => t.libraries.wallTypes.concert,
+    LibraryWallType.documentary => t.libraries.wallTypes.documentary,
+    LibraryWallType.music => t.libraries.wallTypes.music,
+    LibraryWallType.collections => t.libraries.tabs.collections,
+    LibraryWallType.playlists => t.libraries.tabs.playlists,
+  };
+
+  Widget _wallChip(String label, bool selected, VoidCallback onTap, {Key? key}) {
+    final brightness = Theme.of(context).brightness;
+    return Padding(
+      padding: const EdgeInsets.only(right: 5),
+      child: Semantics(
+        selected: selected,
+        child: TextButton(
+          key: key,
+          onPressed: onTap,
+          style: TextButton.styleFrom(
+            minimumSize: Size(0, 32 * MediaQuery.textScalerOf(context).scale(1)),
+            fixedSize: Size.fromHeight(32 * MediaQuery.textScalerOf(context).scale(1)),
+            padding: const EdgeInsets.symmetric(horizontal: 11),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            backgroundColor: selected ? VeloBrand.selection(brightness) : Colors.transparent,
+            foregroundColor: selected ? VeloBrand.foreground(brightness) : VeloPalette.caption(brightness),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            textStyle: TextStyle(
+              fontSize: 15,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              fontVariations: selected ? const [FontVariation('wght', 650)] : null,
+            ),
+          ),
+          child: Text(label, maxLines: 1),
+        ),
+      ),
+    );
+  }
+
+  Widget _wallRow(String key, List<Widget> children) => Padding(
+    padding: const EdgeInsets.only(bottom: 7),
+    child: SingleChildScrollView(
+      key: ValueKey(key),
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 17),
+      child: Row(children: children),
+    ),
+  );
+
+  void _localFacetChanged() {
+    _controller.updateLocalSelection(_selection);
+    if (_scroll.hasClients) _scroll.jumpTo(0);
+  }
+
+  Widget _wallControls() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(17, 8, 17, 12),
+        child: SizedBox(
+          height: 40,
+          child: FocusableTextField(
+            controller: _search,
+            focusNode: _searchFocus,
+            decoration: InputDecoration(
+              hintText: t.libraries.searchHint,
+              prefixIcon: const AppIcon(Symbols.search_rounded, size: 18),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              isDense: true,
+              filled: true,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              suffixIcon: _search.text.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: t.common.clear,
+                      onPressed: () {
+                        _search.clear();
+                        _queryChanged();
+                      },
+                      icon: const AppIcon(Symbols.close_rounded, size: 18),
+                    ),
+            ),
+            onChanged: (_) => _queryChanged(debounce: true),
+            onSubmitted: (_) => _queryChanged(),
+            onBack: widget.onBack,
+          ),
+        ),
+      ),
+      _wallRow('wall-types', [
+        for (final type in LibraryWallType.values)
+          _wallChip(_wallTypeLabel(type), _wallType == type, () {
+            _wallType = type;
+            _kind = null;
+            _genre = null;
+            _country = null;
+            _year.clear();
+            _queryChanged();
+          }, key: ValueKey('wall-type-${type.name}')),
+      ]),
+      _wallRow('wall-sort', [
+        for (final sort in [GroupedLibrarySort.updated, GroupedLibrarySort.released, GroupedLibrarySort.rating])
+          _wallChip(
+            switch (sort) {
+              GroupedLibrarySort.updated => t.libraries.wallSort.updated,
+              GroupedLibrarySort.released => t.libraries.wallSort.released,
+              _ => t.libraries.wallSort.rating,
+            },
+            _sort == sort,
+            () {
+              _direction = _sort == sort && _direction == LibrarySortDirection.descending
+                  ? LibrarySortDirection.ascending
+                  : LibrarySortDirection.descending;
+              _sort = sort;
+              _queryChanged();
+            },
+            key: ValueKey('wall-sort-${sort.name}'),
+          ),
+      ]),
+      _wallRow('wall-genres', [
+        _wallChip(t.libraries.unrestricted, _genre == null, () {
+          _genre = null;
+          _localFacetChanged();
+        }),
+        for (final genre in {..._controller.genres, ?_genre})
+          _wallChip(genre, _genre == genre, () {
+            _genre = genre;
+            _localFacetChanged();
+          }),
+      ]),
+      _wallRow('wall-countries', [
+        _wallChip(t.libraries.unrestricted, _country == null, () {
+          _country = null;
+          _localFacetChanged();
+        }),
+        for (final country in {..._controller.countries, ?_country})
+          _wallChip(country, _country == country, () {
+            _country = country;
+            _localFacetChanged();
+          }),
+      ]),
+      _wallRow('wall-years', [
+        _wallChip(t.libraries.unrestricted, _year.text.isEmpty, () {
+          _year.clear();
+          _localFacetChanged();
+        }),
+        for (final year in {..._controller.years, if (int.tryParse(_year.text) != null) int.parse(_year.text)})
+          _wallChip('$year', _year.text == '$year', () {
+            _year.text = '$year';
+            _localFacetChanged();
+          }),
+      ]),
+    ],
+  );
+
+  Widget _buildWall() => ListenableBuilder(
+    listenable: _controller,
+    builder: (context, _) {
+      final entries = _controller.entries;
+      final loading = _controller.groups.any((group) => group.loading);
+      final failed = _controller.groups.any((group) => group.error != null);
+      final hasMore = _controller.groups.any((group) => group.hasMore);
+      return CustomScrollView(
+        key: const PageStorageKey('all_sources_merged_wall'),
+        controller: _scroll,
+        slivers: [
+          SliverToBoxAdapter(child: _wallControls()),
+          if (_people.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(17, 8, 0, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(t.libraries.wallActors, style: Theme.of(context).textTheme.titleSmall),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 116 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _people.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 10),
+                        itemBuilder: (context, index) =>
+                            SizedBox(width: 240, child: PersonSearchRow(person: _people[index], showServerName: true)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          MediaCardSliverLayout(
+            viewMode: ViewMode.grid,
+            density: 1,
+            itemCount: entries.length,
+            padding: const EdgeInsets.symmetric(horizontal: 17),
+            minimumItemWidth: 107,
+            itemBuilder: (context, position) {
+              final entry = entries[position.index];
+              return FocusableMediaCard(
+                key: ValueKey('wall/${entry.library.backend.name}/${entry.globalKey}'),
+                item: entry.item,
+                viewModeOverride: ViewMode.grid,
+                showServerName: true,
+                libraryName: entry.library.title,
+                onRefresh: (_) => refresh(),
+                onBack: widget.onBack,
+              );
+            },
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(17),
+              child: Column(
+                children: [
+                  if (loading) const CircularProgressIndicator(),
+                  if (failed) Text(t.libraries.groupedLoadFailed),
+                  if (!loading && entries.isEmpty && !hasMore && !failed) Text(t.libraries.noItemsMatchFilters),
+                  if (failed || hasMore)
+                    TextButton(
+                      onPressed: _controller.loadAll,
+                      child: Text(failed ? t.common.retry : t.libraries.loadMore),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 48)),
+        ],
+      );
+    },
+  );
 
   List<Widget> _groupSlivers(LibraryBrowseGroup group, int density) => [
     SliverToBoxAdapter(
@@ -472,6 +866,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
   @override
   Widget build(BuildContext context) {
     final tv = PlatformDetector.isTV();
+    if (_touchWall) return _buildWall();
     return ListenableBuilder(
       listenable: _controller,
       builder: (context, _) {
@@ -488,7 +883,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
                     Text(t.libraries.groupedFacetUnavailable, style: Theme.of(context).textTheme.bodySmall),
                   ],
                 )
-              : _mobileControls(),
+              : _legacyTouchControls(),
         );
         final results = Expanded(
           child: FocusScope(
@@ -539,6 +934,8 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _cancelPeople();
+    _controller.removeListener(_onWallContentChanged);
     _controller.dispose();
     _search.dispose();
     _year.dispose();

@@ -10,6 +10,7 @@ import 'package:plezy/connection/connection.dart';
 import 'package:plezy/media/artist_discography.dart';
 import 'package:plezy/media/library_query.dart';
 import 'package:plezy/media/media_backend.dart';
+import 'package:plezy/media/media_browser_dialect.dart';
 import 'package:plezy/media/media_item.dart';
 import 'package:plezy/media/media_kind.dart';
 import 'package:plezy/media/media_playlist.dart';
@@ -3430,6 +3431,49 @@ void main() {
       expect(captured!.queryParameters['EnableImageTypes'], 'Primary,Backdrop,Logo');
       expect(captured!.queryParameters['ImageTypeLimit'], '3');
     });
+
+    for (final dialect in MediaBrowserDialect.values) {
+      test('wall facet metadata is opt-in for $dialect', () async {
+        final requests = <Uri>[];
+        final scoped = JellyfinClient.forTesting(
+          connection: testJellyfinConnection(dialect: dialect),
+          httpClient: MockClient((request) async {
+            requests.add(request.url);
+            final fields = (request.url.queryParameters['Fields'] ?? '').split(',');
+            return jsonResponse({
+              'Items': [
+                {
+                  'Id': 'animation',
+                  'Type': 'Movie',
+                  'Name': 'Animation',
+                  if (fields.contains('Genres')) 'Genres': ['Animation'],
+                  if (fields.contains('ProductionLocations')) 'ProductionLocations': ['Japan'],
+                  if (fields.contains('DateLastSaved')) 'DateLastSaved': '2026-11-16T12:00:00Z',
+                },
+              ],
+              'TotalRecordCount': 1,
+            });
+          }),
+        );
+        addTearDown(scoped.close);
+        final ordinary = await scoped.fetchLibraryPagedContent(
+          'library',
+          query: const LibraryQuery(kind: MediaKind.movie),
+        );
+        expect(ordinary.items.single.genres, isNull);
+        expect(ordinary.items.single.countries, isNull);
+        expect(requests.last.queryParameters['Fields'], isNot(contains('Genres')));
+        final wall = await scoped.fetchLibraryPagedContent(
+          'library',
+          query: const LibraryQuery(kind: MediaKind.movie),
+          includeFacetMetadata: true,
+        );
+        expect(wall.items.single.genres, ['Animation']);
+        expect(wall.items.single.countries, ['Japan']);
+        expect(wall.items.single.updatedAt, DateTime.parse('2026-11-16T12:00:00Z').millisecondsSinceEpoch ~/ 1000);
+        expect(requests.last.queryParameters['Fields'], isNot(contains('MediaSources')));
+      });
+    }
 
     test('music browse and detail requests use leaf-appropriate fields', () async {
       final captured = <Uri>[];

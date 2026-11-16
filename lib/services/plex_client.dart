@@ -4358,6 +4358,7 @@ class PlexClient
     String libraryId, {
     required LibraryQuery query,
     MediaKind? libraryKind,
+    bool includeFacetMetadata = false,
     AbortController? abort,
   }) async {
     // Translate the neutral query back to Plex's flat key=value query. The

@@ -6,6 +6,8 @@ import 'package:plezy/media/media_backend.dart';
 import 'package:plezy/media/media_item.dart';
 import 'package:plezy/media/media_kind.dart';
 import 'package:plezy/media/media_library.dart';
+import 'package:plezy/media/media_playlist.dart';
+import 'package:plezy/screens/libraries/library_wall.dart';
 import 'package:plezy/screens/libraries/grouped_library_controller.dart';
 import 'package:plezy/services/library_query_translator.dart';
 import 'package:plezy/utils/media_server_http_client.dart';
@@ -155,5 +157,169 @@ void main() {
     controller.reset([a], const GroupedLibrarySelection(), load: false);
     await controller.loadMore(controller.groups.single);
     expect(controller.groups.single.hasMore, isTrue);
+  });
+
+  test(
+    'mobile wall merges source identities, sorts metadata and applies facet unions without moving cursors',
+    () async {
+      final controller = GroupedLibraryController(
+        fetchPage: (library, query, abort) async {
+          final media = MediaItem(
+            id: 'same',
+            backend: library.backend,
+            serverId: library.serverId,
+            kind: MediaKind.movie,
+            title: library.title,
+            rating: library == a ? 2 : 8,
+            genres: [library == a ? 'Drama' : 'Animation'],
+            year: library == a ? 2020 : 2025,
+          ).copyWith(countries: [library == a ? 'US' : 'Japan']);
+          return LibraryPage(items: [media, media], totalCount: 2);
+        },
+      );
+      addTearDown(controller.dispose);
+      controller.reset(
+        [a, b],
+        const GroupedLibrarySelection(wallType: LibraryWallType.all, sort: GroupedLibrarySort.rating),
+        load: false,
+      );
+      await Future.wait(controller.groups.map(controller.loadMore));
+      expect(controller.entries.map((entry) => entry.library.serverId), ['b', 'a']);
+      expect(controller.genres, ['Animation', 'Drama']);
+      expect(controller.countries, ['Japan', 'US']);
+      expect(controller.years, [2025, 2020]);
+      final original = controller.groups.first;
+      controller.updateLocalSelection(
+        const GroupedLibrarySelection(
+          wallType: LibraryWallType.all,
+          sort: GroupedLibrarySort.rating,
+          genre: 'Drama',
+          country: 'US',
+          year: 2020,
+        ),
+      );
+      expect(controller.entries.single.library, a);
+      expect(controller.groups.first, same(original));
+      expect(original.offset, 2);
+      expect(controller.selection.queryFor(a, original.offset, 36).filters, isEmpty);
+      controller.reset(
+        [a, b],
+        const GroupedLibrarySelection(
+          wallType: LibraryWallType.all,
+          sort: GroupedLibrarySort.rating,
+          direction: LibrarySortDirection.ascending,
+        ),
+        load: false,
+      );
+      await Future.wait(controller.groups.map(controller.loadMore));
+      expect(controller.entries.map((entry) => entry.library.serverId), ['a', 'b']);
+      expect(controller.selection.queryFor(b, 0, 36).sort?.direction, LibrarySortDirection.ascending);
+    },
+  );
+
+  test('mobile collections and playlists retain separate pages and deduplicate server-wide records', () async {
+    const secondA = MediaLibrary(
+      id: 'other',
+      backend: MediaBackend.plex,
+      title: 'Other',
+      kind: MediaKind.movie,
+      serverId: 'a',
+    );
+    final playlistRequests = <String>[];
+    final playlistTypes = <String>[];
+    final collectionRequests = <String>[];
+    final controller = GroupedLibraryController(
+      fetchPage: (_, _, _) async => throw StateError('ordinary browse must not own container pages'),
+      fetchPlaylistsPage: (library, query, abort, playlistType) async {
+        playlistRequests.add(library.globalKey);
+        playlistTypes.add(playlistType);
+        return LibraryPage(
+          items: [
+            MediaPlaylist(
+              id: 'same-$playlistType',
+              backend: library.backend,
+              title: 'Keep',
+              playlistType: playlistType,
+              serverId: library.serverId,
+            ),
+            MediaPlaylist(
+              id: 'other-$playlistType',
+              backend: library.backend,
+              title: 'Other',
+              playlistType: playlistType,
+              serverId: library.serverId,
+            ),
+          ],
+          totalCount: 2,
+        );
+      },
+      fetchCollectionsPage: (library, query, abort) async {
+        collectionRequests.add(library.globalKey);
+        return LibraryPage(
+          items: [
+            MediaItem(
+              id: 'collection',
+              backend: library.backend,
+              serverId: library.serverId,
+              kind: MediaKind.collection,
+              title: 'Keep',
+            ),
+          ],
+          totalCount: 1,
+        );
+      },
+    );
+    addTearDown(controller.dispose);
+    controller.reset(
+      [a, secondA, b],
+      const GroupedLibrarySelection(wallType: LibraryWallType.playlists, search: 'Keep'),
+      load: false,
+    );
+    await Future.wait(controller.groups.map(controller.loadMore));
+    expect(playlistRequests, [a.globalKey, b.globalKey]);
+    expect(controller.entries, hasLength(2));
+    expect(controller.entries.every((entry) => entry.playlist?.title == 'Keep'), isTrue);
+    const mixed = MediaLibrary(
+      id: 'mixed',
+      backend: MediaBackend.plex,
+      title: 'Mixed',
+      serverId: 'a',
+      defaultBrowseKinds: [MediaKind.movie, MediaKind.artist],
+    );
+    playlistRequests.clear();
+    playlistTypes.clear();
+    controller.reset(
+      [mixed],
+      const GroupedLibrarySelection(wallType: LibraryWallType.playlists, search: 'Keep'),
+      load: false,
+    );
+    await Future.wait(controller.groups.map(controller.loadMore));
+    expect(playlistTypes, ['audio', 'video']);
+    expect(controller.groups.map((group) => group.offset), [2, 2]);
+    expect(controller.entries, hasLength(2));
+
+    controller.reset([a, secondA], const GroupedLibrarySelection(wallType: LibraryWallType.collections), load: false);
+    await Future.wait(controller.groups.map(controller.loadMore));
+    expect(collectionRequests, [a.globalKey, secondA.globalKey]);
+    expect(controller.entries, hasLength(1));
+  });
+
+  test('special categories use actual genres and basic types scope the source query', () {
+    final namedOnly = item(a, 'Anime Library');
+    expect(libraryWallTypeMatches(LibraryWallType.anime, namedOnly), isFalse);
+    final animation = MediaItem(id: 'real', backend: MediaBackend.plex, kind: MediaKind.movie, genres: ['Animation']);
+    expect(libraryWallTypeMatches(LibraryWallType.anime, animation), isTrue);
+    expect(libraryWallTypeMatches(LibraryWallType.documentary, animation), isFalse);
+    expect(const GroupedLibrarySelection(wallType: LibraryWallType.series).includesLibrary(a), isFalse);
+    const mixed = MediaLibrary(
+      id: 'mixed',
+      backend: MediaBackend.emby,
+      title: 'Mixed',
+      defaultBrowseKinds: [MediaKind.movie, MediaKind.album],
+    );
+    expect(const GroupedLibrarySelection(wallType: LibraryWallType.music).queryFor(mixed, 0, 36).includeKinds, [
+      MediaKind.album,
+    ]);
+    expect(const GroupedLibrarySelection(wallType: LibraryWallType.movies).queryFor(a, 0, 36).kind, MediaKind.movie);
   });
 }

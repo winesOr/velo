@@ -177,10 +177,13 @@ abstract class MediaServerClient {
   /// The library UI builds a neutral [LibraryQuery] at the call boundary via
   /// `libraryQueryFromSelection`, and the Plex client translates it back to
   /// wire params via [PlexLibraryQueryTranslator].
+  /// [includeFacetMetadata] opts the merged wall into genre, country and
+  /// update-date fields. Ordinary browse requests keep their slim defaults.
   Future<LibraryPage<MediaItem>> fetchLibraryPagedContent(
     String libraryId, {
     required LibraryQuery query,
     MediaKind? libraryKind,
+    bool includeFacetMetadata = false,
     AbortController? abort,
   });
 

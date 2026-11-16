@@ -30,6 +30,7 @@ import 'package:plezy/screens/libraries/alpha_scroll_handle.dart';
 import 'package:plezy/screens/libraries/sort_bottom_sheet.dart';
 import 'package:plezy/screens/libraries/state_messages.dart';
 import 'package:plezy/screens/libraries/tabs/library_browse_tab.dart';
+import 'package:plezy/screens/libraries/library_quick_filters.dart';
 import 'package:plezy/services/jellyfin_mappers.dart';
 import 'package:plezy/services/multi_server_manager.dart';
 import 'package:plezy/services/plex_api_cache.dart';
@@ -568,7 +569,7 @@ void main() {
           .map((e) => tester.getRect(find.byWidget(e.widget)))
           .toList();
       final firstRow = cards.where((rect) => (rect.top - cards.first.top).abs() < 1).toList();
-      expect(firstRow.length, scale == 1 ? 3 : 1);
+      expect(firstRow.length, 3);
       expect(tester.takeException(), isNull);
       await expectLater(find.byKey(boundary), matchesGoldenFile('goldens/fusion_library_phone_${scale.toInt()}x.png'));
       debugDefaultTargetPlatformOverride = null;
@@ -596,8 +597,9 @@ void main() {
       );
       await pumpRequestFrames(tester);
       await tester.pumpAndSettle();
-      final sort = find.text(t.libraries.sort);
-      final headerBottom = tester.getRect(sort).bottom.ceil() + 2;
+      final headerBottom =
+          (tester.getRect(find.byType(LibraryQuickFilters)).bottom - tester.getTopLeft(find.byKey(boundary)).dy)
+              .floor();
       Future<List<int>> headerPixels() async {
         final render = tester.renderObject<RenderRepaintBoundary>(find.byKey(boundary));
         final bytes = await tester.runAsync(() async {
@@ -1045,6 +1047,7 @@ class _BrowseClient implements MediaServerClient {
     required LibraryQuery query,
     MediaKind? libraryKind,
     AbortController? abort,
+    bool includeFacetMetadata = false,
   }) {
     pageRequestCount++;
     pageQueries.add(query);

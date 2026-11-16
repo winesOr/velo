@@ -761,6 +761,10 @@
     "track": "音軌 ${n}"
   },
   "videoControls": {
+    "speedLabel": "倍速",
+    "subtitleSimplifiedShort": "簡中",
+    "subtitleTraditionalShort": "繁中",
+    "audioMandarinShort": "國語",
     "playbackSettings": "播放設定",
     "seasonEpisodeShort": "S${season} · E${episode}",
     "episodeShort": "E${n}",
@@ -884,11 +888,7 @@
     "drawerAudioTracks": "音軌",
     "drawerPrimarySubtitle": "主字幕",
     "drawerSecondarySubtitle": "次字幕",
-    "drawerAdjustments": "調整",
-    "speedLabel": "倍速",
-    "subtitleSimplifiedShort": "簡中",
-    "subtitleTraditionalShort": "繁中",
-    "audioMandarinShort": "國語"
+    "drawerAdjustments": "調整"
   },
   "userStatus": {},
   "messages": {
@@ -1342,7 +1342,7 @@
       "dateOlderThanDays": "${count} 天以前",
       "dateOlderThanYear": "一年以前"
     },
-    "searchHint": "搜尋此媒體庫",
+    "searchHint": "輸入影片名稱搜尋",
     "countryUnavailable": "此來源不支援依地區篩選，也不會在本頁另行篩選。",
     "unsupportedFiltersRemoved": "已為此來源停用不支援的已儲存篩選條件。",
     "filterDiscoveryFailed": "無法載入篩選選項。現有的受支援條件仍然有效。",
@@ -1354,7 +1354,27 @@
     "allWatchStates": "全部觀看狀態",
     "watched": "已看",
     "groupedLoadFailed": "無法載入此來源，其他分組仍可使用。",
-    "groupedFacetUnavailable": "請選擇一個媒體庫後再依類型或地區篩選。這些條件無法在多個來源間可靠合併。"
+    "groupedFacetUnavailable": "請選擇一個媒體庫後再依類型或地區篩選。這些條件無法在多個來源間可靠合併。",
+    "chooseServer": "選擇伺服器",
+    "allServers": "所有伺服器",
+    "refreshLibraries": "重新整理媒體庫",
+    "unrestricted": "不限",
+    "wallActors": "演員",
+    "wallTypes": {
+      "all": "全部",
+      "series": "電視劇",
+      "movies": "電影",
+      "anime": "動漫",
+      "variety": "綜藝",
+      "concert": "演唱會",
+      "documentary": "紀錄",
+      "music": "音樂"
+    },
+    "wallSort": {
+      "updated": "最新更新",
+      "released": "最新上映",
+      "rating": "影片評分"
+    }
   },
   "about": {
     "title": "關於",
