@@ -51,6 +51,16 @@ extension _PlexVideoControlsNavigationMethods on _PlexVideoControlsState {
         getForwardIcon: getForwardIcon,
         onFocusActivity: _restartHideTimerForCurrentPlaybackState,
         onHideControls: _hideControlsFromKeyboard,
+        onNavigateAboveTimeline: () {
+          if (_isSkipMarkerButtonVisible) {
+            _skipMarkerFocusNode.requestFocus();
+          } else {
+            _desktopControlsKey.currentState?.requestHeaderFocus();
+          }
+          _restartHideTimerForCurrentPlaybackState();
+        },
+        onToggleDanmaku: _toggleDanmaku,
+        danmakuEnabled: DanmakuSession.instance.enabled,
         trackControlsState: trackControlsState,
         onBack: widget.onBack,
         hasFirstFrame: widget.hasFirstFrame,

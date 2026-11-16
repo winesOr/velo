@@ -19,6 +19,7 @@ class SkipMarkerButton extends StatelessWidget {
   final FocusNode focusNode;
   final VoidCallback onActivate;
   final VoidCallback onFocusDown;
+  final VoidCallback? onFocusUp;
   final String? labelOverride;
 
   const SkipMarkerButton({
@@ -33,6 +34,7 @@ class SkipMarkerButton extends StatelessWidget {
     required this.focusNode,
     required this.onActivate,
     required this.onFocusDown,
+    this.onFocusUp,
     this.labelOverride,
   });
 
@@ -71,6 +73,10 @@ class SkipMarkerButton extends StatelessWidget {
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowDown) {
           onFocusDown();
+          return KeyEventResult.handled;
+        }
+        if (onFocusUp != null && event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowUp) {
+          onFocusUp!();
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;

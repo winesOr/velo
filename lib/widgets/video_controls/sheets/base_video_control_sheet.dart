@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../widgets/app_icon.dart';
+import '../../../focus/dpad_navigator.dart';
+import '../../../focus/key_event_utils.dart';
 import '../../../widgets/bottom_sheet_page_scaffold.dart';
 
 /// Base class for video control bottom sheets providing common UI structure
@@ -31,30 +33,40 @@ class BaseVideoControlSheet extends StatelessWidget {
     if (embeddedIn(context)) {
       final back = onBack;
       if (back == null) return child;
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 2, 12, 0),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: back,
-                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                  icon: const AppIcon(Symbols.arrow_back_rounded, size: 20),
-                ),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.w600),
+      return Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          if (event.logicalKey.isBackKey) return handleBackKeyAction(event, back);
+          return KeyEventResult.ignored;
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 2, 12, 0),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: back,
+                    tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                    icon: const AppIcon(Symbols.arrow_back_rounded, size: 20),
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Flexible(child: child),
-        ],
+            Flexible(child: child),
+          ],
+        ),
       );
     }
     return BottomSheetPageScaffold(

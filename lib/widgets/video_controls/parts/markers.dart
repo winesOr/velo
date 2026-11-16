@@ -321,7 +321,28 @@ extension _PlexVideoControlsMarkerMethods on _PlexVideoControlsState {
         focusNode: _skipMarkerFocusNode,
         labelOverride: t.videoControls.undoIntroSkip,
         onActivate: () => unawaited(_undoIntroSkip()),
-        onFocusDown: () => _desktopControlsKey.currentState?.requestPlayPauseFocus(),
+        onFocusDown: () {
+          if (PlatformDetector.isTV()) {
+            if (_showControls) {
+              _desktopControlsKey.currentState?.requestTimelineFocus();
+            } else {
+              _showControlsWithFocus();
+            }
+            _restartHideTimerForCurrentPlaybackState();
+          } else {
+            _desktopControlsKey.currentState?.requestPlayPauseFocus();
+          }
+        },
+        onFocusUp: PlatformDetector.isTV()
+            ? () {
+                if (_showControls) {
+                  _desktopControlsKey.currentState?.requestHeaderFocus();
+                } else {
+                  _showControlsWithFocus();
+                }
+                _restartHideTimerForCurrentPlaybackState();
+              }
+            : null,
       );
     }
     return ValueListenableBuilder<double>(
@@ -340,7 +361,28 @@ extension _PlexVideoControlsMarkerMethods on _PlexVideoControlsState {
               autoSkipProgress: autoSkipProgress,
               focusNode: _skipMarkerFocusNode,
               onActivate: _activateSkipMarker,
-              onFocusDown: () => _desktopControlsKey.currentState?.requestPlayPauseFocus(),
+              onFocusDown: () {
+                if (PlatformDetector.isTV()) {
+                  if (_showControls) {
+                    _desktopControlsKey.currentState?.requestTimelineFocus();
+                  } else {
+                    _showControlsWithFocus();
+                  }
+                  _restartHideTimerForCurrentPlaybackState();
+                } else {
+                  _desktopControlsKey.currentState?.requestPlayPauseFocus();
+                }
+              },
+              onFocusUp: PlatformDetector.isTV()
+                  ? () {
+                      if (_showControls) {
+                        _desktopControlsKey.currentState?.requestHeaderFocus();
+                      } else {
+                        _showControlsWithFocus();
+                      }
+                      _restartHideTimerForCurrentPlaybackState();
+                    }
+                  : null,
             );
           },
         );

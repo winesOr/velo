@@ -43,6 +43,19 @@ import '../widgets/create_session_dialog.dart';
 import '../widgets/local_media_match_dialog.dart';
 import '../../widgets/loading_indicator_box.dart';
 
+/// The existing create/join flow embedded in a player's hosted drawer.
+class WatchTogetherSetupPanel extends StatelessWidget {
+  const WatchTogetherSetupPanel({super.key});
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+    padding: const EdgeInsets.all(16),
+    child: Consumer<WatchTogetherProvider>(
+      builder: (context, provider, _) => _NotInSessionView(watchTogether: provider),
+    ),
+  );
+}
+
 class WatchTogetherScreen extends StatefulWidget {
   const WatchTogetherScreen({super.key, this.embedded = false, this.onBack});
 

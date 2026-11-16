@@ -61,21 +61,30 @@ extension _PlexVideoControlsVisibilityMethods on _PlexVideoControlsState {
     });
   }
 
-  /// Controls hide delay: 5s on touch mobile and under D-pad/keyboard
+  /// Controls hide delay: 10s on TV, 5s on touch mobile and desktop keyboard
   /// navigation, 3s on desktop with a mouse. Every D-pad press restarts the
-  /// timer, so traversing the bar never races it; a paused D-pad viewer keeps
-  /// the chrome until they dismiss it (see [PlayerChromeController.configure]).
+  /// timer; open TV drawers hold the chrome until they close.
   /// Maestro builds extend the delay because accessibility-tree queries can
   /// take longer than the production timeout on physical devices.
   Duration get _hideDelay {
     if (const bool.fromEnvironment('PLEZY_MAESTRO_E2E')) {
       return const Duration(seconds: 30);
     }
-    final isMobile = (Platform.isIOS || Platform.isAndroid) && !PlatformDetector.isTV();
+    if (PlatformDetector.isTV()) return const Duration(seconds: 10);
+    final isMobile = Platform.isIOS || Platform.isAndroid;
     if (isMobile || playerDirectionalNavigationEnabled()) {
       return const Duration(seconds: 5);
     }
     return const Duration(seconds: 3);
+  }
+
+  void _onPlayerSheetCountChanged() {
+    if (!PlatformDetector.isTV()) return;
+    if (OverlaySheetController.openSheetCount.value > 0) {
+      widget.chromeController.hold(PlayerChromeHold.sheet);
+    } else {
+      widget.chromeController.release(PlayerChromeHold.sheet);
+    }
   }
 
   /// Hide the controls. Notifying the parent, updating the traffic lights and
@@ -87,12 +96,19 @@ extension _PlexVideoControlsVisibilityMethods on _PlexVideoControlsState {
 
   void _startHideTimer() {
     // Sheet completion can arrive after the controls and their route retire.
-    if (!mounted) return;
-    widget.chromeController.startAutoHide();
+    if (!mounted || _sheetIsOpen()) return;
+    if (PlatformDetector.isTV()) {
+      widget.chromeController.restartAutoHideForCurrentPlaybackState();
+    } else {
+      widget.chromeController.startAutoHide();
+    }
   }
 
   /// Restart the hide timer on user interaction for the current playback state.
-  void _restartHideTimerForCurrentPlaybackState() => widget.chromeController.restartAutoHideForCurrentPlaybackState();
+  void _restartHideTimerForCurrentPlaybackState() {
+    if (_sheetIsOpen()) return;
+    widget.chromeController.restartAutoHideForCurrentPlaybackState();
+  }
 
   void _handlePointerSignal(PointerSignalEvent event) {
     if (event is! PointerScrollEvent) return;

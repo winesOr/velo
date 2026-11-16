@@ -18,7 +18,23 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/focusable_list_tile.dart';
 import '../../widgets/overlay_sheet.dart';
 import '../models/watch_session.dart';
+import '../screens/watch_together_screen.dart';
+import '../../widgets/video_controls/sheets/player_settings_drawer.dart';
 import '../providers/watch_together_provider.dart';
+
+/// Opens the real session controls or the existing create/join flow.
+Future<void> showWatchTogetherPlayerDrawer(BuildContext context) async {
+  final provider = context.read<WatchTogetherProvider>();
+  await OverlaySheetController.of(context).show<void>(
+    presentation: OverlaySheetPresentation.edgeDrawer,
+    constraints: BoxConstraints(maxWidth: PlayerSettingsDrawer.widthFor(context)),
+    builder: (context) => ListenableBuilder(
+      listenable: provider,
+      builder: (context, _) =>
+          provider.isInSession ? _SessionMenuSheet(provider: provider) : const WatchTogetherSetupPanel(),
+    ),
+  );
+}
 
 class WatchTogetherSessionIndicator extends StatelessWidget {
   final VoidCallback? onCancelAutoHide;

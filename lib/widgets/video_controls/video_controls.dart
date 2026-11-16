@@ -1010,6 +1010,7 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
     bindEffect(SettingsService.customSkipIntroSeconds, (_) => _updateCustomSkipMarkers(), fireImmediately: false);
     bindEffect(SettingsService.customSkipEndSeconds, (_) => _updateCustomSkipMarkers(), fireImmediately: false);
     _releaseChromeListener = bindListenable(widget.chromeController, _onChromeChanged);
+    OverlaySheetController.openSheetCount.addListener(_onPlayerSheetCountChanged);
     _releaseSyncOffsetsListener = bindListenable(PlayerSyncOffsets.of(widget.player), _onSyncOffsetsChanged);
     _configureChromeController();
     widget.chromeController.setPlaying(widget.player.state.playing);
@@ -1078,8 +1079,9 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
     widget.chromeController.configure(
       hideDelay: _hideDelay,
       hasFirstFrame: widget.hasFirstFrame?.value ?? true,
-      directionalNavigation: playerDirectionalNavigationEnabled(),
+      directionalNavigation: !PlatformDetector.isTV() && playerDirectionalNavigationEnabled(),
     );
+    _onPlayerSheetCountChanged();
   }
 
   @override
@@ -1096,6 +1098,7 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
     }
     if (oldWidget.chromeController != widget.chromeController) {
       _releaseChromeListener();
+      oldWidget.chromeController.release(PlayerChromeHold.sheet, notify: false, restartAutoHide: false);
       _lastControlsVisible = widget.chromeController.controlsVisible;
       _controlsMounted = _lastControlsVisible;
       _controlsOpaque = _lastControlsVisible;
@@ -1130,6 +1133,8 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
 
   @override
   void dispose() {
+    OverlaySheetController.openSheetCount.removeListener(_onPlayerSheetCountChanged);
+    widget.chromeController.release(PlayerChromeHold.sheet, notify: false, restartAutoHide: false);
     _introUndoTimer?.cancel();
     _introUndoGeneration++;
     ++_subtitleVisibilityWriteGeneration;

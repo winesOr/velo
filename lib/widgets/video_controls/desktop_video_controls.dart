@@ -69,6 +69,9 @@ class DesktopVideoControls extends StatefulWidget {
 
   /// Called when user navigates up from timeline (to hide controls)
   final VoidCallback? onHideControls;
+  final VoidCallback? onNavigateAboveTimeline;
+  final VoidCallback? onToggleDanmaku;
+  final bool danmakuEnabled;
 
   final TrackControlsState trackControlsState;
   final VoidCallback? onBack;
@@ -146,6 +149,9 @@ class DesktopVideoControls extends StatefulWidget {
     this.onFocusActivity,
     this.onRequestPlayPauseFocus,
     this.onHideControls,
+    this.onNavigateAboveTimeline,
+    this.onToggleDanmaku,
+    this.danmakuEnabled = false,
     this.trackControlsState = const TrackControlsState(),
     this.onBack,
     this.hasFirstFrame,
@@ -192,6 +198,7 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
   late final FocusNode _timelineFocusNode;
 
   late final FocusNode _volumeFocusNode;
+  late final List<FocusNode> _headerFocusNodes;
 
   late final List<FocusNode> _trackControlFocusNodes;
 
@@ -230,6 +237,7 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
     _goToLiveFocusNode = FocusNode(debugLabel: 'GoToLive');
     _timelineFocusNode = FocusNode(debugLabel: 'Timeline');
     _volumeFocusNode = FocusNode(debugLabel: 'Volume');
+    _headerFocusNodes = List.generate(4, (i) => FocusNode(debugLabel: 'PlayerHeader$i'));
 
     // Create focus nodes for track controls (up to 8 buttons)
     _trackControlFocusNodes = List.generate(
@@ -305,6 +313,9 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
     _goToLiveFocusNode.dispose();
     _timelineFocusNode.dispose();
     _volumeFocusNode.dispose();
+    for (final node in _headerFocusNodes) {
+      node.dispose();
+    }
     for (final node in _trackControlFocusNodes) {
       node.dispose();
     }
@@ -324,6 +335,25 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
   /// `eventRequestsFocusNavigation` before queueing a play/pause focus request
   /// on the chrome; internal hand-offs (the skip-marker button's
   /// ArrowDown, an item swap) are already inside a focus session.
+  void requestHeaderFocus() => _headerFocusNodes.first.requestFocus();
+
+  void requestTimelineFocus() => _timelineFocusNode.requestFocus();
+
+  KeyEventResult _handleHeaderKeyEvent(FocusNode node, KeyEvent event) {
+    if (!event.isActionable) return KeyEventResult.ignored;
+    final index = _headerFocusNodes.indexOf(node);
+    final key = event.logicalKey;
+    if (key.isLeftKey || key.isRightKey) {
+      _headerFocusNodes[(index + (key.isRightKey ? 1 : -1)).clamp(0, 3)].requestFocus();
+    } else if (key.isDownKey) {
+      requestTimelineFocus();
+    } else if (!key.isUpKey) {
+      return KeyEventResult.ignored;
+    }
+    widget.onFocusActivity?.call();
+    return KeyEventResult.handled;
+  }
+
   void requestPlayPauseFocus() {
     _playPauseFocusNode.requestFocus();
   }
@@ -558,7 +588,11 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
     if (key == LogicalKeyboardKey.arrowUp) {
       _timelineSeek.flush();
       _resetSeekState();
-      widget.onHideControls?.call();
+      if (PlatformDetector.isTV()) {
+        widget.onNavigateAboveTimeline?.call();
+      } else {
+        widget.onHideControls?.call();
+      }
       return KeyEventResult.handled;
     }
 
@@ -715,6 +749,12 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
               metadata: widget.metadata,
               style: Platform.isMacOS ? VideoHeaderStyle.singleLine : VideoHeaderStyle.multiLine,
               onBack: widget.onBack,
+              tvFocusNodes: PlatformDetector.isTV() ? _headerFocusNodes : null,
+              onTvKeyEvent: _handleHeaderKeyEvent,
+              onFocusChange: _onFocusChange,
+              onToggleDanmaku: widget.onToggleDanmaku,
+              danmakuEnabled: widget.danmakuEnabled,
+              onMore: () => widget.onShowSettings?.call(PlayerDrawerTab.video),
               onCancelAutoHide: widget.onCancelAutoHide,
               onStartAutoHide: widget.onStartAutoHide,
             ),

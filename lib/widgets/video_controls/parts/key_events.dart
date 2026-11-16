@@ -44,7 +44,7 @@ extension _PlexVideoControlsKeyEventMethods on _PlexVideoControlsState {
   /// while a physical-keyboard Enter leaves focus where it is — activation is
   /// not a request to start navigating.
   void _activatePlayerSurfaceSelect(KeyEvent event) {
-    final requestFocus = eventRequestsFocusNavigation(event, focused: _focusNode);
+    final requestFocus = PlatformDetector.isTV() || eventRequestsFocusNavigation(event, focused: _focusNode);
     if (!widget.canControl) {
       _showControlsWithFocus(requestFocus: requestFocus);
       return;
@@ -58,6 +58,10 @@ extension _PlexVideoControlsKeyEventMethods on _PlexVideoControlsState {
     if (_isSkipMarkerButtonVisible &&
         (!_showControls || (_keyboardService?.isBoundTo(event, ShortcutAction.skipMarker) ?? false))) {
       _activateSkipMarker();
+      return;
+    }
+    if (PlatformDetector.isTV() && !_showControls) {
+      _showControlsWithFocus();
       return;
     }
     // Raise the chrome *before* toggling: Select is the deliberate "show me the
@@ -84,7 +88,7 @@ extension _PlexVideoControlsKeyEventMethods on _PlexVideoControlsState {
       return handlePlayerNavigationKeyAction(event, navigationKey, sheetController!.pop);
     }
 
-    if (widget.chromeController.contentStripVisible) {
+    if (!PlatformDetector.isTV() && widget.chromeController.contentStripVisible) {
       return handlePlayerNavigationKeyAction(event, navigationKey, () {
         _desktopControlsKey.currentState?.dismissContentStrip();
         widget.chromeController.setContentStripVisible(false);
@@ -327,7 +331,10 @@ extension _PlexVideoControlsKeyEventMethods on _PlexVideoControlsState {
     // deliberate "show me the controls" gesture.
     if (!isMobile && key.isDpadDirection && playerDirectionalNavigationEnabled()) {
       if (!_showControls) {
-        if (key.isLeftKey || key.isRightKey) {
+        if (PlatformDetector.isTV()) {
+          _flushHiddenDirectionalSeek();
+          _showControlsWithFocus();
+        } else if (key.isLeftKey || key.isRightKey) {
           if (shouldStartHiddenDirectionalSeek(event)) {
             _hiddenDirectionalSeek(forward: key == LogicalKeyboardKey.arrowRight, isRepeat: event is KeyRepeatEvent);
           }

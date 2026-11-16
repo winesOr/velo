@@ -1,3 +1,7 @@
+import 'package:material_symbols_icons/symbols.dart';
+
+import '../../../focus/focus_theme.dart';
+import '../video_control_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:plezy/utils/formatters.dart';
@@ -8,6 +12,7 @@ import '../../../i18n/strings.g.dart';
 import '../../../utils/episode_titles.dart';
 import '../../../utils/provider_extensions.dart';
 import '../../optimized_media_image.dart';
+import '../../app_icon.dart';
 import '../../../watch_together/widgets/watch_together_overlay.dart';
 import '../../../watch_together/providers/watch_together_provider.dart';
 import '../../app_bar_back_button.dart';
@@ -54,6 +59,12 @@ class VideoControlsHeader extends StatelessWidget {
   /// header is too narrow to fit the clock beside the title and trailing
   /// controls.
   final bool showClock;
+  final List<FocusNode>? tvFocusNodes;
+  final KeyEventResult Function(FocusNode, KeyEvent)? onTvKeyEvent;
+  final ValueChanged<bool>? onFocusChange;
+  final VoidCallback? onToggleDanmaku;
+  final bool danmakuEnabled;
+  final VoidCallback? onMore;
 
   const VideoControlsHeader({
     super.key,
@@ -65,11 +76,18 @@ class VideoControlsHeader extends StatelessWidget {
     this.onCancelAutoHide,
     this.onStartAutoHide,
     this.showClock = true,
+    this.tvFocusNodes,
+    this.onTvKeyEvent,
+    this.onFocusChange,
+    this.onToggleDanmaku,
+    this.danmakuEnabled = false,
+    this.onMore,
   });
 
   @override
   Widget build(BuildContext context) {
     final itemTitle = metadata.title ?? t.common.unknown;
+    if (tvFocusNodes != null) return _buildTvHeader(context, itemTitle);
     final header = Row(
       children: [
         AppBarBackButton(style: BackButtonStyle.video, onPressed: onBack ?? () => Navigator.of(context).pop(true)),
@@ -105,6 +123,91 @@ class VideoControlsHeader extends StatelessWidget {
       children: [
         header,
         Align(alignment: Alignment.centerRight, child: trailing),
+      ],
+    );
+  }
+
+  Widget _buildTvHeader(BuildContext context, String itemTitle) {
+    final scale = FocusTheme.tvPlayerScale(context);
+    Widget button(
+      int index,
+      IconData icon,
+      String label,
+      VoidCallback? action, {
+      bool? checked,
+      String? value,
+      String? visibleValue,
+    }) => VideoControlButton(
+      icon: icon,
+      iconBuilder: visibleValue == null
+          ? null
+          : (color) => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppIcon(icon, color: color, size: 24 * scale),
+                SizedBox(width: 4 * scale),
+                Text(
+                  visibleValue,
+                  style: TextStyle(color: color, fontSize: 14 * scale),
+                ),
+              ],
+            ),
+      tooltip: label,
+      onPressed: action,
+      checked: checked,
+      isActive: checked ?? false,
+      semanticValue: value,
+      focusNode: tvFocusNodes![index],
+      onKeyEvent: onTvKeyEvent,
+      onFocusChange: onFocusChange,
+    );
+    final episode = effectiveEpisodeIndex(metadata);
+    return Row(
+      textDirection: TextDirection.ltr,
+      children: [
+        button(0, Symbols.arrow_back_rounded, t.common.back, onBack ?? () => Navigator.of(context).pop(true)),
+        SizedBox(width: 16 * scale),
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                metadata.grandparentTitle ?? itemTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: Colors.white, fontSize: 24 * scale, fontWeight: FontWeight.w600),
+              ),
+              if (episode != null)
+                Text(
+                  [
+                    if (metadata.parentIndex != null) t.videoControls.seasonNumber(n: metadata.parentIndex!),
+                    t.videoControls.episodeNumber(n: episode),
+                  ].join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.white70, fontSize: 14 * scale),
+                ),
+            ],
+          ),
+        ),
+        button(1, Symbols.subtitles_rounded, t.videoControls.danmakuToggle, onToggleDanmaku, checked: danmakuEnabled),
+        SizedBox(width: 8 * scale),
+        Consumer<WatchTogetherProvider>(
+          builder: (context, provider, _) => button(
+            2,
+            Symbols.group_rounded,
+            t.watchTogether.title,
+            () {
+              onCancelAutoHide?.call();
+              showWatchTogetherPlayerDrawer(context).whenComplete(() => onStartAutoHide?.call());
+            },
+            value: provider.isInSession ? '${t.watchTogether.participants}: ${provider.participantCount}' : null,
+            visibleValue: provider.isInSession ? '${provider.participantCount}' : null,
+          ),
+        ),
+        SizedBox(width: 8 * scale),
+        button(3, Symbols.more_horiz_rounded, t.videoControls.moreButton, onMore),
       ],
     );
   }

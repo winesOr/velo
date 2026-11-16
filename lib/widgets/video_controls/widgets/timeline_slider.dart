@@ -11,6 +11,7 @@ import '../../../i18n/strings.g.dart';
 import '../../../focus/focusable_wrapper.dart';
 import '../../../focus/input_mode_tracker.dart';
 import '../../../theme/gapped_track_shape.dart';
+import '../../../utils/platform_detector.dart';
 import '../../../services/scrub_preview_source.dart';
 import '../../../utils/formatters.dart';
 import '../helpers/eager_horizontal_drag_recognizer.dart';
@@ -401,6 +402,21 @@ class _TimelineSliderState extends State<TimelineSlider> {
                   ),
                 ),
               ),
+              if (showFocus && PlatformDetector.isTV())
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: (constraints.maxHeight - trackHeight + heatHeight) / 2 - 2,
+                  height: trackHeight + 4,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.white, width: 2),
+                        borderRadius: BorderRadius.circular(trackHeight),
+                      ),
+                    ),
+                  ),
+                ),
               Padding(
                 padding: EdgeInsets.only(top: heatHeight),
                 child: Builder(
