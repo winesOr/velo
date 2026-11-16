@@ -22,6 +22,7 @@ import '../widgets/backend_badge.dart';
 import '../utils/codec_utils.dart';
 import '../utils/resolution_label.dart';
 import '../widgets/app_toast.dart';
+import '../watch_together/screens/watch_together_screen.dart';
 import '../widgets/app_dialog.dart';
 import '../utils/focus_utils.dart';
 import '../widgets/press_feedback.dart';
@@ -269,12 +270,6 @@ class _SeasonEpisodePager {
 @visibleForTesting
 const tvDetailRevealGateKey = ValueKey<String>('tvDetailRevealGate');
 
-/// Personal-rating control styling; its height is derived from text scale.
-abstract final class _HeroChips {
-  static const double paddingH = 10;
-  static const BorderRadius radius = BorderRadius.all(Radius.circular(100));
-}
-
 class MediaDetailScreen extends StatefulWidget {
   final MediaItem metadata;
   final bool isOffline;
@@ -488,13 +483,12 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   final GlobalKey _episodeTailKey = GlobalKey();
 
   late final FocusNode _playButtonFocusNode;
-  late final FocusNode _ratingChipFocusNode;
+  late final FocusNode _moreActionsFocusNode;
   final FocusNode _tvRatingSourceFocusNode = FocusNode(debugLabel: 'detail_rating_source');
   late final FocusNode _backButtonFocusNode;
   final _extrasSelectLongPress = DpadSelectLongPressController();
 
   // Context menu key for the three-dots button
-  final _contextMenuKey = GlobalKey<MediaContextMenuState>();
 
   // Locked focus pattern for extras
   int _focusedExtraIndex = 0;
@@ -891,7 +885,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     _extrasFocusNode = FocusNode(debugLabel: 'extras_row');
     _extrasFocusNode.addListener(_handleExtrasFocusChange);
     _playButtonFocusNode = FocusNode(debugLabel: 'play_button');
-    _ratingChipFocusNode = FocusNode(debugLabel: 'rating_chip');
+    _moreActionsFocusNode = FocusNode(debugLabel: 'detail_more');
     _backButtonFocusNode = FocusNode(debugLabel: 'media_detail_back');
     _overviewFocusNode = FocusNode(debugLabel: 'overview');
     _tvDetailInfoFocusNode = FocusNode(debugLabel: 'tv_detail_info');
@@ -1095,7 +1089,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     _audioSelectFocusNode.dispose();
     _subtitleSelectFocusNode.dispose();
     _playButtonStates.dispose();
-    _ratingChipFocusNode.dispose();
+    _moreActionsFocusNode.dispose();
     _tvRatingSourceFocusNode.dispose();
     _backButtonFocusNode.dispose();
     _overviewFocusNode.dispose();
@@ -1151,110 +1145,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     return capabilities != null && (capabilities.numericUserRating || capabilities.userFavorites);
   }
 
-  String _userRatingChipLabel(MediaItem metadata) {
-    final isNumeric = _getMediaClientForMetadata(context)?.capabilities.numericUserRating ?? true;
-    final hasRating = RatingDisplayPolicy.isValid(metadata.userRating);
-    return isNumeric && hasRating ? formatRating(metadata.userRating! / 2.0) : t.mediaMenu.rate;
-  }
-
-  double _userRatingChipHeight(BuildContext context) =>
-      math.max(48.0, MediaQuery.textScalerOf(context).scale(13) * 1.2 + 20);
-
-  Widget _buildUserRatingChip(MediaItem metadata) {
-    final mediaClient = _getMediaClientForMetadata(context);
-    final isNumeric = mediaClient?.capabilities.numericUserRating ?? true;
-    final hasRating = RatingDisplayPolicy.isValid(metadata.userRating);
-    final active = isNumeric ? hasRating : metadata.isFavorite == true;
-
-    final iconData = isNumeric ? Symbols.star_rounded : Symbols.favorite_rounded;
-    final activeIconColor = isNumeric ? Colors.amber : Colors.redAccent;
-    final label = _userRatingChipLabel(metadata);
-
-    return Semantics(
-      label: '${t.explore.detail.yourRating}: $label',
-      child: ListenableBuilder(
-        listenable: _ratingChipFocusNode,
-        builder: (context, _) {
-          void activate() => _showRatingDialog(context, metadata);
-          final colorScheme = Theme.of(context).colorScheme;
-          final isKeyboardMode = InputModeTracker.isKeyboardMode(context);
-          final showFocus = _ratingChipFocusNode.hasFocus && isKeyboardMode;
-          final bgColor = showFocus
-              ? colorScheme.inverseSurface
-              : colorScheme.secondaryContainer.withValues(alpha: 0.8);
-          final fgColor = showFocus ? colorScheme.onInverseSurface : colorScheme.onSecondaryContainer;
-
-          return FocusableWrapper(
-            focusNode: _ratingChipFocusNode,
-            // The TV target includes the external scores above the personal
-            // control, so reveal that whole group rather than centering only
-            // the chip and clipping the first score row.
-            autoScroll: !PlatformDetector.isTV(),
-            onFocusChange: (focused) {
-              if (focused && PlatformDetector.isTV()) {
-                _revealTvDetailForeground(_tvDetailRatingsGroupKey, () => _ratingChipFocusNode.hasFocus);
-              }
-            },
-            onSelect: activate,
-            borderRadius: 100,
-            disableScale: true,
-            useBackgroundFocus: true,
-            onKeyEvent: (_, event) {
-              if (!event.isActionable) return KeyEventResult.ignored;
-              final key = event.logicalKey;
-              if (key.isDownKey) {
-                _playButtonFocusNode.requestFocus();
-                return KeyEventResult.handled;
-              }
-              if (key.isUpKey) {
-                if (PlatformDetector.isTV()) {
-                  _focusTvRatingsOrInfo();
-                } else {
-                  _backButtonFocusNode.requestFocus();
-                }
-                return KeyEventResult.handled;
-              }
-              if (key.isLeftKey || key.isRightKey) {
-                return KeyEventResult.handled; // consume — single chip, nothing beside it (#1181)
-              }
-              return KeyEventResult.ignored;
-            },
-            child: GestureDetector(
-              onTap: activate,
-              child: AnimatedContainer(
-                key: const ValueKey('detail_personal_rating_target'),
-                constraints: BoxConstraints(minWidth: 48, minHeight: _userRatingChipHeight(context)),
-                duration: const Duration(milliseconds: 150),
-                curve: Curves.easeOutCubic,
-                padding: const EdgeInsets.symmetric(horizontal: _HeroChips.paddingH, vertical: 10),
-                decoration: BoxDecoration(color: bgColor, borderRadius: _HeroChips.radius),
-                child: Row(
-                  mainAxisSize: .min,
-                  children: [
-                    AppIcon(
-                      iconData,
-                      fill: active ? 1 : 0,
-                      color: showFocus ? fgColor : (active ? activeIconColor : fgColor),
-                      size: 16,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      label,
-                      style: TextStyle(color: fgColor, fontSize: 13, fontWeight: .w500, height: 1.2),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   void _showRatingDialog(BuildContext sheetContext, MediaItem metadata) {
     final target = metadata.globalKey;
-    final hadFocus = _ratingChipFocusNode.hasFocus;
+    final hadFocus = _moreActionsFocusNode.hasFocus;
     unawaited(
       showScopedDialog<void>(
         context: sheetContext,
@@ -1275,7 +1168,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
           ),
         ),
       ).whenComplete(() {
-        if (mounted && hadFocus) FocusUtils.restoreFocusAfterBuild(this, _ratingChipFocusNode);
+        if (mounted && hadFocus) FocusUtils.restoreFocusAfterBuild(this, _moreActionsFocusNode);
       }),
     );
   }
@@ -2310,22 +2203,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   /// Focus the first available section above the primary action row.
   void _focusAboveActionRow() {
     if (PlatformDetector.isTV()) {
-      // The hero information block sits directly above the action row and is
-      // the D-pad path to the full details sheet (#2042).
-      if (_canEditDetailRating(_metadata)) {
-        _ratingChipFocusNode.requestFocus();
-      } else {
-        _focusTvRatingsOrInfo();
-      }
-      return;
+      _focusTvRatingsOrInfo();
+    } else {
+      _backButtonFocusNode.requestFocus();
     }
-    final contentWidth =
-        MediaQuery.sizeOf(context).width - MediaQuery.paddingOf(context).horizontal - _heroSideInset * 2;
-    if (_usesCompactHero(contentWidth)) {
-      (_canEditDetailRating(_metadata) ? _ratingChipFocusNode : _backButtonFocusNode).requestFocus();
-      return;
-    }
-    if (!widget.isOffline) _ratingChipFocusNode.requestFocus();
   }
 
   /// Focus the overview, or the first available content section when there is no overview.
@@ -3682,18 +3563,45 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                     ),
                   ),
                 ),
-                // More belongs to the detail action group at every width.
-                // Keep one menu lifecycle rather than duplicating it in the
-                // compact page's fixed chrome.
+                Positioned(
+                  top: MediaQuery.paddingOf(context).top + 5,
+                  right: 12,
+                  child: Builder(
+                    builder: (actionContext) => FocusableWrapper(
+                      focusNode: _moreActionsFocusNode,
+                      onSelect: () => unawaited(_showDetailMoreActions(actionContext, metadata)),
+                      onNavigateDown: _playButtonFocusNode.requestFocus,
+                      child: IconButton(
+                        tooltip: t.explore.detail.moreActions,
+                        onPressed: () => unawaited(_showDetailMoreActions(actionContext, metadata)),
+                        icon: const DetailActionIcon(DetailActionGlyph.more),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
                 // Back button (always visible)
                 Positioned(
                   top: 0,
                   left: 0,
                   child: DesktopAppBarHelper.buildAdjustedLeading(
-                    AppBarBackButton(
-                      style: BackButtonStyle.circular,
-                      onPressed: () => Navigator.pop(context, _watchStateChanged),
+                    FocusableWrapper(
                       focusNode: _backButtonFocusNode,
+                      onSelect: () => Navigator.pop(context, _watchStateChanged),
+                      descendantsAreFocusable: false,
+                      disableScale: true,
+                      child: IconButton(
+                        tooltip: t.common.back,
+                        onPressed: () => Navigator.pop(context, _watchStateChanged),
+                        icon: const DetailActionIcon(DetailActionGlyph.back),
+                        style: IconButton.styleFrom(
+                          foregroundColor: Theme.of(context).colorScheme.onSurface,
+                          backgroundColor: Colors.transparent,
+                        ),
+                      ),
                     ),
                     context: context,
                   )!,

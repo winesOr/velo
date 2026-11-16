@@ -22,7 +22,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
 
   Widget _buildAvailableActionButtons(BuildContext context, MediaItem metadata) {
     final isTv = PlatformDetector.isTV();
-    final compactPresentation = !isTv && _usesCompactHero(MediaQuery.sizeOf(context).width - _heroSideInset * 2);
+    final compactPresentation = !isTv;
     final tvScale = TvLayoutConstants.scaleOf(context);
     final actionSize = isTv ? _tvDetailActionSize * tvScale : 48.0;
     final resolvedPlayLabel = _getPlayButtonLabel(metadata);
@@ -297,6 +297,14 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
         );
       }
       if (compactPresentation) {
+        if (onPressed == null) {
+          return IconButton(
+            onPressed: null,
+            icon: icon,
+            tooltip: tooltip,
+            style: actionButtonStyle(foregroundColor: foregroundColor, showFocus: state.showFocus),
+          );
+        }
         return DetailActionPress(
           builder: (states) => IconButton(
             statesController: states,
@@ -409,7 +417,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
             ),
           );
 
-    void showMoreActions() => _contextMenuKey.currentState?.showContextMenu(context);
+    void showMoreActions() => unawaited(_showDetailMoreActions(context, metadata));
 
     final moreActionsAction = widget.isOffline
         ? null
@@ -503,7 +511,17 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                     tooltip: metadata.isFavorite == true ? t.rateSheet.favorited : t.rateSheet.favorite,
                   ),
                 )
-              : watchlistAction;
+              : FocusableAction(
+                  debugLabel: 'detail_favorite',
+                  onPressed: onWatchlist == null ? null : watchlistAction?.onPressed,
+                  builder: (context, state) => iconActionButton(
+                    state,
+                    onPressed: onWatchlist == null ? null : watchlistAction?.onPressed,
+                    busy: _watchlistTarget == metadata.globalKey,
+                    icon: DetailActionIcon(DetailActionGlyph.favorite, selected: onWatchlist == true),
+                    tooltip: onWatchlist == true ? t.explore.removeFromWatchlist : t.rateSheet.favorite,
+                  ),
+                );
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -528,15 +546,13 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                 ),
                 child: Center(
                   child: FocusableActionBar(
-                    actions: [?downloadAction, ?favoriteAction, watchedAction, ?moreActionsAction],
+                    actions: [favoriteAction, watchedAction],
                     spacing: 12,
                     onNavigateDown: _focusBelowActionRow,
                     onNavigateUp: () => _playButtonFocusNode.requestFocus(),
                   ),
                 ),
               ),
-              if (_canEditDetailRating(metadata))
-                Padding(padding: const EdgeInsets.only(top: 8), child: _buildUserRatingChip(metadata)),
             ],
           );
         }
@@ -693,27 +709,79 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     VoidCallback? onPlayTrailer,
     bool showFocus = false,
   }) {
-    return MediaContextMenu(
-      key: _contextMenuKey,
-      item: metadata,
-      onRefresh: (source) => unawaited(_refreshItemInPlace(source)),
-      onPlayTrailer: onPlayTrailer,
-      child: Builder(
-        builder: (buttonContext) => IconButton.filledTonal(
-          onPressed: () {
-            if (!_canUseDetail) return;
-            final renderBox = buttonContext.findRenderObject() as RenderBox?;
-            if (renderBox != null) {
-              final position = renderBox.localToGlobal(renderBox.size.center(Offset.zero));
-              _contextMenuKey.currentState?.showContextMenu(buttonContext, position: position);
-            }
-          },
-          icon: const DetailActionIcon(DetailActionGlyph.more),
-          iconSize: PlatformDetector.isTV() ? 21 * tvScale : 20,
-          style: actionButtonStyle(showFocus: showFocus),
+    return Builder(
+      builder: (actionContext) => IconButton.filledTonal(
+        onPressed: () => unawaited(_showDetailMoreActions(actionContext, metadata)),
+        tooltip: t.explore.detail.moreActions,
+        icon: const DetailActionIcon(DetailActionGlyph.more),
+        iconSize: PlatformDetector.isTV() ? 21 * tvScale : 20,
+        style: actionButtonStyle(showFocus: showFocus),
+      ),
+    );
+  }
+
+  Future<void> _showDetailMoreActions(BuildContext actionContext, MediaItem metadata) async {
+    if (!_canUseDetail) return;
+    final action = await showScopedDialog<String>(
+      context: actionContext,
+      builder: (dialogContext) => AppDialog(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppDialogTitle(title: Text(t.explore.detail.moreActions)),
+              const SizedBox(height: 14),
+              for (final (id, icon, label) in [
+                if (!widget.isOffline) ('together', Symbols.group_rounded, t.watchTogether.title),
+                if (!widget.isOffline && !PlatformDetector.isAppleTV())
+                  ('download', Symbols.download_rounded, t.explore.detail.downloadMovie),
+                ('info', Symbols.info_rounded, t.explore.detail.viewMediaInfo),
+                if (_canEditDetailRating(metadata)) ('rate', Symbols.star_rounded, t.explore.detail.yourRating),
+              ])
+                FocusableWrapper(
+                  onSelect: () => Navigator.of(dialogContext).pop(id),
+                  child: ListTile(
+                    minTileHeight: 48,
+                    leading: AppIcon(icon, size: 20),
+                    title: Text(label),
+                    trailing: const AppIcon(Symbols.chevron_right_rounded, size: 18),
+                    onTap: () => Navigator.of(dialogContext).pop(id),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
+    if (!mounted || !actionContext.mounted || !_canUseDetail) return;
+    switch (action) {
+      case 'together':
+        await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WatchTogetherScreen()));
+      case 'download':
+        await _handleDownloadButtonPressed(actionContext, metadata);
+      case 'info':
+        await showScopedDialog<void>(
+          context: context,
+          builder: (dialogContext) => AppDialog(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppDialogTitle(title: Text(t.explore.detail.viewMediaInfo)),
+                  const SizedBox(height: 14),
+                  Flexible(child: SingleChildScrollView(child: _buildDetailTechnicalInfo(context, metadata))),
+                ],
+              ),
+            ),
+          ),
+        );
+      case 'rate':
+        _showRatingDialog(context, metadata);
+    }
   }
 
   /// Shared retry pipeline for failed/cancelled downloads: confirm download

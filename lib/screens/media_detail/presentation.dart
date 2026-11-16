@@ -226,34 +226,41 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
         MediaQuery.sizeOf(context).width < 720 ||
         (MonoPresentation.isTablet(context) && !MonoPresentation.isLandscapeTablet(context));
     final target = _playbackTargetItem(metadata);
-    final labels = <String>[
-      if (metadata.year != null) '${metadata.year}',
-      if (metadata.contentRating?.isNotEmpty == true) formatContentRating(metadata.contentRating!),
-      if ((target?.durationMs ?? metadata.durationMs) case final int duration) formatDurationTextual(duration),
-      if (metadata.isShow && metadata.leafCount != null) t.explore.episodeCount(n: metadata.leafCount!),
+    final probed = _playbackSources[target?.globalKey];
+    final firstLine = <String>[
+      if (metadata.isShow || metadata.isSeason) ...[
+        if (metadata.studio?.isNotEmpty == true) metadata.studio!,
+      ] else if (metadata.year != null)
+        '${metadata.year}',
       ...?metadata.genres?.take(2),
-      ...buildMediaQualityLabels(target ?? metadata),
+    ];
+    final seasonCount = metadata.childCount ?? (_seasons.isEmpty ? null : _seasons.length);
+    final secondLine = <String>[
+      if (metadata.isShow && seasonCount != null) t.explore.detail.seasonCount(n: seasonCount),
+      if ((target?.durationMs ?? metadata.durationMs) case final int duration) formatDurationTextual(duration),
+      if (buildMediaVideoLabels(probed?.item ?? target ?? metadata, versionIndex: probed?.mediaIndex ?? 0)
+          case final quality when quality.isNotEmpty)
+        quality.join(' '),
     ];
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
         _buildNaturalDetailTitle(context, metadata, centered: centered),
-        const SizedBox(height: 14),
-        if (labels.isNotEmpty)
-          Text(
-            labels.join(' · '),
-            key: const ValueKey('detail_plain_metadata'),
-            textAlign: centered ? TextAlign.center : TextAlign.start,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
-          ),
+        const SizedBox(height: 7),
+        for (final (index, labels) in [firstLine, secondLine].indexed)
+          if (labels.isNotEmpty)
+            Text(
+              labels.join(' · '),
+              key: ValueKey(index == 0 ? 'detail_plain_metadata' : 'detail_secondary_metadata'),
+              textAlign: centered ? TextAlign.center : TextAlign.start,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12, height: 1.6),
+            ),
         MediaRatingsStrip(
           item: metadata,
           alignment: centered ? WrapAlignment.center : WrapAlignment.start,
           padding: const EdgeInsets.only(bottom: 18),
         ),
-        if (!_usesCompactHero(MediaQuery.sizeOf(context).width - _heroSideInset * 2) && _canEditDetailRating(metadata))
-          Padding(padding: const EdgeInsets.only(bottom: 8), child: _buildUserRatingChip(metadata)),
         _buildActionButtons(metadata),
       ],
     );

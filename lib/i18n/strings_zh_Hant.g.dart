@@ -3039,6 +3039,10 @@ class _Translations$explore$detail$zh_Hant extends Translations$explore$detail$z
 	final TranslationsZhHant _root; // ignore: unused_field
 
 	// Translations
+	@override String seasonCount({required Object n}) => '共 ${n} 季';
+	@override String get moreActions => '更多操作';
+	@override String get downloadMovie => '下載此影片';
+	@override String get viewMediaInfo => '查看媒體資訊';
 	@override String get originalTitle => '原始標題';
 	@override String get alsoKnownAs => '又名';
 	@override String get studios => '製作公司';
@@ -4771,6 +4775,10 @@ extension on TranslationsZhHant {
 			'explore.relation.other' => '相關',
 			'explore.broadcast' => ({required Object day, required Object time}) => '${day} ${time} 播出',
 			'explore.broadcastWithZone' => ({required Object day, required Object time, required Object timezone}) => '${day} ${time} ${timezone} 播出',
+			'explore.detail.seasonCount' => ({required Object n}) => '共 ${n} 季',
+			'explore.detail.moreActions' => '更多操作',
+			'explore.detail.downloadMovie' => '下載此影片',
+			'explore.detail.viewMediaInfo' => '查看媒體資訊',
 			'explore.detail.originalTitle' => '原始標題',
 			'explore.detail.alsoKnownAs' => '又名',
 			'explore.detail.studios' => '製作公司',
@@ -4887,12 +4895,12 @@ extension on TranslationsZhHant {
 			'liveTv.recordSettings.keepUpTo' => '要保留的劇集數',
 			'liveTv.recordSettings.keepUpToHint' => '0 表示保留所有劇集',
 			'liveTv.startingInMinutes' => ({required Object minutes}) => '${minutes} 分鐘後開始',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.dayAtTime' => ({required Object day, required Object time}) => '${day} ${time}',
 			'liveTv.invalidPlaybackData' => ({required Object product}) => '${product} 傳回了無效的直播電視播放資料',
 			'liveTv.failedToStartChannel' => '無法啟動直播頻道',
 			'liveTv.failedToBuildStreamUrl' => '無法建立串流 URL',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.playbackStartFailed' => ({required Object reason}) => '無法開始播放此頻道：${reason}',
 			'liveTv.channelSwitchFailed' => ({required Object reason}) => '無法切換頻道：${reason}',
 			'collections.title' => '收藏集',
@@ -5401,12 +5409,12 @@ extension on TranslationsZhHant {
 			'metadataEdit.noArtworkAvailable' => '沒有可用的封面圖片',
 			'metadataEdit.artworkOption' => ({required Object index}) => '封面圖片選項 ${index}',
 			'metadataEdit.selectedArtworkOption' => ({required Object index}) => '封面圖片選項 ${index}，已選擇',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.notSet' => '未設定',
 			'metadataEdit.libraryDefault' => '媒體庫預設',
 			'metadataEdit.accountDefault' => '帳戶預設',
 			'metadataEdit.seriesDefault' => '影集預設',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.episodeSorting' => '單集排序方式',
 			'metadataEdit.oldestFirst' => '由舊到新',
 			'metadataEdit.newestFirst' => '由新到舊',

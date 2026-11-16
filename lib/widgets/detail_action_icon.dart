@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-enum DetailActionGlyph { play, favorite, watched, more, down, next }
+enum DetailActionGlyph { play, favorite, watched, more, down, next, back }
 
 /// Linear paths shared with the approved detail prototype (24 × 24 view box).
 class DetailActionIcon extends StatelessWidget {
@@ -22,6 +22,7 @@ class DetailActionIcon extends StatelessWidget {
         '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
       DetailActionGlyph.down => '<path d="m6 9 6 6 6-6"/>',
       DetailActionGlyph.next => '<path d="m9 5 7 7-7 7"/>',
+      DetailActionGlyph.back => '<path d="m15 5-7 7 7 7"/>',
     };
     return SvgPicture.string(
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '

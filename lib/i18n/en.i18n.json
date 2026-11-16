@@ -1595,6 +1595,10 @@
     "broadcast": "Airs ${day} at ${time}",
     "broadcastWithZone": "Airs ${day} at ${time} ${timezone}",
     "detail": {
+      "seasonCount": "${n} seasons",
+      "moreActions": "More Actions",
+      "downloadMovie": "Download this movie",
+      "viewMediaInfo": "View media information",
       "originalTitle": "Original title",
       "alsoKnownAs": "Also known as",
       "studios": "Studios",

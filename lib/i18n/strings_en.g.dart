@@ -7661,6 +7661,18 @@ class Translations$explore$detail$en {
 
 	// Translations
 
+	/// en: '${n} seasons'
+	String seasonCount({required Object n}) => '${n} seasons';
+
+	/// en: 'More Actions'
+	String get moreActions => 'More Actions';
+
+	/// en: 'Download this movie'
+	String get downloadMovie => 'Download this movie';
+
+	/// en: 'View media information'
+	String get viewMediaInfo => 'View media information';
+
 	/// en: 'Original title'
 	String get originalTitle => 'Original title';
 
@@ -9762,6 +9774,10 @@ extension on Translations {
 			'explore.relation.other' => 'Related',
 			'explore.broadcast' => ({required Object day, required Object time}) => 'Airs ${day} at ${time}',
 			'explore.broadcastWithZone' => ({required Object day, required Object time, required Object timezone}) => 'Airs ${day} at ${time} ${timezone}',
+			'explore.detail.seasonCount' => ({required Object n}) => '${n} seasons',
+			'explore.detail.moreActions' => 'More Actions',
+			'explore.detail.downloadMovie' => 'Download this movie',
+			'explore.detail.viewMediaInfo' => 'View media information',
 			'explore.detail.originalTitle' => 'Original title',
 			'explore.detail.alsoKnownAs' => 'Also known as',
 			'explore.detail.studios' => 'Studios',
@@ -9839,12 +9855,12 @@ extension on Translations {
 			'liveTv.recordSeries' => 'Record Series',
 			'liveTv.recordOptions' => 'Record Options',
 			'liveTv.saveTo' => 'Save to',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.recordings' => 'Recordings',
 			'liveTv.scheduledRecordings' => 'Scheduled',
 			'liveTv.recordingRules' => 'Recording Rules',
 			'liveTv.noScheduledRecordings' => 'Nothing scheduled to record',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.manageRecording' => 'Manage recording',
 			'liveTv.cancelRecording' => 'Cancel recording',
 			'liveTv.cancelRecordingTitle' => 'Cancel this recording?',
@@ -10353,12 +10369,12 @@ extension on Translations {
 			'performanceOverlay.decoderExynosHw' => 'Exynos HW',
 			'performanceOverlay.decoderSoftware' => 'Software',
 			'performanceOverlay.decoderHardware' => 'Hardware',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.tunnelingActive' => 'Active',
 			'performanceOverlay.dvRpuFailed' => ({required Object converted, required Object failures}) => '${converted} (${failures} failed)',
 			'externalPlayer.title' => 'External Player',
 			'externalPlayer.useExternalPlayer' => 'Use External Player',
-			_ => null,
-		} ?? switch (path) {
 			'externalPlayer.useExternalPlayerDescription' => 'Open videos in another app',
 			'externalPlayer.selectPlayer' => 'Select Player',
 			'externalPlayer.customPlayers' => 'Custom Players',

@@ -81,7 +81,8 @@ import 'package:plezy/widgets/tv_browse_rail.dart';
 import 'package:plezy/widgets/media_card.dart';
 import 'package:plezy/widgets/media_details_sheet.dart';
 import 'package:plezy/widgets/media_detail_technical_info.dart';
-import 'package:plezy/widgets/media_context_menu.dart';
+import 'package:plezy/widgets/rating_bottom_sheet.dart';
+import 'package:plezy/providers/trackers_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../test_helpers/prefs.dart';
@@ -479,13 +480,6 @@ void main() {
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pump();
-    expect(FocusManager.instance.primaryFocus?.debugLabel, 'rating_chip');
-    expect(
-      tester.getSize(find.byKey(const ValueKey('detail_personal_rating_target'))).height,
-      greaterThanOrEqualTo(48),
-    );
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
-    await tester.pump();
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'detail_rating_source');
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pump();
@@ -587,7 +581,7 @@ void main() {
 
     expect(find.text('Season 1'), findsOneWidget);
     expect(find.text('Specials'), findsNothing);
-    expect(find.text('S1E1'), findsOneWidget);
+    expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 1)}'), findsOneWidget);
   });
 
   testWidgets('TV detail exposes each season as its episode hub leading options item', (tester) async {
@@ -1224,14 +1218,14 @@ void main() {
     expect(find.descendant(of: cards, matching: find.text('The Show')), findsNothing);
 
     // Play agrees with the hero: the focused episode, not a stale on-deck.
-    expect(find.text('S1E1'), findsOneWidget);
+    expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 1)}'), findsOneWidget);
     await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowRight);
     await tester.pump();
     await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowRight);
     await tester.pump(const Duration(milliseconds: 200));
     expect(tester.widget<Text>(heroTitle).data, 'The One After');
-    expect(find.text('S1E2'), findsOneWidget);
-    expect(find.text('S1E1'), findsNothing);
+    expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 2)}'), findsOneWidget);
+    expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 1)}'), findsNothing);
     semantics.dispose();
   });
 
@@ -1648,7 +1642,7 @@ void main() {
       await tester.pump();
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await settleSelection(tester);
-      expect(find.text('S1E2'), findsOneWidget);
+      expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 2)}'), findsOneWidget);
       expect(status(tester), contains('4K'));
       expect(status(tester), contains('Japanese'));
       expect(status(tester), isNot(contains('English')));
@@ -2037,6 +2031,7 @@ void main() {
         TranslationProvider(
           child: MultiProvider(
             providers: [
+              ChangeNotifierProvider<TrackersProvider>(create: (_) => TrackersProvider()),
               ChangeNotifierProvider<MultiServerProvider>.value(value: multiServerProvider),
               ChangeNotifierProvider<DownloadProvider>.value(value: downloadProvider),
               ChangeNotifierProvider<WatchStateStore>.value(value: watchStateOverlay),
@@ -2286,12 +2281,6 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pump();
       await tester.pumpAndSettle(const Duration(milliseconds: 50));
-      expect(focus('rating_chip').hasFocus, isTrue);
-      expectVisibleAboveRail(find.byKey(const ValueKey('detail_personal_rating_target')));
-      expectVisibleAboveRail(find.byType(MediaRatingsStrip));
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.pump();
-      await tester.pumpAndSettle(const Duration(milliseconds: 50));
       expect(focus('play_button').hasFocus, isTrue);
       final play = find
           .descendant(of: find.byType(FocusableActionBar).first, matching: find.byType(FilledButton))
@@ -2337,7 +2326,16 @@ void main() {
         serverBackend: MediaBackend.plex,
         rawItems: {movie.id: raw},
       );
-      await pumpPhoneDetail(tester, client, movie, viewport: const Size(1280, 720), textScale: 2, tv: true);
+      final observer = _RecordingNavigatorObserver(popVideoPlayerImmediately: true);
+      await pumpPhoneDetail(
+        tester,
+        client,
+        movie,
+        viewport: const Size(1280, 720),
+        textScale: 2,
+        tv: true,
+        observer: observer,
+      );
       await tester.pump(const Duration(milliseconds: 450));
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(TvBrowseRail), findsOneWidget);
@@ -2345,21 +2343,19 @@ void main() {
       final foreground = find.byKey(const ValueKey('tv_detail_content_scroll'));
       final before = tester.getRect(foreground);
       final oldRailTop = tester.getRect(find.byType(TvBrowseRail)).top;
-      final itemReads = client.itemReads;
-      // The root's normal context-menu refresh fetches the same item, now
-      // without cast in the server response. Keep the route/state alive so
-      // its revealed stable rail measurement cannot be reset by remounting.
-      final menu = tester.widget<MediaContextMenu>(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is MediaContextMenu && widget.item is MediaItem && (widget.item as MediaItem).id == movie.id,
-        ),
-      );
-      menu.onRefresh!(movie);
+      final itemReads = client.onDeckReads;
+      // Playback return refreshes the item in the existing detail state.
+      client.show = movie.copyWith(roles: const []);
+      tester
+          .widget<FilledButton>(
+            find.descendant(of: find.byType(FocusableActionBar).first, matching: find.byType(FilledButton)).first,
+          )
+          .onPressed!();
+      await tester.pumpAndSettle();
       await tester.pump();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(client.itemReads, greaterThan(itemReads));
+      expect(client.onDeckReads, greaterThan(itemReads));
       expect(tester.state(find.byType(MediaDetailScreen)), same(detailState));
       expect(find.byType(TvBrowseRail), findsNothing);
       final after = tester.getRect(foreground);
@@ -2674,11 +2670,7 @@ void main() {
         expect(after.bottom, lessThanOrEqualTo(viewport.bottom));
         if (wasFullyVisible) {
           expect(position.pixels, 0, reason: 'already visible Play must not recenter the initial screen');
-          for (final visible in [
-            find.byKey(const ValueKey('detail_natural_title')),
-            find.byType(MediaRatingsStrip),
-            find.byKey(const ValueKey('detail_personal_rating_target')),
-          ]) {
+          for (final visible in [find.byKey(const ValueKey('detail_natural_title')), find.byType(MediaRatingsStrip)]) {
             final rect = tester.getRect(visible);
             expect(rect.top, greaterThanOrEqualTo(viewport.top));
             expect(rect.bottom, lessThanOrEqualTo(viewport.bottom));
@@ -2767,10 +2759,22 @@ void main() {
           expect(find.byKey(const ValueKey('detail_natural_title')), findsOneWidget);
           expect(find.byType(MediaRatingsStrip), findsOneWidget);
           expect(
-            find.byType(MediaContextMenu),
+            find.byTooltip(t.explore.detail.moreActions),
             findsOneWidget,
-            reason: 'one detail More action owns one menu lifecycle',
+            reason: 'one detail More action opens the centered dialog',
           );
+          if (!fixture.tv) {
+            final favorite = find.byWidgetPredicate(
+              (widget) => widget is DetailActionIcon && widget.glyph == DetailActionGlyph.favorite,
+            );
+            expect(favorite, findsOneWidget);
+            final button = find.ancestor(of: favorite, matching: find.byType(IconButton)).first;
+            expect(
+              tester.widget<IconButton>(button).onPressed,
+              isNull,
+              reason: 'Plex without a connected watchlist keeps the heart disabled',
+            );
+          }
           expect(tester.takeException(), isNull);
           if (fixture.name == 'desktop') {
             final pageScroll = find
@@ -3194,7 +3198,7 @@ void main() {
       }
     });
 
-    testWidgets('personal rating target remains at least 48px and grows at 200 percent text', (tester) async {
+    testWidgets('personal rating moves into the top more dialog at 200 percent text', (tester) async {
       final show = buildShow();
       await pumpPhoneDetail(
         tester,
@@ -3203,11 +3207,15 @@ void main() {
         viewport: const Size(320, 844),
         textScale: 2,
       );
-      final target = find.byKey(const ValueKey('detail_personal_rating_target'));
+      expect(find.byKey(const ValueKey('detail_personal_rating_target')), findsNothing);
+      await tester.tap(find.byTooltip(t.explore.detail.moreActions));
+      await tester.pumpAndSettle();
+      final target = find.widgetWithText(ListTile, t.explore.detail.yourRating);
       expect(target, findsOneWidget);
-      final size = tester.getSize(target);
-      expect(size.width, greaterThanOrEqualTo(48));
-      expect(size.height, greaterThan(48));
+      expect(tester.getSize(target).height, greaterThanOrEqualTo(48));
+      await tester.tap(target);
+      await tester.pumpAndSettle();
+      expect(find.byType(RatingBottomSheet), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -3435,8 +3443,12 @@ void main() {
       }
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('S1E2'), findsOneWidget, reason: 'fallback survives a settled empty on-deck');
-      expect(find.text('S1E1'), findsNothing);
+      expect(
+        find.text('${t.common.play} ${t.common.episodeNumber(number: 2)}'),
+        findsOneWidget,
+        reason: 'fallback survives a settled empty on-deck',
+      );
+      expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 1)}'), findsNothing);
     });
 
     testWidgets('returning from playback refreshes watch state without the full-screen loader', (tester) async {
@@ -3459,7 +3471,11 @@ void main() {
 
       await pumpPhoneDetail(tester, client, show, observer: observer);
 
-      expect(find.text('S1E1'), findsOneWidget, reason: 'play button targets the on-deck episode');
+      expect(
+        find.text('${t.common.play} ${t.common.episodeNumber(number: 1)}'),
+        findsOneWidget,
+        reason: 'play button targets the on-deck episode',
+      );
       expect(find.text('1. Episode S1E1'), findsOneWidget);
       final childrenCallsBeforePlayback = client.childrenPageCalls.length;
       observer.pushedRouteNames.clear();
@@ -3469,7 +3485,12 @@ void main() {
       client.onDeckEpisode = episode2;
 
       await tester.tap(
-        find.descendant(of: find.byType(FocusableActionBar), matching: find.byIcon(Symbols.play_arrow_rounded)),
+        find.descendant(
+          of: find.byType(FocusableActionBar),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is DetailActionIcon && widget.glyph == DetailActionGlyph.play,
+          ),
+        ),
       );
       // Pump the push, the immediate pop, and the refresh round-trip one
       // frame at a time: the old full-reload path swapped in a loading
@@ -3502,7 +3523,7 @@ void main() {
 
       expect(observer.pushedRouteNames, contains(kVideoPlayerRouteName));
       // Watch state did refresh: the play button now targets the next episode.
-      expect(find.text('S1E2'), findsOneWidget);
+      expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 2)}'), findsOneWidget);
       // The lightweight refresh fetches the item + on-deck only — no season
       // or episode page refetch, no early-paint (both are full-loader work).
       expect(client.childrenPageCalls.length, childrenCallsBeforePlayback);
@@ -3522,7 +3543,12 @@ void main() {
       await pumpPhoneDetail(tester, client, movie, observer: observer);
       observer.pushedRouteNames.clear();
       final play = find.ancestor(
-        of: find.descendant(of: find.byType(FocusableActionBar), matching: find.byIcon(Symbols.play_arrow_rounded)),
+        of: find.descendant(
+          of: find.byType(FocusableActionBar),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is DetailActionIcon && widget.glyph == DetailActionGlyph.play,
+          ),
+        ),
         matching: find.byType(FilledButton),
       );
       final detail = tester.state(find.byType(MediaDetailScreen)) as DeletionAware;
@@ -3547,7 +3573,9 @@ void main() {
       final show = buildShow();
       final client = _FakeMediaServerClient(show: show, childrenByParent: const {});
       await pumpPhoneDetail(tester, client, show);
-      await tester.tap(find.byTooltip(t.downloads.downloadNow));
+      await tester.tap(find.byTooltip(t.explore.detail.moreActions));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(t.explore.detail.downloadMovie));
       await tester.pumpAndSettle();
       expect(find.text(t.downloads.unwatchedOnly), findsOneWidget);
       DeletionNotifier().notify(
@@ -3780,33 +3808,17 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
       }
 
-      final rate = t.mediaMenu.rate;
-      for (final width in [1100.0, 660.0]) {
+      for (final width in [1100.0, 660.0, 420.0, 320.0]) {
         await resizeTo(width);
-        final metadata = tester.widget<Text>(find.byKey(const ValueKey('detail_plain_metadata')));
-        for (final label in ['2017', 'PG-13', '1h 46min', '1080p']) {
-          expect(metadata.data, contains(label));
-        }
-        expect(find.text(rate), findsOneWidget);
-        for (final score in ['9.2', '7.4', '6.4']) {
-          expect(find.text(score), findsOneWidget);
-        }
-        expect(tester.takeException(), isNull);
-      }
-
-      // Compact phones use a wrapping metadata line, keeping the source's
-      // useful values readable without the old interactive chip strip.
-      for (final width in [420.0, 320.0]) {
-        await resizeTo(width);
-        final metadata = find.byWidgetPredicate(
-          (widget) => widget is Text && (widget.data?.contains('PG-13 · 1h 46min') ?? false),
-        );
-        expect(metadata, findsOneWidget);
-        final text = tester.widget<Text>(metadata);
-        expect(text.data, contains('1080p'));
-        expect(text.data, contains('1h 46min'));
-        expect(text.textAlign, TextAlign.center);
-        expect(tester.getRect(metadata).width, lessThanOrEqualTo(width - 32));
+        final firstLine = tester.widget<Text>(find.byKey(const ValueKey('detail_plain_metadata')));
+        final secondLine = tester.widget<Text>(find.byKey(const ValueKey('detail_secondary_metadata')));
+        expect(firstLine.data, '2017');
+        expect(firstLine.data, isNot(contains('PG-13')));
+        expect(secondLine.data, contains('1h 46min'));
+        expect(secondLine.data, contains('1080p'));
+        expect(firstLine.style?.fontSize, 12);
+        expect(secondLine.style?.fontSize, 12);
+        expect(find.byKey(const ValueKey('detail_personal_rating_target')), findsNothing);
         for (final score in ['9.2', '7.4', '6.4']) {
           expect(find.text(score), findsOneWidget);
         }
@@ -4860,7 +4872,7 @@ Map<String, dynamic> _previewItem(
 }
 
 class _FakeMediaServerClient implements MediaServerClient {
-  final MediaItem show;
+  MediaItem show;
   final MediaBackend serverBackend;
   Completer<void>? favoriteGate;
   int favoriteCalls = 0;

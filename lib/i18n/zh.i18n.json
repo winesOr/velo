@@ -1587,6 +1587,10 @@
     "broadcast": "每周${day} ${time}播出",
     "broadcastWithZone": "每周${day} ${time} ${timezone}播出",
     "detail": {
+      "seasonCount": "共 ${n} 季",
+      "moreActions": "更多操作",
+      "downloadMovie": "下载此影片",
+      "viewMediaInfo": "查看媒体信息",
       "originalTitle": "原名",
       "alsoKnownAs": "又名",
       "studios": "制作公司",

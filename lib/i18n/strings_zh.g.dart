@@ -3125,6 +3125,10 @@ class Translations$explore$detail$zh extends Translations$explore$detail$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String seasonCount({required Object n}) => '共 ${n} 季';
+	@override String get moreActions => '更多操作';
+	@override String get downloadMovie => '下载此影片';
+	@override String get viewMediaInfo => '查看媒体信息';
 	@override String get originalTitle => '原名';
 	@override String get alsoKnownAs => '又名';
 	@override String get studios => '制作公司';
@@ -4896,6 +4900,10 @@ extension on TranslationsZh {
 			'explore.relation.other' => '相关',
 			'explore.broadcast' => ({required Object day, required Object time}) => '每周${day} ${time}播出',
 			'explore.broadcastWithZone' => ({required Object day, required Object time, required Object timezone}) => '每周${day} ${time} ${timezone}播出',
+			'explore.detail.seasonCount' => ({required Object n}) => '共 ${n} 季',
+			'explore.detail.moreActions' => '更多操作',
+			'explore.detail.downloadMovie' => '下载此影片',
+			'explore.detail.viewMediaInfo' => '查看媒体信息',
 			'explore.detail.originalTitle' => '原名',
 			'explore.detail.alsoKnownAs' => '又名',
 			'explore.detail.studios' => '制作公司',
@@ -4973,12 +4981,12 @@ extension on TranslationsZh {
 			'liveTv.recordSeries' => '录制系列节目',
 			'liveTv.recordOptions' => '录制选项',
 			'liveTv.saveTo' => '保存到',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.recordings' => '录制内容',
 			'liveTv.scheduledRecordings' => '计划录制',
 			'liveTv.recordingRules' => '录制规则',
 			'liveTv.noScheduledRecordings' => '没有安排的录制',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.manageRecording' => '管理录制',
 			'liveTv.cancelRecording' => '取消录制',
 			'liveTv.cancelRecordingTitle' => '取消此次录制？',
@@ -5487,12 +5495,12 @@ extension on TranslationsZh {
 			'performanceOverlay.decoderExynosHw' => 'Exynos 硬件',
 			'performanceOverlay.decoderSoftware' => '软件',
 			'performanceOverlay.decoderHardware' => '硬件',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.tunnelingActive' => '已启用',
 			'performanceOverlay.dvRpuFailed' => ({required Object converted, required Object failures}) => '${converted}（${failures} 个失败）',
 			'externalPlayer.title' => '外部播放器',
 			'externalPlayer.useExternalPlayer' => '使用外部播放器',
-			_ => null,
-		} ?? switch (path) {
 			'externalPlayer.useExternalPlayerDescription' => '在其他应用中打开视频',
 			'externalPlayer.selectPlayer' => '选择播放器',
 			'externalPlayer.customPlayers' => '自定义播放器',

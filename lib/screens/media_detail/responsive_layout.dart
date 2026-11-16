@@ -89,7 +89,6 @@ extension _MediaDetailResponsiveLayout on _MediaDetailScreenState {
     final description = _tvDetailDescription(metadata, hideSpoilers: hideSpoilers);
     final focusedEpisode = _tvDetailFocusedEpisode.value;
     final ratingsItem = focusedEpisode == null ? metadata : _withProbedRatings(focusedEpisode);
-    final canRate = _canEditDetailRating(metadata);
     void openDetails() => _openTvDetailsSheet(context, metadata, hideSpoilers: hideSpoilers);
     return SingleChildScrollView(
       key: const ValueKey('tv_detail_content_scroll'),
@@ -123,8 +122,6 @@ extension _MediaDetailResponsiveLayout on _MediaDetailScreenState {
                         ).isNotEmpty &&
                         _tvRatingSourceFocusNode.context != null) {
                       _tvRatingSourceFocusNode.requestFocus();
-                    } else if (canRate) {
-                      _ratingChipFocusNode.requestFocus();
                     } else {
                       _focusTvDetailActionRow();
                     }
@@ -177,10 +174,9 @@ extension _MediaDetailResponsiveLayout on _MediaDetailScreenState {
                   alignment: WrapAlignment.start,
                   firstFocusNode: _tvRatingSourceFocusNode,
                   onNavigateUp: _tvDetailInfoFocusNode.requestFocus,
-                  onNavigateDown: canRate ? _ratingChipFocusNode.requestFocus : _focusTvDetailActionRow,
+                  onNavigateDown: _focusTvDetailActionRow,
                   foregroundColor: _tvDetailForegroundColor(context),
                 ),
-                if (canRate) _buildUserRatingChip(metadata),
               ],
             ),
             const SizedBox(height: 14),
