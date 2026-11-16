@@ -33,9 +33,9 @@ import '../services/cached_playback_metadata_service.dart';
 import 'media_detail/playback_selection.dart';
 import 'media_detail/action_press.dart';
 import 'media_detail/episode_rail.dart';
+import 'media_detail/related_items.dart';
 
 import '../focus/dpad_navigator.dart';
-import '../focus/dpad_select_long_press_controller.dart';
 import '../focus/focusable_action_bar.dart';
 import '../focus/focusable_wrapper.dart';
 import '../focus/hub_vertical_navigation.dart';
@@ -43,7 +43,6 @@ import '../focus/locked_hub_controller.dart';
 import '../focus/key_event_utils.dart';
 import '../focus/input_mode_tracker.dart';
 import '../widgets/cast_member_strip.dart';
-import '../widgets/focus_builders.dart';
 import '../media/library_query.dart';
 import '../media/library_change_event.dart';
 import '../media/media_hub.dart';
@@ -360,6 +359,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   bool get _canUseDetail => mounted && !_isDeleted;
   List<MediaItem>? _extras;
   List<MediaHub> _relatedHubs = [];
+  List<MediaHub> _relatedHubSources = [];
   List<GlobalKey<HubSectionState>> _relatedHubKeys = [];
   bool _hasLoadedExtras = false;
   bool _hasLoadedRelatedHubs = false;
@@ -368,7 +368,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   PageRoute<dynamic>? _route;
   RouteObserver<PageRoute<dynamic>>? _routeObserver;
   late final ScrollController _scrollController;
-  final ScrollController _extrasScrollController = ScrollController();
   bool _watchStateChanged = false;
   final HomeThemeController _detailTheme = HomeThemeController();
   MediaItem? _detailSelectedEpisode;
@@ -486,16 +485,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   late final FocusNode _moreActionsFocusNode;
   final FocusNode _tvRatingSourceFocusNode = FocusNode(debugLabel: 'detail_rating_source');
   late final FocusNode _backButtonFocusNode;
-  final _extrasSelectLongPress = DpadSelectLongPressController();
 
   // Context menu key for the three-dots button
 
   // Locked focus pattern for extras
-  int _focusedExtraIndex = 0;
-  final ValueNotifier<int> _focusedExtraIndexNotifier = ValueNotifier<int>(0);
-  late final FocusNode _extrasFocusNode;
-  final Map<int, GlobalKey<MediaCardState>> _extraCardKeys = {};
-  final _extrasSectionKey = GlobalKey();
 
   // Locked focus pattern for overview
   late final FocusNode _overviewFocusNode;
@@ -511,6 +504,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   // Focus target for the trailing info rows (studio / contentRating)
   late final FocusNode _infoRowsFocusNode;
   final _infoRowsSectionKey = GlobalKey();
+  final _technicalInfoKey = GlobalKey<MediaDetailTechnicalInfoState>();
 
   @override
   MediaItem get serverBoundMetadata => _metadata;
@@ -882,8 +876,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _lastEpisodeFocusNode.addListener(_onLastEpisodeFocusChanged);
-    _extrasFocusNode = FocusNode(debugLabel: 'extras_row');
-    _extrasFocusNode.addListener(_handleExtrasFocusChange);
     _playButtonFocusNode = FocusNode(debugLabel: 'play_button');
     _moreActionsFocusNode = FocusNode(debugLabel: 'detail_more');
     _backButtonFocusNode = FocusNode(debugLabel: 'media_detail_back');
@@ -1080,10 +1072,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     _focusedEpisodeRatingsRevision.dispose();
     _playbackProbeTimer?.cancel();
     _playbackStatusRevision.dispose();
-    _extrasScrollController.dispose();
-    _extrasFocusNode.removeListener(_handleExtrasFocusChange);
-    _extrasFocusNode.dispose();
-    _focusedExtraIndexNotifier.dispose();
     _playButtonFocusNode.dispose();
     _versionSelectFocusNode.dispose();
     _audioSelectFocusNode.dispose();
@@ -1095,7 +1083,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     _overviewFocusNode.dispose();
     _tvDetailInfoFocusNode.dispose();
     _infoRowsFocusNode.dispose();
-    _extrasSelectLongPress.dispose();
     for (final node in _seasonTabFocusNodes) {
       node.dispose();
     }
@@ -2040,15 +2027,37 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       },
       fetch: (client) => client.fetchRelatedHubs(_metadata.id),
       apply: (relatedHubs) {
-        _relatedHubs = relatedHubs;
-        _relatedHubKeys = List.generate(relatedHubs.length, (_) => GlobalKey<HubSectionState>());
+        _relatedHubSources = relatedHubs;
+        final items = detailRelatedItems(relatedHubs);
+        _relatedHubs = PlatformDetector.isTV()
+            ? relatedHubs
+            : [
+                if (items.isNotEmpty)
+                  MediaHub(
+                    id: 'detail.related',
+                    title: t.explore.detail.relatedMedia,
+                    type: 'mixed',
+                    items: items,
+                    size: items.length,
+                    more: true,
+                    serverId: _metadata.serverId,
+                    serverName: _metadata.serverName,
+                  ),
+              ];
+        _relatedHubKeys = List.generate(_relatedHubs.length, (_) => GlobalKey<HubSectionState>());
       },
       markLoaded: () => _hasLoadedRelatedHubs = true,
     );
   }
 
-  /// Focus the first visible section above cast: season tabs → overview → play button.
-  /// Shared by cast UP, extras UP, and related hub UP handlers.
+  Future<List<MediaItem>> _loadAllDetailRelatedItems() async {
+    final current = List<MediaHub>.of(_relatedHubs);
+    final client = _getMediaClientForMetadata(context);
+    if (client == null) return detailRelatedItems(current);
+    return loadDetailRelatedItems(client, itemId: _metadata.id, preview: _relatedHubSources);
+  }
+
+  /// Return from cast to the season tabs, overview, or primary play action.
   void _focusSectionAboveCast() {
     final metadata = _metadata;
     if (metadata.isShow && !_showEpisodesDirectly && _seasons.isNotEmpty && _seasonTabFocusNodes.isNotEmpty) {
@@ -2063,8 +2072,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     }
   }
 
-  /// Focus the first visible section above extras: cast → season tabs → overview → play button.
-  void _focusSectionAboveExtras() {
+  /// Return from recommendations or technical information to cast or the hero.
+  void _focusCastOrAbove() {
     final metadata = _metadata;
     if (metadata.roles != null && metadata.roles!.isNotEmpty) {
       _castStripKey.currentState?.requestFocus();
@@ -2074,26 +2083,20 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     }
   }
 
-  bool get _hasInfoRows {
-    final metadata = _metadata;
-    return metadata.studio != null || metadata.directors?.isNotEmpty == true || metadata.contentRating != null;
-  }
+  bool get _hasInfoRows => _playbackTargetItem(_metadata) != null;
 
-  /// Focus the trailing info rows (studio / directors / contentRating) and scroll them into view.
+  /// Focus the technical information at the end of the page.
   void _focusInfoRows() {
-    _infoRowsFocusNode.requestFocus();
+    if (_technicalInfoKey.currentState?.requestFocus() != true) _infoRowsFocusNode.requestFocus();
     _scrollSectionIntoView(_infoRowsSectionKey);
   }
 
-  /// Focus the first visible focusable section above info rows: related hubs → extras → cast → …
+  /// Return from technical information to recommendations, cast, or the hero.
   void _focusSectionAboveInfoRows() {
     if (_relatedHubs.isNotEmpty) {
       _relatedHubKeys.last.currentState?.requestFocusFromMemory();
-    } else if (_extras != null && _extras!.isNotEmpty) {
-      _extrasFocusNode.requestFocus();
-      _scrollSectionIntoView(_extrasSectionKey);
     } else {
-      _focusSectionAboveExtras();
+      _focusCastOrAbove();
     }
   }
 
@@ -2241,7 +2244,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   void _focusBelowOverview() {
     final metadata = _metadata;
 
-    // DOWN order: season tabs → episodes → cast → extras → related hubs → info rows.
+    // DOWN order: season tabs → episodes → cast → recommendations → technical information.
     if (metadata.isShow && !_showEpisodesDirectly && _seasons.isNotEmpty && _seasonTabFocusNodes.isNotEmpty) {
       _seasonTabFocusNodes[_selectedSeasonIndex].requestFocus();
       _scrollSectionIntoView(_seasonsSectionKey);
@@ -2260,12 +2263,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       return;
     }
 
-    if (_extras != null && _extras!.isNotEmpty) {
-      _extrasFocusNode.requestFocus();
-      _scrollSectionIntoView(_extrasSectionKey);
-      return;
-    }
-
     if (_relatedHubs.isNotEmpty) {
       _relatedHubKeys.first.currentState?.requestFocusFromMemory();
       return;
@@ -2275,11 +2272,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       _focusInfoRows();
     }
   }
-
-  /// Get the responsive card width used by seasons/extras/cast rows.
-  /// Delegates to the cast strip's calculator so the dpad scroll math and
-  /// the rendered cards can never disagree.
-  double _getResponsiveCardWidth() => CastMemberStrip.responsiveCardWidth(context);
 
   void _showSeasonTabContextMenu(int index, {Offset? position}) {
     final key = _seasonContextMenuKeys.putIfAbsent(index, () => GlobalKey<MediaContextMenuState>());
@@ -2441,98 +2433,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   }
 
   /// Handle key events for the extras row (locked focus pattern)
-  KeyEventResult _handleExtrasKeyEvent(FocusNode _, KeyEvent event) {
-    final key = event.logicalKey;
-
-    if (key.isBackKey) return KeyEventResult.ignored;
-
-    if (SelectKeyUpSuppressor.consumeIfSuppressed(event)) {
-      if (event is KeyUpEvent && key.isSelectKey) {
-        _extrasSelectLongPress.reset();
-      }
-      return KeyEventResult.handled;
-    }
-
-    final extras = _extras;
-    if (extras == null || extras.isEmpty) {
-      _extrasSelectLongPress.reset();
-      return KeyEventResult.ignored;
-    }
-
-    final selectResult = _extrasSelectLongPress.handleKeyEvent(
-      event,
-      isOwnerActive: () => mounted,
-      onShortPress: () {
-        if (_focusedExtraIndex < extras.length) {
-          navigateToVideoPlayer(context, metadata: extras[_focusedExtraIndex], isLaunchCurrent: () => _canUseDetail);
-        }
-      },
-      onLongPress: () {
-        if (_focusedExtraIndex < _extraCardKeys.length) {
-          _extraCardKeys[_focusedExtraIndex]?.currentState?.showContextMenu();
-        }
-      },
-    );
-    if (selectResult != KeyEventResult.ignored) return selectResult;
-
-    if (!event.isActionable) return KeyEventResult.ignored;
-
-    // LEFT: previous extra
-    if (key.isLeftKey) {
-      if (_focusedExtraIndex > 0) {
-        _focusedExtraIndex--;
-        _focusedExtraIndexNotifier.value = _focusedExtraIndex;
-        scrollListToIndex(
-          _extrasScrollController,
-          _focusedExtraIndex,
-          itemExtent: _getResponsiveCardWidth() + 4,
-          leadingPadding: 0,
-        );
-      }
-      return KeyEventResult.handled;
-    }
-
-    // RIGHT: next extra
-    if (key.isRightKey) {
-      if (_focusedExtraIndex < _extras!.length - 1) {
-        _focusedExtraIndex++;
-        _focusedExtraIndexNotifier.value = _focusedExtraIndex;
-        scrollListToIndex(
-          _extrasScrollController,
-          _focusedExtraIndex,
-          itemExtent: _getResponsiveCardWidth() + 4,
-          leadingPadding: 0,
-        );
-      }
-      return KeyEventResult.handled;
-    }
-
-    if (key.isUpKey) {
-      _focusSectionAboveExtras();
-      return KeyEventResult.handled;
-    }
-
-    // DOWN: related hubs → info rows → consume
-    if (key.isDownKey) {
-      if (_relatedHubs.isNotEmpty) {
-        _relatedHubKeys.first.currentState?.requestFocusFromMemory();
-      } else if (_hasInfoRows) {
-        _focusInfoRows();
-      }
-      return KeyEventResult.handled;
-    }
-
-    return KeyEventResult.ignored;
-  }
-
-  void _handleExtrasFocusChange() {
-    if (!_extrasFocusNode.hasFocus) _resetExtrasLongPressState();
-  }
-
-  void _resetExtrasLongPressState() {
-    _extrasSelectLongPress.reset();
-  }
-
   void _focusSectionDirectlyAboveCast() {
     if (_episodes.isNotEmpty) {
       final useLastEpisode = _episodes.length > 1;
@@ -2546,10 +2446,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
   /// Focus the first visible section below cast.
   void _focusSectionBelowCast() {
-    if (_extras != null && _extras!.isNotEmpty) {
-      _extrasFocusNode.requestFocus();
-      _scrollSectionIntoView(_extrasSectionKey);
-    } else if (_relatedHubs.isNotEmpty) {
+    if (_relatedHubs.isNotEmpty) {
       _relatedHubKeys.first.currentState?.requestFocusFromMemory();
     } else if (_hasInfoRows) {
       _focusInfoRows();
@@ -2562,12 +2459,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       hubIndex: hubIndex,
       isUp: isUp,
       onTopBoundary: () {
-        if (_extras != null && _extras!.isNotEmpty) {
-          _extrasFocusNode.requestFocus();
-          _scrollSectionIntoView(_extrasSectionKey);
-        } else {
-          _focusSectionAboveExtras();
-        }
+        _focusCastOrAbove();
       },
       onBottomBoundary: _hasInfoRows ? _focusInfoRows : null,
       requestFocus: (targetIndex) {
@@ -2576,7 +2468,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     );
   }
 
-  /// Handle key events for the trailing info rows (studio / contentRating).
+  /// Handle boundary navigation for the final technical information section.
   /// UP returns to the previous focusable section; terminal geometry is trapped.
   KeyEventResult _handleInfoRowsKeyEvent(FocusNode _, KeyEvent event) {
     final key = event.logicalKey;
@@ -2588,7 +2480,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       return KeyEventResult.handled;
     }
 
-    if (key.isDownKey || key.isLeftKey || key.isRightKey || key.isSelectKey) {
+    if (_infoRowsFocusNode.hasPrimaryFocus &&
+        (key.isDownKey || key.isRightKey) &&
+        _technicalInfoKey.currentState?.requestFocus() == true) {
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -3440,7 +3334,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
                               // Cast
                               if (metadata.roles != null && metadata.roles!.isNotEmpty) ...[
-                                _buildDetailSectionHeader(context, t.discover.cast, titleKey: _castSectionKey),
+                                _buildDetailSectionHeader(
+                                  context,
+                                  t.explore.detail.castCrew,
+                                  titleKey: _castSectionKey,
+                                ),
                                 const SizedBox(height: 12),
                                 _buildCastSection(metadata),
                                 SizedBox(height: isTv ? 24 : 12),
@@ -3465,21 +3363,16 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                                 ),
                                 const SizedBox(height: 20),
                               ],
-                              // Trailers & Extras Section
-                              if (!widget.isOffline && _extras != null && _extras!.isNotEmpty) ...[
-                                _buildDetailSectionHeader(context, t.discover.extras, titleKey: _extrasSectionKey),
-                                const SizedBox(height: 12),
-                                _buildExtrasSection(),
-                                SizedBox(height: isTv ? 24 : 12),
-                              ],
-
-                              // Related Hubs (Collections, Similar, More From...)
+                              // One combined row of related films and shows.
                               for (int i = 0; i < _relatedHubs.length; i++) ...[
                                 HubSection(
                                   key: _relatedHubKeys[i],
                                   hub: _relatedHubs[i],
                                   focusMemory: _hubFocusMemory,
                                   icon: _getRelatedHubIcon(_relatedHubs[i]),
+                                  detailRelated: true,
+                                  cardWidthOverride: 107,
+                                  loadMoreItems: _loadAllDetailRelatedItems,
                                   inset: true,
                                   onVerticalNavigation: (isUp) => _handleRelatedHubNavigation(i, isUp),
                                 ),
@@ -3489,41 +3382,19 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                                 SizedBox(height: isTv ? 28 : 8),
                               ],
 
-                              _buildDetailSectionHeader(
-                                context,
-                                '${t.fileInfo.video} · ${t.fileInfo.audio} · ${t.fileInfo.subtitles}',
-                              ),
-                              const SizedBox(height: 12),
-                              _buildDetailTechnicalInfo(context, metadata),
-                              const SizedBox(height: 20),
-                              // Additional info — wrapped in Focus so DPAD DOWN from the
-                              // last focusable section lands here and scrolls it into view.
-                              if (_hasInfoRows)
-                                Focus(
-                                  focusNode: _infoRowsFocusNode,
-                                  onKeyEvent: _handleInfoRowsKeyEvent,
-                                  child: Column(
-                                    key: _infoRowsSectionKey,
-                                    crossAxisAlignment: .start,
-                                    children: [
-                                      if (metadata.studio != null) ...[
-                                        _buildInfoRow(t.discover.studio, metadata.studio!),
-                                        const SizedBox(height: 12),
-                                      ],
-                                      if (metadata.directors?.isNotEmpty == true) ...[
-                                        _buildInfoRow(
-                                          metadata.directors!.length > 1 ? t.discover.directors : t.discover.director,
-                                          metadata.directors!.join(', '),
-                                        ),
-                                        const SizedBox(height: 12),
-                                      ],
-                                      if (metadata.contentRating != null) ...[
-                                        _buildInfoRow(t.discover.rating, formatContentRating(metadata.contentRating!)),
-                                        const SizedBox(height: 12),
-                                      ],
-                                    ],
-                                  ),
+                              Focus(
+                                focusNode: _infoRowsFocusNode,
+                                onKeyEvent: _handleInfoRowsKeyEvent,
+                                child: Column(
+                                  key: _infoRowsSectionKey,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildDetailSectionHeader(context, t.explore.detail.mediaInfo),
+                                    const SizedBox(height: 12),
+                                    _buildDetailTechnicalInfo(context, metadata),
+                                  ],
                                 ),
+                              ),
                             ],
                           ),
                         ),
@@ -4494,87 +4365,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       onNavigateUp: _focusSectionDirectlyAboveCast,
       onNavigateDown: _focusSectionBelowCast,
       onMemberTap: (index) => _navigateToActorMedia(roles[index]),
-    );
-  }
-
-  Widget _buildExtrasSection() {
-    return SettingValueBuilder<int>(
-      pref: SettingsService.libraryDensity,
-      builder: (context, libraryDensity, child) => _buildExtrasSectionContent(),
-    );
-  }
-
-  Widget _buildExtrasSectionContent() {
-    final cardWidth = _getResponsiveCardWidth();
-    // 16:9 aspect ratio for clip thumbnails (cardWidth includes 8px padding on each side)
-    final posterHeight = (cardWidth - 16) * (9 / 16);
-    final containerHeight = posterHeight + 52;
-
-    return Focus(
-      focusNode: _extrasFocusNode,
-      onKeyEvent: _handleExtrasKeyEvent,
-      child: ListenableBuilder(
-        listenable: Listenable.merge([_extrasFocusNode, _focusedExtraIndexNotifier]),
-        builder: (context, _) {
-          final hasFocus = _extrasFocusNode.hasFocus;
-
-          return SizedBox(
-            height: containerHeight,
-            child: HorizontalScrollWithArrows(
-              controller: _extrasScrollController,
-              builder: (scrollController) => ListView.builder(
-                addAutomaticKeepAlives: false,
-                addSemanticIndexes: false,
-                controller: scrollController,
-                scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.none,
-                padding: const EdgeInsets.symmetric(vertical: 5),
-                itemCount: _extras!.length,
-                itemBuilder: (context, index) {
-                  final extra = _extras![index];
-                  final isFocused = hasFocus && index == _focusedExtraIndex;
-                  final cardKey = _extraCardKeys.putIfAbsent(index, () => GlobalKey<MediaCardState>());
-
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: FocusBuilders.buildLockedFocusWrapper(
-                      context: context,
-                      isFocused: isFocused,
-                      onTap: () =>
-                          navigateToVideoPlayer(context, metadata: extra, isLaunchCurrent: () => _canUseDetail),
-                      delegateFocusBorder: true,
-                      child: MediaCard(
-                        key: cardKey,
-                        item: extra,
-                        width: cardWidth,
-                        height: posterHeight,
-                        viewModeOverride: ViewMode.grid,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    final theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: .start,
-      children: [
-        SizedBox(
-          width: 120,
-          child: Text(
-            label,
-            style: TextStyle(fontWeight: .w600, color: theme.colorScheme.onSurfaceVariant),
-          ),
-        ),
-        Expanded(child: Text(value, style: theme.textTheme.bodyLarge)),
-      ],
     );
   }
 

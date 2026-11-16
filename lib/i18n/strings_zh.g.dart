@@ -3129,6 +3129,14 @@ class Translations$explore$detail$zh extends Translations$explore$detail$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String get subtitleFormat => '格式';
+	@override String get castCrew => '演员人员';
+	@override String get mediaInfo => '音视频字幕信息';
+	@override String get relatedMedia => '相关影片';
+	@override String get technicalTitle => '标题';
+	@override String get channelLayout => '声道布局';
+	@override String get channelCount => '声道数';
+	@override String get externalSubtitles => '外挂字幕';
 	@override String seasonCount({required Object n}) => '共 ${n} 季';
 	@override String get moreActions => '更多操作';
 	@override String get downloadMovie => '下载此影片';
@@ -4908,6 +4916,14 @@ extension on TranslationsZh {
 			'explore.relation.other' => '相关',
 			'explore.broadcast' => ({required Object day, required Object time}) => '每周${day} ${time}播出',
 			'explore.broadcastWithZone' => ({required Object day, required Object time, required Object timezone}) => '每周${day} ${time} ${timezone}播出',
+			'explore.detail.subtitleFormat' => '格式',
+			'explore.detail.castCrew' => '演员人员',
+			'explore.detail.mediaInfo' => '音视频字幕信息',
+			'explore.detail.relatedMedia' => '相关影片',
+			'explore.detail.technicalTitle' => '标题',
+			'explore.detail.channelLayout' => '声道布局',
+			'explore.detail.channelCount' => '声道数',
+			'explore.detail.externalSubtitles' => '外挂字幕',
 			'explore.detail.seasonCount' => ({required Object n}) => '共 ${n} 季',
 			'explore.detail.moreActions' => '更多操作',
 			'explore.detail.downloadMovie' => '下载此影片',
@@ -4977,6 +4993,8 @@ extension on TranslationsZh {
 			'liveTv.reorderFavorites' => '重新排序收藏',
 			'liveTv.noFavoriteChannels' => '没有收藏的频道',
 			'liveTv.noFavoriteChannelsHint' => '显示所有频道，然后长按某个频道将其加入收藏。',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.showAllChannels' => '显示所有频道',
 			'liveTv.favoritesLoadFailed' => '无法加载收藏。请检查网络连接后重试。',
 			'liveTv.favoritesUpdateFailed' => '无法更新收藏。请检查网络连接后重试。',
@@ -4985,8 +5003,6 @@ extension on TranslationsZh {
 			'liveTv.watchLive' => '观看直播',
 			'liveTv.goToLive' => '跳至直播',
 			'liveTv.record' => '录制',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordEpisode' => '录制单集',
 			'liveTv.recordSeries' => '录制系列节目',
 			'liveTv.recordOptions' => '录制选项',
@@ -5491,6 +5507,8 @@ extension on TranslationsZh {
 			'performanceOverlay.maxFall' => 'MaxFALL',
 			'performanceOverlay.cacheUsed' => '已用缓存',
 			'performanceOverlay.cacheLimit' => '缓存限制',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.speed' => '速度',
 			'performanceOverlay.player' => '播放器',
 			'performanceOverlay.memory' => '内存',
@@ -5499,8 +5517,6 @@ extension on TranslationsZh {
 			'performanceOverlay.decoderAndroidHw' => 'Android 硬件',
 			'performanceOverlay.decoderNvidiaHw' => 'NVIDIA 硬件',
 			'performanceOverlay.decoderQualcommHw' => 'Qualcomm 硬件',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.decoderMediatekHw' => 'MediaTek 硬件',
 			'performanceOverlay.decoderExynosHw' => 'Exynos 硬件',
 			'performanceOverlay.decoderSoftware' => '软件',

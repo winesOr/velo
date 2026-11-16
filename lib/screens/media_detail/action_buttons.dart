@@ -762,6 +762,10 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       case 'download':
         await _handleDownloadButtonPressed(actionContext, metadata);
       case 'info':
+        if (!PlatformDetector.isTV()) {
+          _scrollSectionIntoView(_infoRowsSectionKey);
+          return;
+        }
         await showScopedDialog<void>(
           context: context,
           builder: (dialogContext) => AppDialog(

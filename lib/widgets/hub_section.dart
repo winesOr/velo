@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/home_typography.dart';
 import '../theme/mono_presentation.dart';
-import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../focus/dpad_navigator.dart';
@@ -63,6 +62,9 @@ class HubSection extends StatefulWidget {
 
   /// Compact score inside recommendation artwork.
   final bool showRatingBadge;
+
+  /// Detail recommendations have a single "All" entry and year/kind captions.
+  final bool detailRelated;
   final bool usesContinueWatchingAction;
   final bool showServerName;
   final Future<List<MediaItem>> Function()? loadMoreItems;
@@ -120,6 +122,7 @@ class HubSection extends StatefulWidget {
     this.showServerName = false,
     this.showWatchProgress = true,
     this.showRatingBadge = true,
+    this.detailRelated = false,
     this.loadMoreItems,
     this.totalResults,
     this.onFocusedItemChanged,
@@ -498,7 +501,7 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
     final isTv = PlatformDetector.isTV();
     final leadingPadding = _leadingPaddingFor(isTv);
     final homePhone = !isTv && !widget.inset && Theme.of(context).extension<HomeTypography>() != null;
-    final canBrowseAll = widget.hub.more || (homePhone && widget.isInContinueWatching);
+    final canBrowseAll = widget.detailRelated || widget.hub.more || (homePhone && widget.isInContinueWatching);
     // Phone headers follow the prototype: 18/w600 title, no leading glyph, and
     // a quiet "All >" link on the far edge. TV keeps the icon-led shelf header.
     final titleStyle =
@@ -542,7 +545,12 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
                       if (isTv) ...[AppIcon(widget.icon, fill: 1, size: 28), const SizedBox(width: 12)],
                       Flexible(
                         fit: isTv ? FlexFit.loose : FlexFit.tight,
-                        child: Text(widget.hub.title, style: titleStyle, overflow: .ellipsis, maxLines: 1),
+                        child: Text(
+                          widget.detailRelated ? t.explore.detail.relatedMedia : widget.hub.title,
+                          style: titleStyle,
+                          overflow: .ellipsis,
+                          maxLines: 1,
+                        ),
                       ),
                       if (widget.totalResults case final totalResults?) ...[
                         SizedBox(width: isTv ? 12 : 8),
@@ -839,6 +847,7 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
                                     isInContinueWatching: widget.isInContinueWatching,
                                     showWatchProgress: widget.showWatchProgress,
                                     showRatingBadge: widget.showRatingBadge,
+                                    showMediaKindSubtitle: widget.detailRelated,
                                     usesContinueWatchingAction: widget.usesContinueWatchingAction,
                                     mixedHubContext: isMixedHub,
                                     episodePosterModeOverride: episodePosterMode,

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/media/media_file_info.dart';
@@ -148,7 +149,72 @@ void main() {
       scale: 2,
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('3840x2160'), findsOneWidget);
+    expect(find.textContaining('3840 × 2160'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('technical cards prefer selected tracks, then default tracks, and combine file parts', (tester) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pump(
+      tester,
+      MediaDetailTechnicalInfo(
+        targetKey: 'movie',
+        title: 'Movie',
+        load: () async => const MediaFileInfo(
+          versions: [
+            MediaFileVersion(
+              parts: [
+                MediaFilePart(
+                  filePath: '/part-one.mkv',
+                  streams: [
+                    MediaStreamDetails(kind: MediaStreamKind.audio, ordinal: 1, language: 'First'),
+                    MediaStreamDetails(kind: MediaStreamKind.audio, ordinal: 2, language: 'Default', isDefault: true),
+                    MediaStreamDetails(kind: MediaStreamKind.audio, ordinal: 3, language: 'Selected', isSelected: true),
+                    MediaStreamDetails(kind: MediaStreamKind.subtitle, ordinal: 1, language: 'First subtitle'),
+                    MediaStreamDetails(
+                      kind: MediaStreamKind.subtitle,
+                      ordinal: 2,
+                      language: 'Default subtitle',
+                      isDefault: true,
+                    ),
+                  ],
+                ),
+                MediaFilePart(filePath: '/part-two.mkv'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('${t.fileInfo.language}: Selected'), findsOneWidget);
+    expect(find.text('${t.fileInfo.language}: Default'), findsNothing);
+    expect(find.text('${t.fileInfo.language}: First'), findsNothing);
+    expect(find.text('${t.fileInfo.language}: Default subtitle'), findsOneWidget);
+    final file = find.byKey(const ValueKey('detail_file_info'));
+    expect(file, findsOneWidget);
+    expect(find.descendant(of: file, matching: find.text('/part-one.mkv')), findsOneWidget);
+    expect(find.descendant(of: file, matching: find.text('/part-two.mkv')), findsOneWidget);
+    final state = tester.state<MediaDetailTechnicalInfoState>(find.byType(MediaDetailTechnicalInfo));
+    expect(state.requestFocus(), isTrue);
+    await tester.pumpAndSettle();
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'detail_technical_video');
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'detail_technical_audio');
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'detail_technical_subtitle');
+    final subtitle = find.byWidgetPredicate(
+      (widget) => widget is Focus && widget.focusNode?.debugLabel == 'detail_technical_subtitle',
+    );
+    expect(tester.getRect(subtitle).left, greaterThanOrEqualTo(0));
+    expect(tester.getRect(subtitle).right, lessThanOrEqualTo(320));
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'detail_technical_file');
   });
 }

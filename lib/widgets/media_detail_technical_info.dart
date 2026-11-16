@@ -4,6 +4,8 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../focus/focusable_wrapper.dart';
 import '../i18n/strings.g.dart';
 import '../media/media_file_info.dart';
+import '../utils/codec_utils.dart';
+import '../utils/resolution_label.dart';
 import 'app_icon.dart';
 
 /// Read-only file data for the same target and version as the Play action.
@@ -18,7 +20,8 @@ class MediaDetailTechnicalInfo extends StatefulWidget {
     this.versionIndex,
     this.offline = false,
     this.revision = 0,
-    this.showHeading = true,
+    this.showHeading = false,
+    this.onNavigateUp,
   });
 
   final String targetKey;
@@ -29,15 +32,52 @@ class MediaDetailTechnicalInfo extends StatefulWidget {
   final bool offline;
   final int revision;
   final bool showHeading;
+  final VoidCallback? onNavigateUp;
 
   @override
-  State<MediaDetailTechnicalInfo> createState() => _MediaDetailTechnicalInfoState();
+  State<MediaDetailTechnicalInfo> createState() => MediaDetailTechnicalInfoState();
 }
 
-class _MediaDetailTechnicalInfoState extends State<MediaDetailTechnicalInfo> {
+class MediaDetailTechnicalInfoState extends State<MediaDetailTechnicalInfo> {
+  static const _cardWidth = 235.0;
+  static const _cardGap = 11.0;
+  final _streamScrollController = ScrollController();
+  final _streamFocusNodes = [
+    FocusNode(debugLabel: 'detail_technical_video'),
+    FocusNode(debugLabel: 'detail_technical_audio'),
+    FocusNode(debugLabel: 'detail_technical_subtitle'),
+  ];
+  final _fileFocusNode = FocusNode(debugLabel: 'detail_technical_file');
   MediaFileInfo? _info;
   bool _loading = false;
   int _generation = 0;
+
+  bool requestFocus() {
+    if (_streamFocusNodes.first.context == null) return false;
+    _streamFocusNodes.first.requestFocus();
+    return true;
+  }
+
+  @override
+  void dispose() {
+    _streamScrollController.dispose();
+    for (final node in _streamFocusNodes) {
+      node.dispose();
+    }
+    _fileFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _revealStream(int index) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_streamFocusNodes[index].hasFocus || !_streamScrollController.hasClients) return;
+      _streamScrollController.animateTo(
+        (index * (_cardWidth + _cardGap)).clamp(0.0, _streamScrollController.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+      );
+    });
+  }
 
   @override
   void initState() {
@@ -115,71 +155,158 @@ class _MediaDetailTechnicalInfoState extends State<MediaDetailTechnicalInfo> {
           ),
           const SizedBox(height: 12),
         ],
-        Text(widget.title, style: theme.textTheme.bodySmall),
-        const SizedBox(height: 10),
         if (_loading)
           const LinearProgressIndicator()
         else if (version == null)
           Text(t.messages.fileInfoNotAvailable, style: theme.textTheme.bodySmall)
         else ...[
           SingleChildScrollView(
+            controller: _streamScrollController,
             scrollDirection: Axis.horizontal,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 11,
+              spacing: _cardGap,
               children: [
-                if (streams.isEmpty)
-                  _card(context, t.fileInfo.video, Symbols.videocam_rounded, {
-                    t.fileInfo.codec: version.videoCodec,
-                    t.fileInfo.resolution: version.resolutionFormatted,
-                    t.fileInfo.bitrate: version.bitrateFormatted,
-                    t.fileInfo.profile: version.videoProfile,
-                  })
-                else
-                  for (final stream in streams) _streamCard(context, stream),
+                for (final kind in [MediaStreamKind.video, MediaStreamKind.audio, MediaStreamKind.subtitle])
+                  _streamCard(context, kind, _preferredStream(streams, kind), version),
               ],
             ),
           ),
           const SizedBox(height: 14),
-          for (final part in version.parts)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _card(context, part.fileName ?? t.fileInfo.file, Symbols.description_rounded, {
-                t.fileInfo.file: part.filePath,
-                t.fileInfo.container: part.container ?? version.container,
-                t.fileInfo.size: part.fileSizeFormatted,
-                t.fileInfo.duration: part.durationFormatted ?? version.durationFormatted,
-              }, fullWidth: true),
-            ),
+          _fileCard(context, version, _preferredStream(streams, MediaStreamKind.video)),
         ],
       ],
     );
   }
 
-  Widget _streamCard(BuildContext context, MediaStreamDetails stream, {double? width}) {
-    final (title, icon) = switch (stream.kind) {
+  MediaStreamDetails? _preferredStream(List<MediaStreamDetails> streams, MediaStreamKind kind) {
+    final tracks = streams.where((stream) => stream.kind == kind).toList(growable: false);
+    return tracks.where((stream) => stream.isSelected == true).firstOrNull ??
+        tracks.where((stream) => stream.isDefault == true).firstOrNull ??
+        tracks.firstOrNull;
+  }
+
+  String? _quality(MediaFileVersion version, MediaStreamDetails? video) {
+    final rawResolution = version.videoResolutionLabel;
+    final resolution = rawResolution != null && rawResolution.isNotEmpty
+        ? resolutionDisplayLabel(rawResolution)
+        : resolutionLabelFromDimensions(video?.width ?? version.width, video?.height ?? version.height);
+    final codec = video?.codec ?? version.videoCodec;
+    final labels = [?resolution, if (codec != null) CodecUtils.formatVideoCodec(codec)];
+    return labels.isEmpty ? null : labels.join(' ');
+  }
+
+  Widget _streamCard(BuildContext context, MediaStreamKind kind, MediaStreamDetails? stream, MediaFileVersion version) {
+    final (title, icon) = switch (kind) {
       MediaStreamKind.video => (t.fileInfo.video, Symbols.videocam_rounded),
       MediaStreamKind.audio => (t.fileInfo.audio, Symbols.music_note_rounded),
       _ => (t.fileInfo.subtitles, Symbols.subtitles_rounded),
     };
-    return _card(context, stream.displayTitle ?? '$title ${stream.ordinal}', icon, {
-      t.fileInfo.codec: stream.codec,
-      t.fileInfo.language: stream.language ?? stream.languageCode,
-      t.fileInfo.resolution: stream.resolutionFormatted,
-      t.fileInfo.frameRate: stream.frameRateFormatted,
-      t.fileInfo.aspectRatio: stream.aspectRatio,
-      t.fileInfo.profile: stream.profile,
-      t.fileInfo.bitrate: stream.bitrateFormatted,
-      t.fileInfo.bitDepth: stream.bitDepthFormatted,
-      t.fileInfo.pixelFormat: stream.pixelFormat,
-      t.fileInfo.dynamicRange: stream.videoRange.label,
-      t.fileInfo.colorSpace: stream.colorSpace,
-      t.fileInfo.colorPrimaries: stream.colorPrimaries,
-      t.fileInfo.colorTransfer: stream.colorTransfer,
-      t.fileInfo.channels: stream.channelsFormatted,
-      t.fileInfo.sampleRate: stream.sampleRateFormatted,
-      t.fileInfo.flagDefault: stream.isDefault == null ? null : (stream.isDefault! ? t.common.yes : t.common.no),
-    }, width: width);
+    final audioCodec = stream?.codec ?? version.audioCodec;
+    final audioTitle = [
+      if (audioCodec != null) CodecUtils.formatAudioCodec(audioCodec),
+      ?stream?.channelLayout,
+    ].join(' ');
+    final rows = switch (kind) {
+      MediaStreamKind.video => <String, String?>{
+        t.explore.detail.technicalTitle: stream?.displayTitle ?? stream?.title ?? _quality(version, stream),
+        t.fileInfo.codec: stream?.codec ?? version.videoCodec,
+        t.fileInfo.resolution:
+            stream?.resolutionFormatted?.replaceAll('x', ' × ') ?? version.resolutionFormatted?.replaceAll('x', ' × '),
+        t.fileInfo.aspectRatio: stream?.aspectRatio ?? version.aspectRatioFormatted,
+        t.fileInfo.frameRate: stream?.frameRate?.toStringAsFixed(3) ?? version.videoFrameRateLabel,
+        t.fileInfo.dynamicRange: stream?.videoRange.label,
+        t.fileInfo.colorSpace: stream?.colorSpace,
+        t.fileInfo.bitDepth: stream?.bitDepthFormatted,
+        t.fileInfo.pixelFormat: stream?.pixelFormat,
+      },
+      MediaStreamKind.audio => <String, String?>{
+        t.explore.detail.technicalTitle: stream?.displayTitle ?? stream?.title ?? audioTitle,
+        t.fileInfo.language: stream?.language ?? stream?.languageCode,
+        t.explore.detail.channelLayout: stream?.channelLayout,
+        t.explore.detail.channelCount: stream?.channels == null ? null : '${stream!.channels} ch',
+        t.fileInfo.sampleRate: stream?.sampleRate == null ? null : '${stream!.sampleRate} Hz',
+        t.fileInfo.profile: stream?.profile ?? version.audioProfile,
+        t.fileInfo.bitrate: stream?.bitrateFormatted,
+        t.fileInfo.flagDefault: _boolean(stream?.isDefault),
+      },
+      _ => <String, String?>{
+        t.explore.detail.technicalTitle: stream?.displayTitle ?? stream?.title,
+        t.fileInfo.language: stream?.language ?? stream?.languageCode,
+        t.explore.detail.subtitleFormat: stream?.codec == null ? null : CodecUtils.formatSubtitleCodec(stream!.codec!),
+        t.fileInfo.flagDefault: _boolean(stream?.isDefault),
+        t.explore.detail.externalSubtitles: _boolean(stream?.isExternal),
+      },
+    };
+    final index = switch (kind) {
+      MediaStreamKind.video => 0,
+      MediaStreamKind.audio => 1,
+      _ => 2,
+    };
+    return FocusableWrapper(
+      focusNode: _streamFocusNodes[index],
+      disableScale: true,
+      borderRadius: 16,
+      onFocusChange: (focused) {
+        if (focused) _revealStream(index);
+      },
+      onNavigateLeft: () => _streamFocusNodes[index > 0 ? index - 1 : 0].requestFocus(),
+      onNavigateRight: () => _streamFocusNodes[index < 2 ? index + 1 : 2].requestFocus(),
+      onNavigateDown: _fileFocusNode.requestFocus,
+      onNavigateUp: widget.onNavigateUp,
+      child: _card(context, title, icon, rows),
+    );
+  }
+
+  String? _boolean(bool? value) => value == null
+      ? null
+      : value
+      ? t.common.yes
+      : t.common.no;
+
+  Widget _fileCard(BuildContext context, MediaFileVersion version, MediaStreamDetails? video) {
+    final theme = Theme.of(context);
+    final caption = theme.textTheme.bodySmall?.copyWith(
+      fontSize: 10,
+      height: 1.8,
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    final summary = [
+      ?version.durationFormatted ?? version.parts.firstOrNull?.durationFormatted,
+      ?version.totalFileSizeFormatted,
+      ?_quality(version, video),
+    ].join(' · ');
+    return FocusableWrapper(
+      focusNode: _fileFocusNode,
+      disableScale: true,
+      onNavigateUp: _streamFocusNodes.first.requestFocus,
+      onNavigateDown: () {},
+      child: Container(
+        key: const ValueKey('detail_file_info'),
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.brightness == Brightness.dark ? const Color(0x15000000) : const Color(0x50FFFFFF),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Text(
+              widget.title,
+              textAlign: TextAlign.center,
+              style: caption?.copyWith(fontSize: 11, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface),
+            ),
+            const SizedBox(height: 7),
+            for (final part in version.parts)
+              if (part.filePath?.isNotEmpty == true) Text(part.filePath!, textAlign: TextAlign.center, style: caption),
+            if (summary.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(summary, textAlign: TextAlign.center, style: caption),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _card(
@@ -191,38 +318,48 @@ class _MediaDetailTechnicalInfoState extends State<MediaDetailTechnicalInfo> {
     double? width,
   }) {
     final theme = Theme.of(context);
-    final text = theme.textTheme.bodySmall?.copyWith(fontSize: fullWidth ? 10 : 11, height: 1.9);
-    return FocusableWrapper(
-      disableScale: true,
-      child: Container(
-        width: fullWidth ? double.infinity : (width ?? 235),
-        margin: EdgeInsets.zero,
-        padding: EdgeInsets.all(fullWidth ? 16 : 15),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.onSurface.withValues(alpha: .065),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: .045)),
+    final text = theme.textTheme.bodySmall?.copyWith(
+      fontSize: fullWidth ? 10 : 11,
+      height: 1.9,
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    return Container(
+      width: fullWidth ? double.infinity : (width ?? _cardWidth),
+      margin: EdgeInsets.zero,
+      padding: EdgeInsets.all(fullWidth ? 16 : 15),
+      decoration: BoxDecoration(
+        color: theme.brightness == Brightness.dark ? const Color(0x16000000) : const Color(0x50FFFFFF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.brightness == Brightness.dark ? const Color(0x09FFFFFF) : const Color(0x38FFFFFF),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                AppIcon(icon, size: 17),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: text?.copyWith(fontSize: fullWidth ? 11 : 13, fontWeight: FontWeight.w500, height: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              AppIcon(icon, size: 17),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  title,
+                  style: text?.copyWith(
+                    fontSize: fullWidth ? 11 : 13,
+                    fontWeight: FontWeight.w500,
+                    height: 1.5,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
-              ],
-            ),
-            SizedBox(height: fullWidth ? 7 : 10),
-            for (final entry in rows.entries)
-              if (entry.value?.isNotEmpty == true) Text('${entry.key}: ${entry.value}', style: text),
-          ],
-        ),
+              ),
+            ],
+          ),
+          SizedBox(height: fullWidth ? 7 : 10),
+          for (final entry in rows.entries)
+            if (entry.value?.isNotEmpty == true) Text('${entry.key}: ${entry.value}', style: text),
+          if (rows.values.every((value) => value?.isNotEmpty != true))
+            Text(t.messages.fileInfoNotAvailable, style: text),
+        ],
       ),
     );
   }

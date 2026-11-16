@@ -28,6 +28,7 @@ import 'package:plezy/media/media_kind.dart';
 import 'package:plezy/media/media_part.dart';
 import 'package:plezy/media/media_rating.dart';
 import 'package:plezy/widgets/media_ratings_strip.dart';
+import 'package:plezy/widgets/cast_member_strip.dart';
 import 'package:plezy/media/media_role.dart';
 import 'package:plezy/media/media_stream.dart';
 import 'package:plezy/media/media_version.dart';
@@ -2494,7 +2495,7 @@ void main() {
       ]);
       await tester.pump();
       await tester.pump();
-      expect(find.text('Independent related result'), findsOneWidget);
+      expect(find.text(t.explore.detail.relatedMedia), findsOneWidget);
       expect(tester.widget<Text>(title).data, 'Available route metadata');
       expect(tester.takeException(), isNull);
     });
@@ -3160,7 +3161,17 @@ void main() {
       await selectEpisodeAndVerifyPlay(1);
       await tester.pump(const Duration(seconds: 1));
 
-      await tester.scrollUntilVisible(find.byKey(const ValueKey('detail_technical_info')), 250, scrollable: pageScroll);
+      await tester.tap(find.byTooltip(t.explore.detail.moreActions));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(t.explore.detail.viewMediaInfo));
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsNothing);
+      expect(tester.getRect(find.byKey(const ValueKey('detail_technical_info'))).top, greaterThanOrEqualTo(0));
+      tester.state<CastMemberStripState>(find.byType(CastMemberStrip)).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(FocusManager.instance.primaryFocus?.debugLabel, 'detail_technical_video');
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byKey(const ValueKey('detail_technical_info')), findsOneWidget);
       expect(find.textContaining('/media/shows/the-show/S01E01-1080p.mkv'), findsOneWidget);
@@ -3175,12 +3186,12 @@ void main() {
       }
       final pathRow = find.descendant(
         of: find.byKey(const ValueKey('detail_technical_info')),
-        matching: find.text('${t.fileInfo.file}: ${filePart.filePath}'),
+        matching: find.text(filePart.filePath!),
       );
       expect(pathRow, findsOneWidget);
       final fileCard = find.ancestor(of: pathRow, matching: find.byType(Container)).first;
       expect(
-        find.descendant(of: fileCard, matching: find.text('${t.fileInfo.size}: ${filePart.fileSizeFormatted}')),
+        find.descendant(of: fileCard, matching: find.textContaining(filePart.fileSizeFormatted!)),
         findsOneWidget,
         reason: 'the exact localized size row belongs to the same file card as the selected source path',
       );
@@ -3595,7 +3606,7 @@ void main() {
       expect(find.text(t.messages.mediaUnavailable), findsOneWidget);
     });
 
-    testWidgets('shows directors when they are the only additional info', (tester) async {
+    testWidgets('omits the removed director footer even when it is the only additional info', (tester) async {
       final movie = testMediaItem(
         id: 'director_only',
         backend: MediaBackend.plex,
@@ -3609,8 +3620,8 @@ void main() {
 
       await pumpPhoneDetail(tester, client, movie);
 
-      expect(find.text('Director'), findsOneWidget);
-      expect(find.text('Jane Director'), findsOneWidget);
+      expect(find.text('Director'), findsNothing);
+      expect(find.text('Jane Director'), findsNothing);
     });
 
     testWidgets('omits the director row for an empty list', (tester) async {
@@ -3628,7 +3639,7 @@ void main() {
 
       await pumpPhoneDetail(tester, client, movie);
 
-      expect(find.text('Example Studio'), findsOneWidget);
+      expect(find.text('Example Studio'), findsNothing);
       expect(find.text('Director'), findsNothing);
     });
 

@@ -251,6 +251,7 @@ class MediaCard extends StatefulWidget {
   /// and the subtitle carries the episode number and runtime instead of
   /// repeating the show on every card (#2217).
   final bool showTitleImplied;
+  final bool showMediaKindSubtitle;
 
   /// Paint-time black tint amount for the artwork, from 0 (clear) to 1 (black).
   final Animation<double>? artworkDim;
@@ -284,6 +285,7 @@ class MediaCard extends StatefulWidget {
     this.showWatchProgress = true,
     this.showRatingBadge = true,
     this.showTitleImplied = false,
+    this.showMediaKindSubtitle = false,
     this.artworkDim,
     this.cardShapeOverride,
   }) : usesContinueWatchingAction = usesContinueWatchingAction ?? isInContinueWatching;
@@ -705,7 +707,9 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
     final posterHeight = widget.height;
     final homeType = Theme.of(context).extension<HomeTypography>();
     final compactHome = homeType != null && !widget.isInContinueWatching && !PlatformDetector.isTV();
-    final homeTitle = homeType?.cardTitle.copyWith(fontSize: compactHome ? 12 : 13);
+    final homeTitle = widget.showMediaKindSubtitle
+        ? const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, height: 1.4)
+        : homeType?.cardTitle.copyWith(fontSize: compactHome ? 12 : 13);
 
     // The focus border hugs the poster (captions stay outside it), matching
     // the full-bleed card treatment.
@@ -773,6 +777,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
                   showTitleImplied: _impliesShowTitle(item),
                   catalogItem: _catalogItem,
                   compactHome: compactHome,
+                  showMediaKindSubtitle: widget.showMediaKindSubtitle,
                 ),
             ],
           ),
@@ -1273,8 +1278,18 @@ class _MediaCardHelpers {
     bool enableDetailLinks = true,
     bool showTitleImplied = false,
     bool compactHome = false,
+    bool showMediaKindSubtitle = false,
     CatalogItem? catalogItem,
   }) {
+    if (showMediaKindSubtitle) {
+      return _caption(
+        context,
+        [
+          if (mi.year != null) '${mi.year}',
+          mi.isMovie ? t.common.mediaKind.movie : t.common.mediaKind.show,
+        ].join(' · '),
+      );
+    }
     if (compactHome && (mi.isMovie || mi.isShow)) {
       return ExcludeSemantics(
         child: Row(

@@ -7673,6 +7673,30 @@ class Translations$explore$detail$en {
 
 	// Translations
 
+	/// en: 'Format'
+	String get subtitleFormat => 'Format';
+
+	/// en: 'Cast & Crew'
+	String get castCrew => 'Cast & Crew';
+
+	/// en: 'Video, Audio & Subtitle Information'
+	String get mediaInfo => 'Video, Audio & Subtitle Information';
+
+	/// en: 'Related Media'
+	String get relatedMedia => 'Related Media';
+
+	/// en: 'Title'
+	String get technicalTitle => 'Title';
+
+	/// en: 'Channel Layout'
+	String get channelLayout => 'Channel Layout';
+
+	/// en: 'Channel Count'
+	String get channelCount => 'Channel Count';
+
+	/// en: 'External Subtitles'
+	String get externalSubtitles => 'External Subtitles';
+
 	/// en: '${n} seasons'
 	String seasonCount({required Object n}) => '${n} seasons';
 
@@ -9790,6 +9814,14 @@ extension on Translations {
 			'explore.relation.other' => 'Related',
 			'explore.broadcast' => ({required Object day, required Object time}) => 'Airs ${day} at ${time}',
 			'explore.broadcastWithZone' => ({required Object day, required Object time, required Object timezone}) => 'Airs ${day} at ${time} ${timezone}',
+			'explore.detail.subtitleFormat' => 'Format',
+			'explore.detail.castCrew' => 'Cast & Crew',
+			'explore.detail.mediaInfo' => 'Video, Audio & Subtitle Information',
+			'explore.detail.relatedMedia' => 'Related Media',
+			'explore.detail.technicalTitle' => 'Title',
+			'explore.detail.channelLayout' => 'Channel Layout',
+			'explore.detail.channelCount' => 'Channel Count',
+			'explore.detail.externalSubtitles' => 'External Subtitles',
 			'explore.detail.seasonCount' => ({required Object n}) => '${n} seasons',
 			'explore.detail.moreActions' => 'More Actions',
 			'explore.detail.downloadMovie' => 'Download this movie',
@@ -9859,6 +9891,8 @@ extension on Translations {
 			'liveTv.reorderFavorites' => 'Reorder Favorites',
 			'liveTv.noFavoriteChannels' => 'No favorite channels',
 			'liveTv.noFavoriteChannelsHint' => 'Show all channels, then long-press a channel to add it to your favorites.',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.showAllChannels' => 'Show All Channels',
 			'liveTv.favoritesLoadFailed' => 'Could not load favorites. Check your connection and try again.',
 			'liveTv.favoritesUpdateFailed' => 'Could not update favorites. Check your connection and try again.',
@@ -9867,8 +9901,6 @@ extension on Translations {
 			'liveTv.watchLive' => 'Watch Live',
 			'liveTv.goToLive' => 'Go to Live',
 			'liveTv.record' => 'Record',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordEpisode' => 'Record Episode',
 			'liveTv.recordSeries' => 'Record Series',
 			'liveTv.recordOptions' => 'Record Options',
@@ -10373,6 +10405,8 @@ extension on Translations {
 			'performanceOverlay.maxFall' => 'MaxFALL',
 			'performanceOverlay.cacheUsed' => 'Cache Used',
 			'performanceOverlay.cacheLimit' => 'Cache Limit',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.speed' => 'Speed',
 			'performanceOverlay.player' => 'Player',
 			'performanceOverlay.memory' => 'Memory',
@@ -10381,8 +10415,6 @@ extension on Translations {
 			'performanceOverlay.decoderAndroidHw' => 'Android HW',
 			'performanceOverlay.decoderNvidiaHw' => 'NVIDIA HW',
 			'performanceOverlay.decoderQualcommHw' => 'Qualcomm HW',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.decoderMediatekHw' => 'MediaTek HW',
 			'performanceOverlay.decoderExynosHw' => 'Exynos HW',
 			'performanceOverlay.decoderSoftware' => 'Software',

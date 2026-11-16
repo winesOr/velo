@@ -3043,6 +3043,14 @@ class _Translations$explore$detail$zh_Hant extends Translations$explore$detail$z
 	final TranslationsZhHant _root; // ignore: unused_field
 
 	// Translations
+	@override String get subtitleFormat => '格式';
+	@override String get castCrew => '演員人員';
+	@override String get mediaInfo => '影音字幕資訊';
+	@override String get relatedMedia => '相關影片';
+	@override String get technicalTitle => '標題';
+	@override String get channelLayout => '聲道配置';
+	@override String get channelCount => '聲道數';
+	@override String get externalSubtitles => '外掛字幕';
 	@override String seasonCount({required Object n}) => '共 ${n} 季';
 	@override String get moreActions => '更多操作';
 	@override String get downloadMovie => '下載此影片';
@@ -4783,6 +4791,14 @@ extension on TranslationsZhHant {
 			'explore.relation.other' => '相關',
 			'explore.broadcast' => ({required Object day, required Object time}) => '${day} ${time} 播出',
 			'explore.broadcastWithZone' => ({required Object day, required Object time, required Object timezone}) => '${day} ${time} ${timezone} 播出',
+			'explore.detail.subtitleFormat' => '格式',
+			'explore.detail.castCrew' => '演員人員',
+			'explore.detail.mediaInfo' => '影音字幕資訊',
+			'explore.detail.relatedMedia' => '相關影片',
+			'explore.detail.technicalTitle' => '標題',
+			'explore.detail.channelLayout' => '聲道配置',
+			'explore.detail.channelCount' => '聲道數',
+			'explore.detail.externalSubtitles' => '外掛字幕',
 			'explore.detail.seasonCount' => ({required Object n}) => '共 ${n} 季',
 			'explore.detail.moreActions' => '更多操作',
 			'explore.detail.downloadMovie' => '下載此影片',
@@ -4891,6 +4907,8 @@ extension on TranslationsZhHant {
 			'liveTv.recordingRuleUpdated' => '錄製規則已更新',
 			'liveTv.guideReloadRequested' => '已要求更新節目表指南',
 			'liveTv.guideReloadFailed' => '無法重新載入節目表指南',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.rulesProcessRequested' => '已要求重新評估規則',
 			'liveTv.rulesProcessFailed' => '無法重新評估錄影規則',
 			'liveTv.recordShow' => '錄製節目',
@@ -4899,8 +4917,6 @@ extension on TranslationsZhHant {
 			'liveTv.recordSettings.newOnly' => '僅新劇集',
 			'liveTv.recordSettings.anyChannel' => '在任何頻道錄影',
 			'liveTv.recordSettings.anyTime' => '在任何時間錄影',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordSettings.skipInLibrary' => '略過媒體庫中已有的劇集',
 			'liveTv.recordSettings.keepUpTo' => '要保留的劇集數',
 			'liveTv.recordSettings.keepUpToHint' => '0 表示保留所有劇集',
@@ -5405,6 +5421,8 @@ extension on TranslationsZhHant {
 			'metadataEdit.selectPoster' => '選擇海報',
 			'metadataEdit.selectBackground' => '選擇背景圖',
 			'metadataEdit.selectLogo' => '選擇標誌',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.selectSquareArt' => '選擇方形圖片',
 			'metadataEdit.fromUrl' => '自訂網址',
 			'metadataEdit.uploadFile' => '上傳檔案',
@@ -5413,8 +5431,6 @@ extension on TranslationsZhHant {
 			'metadataEdit.metadataUpdated' => '中繼資料已更新',
 			'metadataEdit.metadataUpdateFailed' => '中繼資料更新失敗',
 			'metadataEdit.artworkUpdated' => '封面圖片已更新',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.artworkUpdateFailed' => '封面圖片更新失敗',
 			'metadataEdit.noArtworkAvailable' => '沒有可用的封面圖片',
 			'metadataEdit.artworkOption' => ({required Object index}) => '封面圖片選項 ${index}',

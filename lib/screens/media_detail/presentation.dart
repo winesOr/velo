@@ -275,8 +275,17 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
         final probed = _playbackSources[target.globalKey];
         final client = widget.isOffline ? null : _getMediaClientForMetadata(context);
         return MediaDetailTechnicalInfo(
+          key: _technicalInfoKey,
+          onNavigateUp: PlatformDetector.isTV() ? null : _focusSectionAboveInfoRows,
           targetKey: target.globalKey,
-          title: target.displayTitle,
+          title: [
+            target.isEpisode ? target.grandparentTitle ?? metadata.displayTitle : target.displayTitle,
+            if (target.isEpisode)
+              [
+                if (target.parentIndex != null) t.videoControls.seasonNumber(n: target.parentIndex!),
+                if (effectiveEpisodeIndex(target) case final episode?) t.videoControls.episodeNumber(n: episode),
+              ].join(' '),
+          ].join(' · '),
           offline: widget.isOffline,
           revision: _playbackProbeGeneration,
           sourceId: probed?.source?.mediaSourceId,
