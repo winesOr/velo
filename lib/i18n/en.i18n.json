@@ -2560,7 +2560,7 @@
     "editSource": "Edit source",
     "sourceName": "Name",
     "sourceUrl": "HTTP(S) base URL",
-    "sourceUrlHelp": "Path prefixes and an optional /api/v2 suffix are supported. Do not include a query or fragment.",
+    "sourceUrlHelp": "Use an HTTP(S) base URL; path prefixes and an optional /api/v2 suffix are supported. Do not include credentials, a query or fragment. localhost and 127.0.0.1 refer to the device running Velo, not your media server.",
     "sourceUrlInvalid": "Enter a valid HTTP(S) URL without a query, fragment or embedded credentials.",
     "sourceNameRequired": "Enter a source name.",
     "sourceEnabled": "Enable source",

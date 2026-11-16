@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plezy/connection/connection.dart';
 import 'package:plezy/focus/input_mode_tracker.dart';
 import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/media/account_preferences.dart';
@@ -10,12 +11,18 @@ import 'package:plezy/media/account_preferences_target.dart';
 import 'package:plezy/media/account_ref.dart';
 import 'package:plezy/media/media_backend.dart';
 import 'package:plezy/media/media_server_user_profile.dart';
+import 'package:plezy/providers/account_preferences_controller.dart';
 import 'package:plezy/screens/settings/account_preferences_detail_screen.dart';
 import 'package:plezy/screens/settings/account_preferences_screen.dart';
+import 'package:plezy/screens/settings/subtitle_styling_screen.dart';
+import 'package:plezy/services/account_preferences_accounts.dart';
+import 'package:plezy/services/settings_service.dart';
 import 'package:plezy/services/account_preferences_repository.dart';
 import 'package:plezy/theme/mono_theme.dart';
 import 'package:plezy/widgets/backend_badge.dart';
 import 'package:provider/provider.dart';
+
+import '../../test_helpers/prefs.dart';
 
 /// The Account preferences section edits values that live on a media server, so
 /// the two things that cannot regress silently are capability gating — a row
@@ -126,6 +133,74 @@ void main() {
     expect(find.text('Preferred audio language'), findsOneWidget);
   });
 
+  testWidgets('subtitle languages use current accounts before and after navigation', (tester) async {
+    resetSharedPreferencesForTest();
+    await SettingsService.getInstance();
+    final repository = repositoryOf({
+      jellyfinRef: _FakeAccountPreferencesSource(capabilities: AccountPreferencesCapabilities.jellyfin),
+      plexRef: _FakeAccountPreferencesSource(capabilities: AccountPreferencesCapabilities.plex),
+    });
+    final controller = _MutableAccountsController();
+    addTearDown(controller.dispose);
+    final jellyfin = AccountPreferenceAccount(
+      target: jellyfinTarget,
+      connection: JellyfinConnection(
+        id: 'machine-1/user-1',
+        baseUrl: 'https://example.invalid',
+        serverName: 'Basement',
+        serverMachineId: 'machine-1',
+        userId: 'user-1',
+        userName: 'agent',
+        accessToken: 'fixture-token',
+        deviceId: 'fixture-device',
+        createdAt: DateTime(2026),
+      ),
+    );
+    final plex = AccountPreferenceAccount(
+      target: plexTarget,
+      connection: PlexAccountConnection(
+        id: 'plex.account-1',
+        accountToken: 'fixture-token',
+        clientIdentifier: 'fixture-device',
+        accountLabel: 'Plex',
+        createdAt: DateTime(2026),
+      ),
+    );
+    controller.replace([plex]);
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AccountPreferencesController>.value(value: controller),
+          Provider<AccountPreferencesRepository>.value(value: repository),
+        ],
+        child: InputModeTracker(
+          child: MaterialApp(theme: monoTheme(dark: true), home: const SubtitleStylingScreen()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    controller.replace([jellyfin, plex]);
+    await tester.tap(find.text(t.accountPreferences.groups.audioAndSubtitles));
+    await tester.pumpAndSettle();
+    expect(find.text(jellyfinTarget.label), findsOneWidget);
+    expect(find.text(plexTarget.label), findsOneWidget);
+    controller.replace([jellyfin]);
+    await tester.pumpAndSettle();
+    expect(tester.widget<AccountPreferencesBody>(find.byType(AccountPreferencesBody)).target.ref, jellyfinRef);
+    expect(find.text(t.accountPreferences.preferredSubtitleLanguage), findsOneWidget);
+    controller.replace([plex]);
+    await tester.pumpAndSettle();
+    expect(tester.widget<AccountPreferencesBody>(find.byType(AccountPreferencesBody)).target.ref, plexRef);
+    controller.replace([]);
+    await tester.pumpAndSettle();
+    expect(find.text(t.accountPreferences.noAccounts), findsOneWidget);
+    expect(find.byType(AccountPreferencesBody), findsNothing);
+    Navigator.of(tester.element(find.byType(AccountPreferencesScreen))).pop();
+    await tester.pumpAndSettle();
+    expect(find.byType(SubtitleStylingScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('no accounts leaves an empty state instead of an empty list', (tester) async {
     final repository = repositoryOf(const {});
 
@@ -220,7 +295,10 @@ void main() {
     expect(switchValueFor(tester, 'Hide watched items in Latest'), isFalse);
 
     gate.complete();
-    await tester.pumpAndSettle();
+    // Inspect the error while its animated toast is visible. Settling waits
+    // through the toast lifetime and dismisses it before this assertion.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(source.writes, hasLength(1));
     expect(source.writes.single.boolAt(AccountPreferenceKey.hidePlayedInLatest), isFalse);
@@ -387,4 +465,16 @@ class _WriteRejected implements Exception {
 
   @override
   String toString() => '_WriteRejected';
+}
+
+class _MutableAccountsController extends AccountPreferencesController {
+  List<AccountPreferenceAccount> _accounts = const [];
+
+  @override
+  List<AccountPreferenceAccount> get accounts => _accounts;
+
+  void replace(List<AccountPreferenceAccount> accounts) {
+    _accounts = accounts;
+    notifyListeners();
+  }
 }

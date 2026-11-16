@@ -2559,7 +2559,7 @@ class Translations$danmaku$zh extends Translations$danmaku$en {
 	@override String get editSource => '编辑来源';
 	@override String get sourceName => '名称';
 	@override String get sourceUrl => 'HTTP(S) 基础地址';
-	@override String get sourceUrlHelp => '支持路径前缀及 /api/v2 后缀。请勿包含查询参数或片段。';
+	@override String get sourceUrlHelp => '填写 HTTP(S) 基础地址，支持路径前缀及 /api/v2 后缀。请勿包含凭据、查询参数或片段。localhost 和 127.0.0.1 指运行 Velo 的设备，并非媒体服务器。';
 	@override String get sourceUrlInvalid => '请输入有效 HTTP(S) 地址，不包含查询参数、片段或内嵌凭据。';
 	@override String get sourceNameRequired => '请输入来源名称。';
 	@override String get sourceEnabled => '启用来源';
@@ -5784,7 +5784,7 @@ extension on TranslationsZh {
 			'danmaku.editSource' => '编辑来源',
 			'danmaku.sourceName' => '名称',
 			'danmaku.sourceUrl' => 'HTTP(S) 基础地址',
-			'danmaku.sourceUrlHelp' => '支持路径前缀及 /api/v2 后缀。请勿包含查询参数或片段。',
+			'danmaku.sourceUrlHelp' => '填写 HTTP(S) 基础地址，支持路径前缀及 /api/v2 后缀。请勿包含凭据、查询参数或片段。localhost 和 127.0.0.1 指运行 Velo 的设备，并非媒体服务器。',
 			'danmaku.sourceUrlInvalid' => '请输入有效 HTTP(S) 地址，不包含查询参数、片段或内嵌凭据。',
 			'danmaku.sourceNameRequired' => '请输入来源名称。',
 			'danmaku.sourceEnabled' => '启用来源',

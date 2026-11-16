@@ -2549,7 +2549,7 @@
     "editSource": "编辑来源",
     "sourceName": "名称",
     "sourceUrl": "HTTP(S) 基础地址",
-    "sourceUrlHelp": "支持路径前缀及 /api/v2 后缀。请勿包含查询参数或片段。",
+    "sourceUrlHelp": "填写 HTTP(S) 基础地址，支持路径前缀及 /api/v2 后缀。请勿包含凭据、查询参数或片段。localhost 和 127.0.0.1 指运行 Velo 的设备，并非媒体服务器。",
     "sourceUrlInvalid": "请输入有效 HTTP(S) 地址，不包含查询参数、片段或内嵌凭据。",
     "sourceNameRequired": "请输入来源名称。",
     "sourceEnabled": "启用来源",

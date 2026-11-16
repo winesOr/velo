@@ -37,7 +37,6 @@ Future<void> _pump(WidgetTester tester, Widget child, {Size size = const Size(39
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = size;
   addTearDown(tester.view.reset);
-  await _loadFonts();
   await tester.pumpWidget(
     InputModeTracker(
       child: MaterialApp(
@@ -52,6 +51,9 @@ Future<void> _pump(WidgetTester tester, Widget child, {Size size = const Size(39
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  // Register once before any live text widgets can receive font-change events.
+  setUpAll(_loadFonts);
   setUp(() => LocaleSettings.setLocaleSync(AppLocale.en));
 
   testWidgets('settings entry and playback panel share immediate values and restart restoration', (tester) async {

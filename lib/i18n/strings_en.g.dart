@@ -6452,8 +6452,8 @@ class Translations$danmaku$en {
 	/// en: 'HTTP(S) base URL'
 	String get sourceUrl => 'HTTP(S) base URL';
 
-	/// en: 'Path prefixes and an optional /api/v2 suffix are supported. Do not include a query or fragment.'
-	String get sourceUrlHelp => 'Path prefixes and an optional /api/v2 suffix are supported. Do not include a query or fragment.';
+	/// en: 'Use an HTTP(S) base URL; path prefixes and an optional /api/v2 suffix are supported. Do not include credentials, a query or fragment. localhost and 127.0.0.1 refer to the device running Velo, not your media server.'
+	String get sourceUrlHelp => 'Use an HTTP(S) base URL; path prefixes and an optional /api/v2 suffix are supported. Do not include credentials, a query or fragment. localhost and 127.0.0.1 refer to the device running Velo, not your media server.';
 
 	/// en: 'Enter a valid HTTP(S) URL without a query, fragment or embedded credentials.'
 	String get sourceUrlInvalid => 'Enter a valid HTTP(S) URL without a query, fragment or embedded credentials.';
@@ -10644,7 +10644,7 @@ extension on Translations {
 			'danmaku.editSource' => 'Edit source',
 			'danmaku.sourceName' => 'Name',
 			'danmaku.sourceUrl' => 'HTTP(S) base URL',
-			'danmaku.sourceUrlHelp' => 'Path prefixes and an optional /api/v2 suffix are supported. Do not include a query or fragment.',
+			'danmaku.sourceUrlHelp' => 'Use an HTTP(S) base URL; path prefixes and an optional /api/v2 suffix are supported. Do not include credentials, a query or fragment. localhost and 127.0.0.1 refer to the device running Velo, not your media server.',
 			'danmaku.sourceUrlInvalid' => 'Enter a valid HTTP(S) URL without a query, fragment or embedded credentials.',
 			'danmaku.sourceNameRequired' => 'Enter a source name.',
 			'danmaku.sourceEnabled' => 'Enable source',

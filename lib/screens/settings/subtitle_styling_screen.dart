@@ -2,12 +2,15 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:provider/provider.dart';
 
 import '../../i18n/strings.g.dart';
+import '../../providers/account_preferences_controller.dart';
 import '../../services/settings_service.dart';
 import '../../widgets/setting_tile.dart';
 import '../../widgets/settings_page.dart';
 import '../../widgets/settings_section.dart';
+import 'account_preferences_screen.dart';
 import 'settings_utils.dart';
 
 class SubtitleStylingScreen extends StatelessWidget {
@@ -47,6 +50,20 @@ class SubtitleStylingScreen extends StatelessWidget {
     return SettingsPage(
       title: Text(t.screens.subtitleStyling),
       children: [
+        SettingsGroup(
+          title: t.settings.language,
+          children: [
+            SettingNavigationTile(
+              icon: Symbols.translate_rounded,
+              title: t.accountPreferences.groups.audioAndSubtitles,
+              subtitle: t.accountPreferences.storedOnAccount,
+              destinationBuilder: (_) => Consumer<AccountPreferencesController>(
+                builder: (context, controller, _) =>
+                    AccountPreferencesScreen(targets: [for (final account in controller.accounts) account.target]),
+              ),
+            ),
+          ],
+        ),
         SettingsGroup(
           title: t.subtitlingStyling.text,
           children: [

@@ -416,8 +416,7 @@ class _DanmakuSourceEditorState extends State<DanmakuSourceEditor> {
             onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
               labelText: t.danmaku.sourceUrl,
-              helperText: t.danmaku.sourceUrlHelp,
-              helperMaxLines: 4,
+              helper: Text(t.danmaku.sourceUrlHelp),
               border: const OutlineInputBorder(),
             ),
           ),
