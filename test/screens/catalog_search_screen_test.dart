@@ -155,6 +155,7 @@ void main() {
 
     final card = find.byType(MediaCard);
     expect(card, findsOneWidget);
+    final cardRect = tester.getRect(card);
     tester.state<MediaCardState>(card).showContextMenu();
     await tester.pumpAndSettle();
 
@@ -164,6 +165,8 @@ void main() {
     final menuRect = tester.getRect(surface);
     final screenSize = tester.view.physicalSize / tester.view.devicePixelRatio;
     expect(menuRect.width, 286);
+    expect(menuRect.left, closeTo(cardRect.left, .01));
+    expect(menuRect.top, closeTo(cardRect.bottom + 9, .01));
     expect(menuRect.left, greaterThanOrEqualTo(16));
     expect(menuRect.right, lessThanOrEqualTo(screenSize.width - 16));
     expect(menuRect.top, greaterThanOrEqualTo(16));

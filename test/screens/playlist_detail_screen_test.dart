@@ -710,6 +710,12 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.gameButtonX);
     await tester.pumpAndSettle();
     expect(menu, findsOneWidget);
+    final titleText = find.descendant(
+      of: find.ancestor(of: menu, matching: find.byType(AppGlassSurface)).first,
+      matching: find.text('Item 1'),
+    );
+    expect(tester.widget<Text>(titleText).style, Theme.of(tester.element(titleText)).textTheme.titleMedium);
+    expect(tester.getBottomLeft(titleText).dy, lessThan(tester.getTopLeft(menu).dy));
     expect(
       find.descendant(
         of: find.ancestor(of: menu, matching: find.byType(AppGlassSurface)).first,
@@ -732,6 +738,9 @@ void main() {
     await tester.sendKeyUpEvent(LogicalKeyboardKey.select);
     await tester.pumpAndSettle();
     expect(menu, findsOneWidget);
+    expect(tester.widget<Text>(titleText).data, 'Item 1');
+    expect(tester.widget<Text>(titleText).style, Theme.of(tester.element(titleText)).textTheme.titleMedium);
+    expect(tester.getBottomLeft(titleText).dy, lessThan(tester.getTopLeft(menu).dy));
     expect(
       find.descendant(
         of: find.ancestor(of: menu, matching: find.byType(AppGlassSurface)).first,
