@@ -1,6 +1,7 @@
 import 'package:plezy/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/theme/mono_theme.dart';
@@ -203,6 +204,49 @@ void main() {
     await tester.pump();
   });
 
+  testWidgets('toast keeps separate status and alert roles without duplicate announcements', (tester) async {
+    final context = await _pumpHost(tester, size: const Size(390, 844), dark: true);
+    addTearDown(() => AppToast.dismiss(immediately: true));
+    final semantics = tester.ensureSemantics();
+    final announcements = <Object?>[];
+    tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(SystemChannels.accessibility, (
+      message,
+    ) async {
+      announcements.add(message);
+      return null;
+    });
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(
+        SystemChannels.accessibility,
+        null,
+      ),
+    );
+    Finder region(SemanticsRole role) =>
+        find.byWidgetPredicate((widget) => widget is Semantics && widget.properties.role == role);
+    final statusId = tester.getSemantics(region(SemanticsRole.status)).id;
+    final alertId = tester.getSemantics(region(SemanticsRole.alert)).id;
+    AppToast.show(context, 'Saved');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(tester.getSemantics(region(SemanticsRole.status)).label, 'Saved');
+    expect(tester.getSemantics(region(SemanticsRole.alert)).label, isEmpty);
+    AppToast.show(context, 'Failed', type: AppToastType.error);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 60));
+    await tester.pump(const Duration(milliseconds: 120));
+    await tester.pump();
+    expect(tester.getSemantics(region(SemanticsRole.status)).label, isEmpty);
+    expect(tester.getSemantics(region(SemanticsRole.alert)).label, 'Failed');
+    expect(find.bySemanticsLabel('Failed'), findsOneWidget);
+    expect(announcements, isEmpty);
+    AppToast.dismiss(immediately: true);
+    await tester.pump();
+    expect(tester.getSemantics(region(SemanticsRole.status)).id, statusId);
+    expect(tester.getSemantics(region(SemanticsRole.alert)).id, alertId);
+    expect(tester.getSemantics(region(SemanticsRole.alert)).label, isEmpty);
+    semantics.dispose();
+  });
+
   for (final dark in [false, true]) {
     testWidgets('full HD TV keyboard stays within its dialog dark=$dark', (tester) async {
       TvDetectionService.debugSetAppleTVOverride(true);
@@ -380,7 +424,7 @@ Future<BuildContext> _pumpHost(
       theme: tabletFixtureTheme(monoTheme(dark: dark)),
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
-        child: child!,
+        child: AppToastHost(child: child!),
       ),
       home: Scaffold(
         appBar: toolbar ? AppBar(title: const Text('Toolbar')) : null,

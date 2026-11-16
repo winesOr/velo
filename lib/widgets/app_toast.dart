@@ -9,6 +9,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../i18n/strings.g.dart';
 import '../services/device_performance.dart';
+import '../theme/overlay_tokens.dart';
 import '../utils/platform_detector.dart';
 import 'app_icon.dart';
 
@@ -52,6 +53,22 @@ class AppToastHost extends StatefulWidget {
 class _AppToastHostState extends State<AppToastHost> {
   final _overlayKey = GlobalKey<OverlayState>();
   late final _content = OverlayEntry(builder: (_) => widget.child);
+  String _statusLabel = '';
+  String _alertLabel = '';
+  late final _liveRegions = OverlayEntry(
+    builder: (_) => Positioned(
+      top: 0,
+      left: 0,
+      child: _ToastLiveRegions(status: _statusLabel, alert: _alertLabel),
+    ),
+  );
+
+  void _announce(String label, AppToastType? type) {
+    _statusLabel = type == AppToastType.error ? '' : label;
+    _alertLabel = type == AppToastType.error ? label : '';
+    _liveRegions.markNeedsBuild();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -74,7 +91,30 @@ class _AppToastHostState extends State<AppToastHost> {
   }
 
   @override
-  Widget build(BuildContext context) => Overlay(key: _overlayKey, initialEntries: [_content]);
+  Widget build(BuildContext context) => Overlay(key: _overlayKey, initialEntries: [_content, _liveRegions]);
+}
+
+/// Keep both roles mounted before changing their content. These roles already
+/// provide polite / assertive live semantics; adding liveRegion or a separate
+/// announcement would report the same notice twice.
+class _ToastLiveRegions extends StatelessWidget {
+  const _ToastLiveRegions({required this.status, required this.alert});
+  final String status;
+  final String alert;
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+    child: SizedBox(
+      width: 1,
+      height: 1,
+      child: Stack(
+        children: [
+          Semantics(container: true, role: SemanticsRole.status, label: status, child: const SizedBox.expand()),
+          Semantics(container: true, role: SemanticsRole.alert, label: alert, child: const SizedBox.expand()),
+        ],
+      ),
+    ),
+  );
 }
 
 /// Registers real toolbar geometry; invisible tabs and covered routes are ignored.
@@ -253,6 +293,7 @@ class AppToast extends StatefulWidget {
     _next = null;
     _overlay = null;
     _source = null;
+    _host?._announce('', null);
     entry?.remove();
     entry?.dispose();
   }
@@ -298,8 +339,18 @@ class _AppToastState extends State<AppToast> with TickerProviderStateMixin {
     super.initState();
     _notice = widget._initial;
     _count = AppToast._queuedCount;
-    _entrance = AnimationController(vsync: this, duration: const Duration(milliseconds: 220));
-    _swap = AnimationController(vsync: this, value: 1, duration: const Duration(milliseconds: 120));
+    _entrance = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+      animationBehavior: AnimationBehavior.preserve,
+    );
+    _swap = AnimationController(
+      vsync: this,
+      value: 1,
+      duration: const Duration(milliseconds: 120),
+      reverseDuration: const Duration(milliseconds: 60),
+      animationBehavior: AnimationBehavior.preserve,
+    );
     _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 180));
     _remaining = AnimationController(vsync: this, animationBehavior: AnimationBehavior.preserve)
       ..addStatusListener((status) {
@@ -314,10 +365,8 @@ class _AppToastState extends State<AppToast> with TickerProviderStateMixin {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _tv = PlatformDetector.isTV();
-    // Accessible navigation is a reduced-motion preference. Fully disabled
-    // platform animations remain zero-duration, a distinct stronger setting.
-    _reducedMotion = MediaQuery.accessibleNavigationOf(context) || DevicePerformance.isReduced;
     _animationsDisabled = MediaQuery.disableAnimationsOf(context);
+    _reducedMotion = _animationsDisabled || MediaQuery.accessibleNavigationOf(context) || DevicePerformance.isReduced;
     if (!_initialized) {
       _initialized = true;
       _entrance.duration = _duration(220, 150);
@@ -327,13 +376,7 @@ class _AppToastState extends State<AppToast> with TickerProviderStateMixin {
     }
   }
 
-  Duration _duration(int full, int reduced) => Duration(
-    milliseconds: _animationsDisabled
-        ? 0
-        : _reducedMotion
-        ? reduced
-        : full,
-  );
+  Duration _duration(int full, int reduced) => Duration(milliseconds: _reducedMotion ? reduced : full);
 
   Duration? _lifetime() {
     if (_notice.type == AppToastType.loading) return null;
@@ -389,7 +432,6 @@ class _AppToastState extends State<AppToast> with TickerProviderStateMixin {
       _restartClock();
       _announce();
     } else {
-      _swap.duration = _duration(120, 120);
       _swap.reverse().then((_) {
         if (!mounted || AppToast._next != next) return;
         setState(() {
@@ -407,15 +449,7 @@ class _AppToastState extends State<AppToast> with TickerProviderStateMixin {
   void _announce() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      // The live region handles ordinary status; assertiveness is explicit for errors.
-      if (_notice.type == AppToastType.error) {
-        SemanticsService.sendAnnouncement(
-          View.of(context),
-          _semanticLabel,
-          Directionality.of(context),
-          assertiveness: Assertiveness.assertive,
-        );
-      }
+      AppToast._host?._announce(_semanticLabel, _notice.type);
     });
   }
 
@@ -504,7 +538,11 @@ class _AppToastState extends State<AppToast> with TickerProviderStateMixin {
     }
     final scale = _tv ? size.width / 1920 : 1.0;
     final top = player
-        ? (region?.widget.controlsVisible == true && bottom != null ? bottom + 8 : 14.0)
+        ? (region?.widget.controlsVisible == true && bottom != null
+              ? bottom + (_tv ? 16 * scale : 8)
+              : _tv
+              ? 54 * scale
+              : 14.0)
         : bottom != null
         ? bottom + (_tv ? 16 * scale : 8)
         : _tv
@@ -557,7 +595,7 @@ class _AppToastState extends State<AppToast> with TickerProviderStateMixin {
     final radius = _tv ? 40 * s : 22.0;
     final inset = _tv
         ? 96 * s
-        : _player
+        : _player && size.width > size.height
         ? math.max(44.0, math.max(MediaQuery.paddingOf(context).left, MediaQuery.paddingOf(context).right))
         : 16.0;
     final maxWidth = math.max(
@@ -566,8 +604,8 @@ class _AppToastState extends State<AppToast> with TickerProviderStateMixin {
         size.width - inset * 2,
         _tv
             ? 720 * s
-            : _player && size.width > size.height
-            ? 460.0
+            : size.width > size.height
+            ? OverlayTokens.notificationMaxWidth
             : size.width,
       ),
     );
@@ -577,66 +615,124 @@ class _AppToastState extends State<AppToast> with TickerProviderStateMixin {
         ? const Color(0xff222224).withValues(alpha: .66)
         : const Color(0xfffdfcf9).withValues(alpha: .72);
     final iconSize = _tv ? 34 * s : 18.0;
-    Widget statusIcon = AppIcon(icon, size: iconSize, color: accent);
+    Widget statusIcon = ExcludeSemantics(
+      child: AppIcon(icon, size: iconSize, color: accent),
+    );
     if (_notice.type == AppToastType.loading) statusIcon = RotationTransition(turns: _spinner, child: statusIcon);
     Widget body = Stack(
       children: [
-        Padding(
-          padding: EdgeInsets.fromLTRB(_tv ? 26 * s : 14, _tv ? 20 * s : 11, _tv ? 34 * s : 18, _tv ? 20 * s : 11),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              statusIcon,
-              SizedBox(width: _tv ? 18 * s : 10),
-              Flexible(
-                child: Text(
-                  _notice.message,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: foreground,
-                    fontSize: _tv ? 28 * s : 14,
-                    height: _tv ? 38 / 28 : 20 / 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              if (_count > 1) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: foreground.withValues(alpha: .10),
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  child: Text(
-                    '×$_count',
-                    style: TextStyle(color: foreground, fontSize: _tv ? 22 * s : 11, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-              if (_notice.hasAction) ...[
-                SizedBox(width: _tv ? 18 * s : 8),
-                if (_tv)
-                  Text(
-                    '${t.common.toastMenu} ${_notice.actionLabel}',
-                    style: TextStyle(color: dark ? const Color(0xffd6d0ff) : const Color(0xff5348b8), fontSize: 24 * s),
-                  )
-                else
-                  TextButton(
-                    onPressed: _actionUsed ? null : _act,
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(0, 28),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      backgroundColor: dark ? const Color(0x14ffffff) : const Color(0x125348b8),
-                      foregroundColor: dark ? const Color(0xffd6d0ff) : const Color(0xff5348b8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        FadeTransition(
+          opacity: _swap,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              _tv ? 26 * s : 14,
+              _tv ? (_notice.hasAction ? 16 : 20) * s : 11,
+              _tv ? 34 * s : 18,
+              _tv ? (_notice.hasAction ? 16 : 20) * s : 11,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                statusIcon,
+                SizedBox(width: _tv ? 18 * s : 10),
+                Flexible(
+                  child: ExcludeSemantics(
+                    child: Text(
+                      _notice.message,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: foreground,
+                        fontSize: _tv ? 28 * s : 14,
+                        height: _tv ? 38 / 28 : 20 / 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    child: Text(_notice.actionLabel!, maxLines: 1),
                   ),
+                ),
+                if (_count > 1) ...[
+                  SizedBox(width: _tv ? 8 * s : 8),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: _tv ? 10 * s : 6),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: .22),
+                      borderRadius: BorderRadius.circular(_tv ? 15 * s : 9),
+                    ),
+                    child: ExcludeSemantics(
+                      child: Text(
+                        '×$_count',
+                        style: TextStyle(
+                          color: accent,
+                          fontSize: _tv ? 20 * s : 11,
+                          height: _tv ? 30 / 20 : 18 / 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                if (_notice.hasAction) ...[
+                  SizedBox(width: _tv ? 18 * s : 8),
+                  if (_tv)
+                    Container(
+                      height: 48 * s,
+                      padding: EdgeInsets.symmetric(horizontal: 20 * s),
+                      decoration: BoxDecoration(
+                        color: dark ? const Color(0x14ffffff) : const Color(0x125348b8),
+                        borderRadius: BorderRadius.circular(24 * s),
+                      ),
+                      child: DefaultTextStyle(
+                        style: TextStyle(
+                          color: dark ? const Color(0xffd6d0ff) : const Color(0xff5348b8),
+                          fontSize: 28 * s,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 10.08 * s),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: (dark ? const Color(0xffd6d0ff) : const Color(0xff5348b8)).withValues(
+                                    alpha: .8,
+                                  ),
+                                  width: 1.5 * s,
+                                ),
+                                borderRadius: BorderRadius.circular(7.84 * s),
+                              ),
+                              child: Text(
+                                t.common.toastMenu,
+                                style: TextStyle(
+                                  fontSize: 22.4 * s,
+                                  color: (dark ? const Color(0xffd6d0ff) : const Color(0xff5348b8)).withValues(
+                                    alpha: .8,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 11.2 * s),
+                            Text(_notice.actionLabel!),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    TextButton(
+                      onPressed: _actionUsed ? null : _act,
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(0, 28),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        backgroundColor: dark ? const Color(0x14ffffff) : const Color(0x125348b8),
+                        foregroundColor: dark ? const Color(0xffd6d0ff) : const Color(0xff5348b8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: Text(_notice.actionLabel!, maxLines: 1),
+                    ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
         if (_notice.hasAction || _notice.type == AppToastType.error)
@@ -661,11 +757,40 @@ class _AppToastState extends State<AppToast> with TickerProviderStateMixin {
       color: reduced ? surface.withValues(alpha: 1) : surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radius),
-        side: BorderSide(width: .5, color: dark ? const Color(0x1fffffff) : const Color(0x1c242424)),
+        side: BorderSide(width: _tv ? 1.5 * s : .5, color: dark ? const Color(0x1fffffff) : const Color(0x1c242424)),
       ),
       child: body,
     );
-    if (!reduced) body = BackdropFilter(filter: ImageFilter.blur(sigmaX: 26, sigmaY: 26), child: body);
+    if (!reduced) {
+      body = BackdropFilter(
+        filter: ImageFilter.compose(
+          outer: const ColorFilter.matrix([
+            1.3148,
+            -.286,
+            -.0288,
+            0,
+            0,
+            -.0852,
+            1.114,
+            -.0288,
+            0,
+            0,
+            -.0852,
+            -.286,
+            1.3712,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+          ]),
+          inner: ImageFilter.blur(sigmaX: 26, sigmaY: 26),
+        ),
+        child: body,
+      );
+    }
     body = DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
@@ -681,8 +806,6 @@ class _AppToastState extends State<AppToast> with TickerProviderStateMixin {
     );
     body = Semantics(
       container: true,
-      liveRegion: true,
-      label: _semanticLabel,
       onDismiss: _notice.dismissible ? _dismiss : null,
       child: ExcludeSemantics(
         excluding: !_notice.hasAction,
@@ -724,28 +847,38 @@ class _AppToastState extends State<AppToast> with TickerProviderStateMixin {
       width: _tv ? maxWidth : size.width,
       child: Align(
         alignment: _tv ? Alignment.topRight : Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxWidth, minHeight: _tv ? 80 * s : 44),
-          child: AnimatedBuilder(
-            animation: Listenable.merge([_entrance, _swap, _pulse]),
-            builder: (_, child) {
-              final t = const Cubic(.2, .8, .2, 1).transform(_entrance.value);
-              final pulse = math.sin(_pulse.value * math.pi) * .04;
-              return Opacity(
-                opacity: (t * _swap.value).clamp(0, 1),
-                child: Transform.translate(
-                  offset: Offset(0, _reducedMotion || _animationsDisabled ? 0 : (_closing ? -8 : -10) * (1 - t)),
-                  child: Transform.scale(
-                    scale: _reducedMotion || _animationsDisabled
-                        ? 1
-                        : (_closing ? .96 : .94) + (_closing ? .04 : .06) * t + pulse,
-                    child: child,
-                  ),
-                ),
-              );
-            },
-            child: body,
-          ),
+        child: Stack(
+          alignment: _tv ? Alignment.topRight : Alignment.topCenter,
+          children: [
+            if (AppToast._host == null)
+              _ToastLiveRegions(
+                status: _notice.type == AppToastType.error ? '' : _semanticLabel,
+                alert: _notice.type == AppToastType.error ? _semanticLabel : '',
+              ),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth, minHeight: _tv ? 80 * s : 44),
+              child: AnimatedBuilder(
+                animation: Listenable.merge([_entrance, _pulse]),
+                builder: (_, child) {
+                  final t = const Cubic(.2, .8, .2, 1).transform(_entrance.value);
+                  final pulse = math.sin(_pulse.value * math.pi) * .04;
+                  return Opacity(
+                    opacity: t,
+                    child: Transform.translate(
+                      offset: Offset(0, _reducedMotion || _animationsDisabled ? 0 : (_closing ? -8 : -10) * (1 - t)),
+                      child: Transform.scale(
+                        scale: _reducedMotion || _animationsDisabled
+                            ? 1
+                            : (_closing ? .96 : .94) + (_closing ? .04 : .06) * t + pulse,
+                        child: child,
+                      ),
+                    ),
+                  );
+                },
+                child: body,
+              ),
+            ),
+          ],
         ),
       ),
     );
