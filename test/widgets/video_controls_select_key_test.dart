@@ -690,7 +690,7 @@ void main() {
     // turns the next Select into a chrome-raise, so pausing takes two presses
     // (#1890).
     playerTest(
-      'Select toggles playback on the first press after skipping the intro',
+      'Select raises the chrome without toggling after skipping the intro',
       markers: [MediaMarker(id: 1, type: 'intro', startTimeOffset: 10000, endTimeOffset: 45000)],
       (tester) async {
         // A remote is non-pointer input, so the app is already in keyboard
@@ -708,7 +708,8 @@ void main() {
 
         await press(tester, LogicalKeyboardKey.select);
 
-        expect(toggles, 1, reason: 'one press must toggle playback, not merely raise the chrome');
+        expect(toggles, 0, reason: 'TV Select only raises hidden controls when no skip action is available');
+        expect(chrome.controlsVisible, isTrue);
       },
     );
   });

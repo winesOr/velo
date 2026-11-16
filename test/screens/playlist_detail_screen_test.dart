@@ -943,6 +943,9 @@ class _PlaylistHarness {
 }
 
 class _PagedPlaylistClient implements MediaServerClient {
+  @override
+  final Object authenticationSessionId = Object();
+
   final List<MediaItem> items;
   final int? failOnceAt;
   final bool deleteResult;

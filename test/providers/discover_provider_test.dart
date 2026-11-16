@@ -668,6 +668,7 @@ void main() {
     // Futures and stream listeners must belong to the widget test's fake clock.
     disposeFixture();
     await initializeFixture();
+    manager.debugRegisterClientForTesting(_FakeClient(serverIdValue: 'server_2'));
     aggregation.onDeckResult = () => [
       _item('episode', grandparentId: 'show'),
       _item('episode', grandparentId: 'show', serverId: 'server_2'),

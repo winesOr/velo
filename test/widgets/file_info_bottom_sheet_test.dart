@@ -298,7 +298,8 @@ void main() {
 
     await _pumpSheet(tester, fileInfo: fileInfo);
     await tester.tap(find.text(path));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(clipboardCalls, hasLength(1));
     expect(clipboardCalls.single.method, 'Clipboard.setData');
@@ -328,7 +329,8 @@ void main() {
     expect(pathFocusNode.hasFocus, isTrue);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.select);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(clipboardCalls, hasLength(1));
     expect(clipboardCalls.single.arguments, <String, dynamic>{'text': path});

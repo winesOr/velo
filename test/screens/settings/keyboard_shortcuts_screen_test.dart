@@ -87,7 +87,8 @@ void main() {
     await tester.pump();
     await tester.pump();
     await tester.tap(_saveButton());
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsNothing);
     expect(service.getHotkey('play_pause')?.key, PhysicalKeyboardKey.space);
@@ -117,7 +118,8 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, t.common.reset));
     await tester.pumpAndSettle();
     await tester.tap(dialogButton(t.common.reset));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     expect(service.getHotkey('play_pause')?.key, PhysicalKeyboardKey.space);
     expect(find.text(t.settings.shortcutsReset), findsOneWidget);
   });
@@ -136,7 +138,8 @@ void main() {
     await tester.pump();
     preferences.failNextHotkeyWrite = true;
     await tester.tap(_saveButton());
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
     expect(service.getHotkey('play_pause')?.key, PhysicalKeyboardKey.space);

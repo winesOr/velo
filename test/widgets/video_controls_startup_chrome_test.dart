@@ -178,21 +178,20 @@ void main() {
       await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowRight);
       await tester.pump();
 
-      // The controls' own Focus autofocuses too late to win the scope: without
-      // an explicit claim the screen node keeps primary focus, the arrow
-      // reaches it first, and its self-heal raises the whole OSD on this very
-      // first press (#1765).
+      // The player surface must own the wake-up direction rather than
+      // letting it reach the screen node's unrelated self-heal (#1765).
       expect(
         keysReachingScreen,
         isEmpty,
         reason: 'the hidden-chrome layer must own the remote, not the screen self-heal',
       );
-      expect(find.text('10s'), findsOneWidget, reason: 'the seek badge answers, not the chrome');
-      expectNoChrome('a directional seek must leave the picture alone');
+      expect(chrome.controlsVisible, isTrue, reason: 'a TV direction raises the controls without seeking');
+      expect(find.byType(DesktopVideoControls), findsOneWidget);
+      expect(find.text('10s'), findsNothing);
 
       await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowRight);
       await tester.pump();
-      expect(player.seeks, [const Duration(seconds: 10)]);
+      expect(player.seeks, isEmpty, reason: 'the wake-up direction must not also seek');
 
       chrome.cancelAutoHide();
       await tester.pumpWidget(const SizedBox.shrink());

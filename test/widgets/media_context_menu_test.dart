@@ -1902,6 +1902,9 @@ Future<void> _openPlaylistPicker(WidgetTester tester, GlobalKey<MediaContextMenu
 }
 
 class _AudioPlaylistClient implements MediaServerClient {
+  @override
+  final Object authenticationSessionId = Object();
+
   final List<MediaItem> tracks;
   Completer<void>? fetchGate;
   bool blockWithAbort = false;

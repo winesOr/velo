@@ -160,12 +160,11 @@ Future<void> _confirmLibraryAction(WidgetTester tester, String actionLabel) asyn
 
   expect(find.byWidgetPredicate((widget) => widget is AlertDialog), findsOneWidget);
   await tester.tap(find.text(t.common.confirm));
+  // The progress notice is replaced in the same slot; retain the final notice
+  // while the real request and its replacement transition finish.
   await tester.pump();
-  await tester.pump(const Duration(milliseconds: 100));
-  await tester.pump(const Duration(seconds: 2));
-  await tester.pump(const Duration(milliseconds: 500));
-  await tester.pump(const Duration(seconds: 2));
-  await tester.pump(const Duration(milliseconds: 500));
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pump(const Duration(milliseconds: 300));
 }
 
 void main() {

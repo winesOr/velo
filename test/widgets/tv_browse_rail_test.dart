@@ -749,13 +749,21 @@ void main() {
     // The focused card mounts a leader (CompositedTransformTarget); scope to it
     // so we measure the focused card's in-card border container.
     final cardFinder = find
-        .descendant(of: find.byType(CompositedTransformTarget), matching: find.byType(AnimatedContainer))
+        .descendant(
+          of: find.byType(CompositedTransformTarget),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is AnimatedContainer &&
+                widget.foregroundDecoration is BoxDecoration &&
+                (widget.foregroundDecoration! as BoxDecoration).border is Border,
+          ),
+        )
         .first;
     final borderContainer = tester.widget<AnimatedContainer>(cardFinder);
     final border = (borderContainer.foregroundDecoration as BoxDecoration).border as Border;
     final cardSize = tester.getSize(cardFinder);
     final focusScale = tester.widget<AnimatedScale>(
-      find.ancestor(of: cardFinder, matching: find.byType(AnimatedScale)).first,
+      find.ancestor(of: find.byType(CompositedTransformTarget), matching: find.byType(AnimatedScale)).first,
     );
 
     // The border stays in-card; the glow now renders in an overlay that follows

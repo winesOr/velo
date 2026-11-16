@@ -24,7 +24,11 @@ import '../test_helpers/multi_server_fixtures.dart';
 import '../test_helpers/tablet_screenshots.dart';
 
 void main() {
-  setUpAll(() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() async {
+    // Complete font notifications before any render objects subscribe to them.
+    await loadTabletFonts();
+    await Future<void>.delayed(Duration.zero);
     LocaleSettings.setLocaleSync(AppLocale.en);
     LicenseRegistry.reset();
     LicenseRegistry.addLicense(
@@ -127,7 +131,6 @@ Future<void> _pump(WidgetTester tester, Widget screen, {required bool dark, Size
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  await loadTabletFonts();
   await tester.pumpWidget(
     MaterialApp(
       theme: tabletFixtureTheme(monoTheme(dark: dark)),

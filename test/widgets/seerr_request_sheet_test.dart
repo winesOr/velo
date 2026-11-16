@@ -324,7 +324,7 @@ void main() {
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'seerr_request_submit');
 
     await tester.tap(submitFinder);
-    await tester.pumpAndSettle();
+    await _pumpFrames(tester);
 
     expect(postedBody, {
       'mediaType': 'tv',
@@ -420,7 +420,10 @@ void main() {
 
     await _pumpSheet(tester, source: source, kind: MediaKind.movie, tmdbId: 603, title: 'The Matrix', account: account);
     await tester.tap(find.widgetWithText(FilledButton, 'Request'));
-    await tester.pumpAndSettle();
+    await _pumpFrames(tester);
+    // Authority changes close after a frame; finish that exit and mount its notice.
+    await _pumpFrames(tester);
+    await _pumpFrames(tester);
 
     expect(paths.sublist(paths.length - 2), ['/api/v1/request', '/api/v1/auth/me']);
     expect(find.byType(SeerrRequestSheet), findsNothing);
@@ -647,7 +650,10 @@ void main() {
 
     permissions = 0;
     await account.refreshUser();
-    await tester.pumpAndSettle();
+    await _pumpFrames(tester);
+    // Authority changes close after a frame; finish that exit and mount its notice.
+    await _pumpFrames(tester);
+    await _pumpFrames(tester);
 
     expect(find.byType(SeerrRequestSheet), findsNothing);
     expect(find.text(t.seerr.permissionRevoked), findsOneWidget);
@@ -859,7 +865,10 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Request'));
-    await tester.pumpAndSettle();
+    await _pumpFrames(tester);
+    // Authority changes close after a frame; finish that exit and mount its notice.
+    await _pumpFrames(tester);
+    await _pumpFrames(tester);
     expect(find.byType(SeerrRequestSheet), findsNothing);
     expect(find.text('open'), findsOneWidget);
     expect(find.text(t.seerr.permissionRevoked), findsOneWidget);

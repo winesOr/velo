@@ -255,7 +255,8 @@ void main() {
     await tester.pumpAndSettle();
 
     (key.currentState! as SearchInputFocusable).submitSearchQuery('movie');
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(client.queries, ['movie']);
     expect(failedClient.queries, ['movie']);
@@ -318,7 +319,8 @@ void main() {
     await tester.pumpAndSettle();
 
     (key.currentState! as SearchInputFocusable).submitSearchQuery('movie');
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(client.queries, ['movie']);
     expect(find.text(t.explore.searchFailed), findsOneWidget);

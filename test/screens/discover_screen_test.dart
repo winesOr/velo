@@ -91,6 +91,7 @@ void main() {
         fileExtension: 'png',
       );
     }
+    await loadTabletFonts();
     await initializeDateFormatting('en');
     await LocaleSettings.setLocale(AppLocale.zh);
     await (FontLoader('Go Noto Current')..addFont(rootBundle.load('assets/go-noto-current-regular.ttf'))).load();
@@ -1312,7 +1313,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 700));
       expect(find.byType(FusionHomeHero), findsWidgets);
       expect(tester.getSize(find.byType(FusionHomeHero).first).height, lessThan(size.height * .75));
-      expect(find.byTooltip(t.common.options), findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(DiscoverScreen), matching: find.byTooltip(t.common.options)),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
       await captureTablet(tester, find.byKey(boundary), 'home-${size.width.toInt()}');
       await tester.pumpWidget(const SizedBox());
@@ -1336,7 +1340,6 @@ void main() {
         durationMs: 6000000,
         viewOffsetMs: 1800000,
       );
-      await loadTabletFonts();
       await _pumpDiscoverShell(
         tester,
         isTv: true,
@@ -1383,6 +1386,7 @@ void main() {
       expect(tester.takeException(), isNull);
       await captureTv(tester, find.byKey(boundary), 'home-${size.width.toInt()}');
       await tester.pumpWidget(const SizedBox());
+      await tester.pump();
     });
   }
 
@@ -1451,7 +1455,13 @@ void main() {
         expect(recommendations, isNotEmpty);
         expect(recommendations.every((card) => !card.showWatchProgress), isTrue);
         expect(find.byKey(ValueKey('recommendation-score-${movie.globalKey}')), findsOneWidget);
-        expect(find.text('8.6'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byKey(ValueKey('recommendation-score-${movie.globalKey}')),
+            matching: find.text('8.6'),
+          ),
+          findsOneWidget,
+        );
       }
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());

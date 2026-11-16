@@ -486,6 +486,9 @@ void main() {
     );
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pump();
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'detail_rating_source');
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pump();
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'tv_detail_info');
     await tester.sendKeyDownEvent(LogicalKeyboardKey.enter);
     await tester.pump();
@@ -2651,7 +2654,11 @@ void main() {
         final wasFullyVisible = before.top >= viewport.top && before.bottom <= viewport.bottom;
         expect(position.pixels, 0, reason: 'capture the unscrolled layout before the real reveal autofocus');
         expect(FocusManager.instance.primaryFocus?.debugLabel, isNot('play_button'));
-        expect(wasFullyVisible, !initial.rail || initial.scale == 1);
+        expect(
+          wasFullyVisible,
+          isTrue,
+          reason: 'the finalized 36px title leaves Play visible before autofocus, including the 200% rail fixture',
+        );
         expect(tester.widget<AnimatedOpacity>(find.byKey(tvDetailRevealGateKey)).opacity, 0);
         related.complete(const []);
         await tester.pump();

@@ -31,9 +31,9 @@ import '../test_helpers/media_items.dart';
 import '../test_helpers/prefs.dart';
 import '../test_helpers/theme.dart';
 
-/// Regression coverage for #1676: remote/keyboard seeking and pausing must
-/// drive playback through a transient badge instead of raising the full player
-/// chrome, which covers the subtitles the user is trying to read.
+/// Regression coverage for #1676: desktop keyboard seeking and directed media
+/// transport use transient feedback. TV directions and Select instead raise
+/// hidden controls under the current TV input policy.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -89,8 +89,15 @@ void main() {
       bool isLive = false,
       LiveSeekBy? onLiveSeekBy,
       String itemId = 'transient-feedback',
+      // Hidden arrow seeking is a desktop keyboard contract; TV arrows wake.
+      bool desktopDirectionalSeek = false,
     }) async {
       transportCommands = [];
+      if (desktopDirectionalSeek) {
+        TvDetectionService.debugSetAppleTVOverride(false);
+        PlatformDetector.debugSetIsDesktopOSOverride(true);
+        await SettingsService.instance.write(SettingsService.videoPlayerNavigationEnabled, true);
+      }
       await tester.pumpWidget(
         MultiProvider(
           providers: [
@@ -99,7 +106,10 @@ void main() {
             ChangeNotifierProvider<WatchTogetherProvider>.value(value: watchTogether),
           ],
           child: MaterialApp(
-            theme: ThemeData(platform: TargetPlatform.android, extensions: const [testMonoTokens]),
+            theme: ThemeData(
+              platform: desktopDirectionalSeek ? TargetPlatform.macOS : TargetPlatform.android,
+              extensions: const [testMonoTokens],
+            ),
             home: Scaffold(
               body: SizedBox(
                 width: 1280,
@@ -145,7 +155,7 @@ void main() {
     }
 
     testWidgets('a right-arrow tap seeks without raising the chrome', (tester) async {
-      await pumpControls(tester);
+      await pumpControls(tester, desktopDirectionalSeek: true);
 
       await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowRight);
       await tester.pump();
@@ -164,7 +174,7 @@ void main() {
     });
 
     testWidgets('repeated taps in one direction stack into a running total', (tester) async {
-      await pumpControls(tester);
+      await pumpControls(tester, desktopDirectionalSeek: true);
 
       for (var i = 0; i < 3; i++) {
         await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowRight);
@@ -180,7 +190,7 @@ void main() {
     });
 
     testWidgets('flipping direction restarts the badge count', (tester) async {
-      await pumpControls(tester);
+      await pumpControls(tester, desktopDirectionalSeek: true);
 
       await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowRight);
       await tester.pump();
@@ -205,7 +215,7 @@ void main() {
       // keeps reading the 25s that was actually rewound for as long as the
       // user keeps pressing.
       player.setPosition(const Duration(seconds: 25));
-      await pumpControls(tester);
+      await pumpControls(tester, desktopDirectionalSeek: true);
 
       for (var i = 0; i < 5; i++) {
         await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowLeft);
@@ -226,7 +236,7 @@ void main() {
       // badge would describe travel that is not happening. Nor is a seek to
       // the position the playhead already occupies worth dispatching.
       player.setPosition(Duration.zero);
-      await pumpControls(tester);
+      await pumpControls(tester, desktopDirectionalSeek: true);
 
       await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowLeft);
       await tester.pump();
@@ -254,7 +264,7 @@ void main() {
       // landing on 0:00. Rounding each step before summing reads 5 + 8 + 8 + 5.
       await SettingsService.instance.write(SettingsService.seekTimeSmall, 5);
       player.setPosition(const Duration(seconds: 25));
-      await pumpControls(tester);
+      await pumpControls(tester, desktopDirectionalSeek: true);
 
       await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowLeft);
       await tester.pump();
@@ -273,7 +283,7 @@ void main() {
     });
 
     testWidgets('a held arrow accelerates and commits exactly one seek on release', (tester) async {
-      await pumpControls(tester);
+      await pumpControls(tester, desktopDirectionalSeek: true);
 
       await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowRight);
       await tester.pump();
@@ -560,7 +570,12 @@ void main() {
       // the release must still reset the tier or the next hold in the same
       // direction resumes mid-acceleration.
       final liveOffsets = <int>[];
-      await pumpControls(tester, isLive: true, onLiveSeekBy: _acceptingLiveSeek(liveOffsets));
+      await pumpControls(
+        tester,
+        desktopDirectionalSeek: true,
+        isLive: true,
+        onLiveSeekBy: _acceptingLiveSeek(liveOffsets),
+      );
 
       await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowRight);
       await tester.pump();
@@ -595,6 +610,7 @@ void main() {
       var headroom = 0; // seconds between the playhead and the live edge
       await pumpControls(
         tester,
+        desktopDirectionalSeek: true,
         isLive: true,
         onLiveSeekBy: (offset) {
           liveOffsets.add(offset);
@@ -677,7 +693,7 @@ void main() {
       await settleFeedback(tester);
     });
 
-    testWidgets('select raises the chrome before toggling so no badge flashes under it', (tester) async {
+    testWidgets('TV select raises hidden controls without issuing a transport command', (tester) async {
       await pumpControls(tester, wireTransportCallback: true);
 
       await tester.sendKeyDownEvent(LogicalKeyboardKey.select);
@@ -686,7 +702,7 @@ void main() {
       await tester.pump();
 
       expect(chrome.controlsVisible, isTrue);
-      expect(transportCommands, [TransportCommand.toggle]);
+      expect(transportCommands, isEmpty);
 
       await settleFeedback(tester);
     });
@@ -795,7 +811,7 @@ void main() {
     });
 
     testWidgets('the seek readout sits unbacked at the edge it seeks toward', (tester) async {
-      await pumpControls(tester);
+      await pumpControls(tester, desktopDirectionalSeek: true);
 
       await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowRight);
       await tester.pump();
@@ -841,7 +857,7 @@ void main() {
         .x;
 
     testWidgets('each stacked press shows its new total', (tester) async {
-      await pumpControls(tester);
+      await pumpControls(tester, desktopDirectionalSeek: true);
 
       await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowRight);
       await tester.pump();
@@ -862,7 +878,7 @@ void main() {
     testWidgets('the chevron stays visible and travels one way through a held burst', (tester) async {
       // It is a persistent cue, not a blinking one: it must never fade out
       // entirely, and it must only ever displace toward the seek direction.
-      await pumpControls(tester);
+      await pumpControls(tester, desktopDirectionalSeek: true);
 
       await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowRight);
       await tester.pump();

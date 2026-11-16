@@ -30,10 +30,8 @@ import '../test_helpers/media_items.dart';
 import '../test_helpers/prefs.dart';
 import '../test_helpers/theme.dart';
 
-/// A D-pad viewer gets the same 5s a phone does, restarted by every remote
-/// press so a traversal of the control bar never races it. A paused D-pad
-/// viewer keeps the chrome until they dismiss it — a remote has no tap to
-/// bring it back.
+/// A TV viewer gets 10s, restarted by every remote press, including while
+/// paused. Desktop and phone pointer holds retain their existing policies.
 ///
 /// A press on the controls holds them until it lifts, on desktop even when the
 /// drag leaves the player: a slider or scrubber unmounted mid-drag drops the
@@ -169,30 +167,31 @@ void main() {
       return gesture;
     }
 
-    testWidgets('a remote press restarts the 5s delay, and an idle remote lets the OSD go', (tester) async {
+    testWidgets('a remote press restarts the 10s delay, and an idle remote lets the OSD go', (tester) async {
       await pumpControls(tester);
 
       await tester.pump(const Duration(seconds: 4));
       await press(tester, LogicalKeyboardKey.arrowRight);
 
-      await tester.pump(const Duration(seconds: 4));
+      await tester.pump(const Duration(seconds: 9));
       expect(chrome.controlsVisible, isTrue, reason: 'the press restarted the timer mid-traversal');
 
       await tester.pump(const Duration(seconds: 1));
-      expect(chrome.controlsVisible, isFalse, reason: 'an idle remote lets the OSD go after 5s');
+      expect(chrome.controlsVisible, isFalse, reason: 'an idle remote lets the OSD go after 10s');
 
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('pausing keeps the OSD up until the viewer dismisses it', (tester) async {
+    testWidgets('paused TV controls hide after 10s without input', (tester) async {
       await pumpControls(tester);
 
       player.setPlaying(false);
       await tester.pump();
 
-      await tester.pump(const Duration(seconds: 30));
-      expect(chrome.controlsVisible, isTrue, reason: 'a remote has no tap to bring the OSD back');
-      expect(find.byType(DesktopVideoControls), findsOneWidget);
+      await tester.pump(const Duration(seconds: 10));
+      expect(chrome.controlsVisible, isFalse, reason: 'TV uses the same idle delay while paused');
+      await tester.pumpAndSettle();
+      expect(find.byType(DesktopVideoControls), findsNothing);
 
       chrome.cancelAutoHide();
       await tester.pumpWidget(const SizedBox.shrink());

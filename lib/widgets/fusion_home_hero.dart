@@ -70,8 +70,8 @@ class FusionHomeHero extends StatelessWidget {
       child: Text(
         title,
         textAlign: textAlign,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
+        maxLines: MediaQuery.textScalerOf(context).scale(1) > 1 ? null : 2,
+        overflow: MediaQuery.textScalerOf(context).scale(1) > 1 ? null : TextOverflow.ellipsis,
         style: (homeType?.heroTitle ?? Theme.of(context).textTheme.displaySmall)?.copyWith(
           fontSize: HomeTypography.heroTitleSize(
             tv: PlatformDetector.isTV(),

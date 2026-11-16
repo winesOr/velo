@@ -262,21 +262,32 @@ class _MobileVideoControlsState extends State<MobileVideoControls> {
           ),
         ),
         if (widget.onNext != null) iconButton(Symbols.skip_next_rounded, t.videoControls.nextButton, widget.onNext),
-        const Spacer(),
-        PlayerTrackSummary(
-          player: widget.player,
-          onSpeedTap: widget.canControl ? widget.onSpeedTap : null,
-          onSubtitleTap: widget.onSubtitlesTap,
-          trailing: [
-            if (widget.onEpisodesTap != null)
-              PlayerChip(
-                icon: Symbols.format_list_bulleted_rounded,
-                label: widget.episodesLabel ?? t.videoControls.episodesButton,
-                onTapWithRect: widget.onEpisodesTap,
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: PlayerTrackSummary(
+                player: widget.player,
+                onSpeedTap: widget.canControl ? widget.onSpeedTap : null,
+                onSubtitleTap: widget.onSubtitlesTap,
+                trailing: [
+                  if (widget.onEpisodesTap != null)
+                    PlayerChip(
+                      icon: Symbols.format_list_bulleted_rounded,
+                      label: widget.episodesLabel ?? t.videoControls.episodesButton,
+                      onTapWithRect: widget.onEpisodesTap,
+                    ),
+                  if (widget.onDanmakuTap != null)
+                    PlayerChip(
+                      icon: Symbols.subtitles_rounded,
+                      label: t.danmaku.title,
+                      onTapWithRect: widget.onDanmakuTap,
+                    ),
+                ],
               ),
-            if (widget.onDanmakuTap != null)
-              PlayerChip(icon: Symbols.subtitles_rounded, label: t.danmaku.title, onTapWithRect: widget.onDanmakuTap),
-          ],
+            ),
+          ),
         ),
       ],
     );

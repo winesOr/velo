@@ -323,7 +323,8 @@ void main() {
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Remove sync rule'));
     await tester.runAsync(() => removalCompleted.future.timeout(const Duration(seconds: 5)));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(await db.getSyncRule(ruleKey), isNull);
     expect(find.text('Sync rule and associated downloads removed'), findsOneWidget);

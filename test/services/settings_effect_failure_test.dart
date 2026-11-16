@@ -103,7 +103,8 @@ void main() {
     await tester.tap(find.byType(Switch));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(Switch));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(tester.takeException(), isNull);
     expect(find.text(t.settings.companionRemoteServerStopFailed), findsOneWidget);

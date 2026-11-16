@@ -46,7 +46,6 @@ Future<void> pumpGrouped(
   Size? size,
   double textScale = 1,
 }) async {
-  if (size != null) await loadTabletFonts(loadDefaultFont: true);
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = size ?? (tv ? const Size(960, 540) : const Size(390, 844));
   addTearDown(tester.view.reset);
@@ -80,6 +79,8 @@ Future<void> pumpGrouped(
 }
 
 void main() {
+  setUpAll(() => loadTabletFonts(loadDefaultFont: true));
+
   setUp(() async {
     resetSharedPreferencesForTest();
     SettingsService.resetForTesting();
@@ -113,6 +114,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(t.libraries.allYears), findsOneWidget);
       expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
     });
   }
 
@@ -161,6 +164,8 @@ void main() {
     );
     expect(tester.takeException(), isNull);
     await captureTv(tester, find.byKey(const ValueKey('tablet-library')), 'library');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
   });
 
   testWidgets('TV source poster transfers left to filters and right to real content', (tester) async {

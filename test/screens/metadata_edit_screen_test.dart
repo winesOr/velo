@@ -167,7 +167,8 @@ void main() {
     final harness = await _pumpEditor(tester, requests);
 
     await _chooseEpisodeSort(tester, 'Oldest first');
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(_tileText('Episode Sorting', 'Library default'), findsOneWidget);
     expect(find.text('Failed to update metadata'), findsOneWidget);
@@ -201,7 +202,8 @@ void main() {
     expect(find.byType(MetadataEditScreen), findsOneWidget);
 
     save.complete(_response(500));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(MetadataEditScreen), findsOneWidget);
     expect(find.text('Failed to update metadata'), findsOneWidget);
     expect(_tileText('Title', 'Updated title'), findsOneWidget);
@@ -256,7 +258,8 @@ void main() {
     expect(result.completions, 0);
 
     apply.complete(true);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(ArtworkPickerDialog), findsNothing);
     expect(result.completions, 1);
     expect(result.value, isTrue);
@@ -278,7 +281,8 @@ void main() {
     await _pumpArtworkDialog(tester, adapter, result);
 
     await tester.tap(find.text('Upload File'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(adapter.uploadCalls, 1);
     expect(find.byType(ArtworkPickerDialog), findsOneWidget);
