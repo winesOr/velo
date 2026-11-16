@@ -1864,6 +1864,11 @@
     }
   },
   "watchTogether": {
+    "roomWaiting": "Waiting to start",
+    "roomPlaying": "Playing",
+    "roomHoursAgo": "${hours} hours ago",
+    "roomMemberCount": "${count} members",
+    "enterRoom": "Enter room →",
     "title": "Watch Together",
     "description": "Watch content in sync with friends and family",
     "createSession": "Create Room",

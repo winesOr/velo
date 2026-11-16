@@ -1814,6 +1814,11 @@
     }
   },
   "watchTogether": {
+    "roomWaiting": "等待開始",
+    "roomPlaying": "播放中",
+    "roomHoursAgo": "${hours} 小時前",
+    "roomMemberCount": "${count} 位成員",
+    "enterRoom": "進入房間 →",
     "title": "一起看",
     "description": "與親友同步觀看內容",
     "createSession": "建立房間",

@@ -15,6 +15,8 @@ import 'package:plezy/theme/mono_theme.dart';
 import 'package:plezy/watch_together/models/watch_session.dart';
 import 'package:plezy/watch_together/providers/watch_together_provider.dart';
 import 'package:plezy/watch_together/screens/watch_together_screen.dart';
+import 'package:plezy/watch_together/services/recent_rooms_service.dart';
+import 'package:plezy/watch_together/services/watch_together_relay_endpoint.dart';
 import 'package:provider/provider.dart';
 
 import '../test_helpers/prefs.dart';
@@ -31,10 +33,19 @@ class _ProfileFixture extends ChangeNotifier implements ActiveProfileProvider {
 
 // These are UI fixtures, not a claim of two-device playback verification.
 class _RoomFixture extends WatchTogetherProvider {
-  _RoomFixture({this.guest = false, this.reconnecting = false, this.media = false});
+  _RoomFixture({this.guest = false, this.reconnecting = false, this.media = false, this.history, this.playing = false});
   final bool guest;
   final bool reconnecting;
   final bool media;
+  final RecentRoom? history;
+  final bool playing;
+
+  @override
+  RecentRoom? get recentRoom => history;
+  @override
+  bool get isConnected => history != null || super.isConnected;
+  @override
+  bool get isRoomPlaying => playing;
 
   @override
   WatchSession get session => WatchSession(
@@ -59,9 +70,14 @@ class _RoomFixture extends WatchTogetherProvider {
   @override
   String? get currentMediaServerId => media ? 'disconnected-server' : null;
   @override
-  List<Participant> get participants => const [
-    Participant(peerId: 'host', displayName: 'Local viewer', isHost: true),
-    Participant(peerId: 'guest', displayName: 'Remote viewer', isHost: false, isBuffering: true),
+  List<Participant> get participants => [
+    Participant(peerId: 'host', displayName: history == null ? 'Local viewer' : '𠮷Local viewer', isHost: true),
+    Participant(
+      peerId: 'guest',
+      displayName: history == null ? 'Remote viewer' : '😀Remote viewer',
+      isHost: false,
+      isBuffering: true,
+    ),
   ];
   @override
   int get participantCount => participants.length;
@@ -182,6 +198,41 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  for (final playing in [false, true]) {
+    testWidgets('online card uses live members and ${playing ? 'playing' : 'waiting'} status', (tester) async {
+      await pumpRoom(
+        tester,
+        _RoomFixture(
+          media: true,
+          playing: playing,
+          history: RecentRoom(
+            code: 'FILM_NIGHT-23',
+            relayScope: 'fixture',
+            name: 'Recorded room',
+            lastUsed: DateTime.now(),
+            lastMemberCount: 8,
+            lastMemberInitials: ['X'],
+            lastMediaTitle: 'Previous media',
+            lastEpisodeLabel: 'Episode 2',
+            lastSeenAt: DateTime.now().subtract(const Duration(hours: 5)),
+          ),
+        ),
+      );
+      expect(find.text('Recorded room'), findsOneWidget);
+      expect(
+        find.text(
+          '${playing ? t.watchTogether.roomPlaying : t.watchTogether.roomWaiting} · ${t.watchTogether.roomMemberCount(count: 2)}',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Episode 2'), findsNothing);
+      expect(find.text('X'), findsNothing);
+      expect(find.text('𠮷'), findsOneWidget);
+      expect(find.text('😀'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('empty standalone entry exposes actual create and join flows without demo rooms', (tester) async {
     resetSharedPreferencesForTest();
     await SettingsService.getInstance();
@@ -213,6 +264,57 @@ void main() {
     await tester.tap(find.text(t.watchTogether.joinByCode));
     await tester.pumpAndSettle();
     expect(find.text(t.watchTogether.joinInstructions), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('recent cards show recorded media and members while legacy fields stay absent', (tester) async {
+    resetSharedPreferencesForTest();
+    SettingsService.resetForTesting();
+    await SettingsService.getInstance();
+    final endpoint = WatchTogetherRelayEndpoint.resolve(null);
+    await RecentRoomsService.addOrUpdateRoom(
+      'REAL1',
+      profileId: 'fixture-profile',
+      endpoint: endpoint,
+      name: 'Actual film night',
+      lastMediaTitle: 'Actual show',
+      lastEpisodeLabel: 'Episode 7',
+      lastMemberCount: 3,
+      lastMemberInitials: ['W', 'A', 'L'],
+      lastSeenAt: DateTime.now().subtract(const Duration(hours: 2, minutes: 5)),
+    );
+    await RecentRoomsService.addOrUpdateRoom('OLD01', profileId: 'fixture-profile', endpoint: endpoint);
+    final profile = _ProfileFixture();
+    final together = WatchTogetherProvider();
+    addTearDown(profile.dispose);
+    addTearDown(together.dispose);
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<WatchTogetherProvider>.value(value: together),
+          ChangeNotifierProvider<ActiveProfileProvider>.value(value: profile),
+        ],
+        child: MaterialApp(home: const WatchTogetherScreen(embedded: true)),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('Actual film night'), findsOneWidget);
+    expect(find.text('Actual show · Episode 7'), findsOneWidget);
+    expect(
+      find.text('${t.watchTogether.roomHoursAgo(hours: 2)} · ${t.watchTogether.roomMemberCount(count: 3)}'),
+      findsOneWidget,
+    );
+    expect(find.text('W'), findsOneWidget);
+    expect(find.text('A'), findsOneWidget);
+    expect(find.text('L'), findsOneWidget);
+    expect(find.text('OLD01'), findsOneWidget);
+    expect(find.text(t.watchTogether.roomWaiting), findsNothing);
+    expect(find.text('246810'), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();

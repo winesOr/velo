@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import '../../media/ids.dart';
 import '../../media/media_item.dart';
@@ -16,6 +17,7 @@ import '../models/playback_state.dart';
 import '../models/sync_message.dart';
 import '../models/watch_session.dart';
 import '../services/current_playback_dispatcher.dart';
+import '../services/recent_rooms_service.dart';
 import '../services/relay_protocol.g.dart';
 import '../services/watch_together_controller.dart';
 import '../services/watch_together_peer_service.dart';
@@ -62,6 +64,93 @@ class WatchTogetherProvider with ChangeNotifier {
   bool _notifyScheduled = false;
   bool _disposed = false;
   int _sessionOperation = 0;
+  String? _historyProfileId;
+  WatchTogetherRelayEndpoint? _historyEndpoint;
+  String? _historySnapshot;
+  Future<void> _historyWrite = Future<void>.value();
+
+  /// Bind history only after the admission UI verifies its profile and relay
+  /// scope. The binding survives navigation into the player, but never a room.
+  Future<void> recordRecentRoom({
+    required String profileId,
+    required WatchTogetherRelayEndpoint endpoint,
+    String? name,
+  }) {
+    if (!isConnected || profileId.isEmpty) return Future<void>.value();
+    _historyProfileId = profileId;
+    _historyEndpoint = endpoint;
+    final operation = _sessionOperation;
+    _persistRecentRoom(force: true, name: name);
+    return _historyWrite.then((_) {
+      if (!_disposed && operation == _sessionOperation) notifyListeners();
+    });
+  }
+
+  void _persistRecentRoom({bool force = false, String? name}) {
+    final profileId = _historyProfileId;
+    final endpoint = _historyEndpoint;
+    final session = _session;
+    if (profileId == null || endpoint == null || session == null || !session.isConnected) return;
+    final match = _localMediaMatch;
+    final title = currentMediaTitle?.trim();
+    final mediaTitle = title == null || title.isEmpty ? null : title;
+    final episodeLabel = match?.kind == MediaKind.episode && match?.index != null
+        ? t.common.episodeNumber(number: match!.index!)
+        : null;
+    final initials = _participants
+        .map((participant) => participant.displayName.trim())
+        .where((name) => name.isNotEmpty)
+        .take(3)
+        .map((name) => String.fromCharCodes([name.runes.first]).toUpperCase())
+        .toList(growable: false);
+    final count = participantCount;
+    final snapshot = jsonEncode([
+      session.sessionId,
+      session.mediaRatingKey,
+      session.mediaServerId,
+      mediaTitle,
+      episodeLabel,
+      _participants.map((participant) => [participant.peerId, participant.displayName]).toList(),
+      session.controlMode.index,
+    ]);
+    if (!force && snapshot == _historySnapshot) return;
+    _historySnapshot = snapshot;
+    final seenAt = DateTime.now();
+    _historyWrite = _historyWrite
+        .then(
+          (_) => RecentRoomsService.addOrUpdateRoom(
+            session.sessionId,
+            profileId: profileId,
+            endpoint: endpoint,
+            name: name,
+            controlMode: session.controlMode,
+            lastMediaTitle: mediaTitle,
+            lastEpisodeLabel: episodeLabel,
+            lastMemberCount: count,
+            lastMemberInitials: initials,
+            lastSeenAt: seenAt,
+            replaceMedia: session.mediaRatingKey != null,
+          ),
+        )
+        .catchError((Object error, StackTrace stackTrace) {
+          appLogger.e('WatchTogether: Failed to save room history', error: error, stackTrace: stackTrace);
+        });
+  }
+
+  bool get isRoomPlaying => _playbackPhase == PlaybackPhase.playing;
+
+  RecentRoom? get recentRoom {
+    final profileId = _historyProfileId;
+    final endpoint = _historyEndpoint;
+    if (profileId == null || endpoint == null) return null;
+    return RecentRoomsService.getRecentRooms(
+      profileId: profileId,
+      endpoint: endpoint,
+    ).where((room) => room.code == sessionId).firstOrNull;
+  }
+
+  @visibleForTesting
+  Future<void> get pendingRoomHistory => _historyWrite;
 
   @override
   void notifyListeners() {
@@ -69,7 +158,10 @@ class WatchTogetherProvider with ChangeNotifier {
     _notifyScheduled = true;
     scheduleMicrotask(() {
       _notifyScheduled = false;
-      if (!_disposed) super.notifyListeners();
+      if (!_disposed) {
+        _persistRecentRoom();
+        super.notifyListeners();
+      }
     });
   }
 
@@ -627,6 +719,10 @@ class WatchTogetherProvider with ChangeNotifier {
   }
 
   WatchTogetherPeerService? _detachLocalSession({required bool announceLeave}) {
+    _persistRecentRoom(force: true);
+    _historyProfileId = null;
+    _historyEndpoint = null;
+    _historySnapshot = null;
     _sessionOperation++;
     _recoverableTransportError = null;
     if (announceLeave) _controller?.announceLeave();

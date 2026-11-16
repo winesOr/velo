@@ -1853,6 +1853,11 @@
     }
   },
   "watchTogether": {
+    "roomWaiting": "等待开始",
+    "roomPlaying": "播放中",
+    "roomHoursAgo": "${hours} 小时前",
+    "roomMemberCount": "${count} 位成员",
+    "enterRoom": "进入房间 →",
     "title": "一起看",
     "description": "与朋友和家人同步观看内容",
     "createSession": "创建房间",

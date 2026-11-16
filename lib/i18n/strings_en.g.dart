@@ -4679,6 +4679,21 @@ class Translations$watchTogether$en {
 
 	// Translations
 
+	/// en: 'Waiting to start'
+	String get roomWaiting => 'Waiting to start';
+
+	/// en: 'Playing'
+	String get roomPlaying => 'Playing';
+
+	/// en: '${hours} hours ago'
+	String roomHoursAgo({required Object hours}) => '${hours} hours ago';
+
+	/// en: '${count} members'
+	String roomMemberCount({required Object count}) => '${count} members';
+
+	/// en: 'Enter room →'
+	String get enterRoom => 'Enter room →';
+
 	/// en: 'Watch Together'
 	String get title => 'Watch Together';
 
@@ -10197,6 +10212,11 @@ extension on Translations {
 			'music.discography.singlesAndEps' => 'Singles & EPs',
 			'music.discography.live' => 'Live',
 			'music.discography.compilations' => 'Compilations',
+			'watchTogether.roomWaiting' => 'Waiting to start',
+			'watchTogether.roomPlaying' => 'Playing',
+			'watchTogether.roomHoursAgo' => ({required Object hours}) => '${hours} hours ago',
+			'watchTogether.roomMemberCount' => ({required Object count}) => '${count} members',
+			'watchTogether.enterRoom' => 'Enter room →',
 			'watchTogether.title' => 'Watch Together',
 			'watchTogether.description' => 'Watch content in sync with friends and family',
 			'watchTogether.createSession' => 'Create Room',
@@ -10544,13 +10564,13 @@ extension on Translations {
 			'videoSettings.audioNormalizationDisablesPassthrough' => 'Decodes audio to PCM; passthrough is off while this is on',
 			'videoSettings.audioNormalizationStereoMix' => 'Decodes audio to a stereo mix; passthrough is off while this is on',
 			'performanceOverlay.color' => 'Color',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.performance' => 'Performance',
 			'performanceOverlay.buffer' => 'Buffer',
 			'performanceOverlay.app' => 'App',
 			'performanceOverlay.decoder' => 'Decoder',
 			'performanceOverlay.rawDecoder' => 'Raw Decoder',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.tunneling' => 'Tunneling',
 			'performanceOverlay.passthrough' => 'Passthrough',
 			'performanceOverlay.aspect' => 'Aspect',

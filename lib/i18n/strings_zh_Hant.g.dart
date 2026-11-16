@@ -1839,6 +1839,11 @@ class _Translations$watchTogether$zh_Hant extends Translations$watchTogether$zh 
 	final TranslationsZhHant _root; // ignore: unused_field
 
 	// Translations
+	@override String get roomWaiting => '等待開始';
+	@override String get roomPlaying => '播放中';
+	@override String roomHoursAgo({required Object hours}) => '${hours} 小時前';
+	@override String roomMemberCount({required Object count}) => '${count} 位成員';
+	@override String get enterRoom => '進入房間 →';
 	@override String get title => '一起看';
 	@override String get description => '與親友同步觀看內容';
 	@override String get createSession => '建立房間';
@@ -5101,6 +5106,11 @@ extension on TranslationsZhHant {
 			'music.discography.singlesAndEps' => '單曲與 EP',
 			'music.discography.live' => '現場',
 			'music.discography.compilations' => '合輯',
+			'watchTogether.roomWaiting' => '等待開始',
+			'watchTogether.roomPlaying' => '播放中',
+			'watchTogether.roomHoursAgo' => ({required Object hours}) => '${hours} 小時前',
+			'watchTogether.roomMemberCount' => ({required Object count}) => '${count} 位成員',
+			'watchTogether.enterRoom' => '進入房間 →',
 			'watchTogether.title' => '一起看',
 			'watchTogether.description' => '與親友同步觀看內容',
 			'watchTogether.createSession' => '建立房間',
@@ -5487,13 +5497,13 @@ extension on TranslationsZhHant {
 			'performanceOverlay.decoderExynosHw' => 'Exynos 硬體',
 			'performanceOverlay.decoderSoftware' => '軟體',
 			'performanceOverlay.decoderHardware' => '硬體',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.tunnelingActive' => '已啟用',
 			'performanceOverlay.dvRpuFailed' => ({required Object converted, required Object failures}) => '${converted}（${failures} 個失敗）',
 			'externalPlayer.title' => '外部播放器',
 			'externalPlayer.useExternalPlayer' => '使用外部播放器',
 			'externalPlayer.useExternalPlayerDescription' => '在其他應用程式中開啟影片',
-			_ => null,
-		} ?? switch (path) {
 			'externalPlayer.selectPlayer' => '選擇播放器',
 			'externalPlayer.customPlayers' => '自訂播放器',
 			'externalPlayer.systemDefault' => '系統預設',

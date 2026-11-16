@@ -351,20 +351,6 @@ class _NotInSessionViewState extends State<_NotInSessionView> with MountedSetSta
     );
   }
 
-  /// Persists [code] as a recent room for the active profile and refreshes the
-  /// list. A null [controlMode] leaves any stored mode untouched.
-  Future<void> _recordRecentRoom(String code, {ControlMode? controlMode}) async {
-    final profileId = _profileId;
-    if (profileId == null || profileId.isEmpty) return;
-    await RecentRoomsService.addOrUpdateRoom(
-      code,
-      profileId: profileId,
-      endpoint: _relayEndpoint,
-      controlMode: controlMode,
-    );
-    setStateIfMounted(() => _recentRooms = _loadRecentRooms());
-  }
-
   /// Runs [action] behind a busy flag, logging [logMessage] and showing
   /// [failureMessage] in a snackbar when it throws.
   Future<void> _runSessionAction({
@@ -426,13 +412,7 @@ class _NotInSessionViewState extends State<_NotInSessionView> with MountedSetSta
                 (ModalRoute.of(dialogContext)?.isCurrent ?? false);
             if (!scopeIsCurrent) return (success: false, error: t.watchTogether.failedToCreate);
             if (profileId != null && profileId.isNotEmpty) {
-              await RecentRoomsService.addOrUpdateRoom(
-                sessionId,
-                profileId: profileId,
-                endpoint: endpoint,
-                name: name,
-                controlMode: controlMode,
-              );
+              await provider.recordRecentRoom(profileId: profileId, endpoint: endpoint, name: name);
             }
             return (success: true, error: null);
           } catch (error) {
@@ -482,7 +462,7 @@ class _NotInSessionViewState extends State<_NotInSessionView> with MountedSetSta
               (ModalRoute.of(dialogContext)?.isCurrent ?? false);
           if (!scopeIsCurrent) return (success: false, error: t.watchTogether.failedToJoin);
           if (profileId != null && profileId.isNotEmpty) {
-            await RecentRoomsService.addOrUpdateRoom(sessionId, profileId: profileId, endpoint: endpoint);
+            await provider.recordRecentRoom(profileId: profileId, endpoint: endpoint);
           }
           return (success: true, error: null);
         } catch (error) {
@@ -512,13 +492,38 @@ class _NotInSessionViewState extends State<_NotInSessionView> with MountedSetSta
       logMessage: 'Failed to enter room',
       failureMessage: t.watchTogether.failedToJoin,
       action: () async {
-        await widget.watchTogether.enterRoom(
-          room.code,
-          relayEndpoint: _relayEndpoint,
-          controlMode: room.controlMode ?? ControlMode.anyone,
-          displayName: _plexDisplayName,
-        );
-        await _recordRecentRoom(room.code);
+        final profiles = context.read<ActiveProfileProvider>();
+        final profileId = profiles.activeId;
+        final generation = profiles.identityMutationGeneration;
+        final endpoint = _relayEndpoint;
+        final relayPreference = SettingsService.instanceOrNull?.listenableOf(SettingsService.customRelayUrl);
+        var relayChanged = false;
+        void onRelayChanged() => relayChanged = true;
+        relayPreference?.addListener(onRelayChanged);
+        try {
+          await widget.watchTogether.enterRoom(
+            room.code,
+            relayEndpoint: endpoint,
+            controlMode: room.controlMode ?? ControlMode.anyone,
+            displayName: _plexDisplayName,
+          );
+          if (profileId == null ||
+              profileId.isEmpty ||
+              relayChanged ||
+              profiles.activeId != profileId ||
+              profiles.identityMutationGeneration != generation ||
+              WatchTogetherRelayEndpoint.resolve(
+                    SettingsService.instanceOrNull?.read(SettingsService.customRelayUrl),
+                  ) !=
+                  endpoint ||
+              !widget.watchTogether.isConnected ||
+              widget.watchTogether.sessionId != room.code) {
+            return;
+          }
+          await widget.watchTogether.recordRecentRoom(profileId: profileId, endpoint: endpoint);
+        } finally {
+          relayPreference?.removeListener(onRelayChanged);
+        }
       },
     );
   }
@@ -627,9 +632,6 @@ class _RecentRoomTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final title = room.name ?? room.code;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 13),
       child: FocusableWrapper(
@@ -643,43 +645,11 @@ class _RecentRoomTile extends StatelessWidget {
         onSelect: isBusy ? null : onTap,
         onLongPress: () => _showActions(context),
         child: _RoomSurface(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: isEntering ? const LoadingIndicatorBox(size: 24) : const AppIcon(Symbols.meeting_room_rounded),
-                title: Text(title, maxLines: 1, overflow: .ellipsis),
-                subtitle: room.name != null
-                    ? Text(
-                        room.code,
-                        style: TextStyle(fontFamily: 'monospace', color: theme.colorScheme.onSurfaceVariant),
-                      )
-                    : null,
-                trailing: IconButton(
-                  icon: const AppIcon(Symbols.more_vert_rounded),
-                  onPressed: () => _showActions(context),
-                ),
-                onTap: isBusy ? null : onTap,
-                onLongPress: () => _showActions(context),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  if (room.controlMode case final mode?)
-                    _RoomTag(label: mode == ControlMode.hostOnly ? t.watchTogether.hostOnly : t.watchTogether.anyone),
-                  Text(
-                    t.watchTogether.lastUsed(
-                      date: MaterialLocalizations.of(context).formatShortDate(room.lastUsed.toLocal()),
-                    ),
-                    style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ],
+          child: _RoomCardDetails(
+            room: room,
+            isEntering: isEntering,
+            onEnter: isBusy ? null : onTap,
+            onMenu: () => _showActions(context),
           ),
         ),
       ),
@@ -702,6 +672,109 @@ class _RecentRoomTile extends StatelessWidget {
     if (!context.mounted) return;
     if (action == 'rename') onRename();
     if (action == 'remove') onRemove();
+  }
+}
+
+/// Uses only recorded values or the currently admitted room's live state.
+class _RoomCardDetails extends StatelessWidget {
+  const _RoomCardDetails({required this.room, this.live, this.onEnter, this.onMenu, this.isEntering = false});
+  final RecentRoom room;
+  final WatchTogetherProvider? live;
+  final VoidCallback? onEnter;
+  final VoidCallback? onMenu;
+  final bool isEntering;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final online = live?.isConnected == true && !live!.isReconnectingRelay && !live!.isWaitingForHostReconnect;
+    final count = online ? live!.participantCount : room.lastMemberCount;
+    final status = online
+        ? (live!.isRoomPlaying ? t.watchTogether.roomPlaying : t.watchTogether.roomWaiting)
+        : room.lastSeenAt == null
+        ? null
+        : t.watchTogether.roomHoursAgo(hours: DateTime.now().difference(room.lastSeenAt!).inHours.clamp(0, 1 << 31));
+    final statusParts = [?status, if (count != null) t.watchTogether.roomMemberCount(count: count)];
+    final title = online ? live!.currentMediaTitle ?? room.lastMediaTitle : room.lastMediaTitle;
+    final episodeLabel = online && title != room.lastMediaTitle ? null : room.lastEpisodeLabel;
+    final mediaParts = [if (title != null && title.trim().isNotEmpty) title, ?episodeLabel];
+    final initials = online
+        ? live!.participants
+              .map((participant) => participant.displayName.trim())
+              .where((name) => name.isNotEmpty)
+              .take(3)
+              .map((name) => String.fromCharCodes([name.runes.first]).toUpperCase())
+              .toList()
+        : room.lastMemberInitials?.take(3).toList() ?? const <String>[];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (statusParts.isNotEmpty) _RoomTag(label: statusParts.join(' · ')),
+        const SizedBox(height: 9),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                room.name ?? room.code,
+                maxLines: 1,
+                overflow: .ellipsis,
+                style: theme.textTheme.titleMedium?.copyWith(fontSize: 17, fontWeight: FontWeight.w600),
+              ),
+            ),
+            if (isEntering) const LoadingIndicatorBox(size: 24),
+            if (onMenu != null)
+              IconButton(
+                tooltip: t.videoControls.moreButton,
+                icon: const AppIcon(Symbols.more_vert_rounded),
+                onPressed: onMenu,
+              ),
+          ],
+        ),
+        if (mediaParts.isNotEmpty)
+          Text(
+            mediaParts.join(' · '),
+            maxLines: 2,
+            overflow: .ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+        if (initials.isNotEmpty || onEnter != null || live == null) ...[
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              if (initials.isNotEmpty)
+                SizedBox(
+                  width: 27 + (initials.length - 1) * 21,
+                  height: 27,
+                  child: Stack(
+                    children: [
+                      for (var index = 0; index < initials.length; index++)
+                        Positioned(
+                          left: index * 21,
+                          child: Container(
+                            width: 27,
+                            height: 27,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color.alphaBlend(
+                                theme.colorScheme.onSurface.withValues(alpha: .16 + index * .04),
+                                theme.colorScheme.surface,
+                              ),
+                              border: Border.all(color: theme.colorScheme.surface, width: 2),
+                            ),
+                            child: Text(initials[index], style: theme.textTheme.labelSmall?.copyWith(fontSize: 10)),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              const Spacer(),
+              if (live == null) TextButton(onPressed: onEnter, child: Text(t.watchTogether.enterRoom)),
+            ],
+          ),
+        ],
+      ],
+    );
   }
 }
 
@@ -730,6 +803,10 @@ class _ActiveSessionContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: .stretch,
             children: [
+              if (watchTogether.recentRoom case final recentRoom?) ...[
+                _RoomCardDetails(room: recentRoom, live: watchTogether),
+                const SizedBox(height: 16),
+              ],
               Text(
                 watchTogether.isHost ? t.watchTogether.hostingSession : t.watchTogether.inSession,
                 textAlign: TextAlign.start,

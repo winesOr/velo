@@ -1878,6 +1878,11 @@ class Translations$watchTogether$zh extends Translations$watchTogether$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String get roomWaiting => '等待开始';
+	@override String get roomPlaying => '播放中';
+	@override String roomHoursAgo({required Object hours}) => '${hours} 小时前';
+	@override String roomMemberCount({required Object count}) => '${count} 位成员';
+	@override String get enterRoom => '进入房间 →';
 	@override String get title => '一起看';
 	@override String get description => '与朋友和家人同步观看内容';
 	@override String get createSession => '创建房间';
@@ -5216,6 +5221,11 @@ extension on TranslationsZh {
 			'music.discography.singlesAndEps' => '单曲和 EP',
 			'music.discography.live' => '现场',
 			'music.discography.compilations' => '合集',
+			'watchTogether.roomWaiting' => '等待开始',
+			'watchTogether.roomPlaying' => '播放中',
+			'watchTogether.roomHoursAgo' => ({required Object hours}) => '${hours} 小时前',
+			'watchTogether.roomMemberCount' => ({required Object count}) => '${count} 位成员',
+			'watchTogether.enterRoom' => '进入房间 →',
 			'watchTogether.title' => '一起看',
 			'watchTogether.description' => '与朋友和家人同步观看内容',
 			'watchTogether.createSession' => '创建房间',
@@ -5563,13 +5573,13 @@ extension on TranslationsZh {
 			'videoSettings.audioNormalizationDisablesPassthrough' => '将音频解码为 PCM；开启时直通关闭',
 			'videoSettings.audioNormalizationStereoMix' => '将音频解码为立体声混音；开启时直通关闭',
 			'performanceOverlay.color' => '颜色',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.performance' => '性能',
 			'performanceOverlay.buffer' => '缓冲',
 			'performanceOverlay.app' => '应用',
 			'performanceOverlay.decoder' => '解码器',
 			'performanceOverlay.rawDecoder' => '原始解码器',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.tunneling' => '隧道',
 			'performanceOverlay.passthrough' => '直通',
 			'performanceOverlay.aspect' => '宽高比',

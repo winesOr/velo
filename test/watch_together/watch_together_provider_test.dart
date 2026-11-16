@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/media/ids.dart';
 import 'package:plezy/media/media_kind.dart';
 import 'package:plezy/media/media_version.dart';
+import 'package:plezy/services/settings_service.dart';
+import 'package:plezy/watch_together/services/recent_rooms_service.dart';
 import 'package:plezy/watch_together/services/watch_together_relay_endpoint.dart';
 import 'package:plezy/watch_together/models/playback_state.dart';
 import 'package:plezy/watch_together/models/sync_message.dart';
@@ -314,6 +316,59 @@ void main() {
     // The provider reads SettingsService.instanceOrNull?.read(...) when
     // creating/joining sessions; ensure prefs are reset between tests.
     resetSharedPreferencesForTest();
+  });
+
+  test('admitted room history tracks media and members after leaving the setup UI', () async {
+    SettingsService.resetForTesting();
+    await SettingsService.getInstance();
+    final endpoint = WatchTogetherRelayEndpoint.resolve('https://history.example.test');
+    final factory = _FakePeerServiceFactory();
+    final provider = WatchTogetherProvider(peerServiceFactory: factory.call);
+    addTearDown(provider.dispose);
+    await provider.createSession(controlMode: ControlMode.hostOnly, relayEndpoint: endpoint, displayName: '𠮷Wines');
+    await provider.recordRecentRoom(profileId: 'profile-a', endpoint: endpoint, name: 'Actual room');
+    final code = provider.sessionId!;
+    RecentRoom saved() => RecentRoomsService.getRecentRooms(profileId: 'profile-a', endpoint: endpoint).single;
+    expect(saved().lastMemberCount, 1);
+    expect(saved().lastMemberInitials, ['𠮷']);
+    expect(saved().lastMediaTitle, isNull);
+    final service = factory.services.single;
+    service.emitMessage(SyncMessage.join(peerId: 'alex', displayName: '😀Alex', isHost: false));
+    await _flushProviderEvents();
+    await provider.pendingRoomHistory;
+    expect(saved().lastMemberCount, 2);
+    expect(saved().lastMemberInitials, ['𠮷', '😀']);
+    final lease = provider.capturePlaybackLease(selection: true)!;
+    expect(
+      provider.selectMedia(
+        ratingKey: 'film',
+        serverId: ServerId('server'),
+        mediaTitle: 'Real film',
+        position: Duration.zero,
+        rate: 1,
+        lease: lease,
+      ),
+      isTrue,
+    );
+    await _flushProviderEvents();
+    await provider.pendingRoomHistory;
+    expect(saved().lastMediaTitle, 'Real film');
+    expect(saved().lastEpisodeLabel, isNull);
+    service.emitPeerDisconnected('alex');
+    await _flushProviderEvents();
+    await provider.pendingRoomHistory;
+    expect(saved().lastMemberCount, 1);
+    final lastSeenAt = saved().lastSeenAt!;
+    await provider.leaveSession();
+    await provider.pendingRoomHistory;
+    expect(saved().code, code);
+    expect(saved().lastMediaTitle, 'Real film');
+    expect(saved().lastSeenAt!.isBefore(lastSeenAt), isFalse);
+    await provider.joinSession('OTHER', relayEndpoint: endpoint);
+    await _flushProviderEvents();
+    await provider.pendingRoomHistory;
+    expect(saved().code, code); // A new admission never inherits the previous profile binding.
+    expect(RecentRoomsService.getRecentRooms(profileId: 'profile-b', endpoint: endpoint), isEmpty);
   });
 
   group('WatchTogetherProvider — initial state', () {

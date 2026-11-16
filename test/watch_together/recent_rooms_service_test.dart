@@ -46,6 +46,48 @@ void main() {
     expect(profileB.single.controlMode, ControlMode.anyone);
   });
 
+  test('optional snapshots round-trip, retain legacy rooms, and replace stale episode details', () async {
+    final legacy = RecentRoom.fromJson({'code': 'OLD01', 'relayScope': 'scope', 'lastUsed': 1});
+    expect(legacy.lastMediaTitle, isNull);
+    expect(legacy.lastEpisodeLabel, isNull);
+    expect(legacy.lastMemberCount, isNull);
+    expect(legacy.lastMemberInitials, isNull);
+    expect(legacy.lastSeenAt, isNull);
+    final seenAt = DateTime.fromMillisecondsSinceEpoch(123456);
+    await RecentRoomsService.addOrUpdateRoom(
+      'REAL1',
+      profileId: 'profile-a',
+      endpoint: endpointA,
+      lastMediaTitle: 'Actual show',
+      lastEpisodeLabel: 'Episode 7',
+      lastMemberCount: 4,
+      lastMemberInitials: ['W', '😀', '𠮷', 'D'],
+      lastSeenAt: seenAt,
+    );
+    var room = RecentRoomsService.getRecentRooms(profileId: 'profile-a', endpoint: endpointA).single;
+    expect(room.lastMediaTitle, 'Actual show');
+    expect(room.lastEpisodeLabel, 'Episode 7');
+    expect(room.lastMemberCount, 4);
+    expect(room.lastMemberInitials, ['W', '😀', '𠮷']);
+    expect(room.lastSeenAt, seenAt);
+    await RecentRoomsService.renameRoom('REAL1', 'Film night', profileId: 'profile-a', endpoint: endpointA);
+    await RecentRoomsService.addOrUpdateRoom('REAL1', profileId: 'profile-a', endpoint: endpointA);
+    room = RecentRoomsService.getRecentRooms(profileId: 'profile-a', endpoint: endpointA).single;
+    expect(room.lastEpisodeLabel, 'Episode 7');
+    await RecentRoomsService.addOrUpdateRoom(
+      'REAL1',
+      profileId: 'profile-a',
+      endpoint: endpointA,
+      lastMediaTitle: 'Actual movie',
+      replaceMedia: true,
+    );
+    room = RecentRoomsService.getRecentRooms(profileId: 'profile-a', endpoint: endpointA).single;
+    expect(room.name, 'Film night');
+    expect(room.lastMediaTitle, 'Actual movie');
+    expect(room.lastEpisodeLabel, isNull);
+    expect(room.lastMemberCount, 4);
+  });
+
   test('same code is independently mutable on different relay bases', () async {
     await RecentRoomsService.addOrUpdateRoom(
       'SAME1',

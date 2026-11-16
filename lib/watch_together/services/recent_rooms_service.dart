@@ -19,8 +19,25 @@ class RecentRoom {
   final DateTime lastUsed;
   @JsonKey(fromJson: _controlModeFromIndex, toJson: _controlModeToIndex)
   final ControlMode? controlMode;
+  final String? lastMediaTitle;
+  final String? lastEpisodeLabel;
+  final int? lastMemberCount;
+  final List<String>? lastMemberInitials;
+  @JsonKey(fromJson: _nullableDateTimeFromMillis, toJson: _nullableDateTimeToMillis)
+  final DateTime? lastSeenAt;
 
-  const RecentRoom({required this.code, required this.relayScope, this.name, required this.lastUsed, this.controlMode});
+  const RecentRoom({
+    required this.code,
+    required this.relayScope,
+    this.name,
+    required this.lastUsed,
+    this.controlMode,
+    this.lastMediaTitle,
+    this.lastEpisodeLabel,
+    this.lastMemberCount,
+    this.lastMemberInitials,
+    this.lastSeenAt,
+  });
 
   Map<String, dynamic> toJson() => _$RecentRoomToJson(this);
 
@@ -32,6 +49,12 @@ class RecentRoom {
     String? name,
     DateTime? lastUsed,
     ControlMode? controlMode,
+    String? lastMediaTitle,
+    String? lastEpisodeLabel,
+    int? lastMemberCount,
+    List<String>? lastMemberInitials,
+    DateTime? lastSeenAt,
+    bool replaceMedia = false,
     bool clearName = false,
   }) => RecentRoom(
     code: code ?? this.code,
@@ -39,12 +62,21 @@ class RecentRoom {
     name: clearName ? null : (name ?? this.name),
     lastUsed: lastUsed ?? this.lastUsed,
     controlMode: controlMode ?? this.controlMode,
+    lastMediaTitle: replaceMedia ? lastMediaTitle : (lastMediaTitle ?? this.lastMediaTitle),
+    lastEpisodeLabel: replaceMedia ? lastEpisodeLabel : (lastEpisodeLabel ?? this.lastEpisodeLabel),
+    lastMemberCount: lastMemberCount ?? this.lastMemberCount,
+    lastMemberInitials: (lastMemberInitials ?? this.lastMemberInitials)?.take(3).toList(growable: false),
+    lastSeenAt: lastSeenAt ?? this.lastSeenAt,
   );
 }
 
 DateTime _dateTimeFromMillis(int value) => DateTime.fromMillisecondsSinceEpoch(value);
 
 int _dateTimeToMillis(DateTime value) => value.millisecondsSinceEpoch;
+
+DateTime? _nullableDateTimeFromMillis(int? value) => value == null ? null : _dateTimeFromMillis(value);
+
+int? _nullableDateTimeToMillis(DateTime? value) => value?.millisecondsSinceEpoch;
 
 ControlMode? _controlModeFromIndex(int? index) {
   if (index == null || index < 0 || index >= ControlMode.values.length) return null;
@@ -93,6 +125,12 @@ class RecentRoomsService {
     required WatchTogetherRelayEndpoint endpoint,
     String? name,
     ControlMode? controlMode,
+    String? lastMediaTitle,
+    String? lastEpisodeLabel,
+    int? lastMemberCount,
+    List<String>? lastMemberInitials,
+    DateTime? lastSeenAt,
+    bool replaceMedia = false,
   }) async {
     final scope = _scopeFor(endpoint);
     final rooms = _load(profileId);
@@ -102,10 +140,27 @@ class RecentRoomsService {
         lastUsed: DateTime.now(),
         name: name ?? rooms[index].name,
         controlMode: controlMode,
+        lastMediaTitle: lastMediaTitle,
+        lastEpisodeLabel: lastEpisodeLabel,
+        lastMemberCount: lastMemberCount,
+        lastMemberInitials: lastMemberInitials,
+        lastSeenAt: lastSeenAt,
+        replaceMedia: replaceMedia,
       );
     } else {
       rooms.add(
-        RecentRoom(code: code, relayScope: scope, name: name, lastUsed: DateTime.now(), controlMode: controlMode),
+        RecentRoom(
+          code: code,
+          relayScope: scope,
+          name: name,
+          lastUsed: DateTime.now(),
+          controlMode: controlMode,
+          lastMediaTitle: lastMediaTitle,
+          lastEpisodeLabel: lastEpisodeLabel,
+          lastMemberCount: lastMemberCount,
+          lastMemberInitials: lastMemberInitials?.take(3).toList(growable: false),
+          lastSeenAt: lastSeenAt,
+        ),
       );
     }
     await _save(profileId, rooms);
