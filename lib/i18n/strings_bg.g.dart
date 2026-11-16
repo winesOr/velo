@@ -1699,19 +1699,19 @@ class _Translations$watchTogether$bg extends Translations$watchTogether$en {
 	// Translations
 	@override String get title => 'Гледане заедно';
 	@override String get description => 'Гледайте съдържание синхронизирано с приятели и семейство';
-	@override String get createSession => 'Създай сесия';
+	@override String get createSession => 'Създай стая';
 	@override String get creating => 'Създаване...';
-	@override String get joinSession => 'Присъедини се към сесия';
+	@override String get joinSession => 'Присъедини се към стая';
 	@override String get joining => 'Присъединяване...';
 	@override String get controlMode => 'Режим на управление';
 	@override String get controlModeQuestion => 'Кой може да управлява възпроизвеждането?';
 	@override String get hostOnly => 'Само организаторът';
 	@override String get anyone => 'Всеки';
-	@override String get hostingSession => 'Организирана сесия';
-	@override String get inSession => 'В сесия';
-	@override String get sessionCode => 'Код на сесията';
-	@override String get openSessionControls => 'Отвори контролите за сесията „Гледане заедно“';
-	@override String get copySessionCode => 'Копирай кода на сесията';
+	@override String get hostingSession => 'Организирана стая';
+	@override String get inSession => 'В стая';
+	@override String get sessionCode => 'Код на стаята';
+	@override String get openSessionControls => 'Отвори контролите за стаята „Гледане заедно“';
+	@override String get copySessionCode => 'Копирай кода на стаята';
 	@override String get hostControlsPlayback => 'Организаторът управлява възпроизвеждането';
 	@override String get anyoneCanControl => 'Всеки може да управлява възпроизвеждането';
 	@override String get hostControls => 'Контроли на организатора';
@@ -1722,31 +1722,31 @@ class _Translations$watchTogether$bg extends Translations$watchTogether$en {
 	@override String get youAreHost => 'Вие сте организаторът';
 	@override String get makeHost => 'Направи организатор';
 	@override String get makeHostQuestion => 'Предаване на ролята на организатор?';
-	@override String makeHostConfirm({required Object name}) => '${name} ще управлява възпроизвеждането и ще води сесията за всички.';
+	@override String makeHostConfirm({required Object name}) => '${name} ще управлява възпроизвеждането и ще води стаята за всички.';
 	@override String get transfer => 'Предай';
 	@override String hostChangedTo({required Object name}) => '${name} вече е организатор';
 	@override String get youAreNowHost => 'Вече сте организаторът';
 	@override String hostTransferFailed({required Object name}) => '${name} не можа да стане организатор';
 	@override String get watchingWithOthers => 'Гледате с други';
-	@override String get endSession => 'Край на сесията';
-	@override String get leaveSession => 'Напусни сесията';
-	@override String get endSessionQuestion => 'Край на сесията?';
-	@override String get leaveSessionQuestion => 'Напускане на сесията?';
-	@override String get endSessionConfirm => 'Това ще прекрати сесията за всички участници.';
-	@override String get leaveSessionConfirm => 'Ще бъдете премахнати от сесията.';
-	@override String get endSessionConfirmOverlay => 'Това ще прекрати сесията за гледане за всички участници.';
-	@override String get leaveSessionConfirmOverlay => 'Ще бъдете изключени от сесията за гледане.';
+	@override String get endSession => 'Край на стаята';
+	@override String get leaveSession => 'Напусни стаята';
+	@override String get endSessionQuestion => 'Край на стаята?';
+	@override String get leaveSessionQuestion => 'Напускане на стаята?';
+	@override String get endSessionConfirm => 'Това ще прекрати стаята за всички участници.';
+	@override String get leaveSessionConfirm => 'Ще бъдете премахнати от стаята.';
+	@override String get endSessionConfirmOverlay => 'Това ще прекрати стаята за гледане за всички участници.';
+	@override String get leaveSessionConfirmOverlay => 'Ще бъдете изключени от стаята за гледане.';
 	@override String get end => 'Край';
 	@override String get leave => 'Напусни';
 	@override String get syncing => 'Синхронизиране...';
-	@override String get joinWatchSession => 'Присъедини се към сесия за гледане';
+	@override String get joinWatchSession => 'Присъедини се към стая за гледане';
 	@override String get enterCodeHint => 'Въведете 5-символен код';
 	@override String get pasteFromClipboard => 'Постави от клипборда';
-	@override String get pleaseEnterCode => 'Моля, въведете код на сесия';
-	@override String get joinInstructions => 'Въведете кода на сесията от организатора, за да се присъедините.';
-	@override String get failedToCreate => 'Неуспешно създаване на сесия';
-	@override String get failedToJoin => 'Неуспешно присъединяване към сесия';
-	@override String get sessionCodeCopied => 'Кодът на сесията е копиран в клипборда';
+	@override String get pleaseEnterCode => 'Моля, въведете код на стая';
+	@override String get joinInstructions => 'Въведете кода на стаята от организатора, за да се присъедините.';
+	@override String get failedToCreate => 'Неуспешно създаване на стая';
+	@override String get failedToJoin => 'Неуспешно присъединяване към стая';
+	@override String get sessionCodeCopied => 'Кодът на стаята е копиран в клипборда';
 	@override String get relayUnreachable => 'Релейният сървър е недостъпен. Възможно е интернет доставчикът да блокира гледането заедно.';
 	@override String get reconnectingToHost => 'Повторно свързване с организатора...';
 	@override String get currentPlayback => 'Текущо възпроизвеждане';
@@ -1764,13 +1764,15 @@ class _Translations$watchTogether$bg extends Translations$watchTogether$en {
 	@override String resumingWithout({required Object name}) => 'Продължаване без ${name}';
 	@override String get waitingForParticipants => 'Изчакване другите да заредят...';
 	@override String waitingForName({required Object name}) => 'Изчакване на ${name}...';
-	@override String get recentRooms => 'Скорошни стаи';
+	@override String get recentRooms => 'Моите стаи';
 	@override String get renameRoom => 'Преименувай стая';
 	@override String get removeRoom => 'Премахни';
 	@override String get guestSwitchUnavailable => 'Превключването не е възможно — сървърът е недостъпен за синхронизация';
 	@override String get guestSwitchFailed => 'Превключването не е възможно — съдържанието не е намерено на този сървър';
 	@override String get defaultDisplayName => 'Потребител';
 	@override late final _Translations$watchTogether$errors$bg errors = _Translations$watchTogether$errors$bg._(_root);
+	@override String get recentLabel => 'Скорошни';
+	@override String get joinByCode => 'Присъедини се с код';
 }
 
 // Path: downloads
@@ -2826,10 +2828,10 @@ class _Translations$watchTogether$errors$bg extends Translations$watchTogether$e
 
 	// Translations
 	@override String get timedOut => 'Релейният сървър не отговори навреме';
-	@override String get connectionLost => 'Връзката се затвори, преди сесията да е готова';
+	@override String get connectionLost => 'Връзката се затвори, преди стаята да е готова';
 	@override String get invalidRelayResponse => 'Релейният сървър изпрати неочакван отговор';
-	@override String get sessionEnded => 'Организаторът прекрати сесията';
-	@override String get sessionUnavailable => 'Тази сесия не може да бъде възобновена. Присъединете се към стая или създайте нова, за да продължите.';
+	@override String get sessionEnded => 'Организаторът прекрати стаята';
+	@override String get sessionUnavailable => 'Тази стая не може да бъде възобновена. Присъединете се към стая или създайте нова, за да продължите.';
 }
 
 // Path: downloads.backgroundWarning
@@ -4532,19 +4534,19 @@ extension on TranslationsBg {
 			'music.discography.compilations' => 'Компилации',
 			'watchTogether.title' => 'Гледане заедно',
 			'watchTogether.description' => 'Гледайте съдържание синхронизирано с приятели и семейство',
-			'watchTogether.createSession' => 'Създай сесия',
+			'watchTogether.createSession' => 'Създай стая',
 			'watchTogether.creating' => 'Създаване...',
-			'watchTogether.joinSession' => 'Присъедини се към сесия',
+			'watchTogether.joinSession' => 'Присъедини се към стая',
 			'watchTogether.joining' => 'Присъединяване...',
 			'watchTogether.controlMode' => 'Режим на управление',
 			'watchTogether.controlModeQuestion' => 'Кой може да управлява възпроизвеждането?',
 			'watchTogether.hostOnly' => 'Само организаторът',
 			'watchTogether.anyone' => 'Всеки',
-			'watchTogether.hostingSession' => 'Организирана сесия',
-			'watchTogether.inSession' => 'В сесия',
-			'watchTogether.sessionCode' => 'Код на сесията',
-			'watchTogether.openSessionControls' => 'Отвори контролите за сесията „Гледане заедно“',
-			'watchTogether.copySessionCode' => 'Копирай кода на сесията',
+			'watchTogether.hostingSession' => 'Организирана стая',
+			'watchTogether.inSession' => 'В стая',
+			'watchTogether.sessionCode' => 'Код на стаята',
+			'watchTogether.openSessionControls' => 'Отвори контролите за стаята „Гледане заедно“',
+			'watchTogether.copySessionCode' => 'Копирай кода на стаята',
 			'watchTogether.hostControlsPlayback' => 'Организаторът управлява възпроизвеждането',
 			'watchTogether.anyoneCanControl' => 'Всеки може да управлява възпроизвеждането',
 			'watchTogether.hostControls' => 'Контроли на организатора',
@@ -4555,31 +4557,31 @@ extension on TranslationsBg {
 			'watchTogether.youAreHost' => 'Вие сте организаторът',
 			'watchTogether.makeHost' => 'Направи организатор',
 			'watchTogether.makeHostQuestion' => 'Предаване на ролята на организатор?',
-			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} ще управлява възпроизвеждането и ще води сесията за всички.',
+			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} ще управлява възпроизвеждането и ще води стаята за всички.',
 			'watchTogether.transfer' => 'Предай',
 			'watchTogether.hostChangedTo' => ({required Object name}) => '${name} вече е организатор',
 			'watchTogether.youAreNowHost' => 'Вече сте организаторът',
 			'watchTogether.hostTransferFailed' => ({required Object name}) => '${name} не можа да стане организатор',
 			'watchTogether.watchingWithOthers' => 'Гледате с други',
-			'watchTogether.endSession' => 'Край на сесията',
-			'watchTogether.leaveSession' => 'Напусни сесията',
-			'watchTogether.endSessionQuestion' => 'Край на сесията?',
-			'watchTogether.leaveSessionQuestion' => 'Напускане на сесията?',
-			'watchTogether.endSessionConfirm' => 'Това ще прекрати сесията за всички участници.',
-			'watchTogether.leaveSessionConfirm' => 'Ще бъдете премахнати от сесията.',
-			'watchTogether.endSessionConfirmOverlay' => 'Това ще прекрати сесията за гледане за всички участници.',
-			'watchTogether.leaveSessionConfirmOverlay' => 'Ще бъдете изключени от сесията за гледане.',
+			'watchTogether.endSession' => 'Край на стаята',
+			'watchTogether.leaveSession' => 'Напусни стаята',
+			'watchTogether.endSessionQuestion' => 'Край на стаята?',
+			'watchTogether.leaveSessionQuestion' => 'Напускане на стаята?',
+			'watchTogether.endSessionConfirm' => 'Това ще прекрати стаята за всички участници.',
+			'watchTogether.leaveSessionConfirm' => 'Ще бъдете премахнати от стаята.',
+			'watchTogether.endSessionConfirmOverlay' => 'Това ще прекрати стаята за гледане за всички участници.',
+			'watchTogether.leaveSessionConfirmOverlay' => 'Ще бъдете изключени от стаята за гледане.',
 			'watchTogether.end' => 'Край',
 			'watchTogether.leave' => 'Напусни',
 			'watchTogether.syncing' => 'Синхронизиране...',
-			'watchTogether.joinWatchSession' => 'Присъедини се към сесия за гледане',
+			'watchTogether.joinWatchSession' => 'Присъедини се към стая за гледане',
 			'watchTogether.enterCodeHint' => 'Въведете 5-символен код',
 			'watchTogether.pasteFromClipboard' => 'Постави от клипборда',
-			'watchTogether.pleaseEnterCode' => 'Моля, въведете код на сесия',
-			'watchTogether.joinInstructions' => 'Въведете кода на сесията от организатора, за да се присъедините.',
-			'watchTogether.failedToCreate' => 'Неуспешно създаване на сесия',
-			'watchTogether.failedToJoin' => 'Неуспешно присъединяване към сесия',
-			'watchTogether.sessionCodeCopied' => 'Кодът на сесията е копиран в клипборда',
+			'watchTogether.pleaseEnterCode' => 'Моля, въведете код на стая',
+			'watchTogether.joinInstructions' => 'Въведете кода на стаята от организатора, за да се присъедините.',
+			'watchTogether.failedToCreate' => 'Неуспешно създаване на стая',
+			'watchTogether.failedToJoin' => 'Неуспешно присъединяване към стая',
+			'watchTogether.sessionCodeCopied' => 'Кодът на стаята е копиран в клипборда',
 			'watchTogether.relayUnreachable' => 'Релейният сървър е недостъпен. Възможно е интернет доставчикът да блокира гледането заедно.',
 			'watchTogether.reconnectingToHost' => 'Повторно свързване с организатора...',
 			'watchTogether.currentPlayback' => 'Текущо възпроизвеждане',
@@ -4599,17 +4601,19 @@ extension on TranslationsBg {
 			_ => null,
 		} ?? switch (path) {
 			'watchTogether.waitingForName' => ({required Object name}) => 'Изчакване на ${name}...',
-			'watchTogether.recentRooms' => 'Скорошни стаи',
+			'watchTogether.recentRooms' => 'Моите стаи',
 			'watchTogether.renameRoom' => 'Преименувай стая',
 			'watchTogether.removeRoom' => 'Премахни',
 			'watchTogether.guestSwitchUnavailable' => 'Превключването не е възможно — сървърът е недостъпен за синхронизация',
 			'watchTogether.guestSwitchFailed' => 'Превключването не е възможно — съдържанието не е намерено на този сървър',
 			'watchTogether.defaultDisplayName' => 'Потребител',
 			'watchTogether.errors.timedOut' => 'Релейният сървър не отговори навреме',
-			'watchTogether.errors.connectionLost' => 'Връзката се затвори, преди сесията да е готова',
+			'watchTogether.errors.connectionLost' => 'Връзката се затвори, преди стаята да е готова',
 			'watchTogether.errors.invalidRelayResponse' => 'Релейният сървър изпрати неочакван отговор',
-			'watchTogether.errors.sessionEnded' => 'Организаторът прекрати сесията',
-			'watchTogether.errors.sessionUnavailable' => 'Тази сесия не може да бъде възобновена. Присъединете се към стая или създайте нова, за да продължите.',
+			'watchTogether.errors.sessionEnded' => 'Организаторът прекрати стаята',
+			'watchTogether.errors.sessionUnavailable' => 'Тази стая не може да бъде възобновена. Присъединете се към стая или създайте нова, за да продължите.',
+			'watchTogether.recentLabel' => 'Скорошни',
+			'watchTogether.joinByCode' => 'Присъедини се с код',
 			'downloads.title' => 'Изтегляния',
 			'downloads.manage' => 'Управление',
 			'downloads.tvShows' => 'ТВ сериали',
@@ -5108,10 +5112,10 @@ extension on TranslationsBg {
 			'addServer.addConnectionTitleScoped' => ({required Object name}) => 'Добави към ${name}',
 			'addServer.signInWithPlexCard' => 'Вход с Plex',
 			'addServer.signInWithPlexCardSubtitle' => 'Удостоверете това устройство. Споделените сървъри се добавят.',
-			'addServer.signInWithPlexCardSubtitleScoped' => 'Удостоверете Plex акаунт. Домашните потребители стават профили.',
-			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Свържи се с ${product}',
 			_ => null,
 		} ?? switch (path) {
+			'addServer.signInWithPlexCardSubtitleScoped' => 'Удостоверете Plex акаунт. Домашните потребители стават профили.',
+			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Свържи се с ${product}',
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Въведете URL адреса на сървъра, потребителското име и паролата.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => 'Впишете се в своя ${product} сървър. Обвързва се с ${name}.',
 			'addServer.borrowFromAnotherProfile' => 'Използвай от друг профил',

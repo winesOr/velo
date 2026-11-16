@@ -1817,19 +1817,19 @@ class _Translations$watchTogether$zh_Hant extends Translations$watchTogether$zh 
 	// Translations
 	@override String get title => '一起看';
 	@override String get description => '與親友同步觀看內容';
-	@override String get createSession => '建立「一起看」工作階段';
+	@override String get createSession => '建立房間';
 	@override String get creating => '正在建立…';
-	@override String get joinSession => '加入工作階段';
+	@override String get joinSession => '加入房間';
 	@override String get joining => '正在加入…';
 	@override String get controlMode => '控制模式';
 	@override String get controlModeQuestion => '誰可以控制播放？';
 	@override String get hostOnly => '僅限主持人';
 	@override String get anyone => '任何人';
 	@override String get hostingSession => '主持「一起看」';
-	@override String get inSession => '在工作階段中';
-	@override String get sessionCode => '工作階段代碼';
-	@override String get openSessionControls => '開啟「一起看」工作階段控制面板';
-	@override String get copySessionCode => '複製工作階段代碼';
+	@override String get inSession => '在房間中';
+	@override String get sessionCode => '邀請碼';
+	@override String get openSessionControls => '開啟「一起看」房間控制面板';
+	@override String get copySessionCode => '複製邀請碼';
 	@override String get hostControlsPlayback => '主持人控制播放';
 	@override String get anyoneCanControl => '任何人都能控制播放';
 	@override String get hostControls => '主持人控制';
@@ -1840,31 +1840,31 @@ class _Translations$watchTogether$zh_Hant extends Translations$watchTogether$zh 
 	@override String get youAreHost => '您是主持人';
 	@override String get makeHost => '設為主持人';
 	@override String get makeHostQuestion => '移交主持人？';
-	@override String makeHostConfirm({required Object name}) => '${name} 將控制播放並主導所有人的工作階段。';
+	@override String makeHostConfirm({required Object name}) => '${name} 將控制播放並主導所有人的房間。';
 	@override String get transfer => '移交';
 	@override String hostChangedTo({required Object name}) => '${name} 現在是主持人';
 	@override String get youAreNowHost => '您現在是主持人';
 	@override String hostTransferFailed({required Object name}) => '無法將 ${name} 設為主持人';
 	@override String get watchingWithOthers => '與他人一起觀看';
-	@override String get endSession => '結束工作階段';
-	@override String get leaveSession => '離開工作階段';
-	@override String get endSessionQuestion => '結束工作階段？';
-	@override String get leaveSessionQuestion => '離開工作階段？';
-	@override String get endSessionConfirm => '這將為所有參與者結束此「一起看」工作階段。';
-	@override String get leaveSessionConfirm => '您將退出此「一起看」工作階段。';
-	@override String get endSessionConfirmOverlay => '這將為所有參與者結束觀看工作階段。';
-	@override String get leaveSessionConfirmOverlay => '您將中斷與「一起看」工作階段的連線。';
+	@override String get endSession => '結束房間';
+	@override String get leaveSession => '離開房間';
+	@override String get endSessionQuestion => '結束房間？';
+	@override String get leaveSessionQuestion => '離開房間？';
+	@override String get endSessionConfirm => '這將為所有參與者結束此「一起看」房間。';
+	@override String get leaveSessionConfirm => '您將退出此「一起看」房間。';
+	@override String get endSessionConfirmOverlay => '這將為所有參與者結束觀看房間。';
+	@override String get leaveSessionConfirmOverlay => '您將中斷與「一起看」房間的連線。';
 	@override String get end => '結束';
 	@override String get leave => '離開';
 	@override String get syncing => '同步中…';
-	@override String get joinWatchSession => '加入「一起看」工作階段';
+	@override String get joinWatchSession => '加入「一起看」房間';
 	@override String get enterCodeHint => '輸入 5 個英數字元的代碼';
 	@override String get pasteFromClipboard => '從剪貼簿貼上';
-	@override String get pleaseEnterCode => '請輸入工作階段代碼';
-	@override String get joinInstructions => '輸入主持人的工作階段代碼以加入「一起看」。';
-	@override String get failedToCreate => '建立工作階段失敗';
-	@override String get failedToJoin => '加入工作階段失敗';
-	@override String get sessionCodeCopied => '工作階段代碼已複製到剪貼簿';
+	@override String get pleaseEnterCode => '請輸入邀請碼';
+	@override String get joinInstructions => '輸入房主的邀請碼以加入房間。';
+	@override String get failedToCreate => '建立房間失敗';
+	@override String get failedToJoin => '加入房間失敗';
+	@override String get sessionCodeCopied => '邀請碼已複製到剪貼簿';
 	@override String get relayUnreachable => '無法連線至中繼伺服器。ISP 封鎖可能會導致「一起看」無法使用。';
 	@override String get reconnectingToHost => '正在重新連線至主持人…';
 	@override String get currentPlayback => '目前播放內容';
@@ -1882,14 +1882,14 @@ class _Translations$watchTogether$zh_Hant extends Translations$watchTogether$zh 
 	@override String resumingWithout({required Object name}) => '不等待 ${name}，繼續播放';
 	@override String get waitingForParticipants => '正在等待其他人載入…';
 	@override String waitingForName({required Object name}) => '正在等待 ${name}…';
-	@override String get recentRooms => '最近的房間';
+	@override String get recentRooms => '我的房間';
 	@override String get renameRoom => '重新命名房間';
 	@override String get removeRoom => '移除';
 	@override String get guestSwitchUnavailable => '無法切換 — 伺服器無法進行同步';
 	@override String get guestSwitchFailed => '無法切換 — 在此伺服器上找不到內容';
 	@override String get defaultDisplayName => '使用者';
 	@override late final _Translations$watchTogether$errors$zh_Hant errors = _Translations$watchTogether$errors$zh_Hant._(_root);
-	@override String get introHeading => '相隔兩地，也能一起看。';
+	@override String get introHeading => '隔著距離，\n也能一起入戲。';
 	@override String get recentRoomsDescription => '為此使用者設定檔和中繼儲存的房間。重新進入空房間時你可能會成為房主。';
 	@override String get noRecentRooms => '建立或加入房間後，會顯示在這裡。';
 	@override String get reconnectingRelay => '正在重新連線中繼…';
@@ -1908,6 +1908,11 @@ class _Translations$watchTogether$zh_Hant extends Translations$watchTogether$zh 
 	@override String get useMatch => '使用此資源';
 	@override String get noMatchingMedia => '已連線的伺服器上沒有可播放的結果。';
 	@override String get matchSearchFailed => '部分伺服器無法搜尋。請重試或檢查網路連線。';
+	@override String get joinByCode => '邀請碼加入';
+	@override String get introLabel => 'WATCH TOGETHER';
+	@override String get recentLabel => '最近';
+	@override String get inviteOnlyDescription => '房間僅透過邀請加入。';
+	@override String get introDescription => '邀請朋友加入房間，同步播放與暫停。\n各自連接媒體伺服器。';
 }
 
 // Path: downloads
@@ -3130,10 +3135,10 @@ class _Translations$watchTogether$errors$zh_Hant extends Translations$watchToget
 
 	// Translations
 	@override String get timedOut => '中繼伺服器未及時回應';
-	@override String get connectionLost => '工作階段就緒前連線已中斷';
+	@override String get connectionLost => '房間就緒前連線已中斷';
 	@override String get invalidRelayResponse => '中繼伺服器傳回了非預期的回應';
-	@override String get sessionEnded => '主持人已結束工作階段';
-	@override String get sessionUnavailable => '無法恢復此工作階段。請加入或建立房間以繼續。';
+	@override String get sessionEnded => '主持人已結束房間';
+	@override String get sessionUnavailable => '無法恢復此房間。請加入或建立房間以繼續。';
 }
 
 // Path: downloads.backgroundWarning
@@ -5014,19 +5019,19 @@ extension on TranslationsZhHant {
 			'music.discography.compilations' => '合輯',
 			'watchTogether.title' => '一起看',
 			'watchTogether.description' => '與親友同步觀看內容',
-			'watchTogether.createSession' => '建立「一起看」工作階段',
+			'watchTogether.createSession' => '建立房間',
 			'watchTogether.creating' => '正在建立…',
-			'watchTogether.joinSession' => '加入工作階段',
+			'watchTogether.joinSession' => '加入房間',
 			'watchTogether.joining' => '正在加入…',
 			'watchTogether.controlMode' => '控制模式',
 			'watchTogether.controlModeQuestion' => '誰可以控制播放？',
 			'watchTogether.hostOnly' => '僅限主持人',
 			'watchTogether.anyone' => '任何人',
 			'watchTogether.hostingSession' => '主持「一起看」',
-			'watchTogether.inSession' => '在工作階段中',
-			'watchTogether.sessionCode' => '工作階段代碼',
-			'watchTogether.openSessionControls' => '開啟「一起看」工作階段控制面板',
-			'watchTogether.copySessionCode' => '複製工作階段代碼',
+			'watchTogether.inSession' => '在房間中',
+			'watchTogether.sessionCode' => '邀請碼',
+			'watchTogether.openSessionControls' => '開啟「一起看」房間控制面板',
+			'watchTogether.copySessionCode' => '複製邀請碼',
 			'watchTogether.hostControlsPlayback' => '主持人控制播放',
 			'watchTogether.anyoneCanControl' => '任何人都能控制播放',
 			'watchTogether.hostControls' => '主持人控制',
@@ -5037,31 +5042,31 @@ extension on TranslationsZhHant {
 			'watchTogether.youAreHost' => '您是主持人',
 			'watchTogether.makeHost' => '設為主持人',
 			'watchTogether.makeHostQuestion' => '移交主持人？',
-			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} 將控制播放並主導所有人的工作階段。',
+			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} 將控制播放並主導所有人的房間。',
 			'watchTogether.transfer' => '移交',
 			'watchTogether.hostChangedTo' => ({required Object name}) => '${name} 現在是主持人',
 			'watchTogether.youAreNowHost' => '您現在是主持人',
 			'watchTogether.hostTransferFailed' => ({required Object name}) => '無法將 ${name} 設為主持人',
 			'watchTogether.watchingWithOthers' => '與他人一起觀看',
-			'watchTogether.endSession' => '結束工作階段',
-			'watchTogether.leaveSession' => '離開工作階段',
-			'watchTogether.endSessionQuestion' => '結束工作階段？',
-			'watchTogether.leaveSessionQuestion' => '離開工作階段？',
-			'watchTogether.endSessionConfirm' => '這將為所有參與者結束此「一起看」工作階段。',
-			'watchTogether.leaveSessionConfirm' => '您將退出此「一起看」工作階段。',
-			'watchTogether.endSessionConfirmOverlay' => '這將為所有參與者結束觀看工作階段。',
-			'watchTogether.leaveSessionConfirmOverlay' => '您將中斷與「一起看」工作階段的連線。',
+			'watchTogether.endSession' => '結束房間',
+			'watchTogether.leaveSession' => '離開房間',
+			'watchTogether.endSessionQuestion' => '結束房間？',
+			'watchTogether.leaveSessionQuestion' => '離開房間？',
+			'watchTogether.endSessionConfirm' => '這將為所有參與者結束此「一起看」房間。',
+			'watchTogether.leaveSessionConfirm' => '您將退出此「一起看」房間。',
+			'watchTogether.endSessionConfirmOverlay' => '這將為所有參與者結束觀看房間。',
+			'watchTogether.leaveSessionConfirmOverlay' => '您將中斷與「一起看」房間的連線。',
 			'watchTogether.end' => '結束',
 			'watchTogether.leave' => '離開',
 			'watchTogether.syncing' => '同步中…',
-			'watchTogether.joinWatchSession' => '加入「一起看」工作階段',
+			'watchTogether.joinWatchSession' => '加入「一起看」房間',
 			'watchTogether.enterCodeHint' => '輸入 5 個英數字元的代碼',
 			'watchTogether.pasteFromClipboard' => '從剪貼簿貼上',
-			'watchTogether.pleaseEnterCode' => '請輸入工作階段代碼',
-			'watchTogether.joinInstructions' => '輸入主持人的工作階段代碼以加入「一起看」。',
-			'watchTogether.failedToCreate' => '建立工作階段失敗',
-			'watchTogether.failedToJoin' => '加入工作階段失敗',
-			'watchTogether.sessionCodeCopied' => '工作階段代碼已複製到剪貼簿',
+			'watchTogether.pleaseEnterCode' => '請輸入邀請碼',
+			'watchTogether.joinInstructions' => '輸入房主的邀請碼以加入房間。',
+			'watchTogether.failedToCreate' => '建立房間失敗',
+			'watchTogether.failedToJoin' => '加入房間失敗',
+			'watchTogether.sessionCodeCopied' => '邀請碼已複製到剪貼簿',
 			'watchTogether.relayUnreachable' => '無法連線至中繼伺服器。ISP 封鎖可能會導致「一起看」無法使用。',
 			'watchTogether.reconnectingToHost' => '正在重新連線至主持人…',
 			'watchTogether.currentPlayback' => '目前播放內容',
@@ -5079,18 +5084,18 @@ extension on TranslationsZhHant {
 			'watchTogether.resumingWithout' => ({required Object name}) => '不等待 ${name}，繼續播放',
 			'watchTogether.waitingForParticipants' => '正在等待其他人載入…',
 			'watchTogether.waitingForName' => ({required Object name}) => '正在等待 ${name}…',
-			'watchTogether.recentRooms' => '最近的房間',
+			'watchTogether.recentRooms' => '我的房間',
 			'watchTogether.renameRoom' => '重新命名房間',
 			'watchTogether.removeRoom' => '移除',
 			'watchTogether.guestSwitchUnavailable' => '無法切換 — 伺服器無法進行同步',
 			'watchTogether.guestSwitchFailed' => '無法切換 — 在此伺服器上找不到內容',
 			'watchTogether.defaultDisplayName' => '使用者',
 			'watchTogether.errors.timedOut' => '中繼伺服器未及時回應',
-			'watchTogether.errors.connectionLost' => '工作階段就緒前連線已中斷',
+			'watchTogether.errors.connectionLost' => '房間就緒前連線已中斷',
 			'watchTogether.errors.invalidRelayResponse' => '中繼伺服器傳回了非預期的回應',
-			'watchTogether.errors.sessionEnded' => '主持人已結束工作階段',
-			'watchTogether.errors.sessionUnavailable' => '無法恢復此工作階段。請加入或建立房間以繼續。',
-			'watchTogether.introHeading' => '相隔兩地，也能一起看。',
+			'watchTogether.errors.sessionEnded' => '主持人已結束房間',
+			'watchTogether.errors.sessionUnavailable' => '無法恢復此房間。請加入或建立房間以繼續。',
+			'watchTogether.introHeading' => '隔著距離，\n也能一起入戲。',
 			'watchTogether.recentRoomsDescription' => '為此使用者設定檔和中繼儲存的房間。重新進入空房間時你可能會成為房主。',
 			'watchTogether.noRecentRooms' => '建立或加入房間後，會顯示在這裡。',
 			'watchTogether.reconnectingRelay' => '正在重新連線中繼…',
@@ -5109,6 +5114,11 @@ extension on TranslationsZhHant {
 			'watchTogether.useMatch' => '使用此資源',
 			'watchTogether.noMatchingMedia' => '已連線的伺服器上沒有可播放的結果。',
 			'watchTogether.matchSearchFailed' => '部分伺服器無法搜尋。請重試或檢查網路連線。',
+			'watchTogether.joinByCode' => '邀請碼加入',
+			'watchTogether.introLabel' => 'WATCH TOGETHER',
+			'watchTogether.recentLabel' => '最近',
+			'watchTogether.inviteOnlyDescription' => '房間僅透過邀請加入。',
+			'watchTogether.introDescription' => '邀請朋友加入房間，同步播放與暫停。\n各自連接媒體伺服器。',
 			'downloads.title' => '下載',
 			'downloads.manage' => '管理',
 			'downloads.tvShows' => '影集',
@@ -5421,13 +5431,13 @@ extension on TranslationsZhHant {
 			'metadataEdit.originalTitle' => '原始標題',
 			'metadataEdit.releaseDate' => '上映日期',
 			'metadataEdit.contentRating' => '內容分級',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.studio' => '製片商',
 			'metadataEdit.tagline' => '宣傳標語',
 			'metadataEdit.summary' => '大綱簡介',
 			'metadataEdit.poster' => '海報',
 			'metadataEdit.background' => '背景圖',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.logo' => '標誌（Logo）',
 			'metadataEdit.squareArt' => '方形圖片',
 			'metadataEdit.selectPoster' => '選擇海報',

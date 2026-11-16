@@ -1699,19 +1699,19 @@ class _Translations$watchTogether$da extends Translations$watchTogether$en {
 	// Translations
 	@override String get title => 'Se sammen';
 	@override String get description => 'Se indhold synkroniseret med venner og familie';
-	@override String get createSession => 'Opret session';
+	@override String get createSession => 'Opret rum';
 	@override String get creating => 'Opretter...';
-	@override String get joinSession => 'Deltag i session';
+	@override String get joinSession => 'Deltag i rum';
 	@override String get joining => 'Deltager...';
 	@override String get controlMode => 'Kontroltilstand';
 	@override String get controlModeQuestion => 'Hvem kan styre afspilning?';
 	@override String get hostOnly => 'Kun vært';
 	@override String get anyone => 'Alle';
-	@override String get hostingSession => 'Er vært for sessionen';
-	@override String get inSession => 'Deltager i en session';
-	@override String get sessionCode => 'Sessionskode';
-	@override String get openSessionControls => 'Åbn sessionsstyring for Se sammen';
-	@override String get copySessionCode => 'Kopiér sessionskode';
+	@override String get hostingSession => 'Er vært for rummet';
+	@override String get inSession => 'Deltager i et rum';
+	@override String get sessionCode => 'Rumkode';
+	@override String get openSessionControls => 'Åbn rumstyring for Se sammen';
+	@override String get copySessionCode => 'Kopiér rumkode';
 	@override String get hostControlsPlayback => 'Værten styrer afspilningen';
 	@override String get anyoneCanControl => 'Alle kan styre afspilningen';
 	@override String get hostControls => 'Værten styrer';
@@ -1722,18 +1722,18 @@ class _Translations$watchTogether$da extends Translations$watchTogether$en {
 	@override String get youAreHost => 'Du er vært';
 	@override String get makeHost => 'Gør til vært';
 	@override String get makeHostQuestion => 'Overfør vært?';
-	@override String makeHostConfirm({required Object name}) => '${name} styrer afspilningen og sessionen for alle.';
+	@override String makeHostConfirm({required Object name}) => '${name} styrer afspilningen og rummet for alle.';
 	@override String get transfer => 'Overfør';
 	@override String hostChangedTo({required Object name}) => '${name} er nu vært';
 	@override String get youAreNowHost => 'Du er nu værten';
 	@override String hostTransferFailed({required Object name}) => 'Kunne ikke gøre ${name} til vært';
 	@override String get watchingWithOthers => 'Ser med andre';
-	@override String get endSession => 'Afslut session';
-	@override String get leaveSession => 'Forlad session';
-	@override String get endSessionQuestion => 'Afslut session?';
-	@override String get leaveSessionQuestion => 'Forlad session?';
-	@override String get endSessionConfirm => 'Dette afslutter sessionen for alle deltagere.';
-	@override String get leaveSessionConfirm => 'Du vil blive fjernet fra sessionen.';
+	@override String get endSession => 'Afslut rum';
+	@override String get leaveSession => 'Forlad rum';
+	@override String get endSessionQuestion => 'Afslut rum?';
+	@override String get leaveSessionQuestion => 'Forlad rum?';
+	@override String get endSessionConfirm => 'Dette afslutter rummet for alle deltagere.';
+	@override String get leaveSessionConfirm => 'Du vil blive fjernet fra rummet.';
 	@override String get endSessionConfirmOverlay => 'Dette afslutter fællesafspilningen for alle deltagere.';
 	@override String get leaveSessionConfirmOverlay => 'Din forbindelse til fællesafspilningen afbrydes.';
 	@override String get end => 'Afslut';
@@ -1742,11 +1742,11 @@ class _Translations$watchTogether$da extends Translations$watchTogether$en {
 	@override String get joinWatchSession => 'Deltag i fællesafspilning';
 	@override String get enterCodeHint => 'Indtast 5-tegns kode';
 	@override String get pasteFromClipboard => 'Indsæt fra udklipsholder';
-	@override String get pleaseEnterCode => 'Indtast en sessionskode';
-	@override String get joinInstructions => 'Indtast værtens sessionskode for at deltage.';
-	@override String get failedToCreate => 'Kunne ikke oprette session';
-	@override String get failedToJoin => 'Kunne ikke deltage i session';
-	@override String get sessionCodeCopied => 'Sessionskode kopieret til udklipsholder';
+	@override String get pleaseEnterCode => 'Indtast en rumkode';
+	@override String get joinInstructions => 'Indtast værtens rumkode for at deltage.';
+	@override String get failedToCreate => 'Kunne ikke oprette rum';
+	@override String get failedToJoin => 'Kunne ikke deltage i rum';
+	@override String get sessionCodeCopied => 'Rumkode kopieret til udklipsholder';
 	@override String get relayUnreachable => 'Relayserveren kan ikke nås. Blokering hos internetudbyderen kan forhindre Se sammen.';
 	@override String get reconnectingToHost => 'Genopretter forbindelse til vært...';
 	@override String get currentPlayback => 'Nuværende afspilning';
@@ -1764,13 +1764,15 @@ class _Translations$watchTogether$da extends Translations$watchTogether$en {
 	@override String resumingWithout({required Object name}) => 'Fortsætter uden ${name}';
 	@override String get waitingForParticipants => 'Venter på, at de andre bliver klar...';
 	@override String waitingForName({required Object name}) => 'Venter på ${name}...';
-	@override String get recentRooms => 'Seneste rum';
+	@override String get recentRooms => 'Mine rum';
 	@override String get renameRoom => 'Omdøb rum';
 	@override String get removeRoom => 'Fjern';
 	@override String get guestSwitchUnavailable => 'Kunne ikke skifte — server ikke tilgængelig for synkronisering';
 	@override String get guestSwitchFailed => 'Kunne ikke skifte — indhold blev ikke fundet på denne server';
 	@override String get defaultDisplayName => 'Bruger';
 	@override late final _Translations$watchTogether$errors$da errors = _Translations$watchTogether$errors$da._(_root);
+	@override String get recentLabel => 'Seneste';
+	@override String get joinByCode => 'Deltag med kode';
 }
 
 // Path: downloads
@@ -2826,10 +2828,10 @@ class _Translations$watchTogether$errors$da extends Translations$watchTogether$e
 
 	// Translations
 	@override String get timedOut => 'Relayserveren svarede ikke i tide';
-	@override String get connectionLost => 'Forbindelsen blev lukket, før sessionen var klar';
+	@override String get connectionLost => 'Forbindelsen blev lukket, før rummet var klar';
 	@override String get invalidRelayResponse => 'Relayserveren sendte et uventet svar';
-	@override String get sessionEnded => 'Værten afsluttede sessionen';
-	@override String get sessionUnavailable => 'Kan ikke genoptage denne session. Deltag i eller opret et rum for at fortsætte.';
+	@override String get sessionEnded => 'Værten afsluttede rummet';
+	@override String get sessionUnavailable => 'Kan ikke genoptage dette rum. Deltag i eller opret et rum for at fortsætte.';
 }
 
 // Path: downloads.backgroundWarning
@@ -4532,19 +4534,19 @@ extension on TranslationsDa {
 			'music.discography.compilations' => 'Opsamlinger',
 			'watchTogether.title' => 'Se sammen',
 			'watchTogether.description' => 'Se indhold synkroniseret med venner og familie',
-			'watchTogether.createSession' => 'Opret session',
+			'watchTogether.createSession' => 'Opret rum',
 			'watchTogether.creating' => 'Opretter...',
-			'watchTogether.joinSession' => 'Deltag i session',
+			'watchTogether.joinSession' => 'Deltag i rum',
 			'watchTogether.joining' => 'Deltager...',
 			'watchTogether.controlMode' => 'Kontroltilstand',
 			'watchTogether.controlModeQuestion' => 'Hvem kan styre afspilning?',
 			'watchTogether.hostOnly' => 'Kun vært',
 			'watchTogether.anyone' => 'Alle',
-			'watchTogether.hostingSession' => 'Er vært for sessionen',
-			'watchTogether.inSession' => 'Deltager i en session',
-			'watchTogether.sessionCode' => 'Sessionskode',
-			'watchTogether.openSessionControls' => 'Åbn sessionsstyring for Se sammen',
-			'watchTogether.copySessionCode' => 'Kopiér sessionskode',
+			'watchTogether.hostingSession' => 'Er vært for rummet',
+			'watchTogether.inSession' => 'Deltager i et rum',
+			'watchTogether.sessionCode' => 'Rumkode',
+			'watchTogether.openSessionControls' => 'Åbn rumstyring for Se sammen',
+			'watchTogether.copySessionCode' => 'Kopiér rumkode',
 			'watchTogether.hostControlsPlayback' => 'Værten styrer afspilningen',
 			'watchTogether.anyoneCanControl' => 'Alle kan styre afspilningen',
 			'watchTogether.hostControls' => 'Værten styrer',
@@ -4555,18 +4557,18 @@ extension on TranslationsDa {
 			'watchTogether.youAreHost' => 'Du er vært',
 			'watchTogether.makeHost' => 'Gør til vært',
 			'watchTogether.makeHostQuestion' => 'Overfør vært?',
-			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} styrer afspilningen og sessionen for alle.',
+			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} styrer afspilningen og rummet for alle.',
 			'watchTogether.transfer' => 'Overfør',
 			'watchTogether.hostChangedTo' => ({required Object name}) => '${name} er nu vært',
 			'watchTogether.youAreNowHost' => 'Du er nu værten',
 			'watchTogether.hostTransferFailed' => ({required Object name}) => 'Kunne ikke gøre ${name} til vært',
 			'watchTogether.watchingWithOthers' => 'Ser med andre',
-			'watchTogether.endSession' => 'Afslut session',
-			'watchTogether.leaveSession' => 'Forlad session',
-			'watchTogether.endSessionQuestion' => 'Afslut session?',
-			'watchTogether.leaveSessionQuestion' => 'Forlad session?',
-			'watchTogether.endSessionConfirm' => 'Dette afslutter sessionen for alle deltagere.',
-			'watchTogether.leaveSessionConfirm' => 'Du vil blive fjernet fra sessionen.',
+			'watchTogether.endSession' => 'Afslut rum',
+			'watchTogether.leaveSession' => 'Forlad rum',
+			'watchTogether.endSessionQuestion' => 'Afslut rum?',
+			'watchTogether.leaveSessionQuestion' => 'Forlad rum?',
+			'watchTogether.endSessionConfirm' => 'Dette afslutter rummet for alle deltagere.',
+			'watchTogether.leaveSessionConfirm' => 'Du vil blive fjernet fra rummet.',
 			'watchTogether.endSessionConfirmOverlay' => 'Dette afslutter fællesafspilningen for alle deltagere.',
 			'watchTogether.leaveSessionConfirmOverlay' => 'Din forbindelse til fællesafspilningen afbrydes.',
 			'watchTogether.end' => 'Afslut',
@@ -4575,11 +4577,11 @@ extension on TranslationsDa {
 			'watchTogether.joinWatchSession' => 'Deltag i fællesafspilning',
 			'watchTogether.enterCodeHint' => 'Indtast 5-tegns kode',
 			'watchTogether.pasteFromClipboard' => 'Indsæt fra udklipsholder',
-			'watchTogether.pleaseEnterCode' => 'Indtast en sessionskode',
-			'watchTogether.joinInstructions' => 'Indtast værtens sessionskode for at deltage.',
-			'watchTogether.failedToCreate' => 'Kunne ikke oprette session',
-			'watchTogether.failedToJoin' => 'Kunne ikke deltage i session',
-			'watchTogether.sessionCodeCopied' => 'Sessionskode kopieret til udklipsholder',
+			'watchTogether.pleaseEnterCode' => 'Indtast en rumkode',
+			'watchTogether.joinInstructions' => 'Indtast værtens rumkode for at deltage.',
+			'watchTogether.failedToCreate' => 'Kunne ikke oprette rum',
+			'watchTogether.failedToJoin' => 'Kunne ikke deltage i rum',
+			'watchTogether.sessionCodeCopied' => 'Rumkode kopieret til udklipsholder',
 			'watchTogether.relayUnreachable' => 'Relayserveren kan ikke nås. Blokering hos internetudbyderen kan forhindre Se sammen.',
 			'watchTogether.reconnectingToHost' => 'Genopretter forbindelse til vært...',
 			'watchTogether.currentPlayback' => 'Nuværende afspilning',
@@ -4599,17 +4601,19 @@ extension on TranslationsDa {
 			_ => null,
 		} ?? switch (path) {
 			'watchTogether.waitingForName' => ({required Object name}) => 'Venter på ${name}...',
-			'watchTogether.recentRooms' => 'Seneste rum',
+			'watchTogether.recentRooms' => 'Mine rum',
 			'watchTogether.renameRoom' => 'Omdøb rum',
 			'watchTogether.removeRoom' => 'Fjern',
 			'watchTogether.guestSwitchUnavailable' => 'Kunne ikke skifte — server ikke tilgængelig for synkronisering',
 			'watchTogether.guestSwitchFailed' => 'Kunne ikke skifte — indhold blev ikke fundet på denne server',
 			'watchTogether.defaultDisplayName' => 'Bruger',
 			'watchTogether.errors.timedOut' => 'Relayserveren svarede ikke i tide',
-			'watchTogether.errors.connectionLost' => 'Forbindelsen blev lukket, før sessionen var klar',
+			'watchTogether.errors.connectionLost' => 'Forbindelsen blev lukket, før rummet var klar',
 			'watchTogether.errors.invalidRelayResponse' => 'Relayserveren sendte et uventet svar',
-			'watchTogether.errors.sessionEnded' => 'Værten afsluttede sessionen',
-			'watchTogether.errors.sessionUnavailable' => 'Kan ikke genoptage denne session. Deltag i eller opret et rum for at fortsætte.',
+			'watchTogether.errors.sessionEnded' => 'Værten afsluttede rummet',
+			'watchTogether.errors.sessionUnavailable' => 'Kan ikke genoptage dette rum. Deltag i eller opret et rum for at fortsætte.',
+			'watchTogether.recentLabel' => 'Seneste',
+			'watchTogether.joinByCode' => 'Deltag med kode',
 			'downloads.title' => 'Downloads',
 			'downloads.manage' => 'Administrer',
 			'downloads.tvShows' => 'TV-serier',
@@ -5108,10 +5112,10 @@ extension on TranslationsDa {
 			'addServer.addConnectionTitleScoped' => ({required Object name}) => 'Tilføj til ${name}',
 			'addServer.signInWithPlexCard' => 'Log ind med Plex',
 			'addServer.signInWithPlexCardSubtitle' => 'Godkend denne enhed. Delte servere tilføjes.',
-			'addServer.signInWithPlexCardSubtitleScoped' => 'Godkend en Plex-konto. Plex Home-brugere bliver til profiler.',
-			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Opret forbindelse til ${product}',
 			_ => null,
 		} ?? switch (path) {
+			'addServer.signInWithPlexCardSubtitleScoped' => 'Godkend en Plex-konto. Plex Home-brugere bliver til profiler.',
+			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Opret forbindelse til ${product}',
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Indtast din server-URL, brugernavn og adgangskode.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => 'Log ind på din ${product}-server. Tilknyttes til ${name}.',
 			'addServer.borrowFromAnotherProfile' => 'Lån fra en anden profil',

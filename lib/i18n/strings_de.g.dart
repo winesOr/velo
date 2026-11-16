@@ -1699,19 +1699,19 @@ class _Translations$watchTogether$de extends Translations$watchTogether$en {
 	// Translations
 	@override String get title => 'Gemeinsam Schauen';
 	@override String get description => 'Inhalte synchron mit Freunden und Familie schauen';
-	@override String get createSession => 'Sitzung erstellen';
+	@override String get createSession => 'Raum erstellen';
 	@override String get creating => 'Wird erstellt …';
-	@override String get joinSession => 'Sitzung beitreten';
+	@override String get joinSession => 'Raum beitreten';
 	@override String get joining => 'Beitritt läuft …';
 	@override String get controlMode => 'Steuerungsmodus';
 	@override String get controlModeQuestion => 'Wer kann die Wiedergabe steuern?';
 	@override String get hostOnly => 'Nur Host';
 	@override String get anyone => 'Alle';
-	@override String get hostingSession => 'Sitzung wird gehostet';
-	@override String get inSession => 'In einer Sitzung';
-	@override String get sessionCode => 'Sitzungscode';
-	@override String get openSessionControls => 'Sitzungssteuerung für Gemeinsam Schauen öffnen';
-	@override String get copySessionCode => 'Sitzungscode kopieren';
+	@override String get hostingSession => 'Raum wird gehostet';
+	@override String get inSession => 'In einem Raum';
+	@override String get sessionCode => 'Raumcode';
+	@override String get openSessionControls => 'Raumsteuerung für Gemeinsam Schauen öffnen';
+	@override String get copySessionCode => 'Raumcode kopieren';
 	@override String get hostControlsPlayback => 'Host steuert die Wiedergabe';
 	@override String get anyoneCanControl => 'Alle können die Wiedergabe steuern';
 	@override String get hostControls => 'Host steuert';
@@ -1722,31 +1722,31 @@ class _Translations$watchTogether$de extends Translations$watchTogether$en {
 	@override String get youAreHost => 'Du bist der Host';
 	@override String get makeHost => 'Zum Host machen';
 	@override String get makeHostQuestion => 'Host übertragen?';
-	@override String makeHostConfirm({required Object name}) => '${name} steuert dann die Wiedergabe und die Sitzung für alle.';
+	@override String makeHostConfirm({required Object name}) => '${name} steuert dann die Wiedergabe und den Raum für alle.';
 	@override String get transfer => 'Übertragen';
 	@override String hostChangedTo({required Object name}) => '${name} ist jetzt der Host';
 	@override String get youAreNowHost => 'Du bist jetzt der Host';
 	@override String hostTransferFailed({required Object name}) => '${name} konnte nicht zum Host gemacht werden';
 	@override String get watchingWithOthers => 'Mit anderen schauen';
-	@override String get endSession => 'Sitzung beenden';
-	@override String get leaveSession => 'Sitzung verlassen';
-	@override String get endSessionQuestion => 'Sitzung beenden?';
-	@override String get leaveSessionQuestion => 'Sitzung verlassen?';
-	@override String get endSessionConfirm => 'Dies beendet die Sitzung für alle Teilnehmer.';
-	@override String get leaveSessionConfirm => 'Du wirst aus der Sitzung entfernt.';
-	@override String get endSessionConfirmOverlay => 'Dies beendet die Schausitzung für alle Teilnehmer.';
-	@override String get leaveSessionConfirmOverlay => 'Du wirst von der Schausitzung getrennt.';
+	@override String get endSession => 'Raum beenden';
+	@override String get leaveSession => 'Raum verlassen';
+	@override String get endSessionQuestion => 'Raum beenden?';
+	@override String get leaveSessionQuestion => 'Raum verlassen?';
+	@override String get endSessionConfirm => 'Dies beendet den Raum für alle Teilnehmer.';
+	@override String get leaveSessionConfirm => 'Du wirst aus dem Raum entfernt.';
+	@override String get endSessionConfirmOverlay => 'Dies beendet den Raum für alle Teilnehmer.';
+	@override String get leaveSessionConfirmOverlay => 'Du wirst von dem Raum getrennt.';
 	@override String get end => 'Beenden';
 	@override String get leave => 'Verlassen';
 	@override String get syncing => 'Wird synchronisiert …';
-	@override String get joinWatchSession => 'Schausitzung beitreten';
+	@override String get joinWatchSession => 'Raum beitreten';
 	@override String get enterCodeHint => '5-stelligen Code eingeben';
 	@override String get pasteFromClipboard => 'Aus Zwischenablage einfügen';
-	@override String get pleaseEnterCode => 'Bitte gib einen Sitzungscode ein';
-	@override String get joinInstructions => 'Gib den Sitzungscode des Hosts ein, um beizutreten.';
-	@override String get failedToCreate => 'Sitzung konnte nicht erstellt werden';
-	@override String get failedToJoin => 'Beitritt zur Sitzung fehlgeschlagen';
-	@override String get sessionCodeCopied => 'Sitzungscode in Zwischenablage kopiert';
+	@override String get pleaseEnterCode => 'Bitte gib einen Raumcode ein';
+	@override String get joinInstructions => 'Gib den Raumcode des Hosts ein, um beizutreten.';
+	@override String get failedToCreate => 'Raum konnte nicht erstellt werden';
+	@override String get failedToJoin => 'Beitritt zum Raum fehlgeschlagen';
+	@override String get sessionCodeCopied => 'Raumcode in Zwischenablage kopiert';
 	@override String get relayUnreachable => 'Relay-Server nicht erreichbar. Eine Sperre durch den Internetanbieter kann gemeinsames Schauen verhindern.';
 	@override String get reconnectingToHost => 'Verbindung zum Host wird wiederhergestellt …';
 	@override String get currentPlayback => 'Aktuelle Wiedergabe';
@@ -1754,7 +1754,7 @@ class _Translations$watchTogether$de extends Translations$watchTogether$en {
 	@override String get joinCurrentPlaybackDescription => 'Zu dem Inhalt wechseln, den der Host gerade ansieht';
 	@override String get failedToOpenCurrentPlayback => 'Aktuelle Wiedergabe konnte nicht geöffnet werden';
 	@override String participantJoined({required Object name}) => '${name} ist beigetreten';
-	@override String participantLeft({required Object name}) => '${name} hat die Sitzung verlassen';
+	@override String participantLeft({required Object name}) => '${name} hat den Raum verlassen';
 	@override String participantPaused({required Object name}) => '${name} hat pausiert';
 	@override String participantResumed({required Object name}) => '${name} hat fortgesetzt';
 	@override String participantSeeked({required Object name}) => '${name} hat die Wiedergabeposition geändert';
@@ -1764,13 +1764,15 @@ class _Translations$watchTogether$de extends Translations$watchTogether$en {
 	@override String resumingWithout({required Object name}) => 'Fortfahren ohne ${name}';
 	@override String get waitingForParticipants => 'Warten, bis die anderen bereit sind …';
 	@override String waitingForName({required Object name}) => 'Warten auf ${name} …';
-	@override String get recentRooms => 'Zuletzt verwendete Räume';
+	@override String get recentRooms => 'Meine Räume';
 	@override String get renameRoom => 'Raum umbenennen';
 	@override String get removeRoom => 'Entfernen';
 	@override String get guestSwitchUnavailable => 'Wechsel fehlgeschlagen — Server nicht für Synchronisierung verfügbar';
 	@override String get guestSwitchFailed => 'Wechsel fehlgeschlagen — Inhalt auf diesem Server nicht gefunden';
 	@override String get defaultDisplayName => 'Benutzer';
 	@override late final _Translations$watchTogether$errors$de errors = _Translations$watchTogether$errors$de._(_root);
+	@override String get recentLabel => 'Zuletzt';
+	@override String get joinByCode => 'Mit Code beitreten';
 }
 
 // Path: downloads
@@ -2826,10 +2828,10 @@ class _Translations$watchTogether$errors$de extends Translations$watchTogether$e
 
 	// Translations
 	@override String get timedOut => 'Der Relay-Server hat nicht rechtzeitig geantwortet';
-	@override String get connectionLost => 'Die Verbindung wurde geschlossen, bevor die Sitzung bereit war';
+	@override String get connectionLost => 'Die Verbindung wurde geschlossen, bevor den Raum bereit war';
 	@override String get invalidRelayResponse => 'Der Relay-Server hat eine unerwartete Antwort gesendet';
-	@override String get sessionEnded => 'Der Host hat die Sitzung beendet';
-	@override String get sessionUnavailable => 'Diese Sitzung kann nicht fortgesetzt werden. Tritt einem Raum bei oder erstelle einen, um fortzufahren.';
+	@override String get sessionEnded => 'Der Host hat den Raum beendet';
+	@override String get sessionUnavailable => 'Dieser Raum kann nicht fortgesetzt werden. Tritt einem Raum bei oder erstelle einen, um fortzufahren.';
 }
 
 // Path: downloads.backgroundWarning
@@ -4532,19 +4534,19 @@ extension on TranslationsDe {
 			'music.discography.compilations' => 'Kompilationen',
 			'watchTogether.title' => 'Gemeinsam Schauen',
 			'watchTogether.description' => 'Inhalte synchron mit Freunden und Familie schauen',
-			'watchTogether.createSession' => 'Sitzung erstellen',
+			'watchTogether.createSession' => 'Raum erstellen',
 			'watchTogether.creating' => 'Wird erstellt …',
-			'watchTogether.joinSession' => 'Sitzung beitreten',
+			'watchTogether.joinSession' => 'Raum beitreten',
 			'watchTogether.joining' => 'Beitritt läuft …',
 			'watchTogether.controlMode' => 'Steuerungsmodus',
 			'watchTogether.controlModeQuestion' => 'Wer kann die Wiedergabe steuern?',
 			'watchTogether.hostOnly' => 'Nur Host',
 			'watchTogether.anyone' => 'Alle',
-			'watchTogether.hostingSession' => 'Sitzung wird gehostet',
-			'watchTogether.inSession' => 'In einer Sitzung',
-			'watchTogether.sessionCode' => 'Sitzungscode',
-			'watchTogether.openSessionControls' => 'Sitzungssteuerung für Gemeinsam Schauen öffnen',
-			'watchTogether.copySessionCode' => 'Sitzungscode kopieren',
+			'watchTogether.hostingSession' => 'Raum wird gehostet',
+			'watchTogether.inSession' => 'In einem Raum',
+			'watchTogether.sessionCode' => 'Raumcode',
+			'watchTogether.openSessionControls' => 'Raumsteuerung für Gemeinsam Schauen öffnen',
+			'watchTogether.copySessionCode' => 'Raumcode kopieren',
 			'watchTogether.hostControlsPlayback' => 'Host steuert die Wiedergabe',
 			'watchTogether.anyoneCanControl' => 'Alle können die Wiedergabe steuern',
 			'watchTogether.hostControls' => 'Host steuert',
@@ -4555,31 +4557,31 @@ extension on TranslationsDe {
 			'watchTogether.youAreHost' => 'Du bist der Host',
 			'watchTogether.makeHost' => 'Zum Host machen',
 			'watchTogether.makeHostQuestion' => 'Host übertragen?',
-			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} steuert dann die Wiedergabe und die Sitzung für alle.',
+			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} steuert dann die Wiedergabe und den Raum für alle.',
 			'watchTogether.transfer' => 'Übertragen',
 			'watchTogether.hostChangedTo' => ({required Object name}) => '${name} ist jetzt der Host',
 			'watchTogether.youAreNowHost' => 'Du bist jetzt der Host',
 			'watchTogether.hostTransferFailed' => ({required Object name}) => '${name} konnte nicht zum Host gemacht werden',
 			'watchTogether.watchingWithOthers' => 'Mit anderen schauen',
-			'watchTogether.endSession' => 'Sitzung beenden',
-			'watchTogether.leaveSession' => 'Sitzung verlassen',
-			'watchTogether.endSessionQuestion' => 'Sitzung beenden?',
-			'watchTogether.leaveSessionQuestion' => 'Sitzung verlassen?',
-			'watchTogether.endSessionConfirm' => 'Dies beendet die Sitzung für alle Teilnehmer.',
-			'watchTogether.leaveSessionConfirm' => 'Du wirst aus der Sitzung entfernt.',
-			'watchTogether.endSessionConfirmOverlay' => 'Dies beendet die Schausitzung für alle Teilnehmer.',
-			'watchTogether.leaveSessionConfirmOverlay' => 'Du wirst von der Schausitzung getrennt.',
+			'watchTogether.endSession' => 'Raum beenden',
+			'watchTogether.leaveSession' => 'Raum verlassen',
+			'watchTogether.endSessionQuestion' => 'Raum beenden?',
+			'watchTogether.leaveSessionQuestion' => 'Raum verlassen?',
+			'watchTogether.endSessionConfirm' => 'Dies beendet den Raum für alle Teilnehmer.',
+			'watchTogether.leaveSessionConfirm' => 'Du wirst aus dem Raum entfernt.',
+			'watchTogether.endSessionConfirmOverlay' => 'Dies beendet den Raum für alle Teilnehmer.',
+			'watchTogether.leaveSessionConfirmOverlay' => 'Du wirst von dem Raum getrennt.',
 			'watchTogether.end' => 'Beenden',
 			'watchTogether.leave' => 'Verlassen',
 			'watchTogether.syncing' => 'Wird synchronisiert …',
-			'watchTogether.joinWatchSession' => 'Schausitzung beitreten',
+			'watchTogether.joinWatchSession' => 'Raum beitreten',
 			'watchTogether.enterCodeHint' => '5-stelligen Code eingeben',
 			'watchTogether.pasteFromClipboard' => 'Aus Zwischenablage einfügen',
-			'watchTogether.pleaseEnterCode' => 'Bitte gib einen Sitzungscode ein',
-			'watchTogether.joinInstructions' => 'Gib den Sitzungscode des Hosts ein, um beizutreten.',
-			'watchTogether.failedToCreate' => 'Sitzung konnte nicht erstellt werden',
-			'watchTogether.failedToJoin' => 'Beitritt zur Sitzung fehlgeschlagen',
-			'watchTogether.sessionCodeCopied' => 'Sitzungscode in Zwischenablage kopiert',
+			'watchTogether.pleaseEnterCode' => 'Bitte gib einen Raumcode ein',
+			'watchTogether.joinInstructions' => 'Gib den Raumcode des Hosts ein, um beizutreten.',
+			'watchTogether.failedToCreate' => 'Raum konnte nicht erstellt werden',
+			'watchTogether.failedToJoin' => 'Beitritt zum Raum fehlgeschlagen',
+			'watchTogether.sessionCodeCopied' => 'Raumcode in Zwischenablage kopiert',
 			'watchTogether.relayUnreachable' => 'Relay-Server nicht erreichbar. Eine Sperre durch den Internetanbieter kann gemeinsames Schauen verhindern.',
 			'watchTogether.reconnectingToHost' => 'Verbindung zum Host wird wiederhergestellt …',
 			'watchTogether.currentPlayback' => 'Aktuelle Wiedergabe',
@@ -4587,7 +4589,7 @@ extension on TranslationsDe {
 			'watchTogether.joinCurrentPlaybackDescription' => 'Zu dem Inhalt wechseln, den der Host gerade ansieht',
 			'watchTogether.failedToOpenCurrentPlayback' => 'Aktuelle Wiedergabe konnte nicht geöffnet werden',
 			'watchTogether.participantJoined' => ({required Object name}) => '${name} ist beigetreten',
-			'watchTogether.participantLeft' => ({required Object name}) => '${name} hat die Sitzung verlassen',
+			'watchTogether.participantLeft' => ({required Object name}) => '${name} hat den Raum verlassen',
 			'watchTogether.participantPaused' => ({required Object name}) => '${name} hat pausiert',
 			'watchTogether.participantResumed' => ({required Object name}) => '${name} hat fortgesetzt',
 			'watchTogether.participantSeeked' => ({required Object name}) => '${name} hat die Wiedergabeposition geändert',
@@ -4599,17 +4601,19 @@ extension on TranslationsDe {
 			_ => null,
 		} ?? switch (path) {
 			'watchTogether.waitingForName' => ({required Object name}) => 'Warten auf ${name} …',
-			'watchTogether.recentRooms' => 'Zuletzt verwendete Räume',
+			'watchTogether.recentRooms' => 'Meine Räume',
 			'watchTogether.renameRoom' => 'Raum umbenennen',
 			'watchTogether.removeRoom' => 'Entfernen',
 			'watchTogether.guestSwitchUnavailable' => 'Wechsel fehlgeschlagen — Server nicht für Synchronisierung verfügbar',
 			'watchTogether.guestSwitchFailed' => 'Wechsel fehlgeschlagen — Inhalt auf diesem Server nicht gefunden',
 			'watchTogether.defaultDisplayName' => 'Benutzer',
 			'watchTogether.errors.timedOut' => 'Der Relay-Server hat nicht rechtzeitig geantwortet',
-			'watchTogether.errors.connectionLost' => 'Die Verbindung wurde geschlossen, bevor die Sitzung bereit war',
+			'watchTogether.errors.connectionLost' => 'Die Verbindung wurde geschlossen, bevor den Raum bereit war',
 			'watchTogether.errors.invalidRelayResponse' => 'Der Relay-Server hat eine unerwartete Antwort gesendet',
-			'watchTogether.errors.sessionEnded' => 'Der Host hat die Sitzung beendet',
-			'watchTogether.errors.sessionUnavailable' => 'Diese Sitzung kann nicht fortgesetzt werden. Tritt einem Raum bei oder erstelle einen, um fortzufahren.',
+			'watchTogether.errors.sessionEnded' => 'Der Host hat den Raum beendet',
+			'watchTogether.errors.sessionUnavailable' => 'Dieser Raum kann nicht fortgesetzt werden. Tritt einem Raum bei oder erstelle einen, um fortzufahren.',
+			'watchTogether.recentLabel' => 'Zuletzt',
+			'watchTogether.joinByCode' => 'Mit Code beitreten',
 			'downloads.title' => 'Downloads',
 			'downloads.manage' => 'Verwalten',
 			'downloads.tvShows' => 'Serien',
@@ -5108,10 +5112,10 @@ extension on TranslationsDe {
 			'addServer.addConnectionTitleScoped' => ({required Object name}) => 'Zu ${name} hinzufügen',
 			'addServer.signInWithPlexCard' => 'Mit Plex anmelden',
 			'addServer.signInWithPlexCardSubtitle' => 'Dieses Gerät autorisieren. Geteilte Server werden hinzugefügt.',
-			'addServer.signInWithPlexCardSubtitleScoped' => 'Ein Plex-Konto autorisieren. Home-Benutzer werden zu Profilen.',
-			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Mit ${product} verbinden',
 			_ => null,
 		} ?? switch (path) {
+			'addServer.signInWithPlexCardSubtitleScoped' => 'Ein Plex-Konto autorisieren. Home-Benutzer werden zu Profilen.',
+			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Mit ${product} verbinden',
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Gib Server-URL, Benutzername und Passwort ein.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => 'Melde dich bei deinem ${product}-Server an. Wird mit ${name} verknüpft.',
 			'addServer.borrowFromAnotherProfile' => 'Von einem anderen Profil ausleihen',

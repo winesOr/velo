@@ -1699,19 +1699,19 @@ class _Translations$watchTogether$nl extends Translations$watchTogether$en {
 	// Translations
 	@override String get title => 'Samen kijken';
 	@override String get description => 'Kijk synchroon met vrienden en familie';
-	@override String get createSession => 'Sessie maken';
-	@override String get creating => 'Sessie maken...';
-	@override String get joinSession => 'Deelnemen aan sessie';
+	@override String get createSession => 'Kamer maken';
+	@override String get creating => 'Kamer maken...';
+	@override String get joinSession => 'Deelnemen aan kamer';
 	@override String get joining => 'Deelnemen...';
 	@override String get controlMode => 'Bedieningsmodus';
 	@override String get controlModeQuestion => 'Wie kan het afspelen bedienen?';
 	@override String get hostOnly => 'Alleen host';
 	@override String get anyone => 'Iedereen';
-	@override String get hostingSession => 'Sessie hosten';
-	@override String get inSession => 'In sessie';
-	@override String get sessionCode => 'Sessiecode';
+	@override String get hostingSession => 'Kamer hosten';
+	@override String get inSession => 'In kamer';
+	@override String get sessionCode => 'Kamercode';
 	@override String get openSessionControls => 'Bediening voor Samen kijken openen';
-	@override String get copySessionCode => 'Sessiecode kopiëren';
+	@override String get copySessionCode => 'Kamercode kopiëren';
 	@override String get hostControlsPlayback => 'Host bedient het afspelen';
 	@override String get anyoneCanControl => 'Iedereen kan het afspelen bedienen';
 	@override String get hostControls => 'Host bedient';
@@ -1722,31 +1722,31 @@ class _Translations$watchTogether$nl extends Translations$watchTogether$en {
 	@override String get youAreHost => 'Jij bent de host';
 	@override String get makeHost => 'Tot host maken';
 	@override String get makeHostQuestion => 'Host overdragen?';
-	@override String makeHostConfirm({required Object name}) => '${name} bedient dan het afspelen en de sessie voor iedereen.';
+	@override String makeHostConfirm({required Object name}) => '${name} bedient dan het afspelen en de kamer voor iedereen.';
 	@override String get transfer => 'Overdragen';
 	@override String hostChangedTo({required Object name}) => '${name} is nu de host';
 	@override String get youAreNowHost => 'Jij bent nu de host';
 	@override String hostTransferFailed({required Object name}) => 'Kon ${name} niet tot host maken';
 	@override String get watchingWithOthers => 'Kijken met anderen';
-	@override String get endSession => 'Sessie beëindigen';
-	@override String get leaveSession => 'Sessie verlaten';
-	@override String get endSessionQuestion => 'Sessie beëindigen?';
-	@override String get leaveSessionQuestion => 'Sessie verlaten?';
-	@override String get endSessionConfirm => 'Dit beëindigt de sessie voor alle deelnemers.';
-	@override String get leaveSessionConfirm => 'Je wordt uit de sessie verwijderd.';
-	@override String get endSessionConfirmOverlay => 'Dit beëindigt de kijksessie voor alle deelnemers.';
-	@override String get leaveSessionConfirmOverlay => 'Je wordt losgekoppeld van de kijksessie.';
+	@override String get endSession => 'Kamer beëindigen';
+	@override String get leaveSession => 'Kamer verlaten';
+	@override String get endSessionQuestion => 'Kamer beëindigen?';
+	@override String get leaveSessionQuestion => 'Kamer verlaten?';
+	@override String get endSessionConfirm => 'Dit beëindigt de kamer voor alle deelnemers.';
+	@override String get leaveSessionConfirm => 'Je wordt uit de kamer verwijderd.';
+	@override String get endSessionConfirmOverlay => 'Dit beëindigt de kijkkamer voor alle deelnemers.';
+	@override String get leaveSessionConfirmOverlay => 'Je wordt losgekoppeld van de kijkkamer.';
 	@override String get end => 'Beëindigen';
 	@override String get leave => 'Verlaten';
 	@override String get syncing => 'Synchroniseren...';
-	@override String get joinWatchSession => 'Deelnemen aan kijksessie';
+	@override String get joinWatchSession => 'Deelnemen aan kijkkamer';
 	@override String get enterCodeHint => 'Voer de code van 5 tekens in';
 	@override String get pasteFromClipboard => 'Plakken vanaf klembord';
-	@override String get pleaseEnterCode => 'Voer een sessiecode in';
-	@override String get joinInstructions => 'Voer de sessiecode van de host in om deel te nemen.';
-	@override String get failedToCreate => 'Sessie maken mislukt';
-	@override String get failedToJoin => 'Deelnemen aan sessie mislukt';
-	@override String get sessionCodeCopied => 'Sessiecode naar het klembord gekopieerd';
+	@override String get pleaseEnterCode => 'Voer een kamercode in';
+	@override String get joinInstructions => 'Voer de kamercode van de host in om deel te nemen.';
+	@override String get failedToCreate => 'Kamer maken mislukt';
+	@override String get failedToJoin => 'Deelnemen aan kamer mislukt';
+	@override String get sessionCodeCopied => 'Kamercode naar het klembord gekopieerd';
 	@override String get relayUnreachable => 'De relayserver is onbereikbaar. Een blokkering door je internetprovider kan Samen kijken verhinderen.';
 	@override String get reconnectingToHost => 'Opnieuw verbinden met host...';
 	@override String get currentPlayback => 'Wat nu wordt afgespeeld';
@@ -1754,7 +1754,7 @@ class _Translations$watchTogether$nl extends Translations$watchTogether$en {
 	@override String get joinCurrentPlaybackDescription => 'Ga terug naar wat de host nu kijkt';
 	@override String get failedToOpenCurrentPlayback => 'Wat nu wordt afgespeeld kon niet worden geopend';
 	@override String participantJoined({required Object name}) => '${name} is toegetreden';
-	@override String participantLeft({required Object name}) => '${name} heeft de sessie verlaten';
+	@override String participantLeft({required Object name}) => '${name} heeft de kamer verlaten';
 	@override String participantPaused({required Object name}) => '${name} heeft gepauzeerd';
 	@override String participantResumed({required Object name}) => '${name} heeft hervat';
 	@override String participantSeeked({required Object name}) => '${name} heeft de afspeelpositie gewijzigd';
@@ -1764,13 +1764,15 @@ class _Translations$watchTogether$nl extends Translations$watchTogether$en {
 	@override String resumingWithout({required Object name}) => 'Hervatten zonder ${name}';
 	@override String get waitingForParticipants => 'Wachten tot anderen klaar zijn met laden...';
 	@override String waitingForName({required Object name}) => 'Wachten op ${name}...';
-	@override String get recentRooms => 'Recente kamers';
+	@override String get recentRooms => 'Mijn kamers';
 	@override String get renameRoom => 'Kamer hernoemen';
 	@override String get removeRoom => 'Verwijderen';
 	@override String get guestSwitchUnavailable => 'Kon niet schakelen — server niet beschikbaar voor synchronisatie';
 	@override String get guestSwitchFailed => 'Kon niet schakelen — inhoud niet gevonden op deze server';
 	@override String get defaultDisplayName => 'Gebruiker';
 	@override late final _Translations$watchTogether$errors$nl errors = _Translations$watchTogether$errors$nl._(_root);
+	@override String get recentLabel => 'Recent';
+	@override String get joinByCode => 'Deelnemen met code';
 }
 
 // Path: downloads
@@ -2826,10 +2828,10 @@ class _Translations$watchTogether$errors$nl extends Translations$watchTogether$e
 
 	// Translations
 	@override String get timedOut => 'De relayserver heeft niet op tijd gereageerd';
-	@override String get connectionLost => 'De verbinding is verbroken voordat de sessie gereed was';
+	@override String get connectionLost => 'De verbinding is verbroken voordat de kamer gereed was';
 	@override String get invalidRelayResponse => 'De relayserver heeft een onverwacht antwoord verzonden';
-	@override String get sessionEnded => 'De host heeft de sessie beëindigd';
-	@override String get sessionUnavailable => 'Kan deze sessie niet hervatten. Neem deel aan of maak een kamer om door te gaan.';
+	@override String get sessionEnded => 'De host heeft de kamer beëindigd';
+	@override String get sessionUnavailable => 'Kan deze kamer niet hervatten. Neem deel aan of maak een kamer om door te gaan.';
 }
 
 // Path: downloads.backgroundWarning
@@ -4532,19 +4534,19 @@ extension on TranslationsNl {
 			'music.discography.compilations' => 'Compilaties',
 			'watchTogether.title' => 'Samen kijken',
 			'watchTogether.description' => 'Kijk synchroon met vrienden en familie',
-			'watchTogether.createSession' => 'Sessie maken',
-			'watchTogether.creating' => 'Sessie maken...',
-			'watchTogether.joinSession' => 'Deelnemen aan sessie',
+			'watchTogether.createSession' => 'Kamer maken',
+			'watchTogether.creating' => 'Kamer maken...',
+			'watchTogether.joinSession' => 'Deelnemen aan kamer',
 			'watchTogether.joining' => 'Deelnemen...',
 			'watchTogether.controlMode' => 'Bedieningsmodus',
 			'watchTogether.controlModeQuestion' => 'Wie kan het afspelen bedienen?',
 			'watchTogether.hostOnly' => 'Alleen host',
 			'watchTogether.anyone' => 'Iedereen',
-			'watchTogether.hostingSession' => 'Sessie hosten',
-			'watchTogether.inSession' => 'In sessie',
-			'watchTogether.sessionCode' => 'Sessiecode',
+			'watchTogether.hostingSession' => 'Kamer hosten',
+			'watchTogether.inSession' => 'In kamer',
+			'watchTogether.sessionCode' => 'Kamercode',
 			'watchTogether.openSessionControls' => 'Bediening voor Samen kijken openen',
-			'watchTogether.copySessionCode' => 'Sessiecode kopiëren',
+			'watchTogether.copySessionCode' => 'Kamercode kopiëren',
 			'watchTogether.hostControlsPlayback' => 'Host bedient het afspelen',
 			'watchTogether.anyoneCanControl' => 'Iedereen kan het afspelen bedienen',
 			'watchTogether.hostControls' => 'Host bedient',
@@ -4555,31 +4557,31 @@ extension on TranslationsNl {
 			'watchTogether.youAreHost' => 'Jij bent de host',
 			'watchTogether.makeHost' => 'Tot host maken',
 			'watchTogether.makeHostQuestion' => 'Host overdragen?',
-			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} bedient dan het afspelen en de sessie voor iedereen.',
+			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} bedient dan het afspelen en de kamer voor iedereen.',
 			'watchTogether.transfer' => 'Overdragen',
 			'watchTogether.hostChangedTo' => ({required Object name}) => '${name} is nu de host',
 			'watchTogether.youAreNowHost' => 'Jij bent nu de host',
 			'watchTogether.hostTransferFailed' => ({required Object name}) => 'Kon ${name} niet tot host maken',
 			'watchTogether.watchingWithOthers' => 'Kijken met anderen',
-			'watchTogether.endSession' => 'Sessie beëindigen',
-			'watchTogether.leaveSession' => 'Sessie verlaten',
-			'watchTogether.endSessionQuestion' => 'Sessie beëindigen?',
-			'watchTogether.leaveSessionQuestion' => 'Sessie verlaten?',
-			'watchTogether.endSessionConfirm' => 'Dit beëindigt de sessie voor alle deelnemers.',
-			'watchTogether.leaveSessionConfirm' => 'Je wordt uit de sessie verwijderd.',
-			'watchTogether.endSessionConfirmOverlay' => 'Dit beëindigt de kijksessie voor alle deelnemers.',
-			'watchTogether.leaveSessionConfirmOverlay' => 'Je wordt losgekoppeld van de kijksessie.',
+			'watchTogether.endSession' => 'Kamer beëindigen',
+			'watchTogether.leaveSession' => 'Kamer verlaten',
+			'watchTogether.endSessionQuestion' => 'Kamer beëindigen?',
+			'watchTogether.leaveSessionQuestion' => 'Kamer verlaten?',
+			'watchTogether.endSessionConfirm' => 'Dit beëindigt de kamer voor alle deelnemers.',
+			'watchTogether.leaveSessionConfirm' => 'Je wordt uit de kamer verwijderd.',
+			'watchTogether.endSessionConfirmOverlay' => 'Dit beëindigt de kijkkamer voor alle deelnemers.',
+			'watchTogether.leaveSessionConfirmOverlay' => 'Je wordt losgekoppeld van de kijkkamer.',
 			'watchTogether.end' => 'Beëindigen',
 			'watchTogether.leave' => 'Verlaten',
 			'watchTogether.syncing' => 'Synchroniseren...',
-			'watchTogether.joinWatchSession' => 'Deelnemen aan kijksessie',
+			'watchTogether.joinWatchSession' => 'Deelnemen aan kijkkamer',
 			'watchTogether.enterCodeHint' => 'Voer de code van 5 tekens in',
 			'watchTogether.pasteFromClipboard' => 'Plakken vanaf klembord',
-			'watchTogether.pleaseEnterCode' => 'Voer een sessiecode in',
-			'watchTogether.joinInstructions' => 'Voer de sessiecode van de host in om deel te nemen.',
-			'watchTogether.failedToCreate' => 'Sessie maken mislukt',
-			'watchTogether.failedToJoin' => 'Deelnemen aan sessie mislukt',
-			'watchTogether.sessionCodeCopied' => 'Sessiecode naar het klembord gekopieerd',
+			'watchTogether.pleaseEnterCode' => 'Voer een kamercode in',
+			'watchTogether.joinInstructions' => 'Voer de kamercode van de host in om deel te nemen.',
+			'watchTogether.failedToCreate' => 'Kamer maken mislukt',
+			'watchTogether.failedToJoin' => 'Deelnemen aan kamer mislukt',
+			'watchTogether.sessionCodeCopied' => 'Kamercode naar het klembord gekopieerd',
 			'watchTogether.relayUnreachable' => 'De relayserver is onbereikbaar. Een blokkering door je internetprovider kan Samen kijken verhinderen.',
 			'watchTogether.reconnectingToHost' => 'Opnieuw verbinden met host...',
 			'watchTogether.currentPlayback' => 'Wat nu wordt afgespeeld',
@@ -4587,7 +4589,7 @@ extension on TranslationsNl {
 			'watchTogether.joinCurrentPlaybackDescription' => 'Ga terug naar wat de host nu kijkt',
 			'watchTogether.failedToOpenCurrentPlayback' => 'Wat nu wordt afgespeeld kon niet worden geopend',
 			'watchTogether.participantJoined' => ({required Object name}) => '${name} is toegetreden',
-			'watchTogether.participantLeft' => ({required Object name}) => '${name} heeft de sessie verlaten',
+			'watchTogether.participantLeft' => ({required Object name}) => '${name} heeft de kamer verlaten',
 			'watchTogether.participantPaused' => ({required Object name}) => '${name} heeft gepauzeerd',
 			'watchTogether.participantResumed' => ({required Object name}) => '${name} heeft hervat',
 			'watchTogether.participantSeeked' => ({required Object name}) => '${name} heeft de afspeelpositie gewijzigd',
@@ -4599,17 +4601,19 @@ extension on TranslationsNl {
 			_ => null,
 		} ?? switch (path) {
 			'watchTogether.waitingForName' => ({required Object name}) => 'Wachten op ${name}...',
-			'watchTogether.recentRooms' => 'Recente kamers',
+			'watchTogether.recentRooms' => 'Mijn kamers',
 			'watchTogether.renameRoom' => 'Kamer hernoemen',
 			'watchTogether.removeRoom' => 'Verwijderen',
 			'watchTogether.guestSwitchUnavailable' => 'Kon niet schakelen — server niet beschikbaar voor synchronisatie',
 			'watchTogether.guestSwitchFailed' => 'Kon niet schakelen — inhoud niet gevonden op deze server',
 			'watchTogether.defaultDisplayName' => 'Gebruiker',
 			'watchTogether.errors.timedOut' => 'De relayserver heeft niet op tijd gereageerd',
-			'watchTogether.errors.connectionLost' => 'De verbinding is verbroken voordat de sessie gereed was',
+			'watchTogether.errors.connectionLost' => 'De verbinding is verbroken voordat de kamer gereed was',
 			'watchTogether.errors.invalidRelayResponse' => 'De relayserver heeft een onverwacht antwoord verzonden',
-			'watchTogether.errors.sessionEnded' => 'De host heeft de sessie beëindigd',
-			'watchTogether.errors.sessionUnavailable' => 'Kan deze sessie niet hervatten. Neem deel aan of maak een kamer om door te gaan.',
+			'watchTogether.errors.sessionEnded' => 'De host heeft de kamer beëindigd',
+			'watchTogether.errors.sessionUnavailable' => 'Kan deze kamer niet hervatten. Neem deel aan of maak een kamer om door te gaan.',
+			'watchTogether.recentLabel' => 'Recent',
+			'watchTogether.joinByCode' => 'Deelnemen met code',
 			'downloads.title' => 'Downloads',
 			'downloads.manage' => 'Beheren',
 			'downloads.tvShows' => 'Series',
@@ -5108,10 +5112,10 @@ extension on TranslationsNl {
 			'addServer.addConnectionTitleScoped' => ({required Object name}) => 'Toevoegen aan ${name}',
 			'addServer.signInWithPlexCard' => 'Inloggen met Plex',
 			'addServer.signInWithPlexCardSubtitle' => 'Autoriseer dit apparaat. Gedeelde servers worden toegevoegd.',
-			'addServer.signInWithPlexCardSubtitleScoped' => 'Autoriseer een Plex-account. Home-gebruikers worden profielen.',
-			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Verbinding maken met ${product}',
 			_ => null,
 		} ?? switch (path) {
+			'addServer.signInWithPlexCardSubtitleScoped' => 'Autoriseer een Plex-account. Home-gebruikers worden profielen.',
+			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Verbinding maken met ${product}',
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Voer je server-URL, gebruikersnaam en wachtwoord in.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => 'Meld je aan bij je ${product}-server. Wordt gekoppeld aan ${name}.',
 			'addServer.borrowFromAnotherProfile' => 'Van een ander profiel lenen',

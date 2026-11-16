@@ -1699,19 +1699,19 @@ class _Translations$watchTogether$nb extends Translations$watchTogether$en {
 	// Translations
 	@override String get title => 'Se sammen';
 	@override String get description => 'Se innhold synkronisert med venner og familie';
-	@override String get createSession => 'Opprett økt';
+	@override String get createSession => 'Opprett rom';
 	@override String get creating => 'Oppretter...';
-	@override String get joinSession => 'Bli med i økt';
+	@override String get joinSession => 'Bli med i rom';
 	@override String get joining => 'Blir med...';
 	@override String get controlMode => 'Kontrollmodus';
 	@override String get controlModeQuestion => 'Hvem kan kontrollere avspilling?';
 	@override String get hostOnly => 'Kun vert';
 	@override String get anyone => 'Alle';
-	@override String get hostingSession => 'Er vert for økt';
-	@override String get inSession => 'I økt';
-	@override String get sessionCode => 'Øktkode';
-	@override String get openSessionControls => 'Åpne øktkontroller for Se sammen';
-	@override String get copySessionCode => 'Kopier øktkode';
+	@override String get hostingSession => 'Er vert for rom';
+	@override String get inSession => 'I rom';
+	@override String get sessionCode => 'Romkode';
+	@override String get openSessionControls => 'Åpne romkontroller for Se sammen';
+	@override String get copySessionCode => 'Kopier romkode';
 	@override String get hostControlsPlayback => 'Verten kontrollerer avspilling';
 	@override String get anyoneCanControl => 'Alle kan kontrollere avspilling';
 	@override String get hostControls => 'Vertskontroll';
@@ -1722,31 +1722,31 @@ class _Translations$watchTogether$nb extends Translations$watchTogether$en {
 	@override String get youAreHost => 'Du er verten';
 	@override String get makeHost => 'Gjør til vert';
 	@override String get makeHostQuestion => 'Overfør vert?';
-	@override String makeHostConfirm({required Object name}) => '${name} vil kontrollere avspillingen og styre økten for alle.';
+	@override String makeHostConfirm({required Object name}) => '${name} vil kontrollere avspillingen og styre rommet for alle.';
 	@override String get transfer => 'Overfør';
 	@override String hostChangedTo({required Object name}) => '${name} er nå verten';
 	@override String get youAreNowHost => 'Du er nå verten';
 	@override String hostTransferFailed({required Object name}) => 'Kunne ikke gjøre ${name} til vert';
 	@override String get watchingWithOthers => 'Ser med andre';
-	@override String get endSession => 'Avslutt økt';
-	@override String get leaveSession => 'Forlat økt';
-	@override String get endSessionQuestion => 'Avslutte økt?';
-	@override String get leaveSessionQuestion => 'Forlate økt?';
-	@override String get endSessionConfirm => 'Dette vil avslutte økten for alle deltakere.';
-	@override String get leaveSessionConfirm => 'Du vil bli fjernet fra økten.';
-	@override String get endSessionConfirmOverlay => 'Dette vil avslutte se sammen-økten for alle deltakere.';
-	@override String get leaveSessionConfirmOverlay => 'Du vil bli frakoblet fra se sammen-økten.';
+	@override String get endSession => 'Avslutt rom';
+	@override String get leaveSession => 'Forlat rom';
+	@override String get endSessionQuestion => 'Avslutte rom?';
+	@override String get leaveSessionQuestion => 'Forlate rom?';
+	@override String get endSessionConfirm => 'Dette vil avslutte rommet for alle deltakere.';
+	@override String get leaveSessionConfirm => 'Du vil bli fjernet fra rommet.';
+	@override String get endSessionConfirmOverlay => 'Dette vil avslutte se sammen-rommet for alle deltakere.';
+	@override String get leaveSessionConfirmOverlay => 'Du vil bli frakoblet fra se sammen-rommet.';
 	@override String get end => 'Avslutt';
 	@override String get leave => 'Forlat';
 	@override String get syncing => 'Synkroniserer...';
-	@override String get joinWatchSession => 'Bli med i se sammen-økt';
+	@override String get joinWatchSession => 'Bli med i se sammen-rom';
 	@override String get enterCodeHint => 'Skriv inn 5-tegns kode';
 	@override String get pasteFromClipboard => 'Lim inn fra utklippstavle';
-	@override String get pleaseEnterCode => 'Vennligst skriv inn en øktkode';
-	@override String get joinInstructions => 'Skriv inn vertens øktkode for å bli med.';
-	@override String get failedToCreate => 'Kunne ikke opprette økt';
-	@override String get failedToJoin => 'Kunne ikke bli med i økt';
-	@override String get sessionCodeCopied => 'Øktkode kopiert til utklippstavle';
+	@override String get pleaseEnterCode => 'Vennligst skriv inn en romkode';
+	@override String get joinInstructions => 'Skriv inn vertens romkode for å bli med.';
+	@override String get failedToCreate => 'Kunne ikke opprette rom';
+	@override String get failedToJoin => 'Kunne ikke bli med i rom';
+	@override String get sessionCodeCopied => 'Romkode kopiert til utklippstavle';
 	@override String get relayUnreachable => 'Reléserveren kan ikke nås. Blokkering hos internettleverandøren kan hindre Se sammen.';
 	@override String get reconnectingToHost => 'Kobler til verten på nytt...';
 	@override String get currentPlayback => 'Gjeldende avspilling';
@@ -1764,13 +1764,15 @@ class _Translations$watchTogether$nb extends Translations$watchTogether$en {
 	@override String resumingWithout({required Object name}) => 'Fortsetter uten ${name}';
 	@override String get waitingForParticipants => 'Venter på at de andre skal laste inn...';
 	@override String waitingForName({required Object name}) => 'Venter på ${name}...';
-	@override String get recentRooms => 'Nylige rom';
+	@override String get recentRooms => 'Mine rom';
 	@override String get renameRoom => 'Gi nytt navn til rom';
 	@override String get removeRoom => 'Fjern';
 	@override String get guestSwitchUnavailable => 'Kunne ikke bytte — server ikke tilgjengelig for synkronisering';
 	@override String get guestSwitchFailed => 'Kunne ikke bytte — innhold ble ikke funnet på denne serveren';
 	@override String get defaultDisplayName => 'Bruker';
 	@override late final _Translations$watchTogether$errors$nb errors = _Translations$watchTogether$errors$nb._(_root);
+	@override String get recentLabel => 'Nylige';
+	@override String get joinByCode => 'Bli med med kode';
 }
 
 // Path: downloads
@@ -2826,10 +2828,10 @@ class _Translations$watchTogether$errors$nb extends Translations$watchTogether$e
 
 	// Translations
 	@override String get timedOut => 'Reléserveren svarte ikke i tide';
-	@override String get connectionLost => 'Tilkoblingen ble lukket før økten var klar';
+	@override String get connectionLost => 'Tilkoblingen ble lukket før rommet var klar';
 	@override String get invalidRelayResponse => 'Reléserveren sendte et uventet svar';
-	@override String get sessionEnded => 'Verten avsluttet økten';
-	@override String get sessionUnavailable => 'Kan ikke gjenoppta denne økten. Bli med i eller opprett et rom for å fortsette.';
+	@override String get sessionEnded => 'Verten avsluttet rommet';
+	@override String get sessionUnavailable => 'Kan ikke gjenoppta dette rommet. Bli med i eller opprett et rom for å fortsette.';
 }
 
 // Path: downloads.backgroundWarning
@@ -4532,19 +4534,19 @@ extension on TranslationsNb {
 			'music.discography.compilations' => 'Samlealbum',
 			'watchTogether.title' => 'Se sammen',
 			'watchTogether.description' => 'Se innhold synkronisert med venner og familie',
-			'watchTogether.createSession' => 'Opprett økt',
+			'watchTogether.createSession' => 'Opprett rom',
 			'watchTogether.creating' => 'Oppretter...',
-			'watchTogether.joinSession' => 'Bli med i økt',
+			'watchTogether.joinSession' => 'Bli med i rom',
 			'watchTogether.joining' => 'Blir med...',
 			'watchTogether.controlMode' => 'Kontrollmodus',
 			'watchTogether.controlModeQuestion' => 'Hvem kan kontrollere avspilling?',
 			'watchTogether.hostOnly' => 'Kun vert',
 			'watchTogether.anyone' => 'Alle',
-			'watchTogether.hostingSession' => 'Er vert for økt',
-			'watchTogether.inSession' => 'I økt',
-			'watchTogether.sessionCode' => 'Øktkode',
-			'watchTogether.openSessionControls' => 'Åpne øktkontroller for Se sammen',
-			'watchTogether.copySessionCode' => 'Kopier øktkode',
+			'watchTogether.hostingSession' => 'Er vert for rom',
+			'watchTogether.inSession' => 'I rom',
+			'watchTogether.sessionCode' => 'Romkode',
+			'watchTogether.openSessionControls' => 'Åpne romkontroller for Se sammen',
+			'watchTogether.copySessionCode' => 'Kopier romkode',
 			'watchTogether.hostControlsPlayback' => 'Verten kontrollerer avspilling',
 			'watchTogether.anyoneCanControl' => 'Alle kan kontrollere avspilling',
 			'watchTogether.hostControls' => 'Vertskontroll',
@@ -4555,31 +4557,31 @@ extension on TranslationsNb {
 			'watchTogether.youAreHost' => 'Du er verten',
 			'watchTogether.makeHost' => 'Gjør til vert',
 			'watchTogether.makeHostQuestion' => 'Overfør vert?',
-			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} vil kontrollere avspillingen og styre økten for alle.',
+			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} vil kontrollere avspillingen og styre rommet for alle.',
 			'watchTogether.transfer' => 'Overfør',
 			'watchTogether.hostChangedTo' => ({required Object name}) => '${name} er nå verten',
 			'watchTogether.youAreNowHost' => 'Du er nå verten',
 			'watchTogether.hostTransferFailed' => ({required Object name}) => 'Kunne ikke gjøre ${name} til vert',
 			'watchTogether.watchingWithOthers' => 'Ser med andre',
-			'watchTogether.endSession' => 'Avslutt økt',
-			'watchTogether.leaveSession' => 'Forlat økt',
-			'watchTogether.endSessionQuestion' => 'Avslutte økt?',
-			'watchTogether.leaveSessionQuestion' => 'Forlate økt?',
-			'watchTogether.endSessionConfirm' => 'Dette vil avslutte økten for alle deltakere.',
-			'watchTogether.leaveSessionConfirm' => 'Du vil bli fjernet fra økten.',
-			'watchTogether.endSessionConfirmOverlay' => 'Dette vil avslutte se sammen-økten for alle deltakere.',
-			'watchTogether.leaveSessionConfirmOverlay' => 'Du vil bli frakoblet fra se sammen-økten.',
+			'watchTogether.endSession' => 'Avslutt rom',
+			'watchTogether.leaveSession' => 'Forlat rom',
+			'watchTogether.endSessionQuestion' => 'Avslutte rom?',
+			'watchTogether.leaveSessionQuestion' => 'Forlate rom?',
+			'watchTogether.endSessionConfirm' => 'Dette vil avslutte rommet for alle deltakere.',
+			'watchTogether.leaveSessionConfirm' => 'Du vil bli fjernet fra rommet.',
+			'watchTogether.endSessionConfirmOverlay' => 'Dette vil avslutte se sammen-rommet for alle deltakere.',
+			'watchTogether.leaveSessionConfirmOverlay' => 'Du vil bli frakoblet fra se sammen-rommet.',
 			'watchTogether.end' => 'Avslutt',
 			'watchTogether.leave' => 'Forlat',
 			'watchTogether.syncing' => 'Synkroniserer...',
-			'watchTogether.joinWatchSession' => 'Bli med i se sammen-økt',
+			'watchTogether.joinWatchSession' => 'Bli med i se sammen-rom',
 			'watchTogether.enterCodeHint' => 'Skriv inn 5-tegns kode',
 			'watchTogether.pasteFromClipboard' => 'Lim inn fra utklippstavle',
-			'watchTogether.pleaseEnterCode' => 'Vennligst skriv inn en øktkode',
-			'watchTogether.joinInstructions' => 'Skriv inn vertens øktkode for å bli med.',
-			'watchTogether.failedToCreate' => 'Kunne ikke opprette økt',
-			'watchTogether.failedToJoin' => 'Kunne ikke bli med i økt',
-			'watchTogether.sessionCodeCopied' => 'Øktkode kopiert til utklippstavle',
+			'watchTogether.pleaseEnterCode' => 'Vennligst skriv inn en romkode',
+			'watchTogether.joinInstructions' => 'Skriv inn vertens romkode for å bli med.',
+			'watchTogether.failedToCreate' => 'Kunne ikke opprette rom',
+			'watchTogether.failedToJoin' => 'Kunne ikke bli med i rom',
+			'watchTogether.sessionCodeCopied' => 'Romkode kopiert til utklippstavle',
 			'watchTogether.relayUnreachable' => 'Reléserveren kan ikke nås. Blokkering hos internettleverandøren kan hindre Se sammen.',
 			'watchTogether.reconnectingToHost' => 'Kobler til verten på nytt...',
 			'watchTogether.currentPlayback' => 'Gjeldende avspilling',
@@ -4599,17 +4601,19 @@ extension on TranslationsNb {
 			_ => null,
 		} ?? switch (path) {
 			'watchTogether.waitingForName' => ({required Object name}) => 'Venter på ${name}...',
-			'watchTogether.recentRooms' => 'Nylige rom',
+			'watchTogether.recentRooms' => 'Mine rom',
 			'watchTogether.renameRoom' => 'Gi nytt navn til rom',
 			'watchTogether.removeRoom' => 'Fjern',
 			'watchTogether.guestSwitchUnavailable' => 'Kunne ikke bytte — server ikke tilgjengelig for synkronisering',
 			'watchTogether.guestSwitchFailed' => 'Kunne ikke bytte — innhold ble ikke funnet på denne serveren',
 			'watchTogether.defaultDisplayName' => 'Bruker',
 			'watchTogether.errors.timedOut' => 'Reléserveren svarte ikke i tide',
-			'watchTogether.errors.connectionLost' => 'Tilkoblingen ble lukket før økten var klar',
+			'watchTogether.errors.connectionLost' => 'Tilkoblingen ble lukket før rommet var klar',
 			'watchTogether.errors.invalidRelayResponse' => 'Reléserveren sendte et uventet svar',
-			'watchTogether.errors.sessionEnded' => 'Verten avsluttet økten',
-			'watchTogether.errors.sessionUnavailable' => 'Kan ikke gjenoppta denne økten. Bli med i eller opprett et rom for å fortsette.',
+			'watchTogether.errors.sessionEnded' => 'Verten avsluttet rommet',
+			'watchTogether.errors.sessionUnavailable' => 'Kan ikke gjenoppta dette rommet. Bli med i eller opprett et rom for å fortsette.',
+			'watchTogether.recentLabel' => 'Nylige',
+			'watchTogether.joinByCode' => 'Bli med med kode',
 			'downloads.title' => 'Nedlastinger',
 			'downloads.manage' => 'Administrer',
 			'downloads.tvShows' => 'TV-serier',
@@ -5108,10 +5112,10 @@ extension on TranslationsNb {
 			'addServer.addConnectionTitleScoped' => ({required Object name}) => 'Legg til for ${name}',
 			'addServer.signInWithPlexCard' => 'Logg inn med Plex',
 			'addServer.signInWithPlexCardSubtitle' => 'Autoriser denne enheten. Delte servere legges til.',
-			'addServer.signInWithPlexCardSubtitleScoped' => 'Autoriser en Plex-konto. Home-brukere blir profiler.',
-			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Koble til ${product}',
 			_ => null,
 		} ?? switch (path) {
+			'addServer.signInWithPlexCardSubtitleScoped' => 'Autoriser en Plex-konto. Home-brukere blir profiler.',
+			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Koble til ${product}',
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Skriv inn server-URL-en, brukernavnet og passordet ditt.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => 'Logg på ${product}-serveren din. Knyttes til ${name}.',
 			'addServer.borrowFromAnotherProfile' => 'Lån fra en annen profil',

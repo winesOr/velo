@@ -1866,21 +1866,21 @@ class Translations$watchTogether$zh extends Translations$watchTogether$en {
 	// Translations
 	@override String get title => '一起看';
 	@override String get description => '与朋友和家人同步观看内容';
-	@override String get createSession => '创建会话';
+	@override String get createSession => '创建房间';
 	@override String get optionalRoomName => '房间名称（可选）';
 	@override String get createRoomHostDescription => '你将成为房主，可以控制播放和暂停。';
 	@override String get creating => '正在创建…';
-	@override String get joinSession => '加入会话';
+	@override String get joinSession => '加入房间';
 	@override String get joining => '正在加入…';
 	@override String get controlMode => '控制模式';
 	@override String get controlModeQuestion => '谁可以控制播放？';
 	@override String get hostOnly => '仅主持人';
 	@override String get anyone => '任何人';
-	@override String get hostingSession => '主持会话';
-	@override String get inSession => '在会话中';
-	@override String get sessionCode => '会话代码';
-	@override String get openSessionControls => '打开“一起看”会话控制';
-	@override String get copySessionCode => '复制会话代码';
+	@override String get hostingSession => '主持房间';
+	@override String get inSession => '在房间中';
+	@override String get sessionCode => '邀请码';
+	@override String get openSessionControls => '打开“一起看”房间控制';
+	@override String get copySessionCode => '复制邀请码';
 	@override String get hostControlsPlayback => '主持人控制播放';
 	@override String get anyoneCanControl => '任何人都可以控制播放';
 	@override String get hostControls => '主持人控制';
@@ -1891,33 +1891,33 @@ class Translations$watchTogether$zh extends Translations$watchTogether$en {
 	@override String get youAreHost => '你是主持人';
 	@override String get makeHost => '设为主持人';
 	@override String get makeHostQuestion => '移交主持人？';
-	@override String makeHostConfirm({required Object name}) => '${name} 将控制播放并主导所有人的会话。';
+	@override String makeHostConfirm({required Object name}) => '${name} 将控制播放并主导所有人的房间。';
 	@override String get transfer => '移交';
 	@override String hostChangedTo({required Object name}) => '${name} 现在是主持人';
 	@override String get youAreNowHost => '你现在是主持人';
 	@override String hostTransferFailed({required Object name}) => '无法将 ${name} 设为主持人';
 	@override String get watchingWithOthers => '与他人一起观看';
-	@override String get endSession => '结束会话';
-	@override String get leaveSession => '离开会话';
-	@override String get endSessionQuestion => '结束会话？';
-	@override String get leaveSessionQuestion => '离开会话？';
-	@override String get endSessionConfirm => '这将为所有参与者结束会话。';
-	@override String get leaveSessionConfirm => '你将被移出会话。';
-	@override String get endSessionConfirmOverlay => '这将为所有参与者结束观看会话。';
-	@override String get leaveSessionConfirmOverlay => '你将断开与观看会话的连接。';
+	@override String get endSession => '结束房间';
+	@override String get leaveSession => '离开房间';
+	@override String get endSessionQuestion => '结束房间？';
+	@override String get leaveSessionQuestion => '离开房间？';
+	@override String get endSessionConfirm => '这将为所有参与者结束房间。';
+	@override String get leaveSessionConfirm => '你将被移出房间。';
+	@override String get endSessionConfirmOverlay => '这将为所有参与者结束观看房间。';
+	@override String get leaveSessionConfirmOverlay => '你将断开与观看房间的连接。';
 	@override String get end => '结束';
 	@override String get leave => '离开';
 	@override String get syncing => '正在同步…';
-	@override String get joinWatchSession => '加入观看会话';
+	@override String get joinWatchSession => '加入观看房间';
 	@override String get enterCodeHint => '输入房主的房间码';
 	@override String get pasteFromClipboard => '从剪贴板粘贴';
-	@override String get pleaseEnterCode => '请输入会话代码';
+	@override String get pleaseEnterCode => '请输入邀请码';
 	@override String get roomNotFound => '未找到房间，请检查邀请码后重试。';
 	@override String get roomFull => '房间人数已满。';
-	@override String get joinInstructions => '输入主持人的会话代码以加入。';
-	@override String get failedToCreate => '创建会话失败';
-	@override String get failedToJoin => '加入会话失败';
-	@override String get sessionCodeCopied => '会话代码已复制到剪贴板';
+	@override String get joinInstructions => '输入房主的邀请码以加入房间。';
+	@override String get failedToCreate => '创建房间失败';
+	@override String get failedToJoin => '加入房间失败';
+	@override String get sessionCodeCopied => '邀请码已复制到剪贴板';
 	@override String get relayUnreachable => '无法访问中继服务器。网络运营商的屏蔽可能导致“一起看”不可用。';
 	@override String get reconnectingToHost => '正在重新连接到主持人…';
 	@override String get currentPlayback => '当前播放';
@@ -1935,14 +1935,14 @@ class Translations$watchTogether$zh extends Translations$watchTogether$en {
 	@override String resumingWithout({required Object name}) => '不再等待 ${name}，继续播放';
 	@override String get waitingForParticipants => '正在等待其他人加载…';
 	@override String waitingForName({required Object name}) => '正在等待 ${name}…';
-	@override String get recentRooms => '最近的房间';
+	@override String get recentRooms => '我的房间';
 	@override String get renameRoom => '重命名房间';
 	@override String get removeRoom => '移除';
 	@override String get guestSwitchUnavailable => '无法切换 — 服务器不可用于同步';
 	@override String get guestSwitchFailed => '无法切换 — 在此服务器上未找到内容';
 	@override String get defaultDisplayName => '用户';
 	@override late final Translations$watchTogether$errors$zh errors = Translations$watchTogether$errors$zh.internal(_root);
-	@override String get introHeading => '相隔两地，一起入戏。';
+	@override String get introHeading => '隔着距离，\n也能一起入戏。';
 	@override String get recentRoomsDescription => '仅显示当前用户与中继的最近房间；重新进入空房间时，你可能成为房主。';
 	@override String get noRecentRooms => '创建或加入后，房间会显示在这里。';
 	@override String lastUsed({required Object date}) => '上次使用 ${date}';
@@ -1968,6 +1968,11 @@ class Translations$watchTogether$zh extends Translations$watchTogether$en {
 	@override String get useMatch => '使用此资源';
 	@override String get noMatchingMedia => '已连接服务器中没有找到可播放资源。';
 	@override String get matchSearchFailed => '部分服务器搜索失败，请重试或检查连接。';
+	@override String get joinByCode => '邀请码加入';
+	@override String get introLabel => 'WATCH TOGETHER';
+	@override String get recentLabel => '最近';
+	@override String get inviteOnlyDescription => '房间仅通过邀请加入。';
+	@override String get introDescription => '邀请朋友加入房间，同步播放与暂停。\n各自连接媒体服务器。';
 }
 
 // Path: downloads
@@ -3216,10 +3221,10 @@ class Translations$watchTogether$errors$zh extends Translations$watchTogether$er
 
 	// Translations
 	@override String get timedOut => '中继服务器未及时响应';
-	@override String get connectionLost => '会话准备就绪前连接已断开';
+	@override String get connectionLost => '房间准备就绪前连接已断开';
 	@override String get invalidRelayResponse => '中继服务器返回了意外的响应';
-	@override String get sessionEnded => '主持人已结束会话';
-	@override String get sessionUnavailable => '无法恢复此会话。请加入或创建房间以继续。';
+	@override String get sessionEnded => '主持人已结束房间';
+	@override String get sessionUnavailable => '无法恢复此房间。请加入或创建房间以继续。';
 }
 
 // Path: downloads.backgroundWarning
@@ -5139,21 +5144,21 @@ extension on TranslationsZh {
 			'music.discography.compilations' => '合集',
 			'watchTogether.title' => '一起看',
 			'watchTogether.description' => '与朋友和家人同步观看内容',
-			'watchTogether.createSession' => '创建会话',
+			'watchTogether.createSession' => '创建房间',
 			'watchTogether.optionalRoomName' => '房间名称（可选）',
 			'watchTogether.createRoomHostDescription' => '你将成为房主，可以控制播放和暂停。',
 			'watchTogether.creating' => '正在创建…',
-			'watchTogether.joinSession' => '加入会话',
+			'watchTogether.joinSession' => '加入房间',
 			'watchTogether.joining' => '正在加入…',
 			'watchTogether.controlMode' => '控制模式',
 			'watchTogether.controlModeQuestion' => '谁可以控制播放？',
 			'watchTogether.hostOnly' => '仅主持人',
 			'watchTogether.anyone' => '任何人',
-			'watchTogether.hostingSession' => '主持会话',
-			'watchTogether.inSession' => '在会话中',
-			'watchTogether.sessionCode' => '会话代码',
-			'watchTogether.openSessionControls' => '打开“一起看”会话控制',
-			'watchTogether.copySessionCode' => '复制会话代码',
+			'watchTogether.hostingSession' => '主持房间',
+			'watchTogether.inSession' => '在房间中',
+			'watchTogether.sessionCode' => '邀请码',
+			'watchTogether.openSessionControls' => '打开“一起看”房间控制',
+			'watchTogether.copySessionCode' => '复制邀请码',
 			'watchTogether.hostControlsPlayback' => '主持人控制播放',
 			'watchTogether.anyoneCanControl' => '任何人都可以控制播放',
 			'watchTogether.hostControls' => '主持人控制',
@@ -5164,33 +5169,33 @@ extension on TranslationsZh {
 			'watchTogether.youAreHost' => '你是主持人',
 			'watchTogether.makeHost' => '设为主持人',
 			'watchTogether.makeHostQuestion' => '移交主持人？',
-			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} 将控制播放并主导所有人的会话。',
+			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} 将控制播放并主导所有人的房间。',
 			'watchTogether.transfer' => '移交',
 			'watchTogether.hostChangedTo' => ({required Object name}) => '${name} 现在是主持人',
 			'watchTogether.youAreNowHost' => '你现在是主持人',
 			'watchTogether.hostTransferFailed' => ({required Object name}) => '无法将 ${name} 设为主持人',
 			'watchTogether.watchingWithOthers' => '与他人一起观看',
-			'watchTogether.endSession' => '结束会话',
-			'watchTogether.leaveSession' => '离开会话',
-			'watchTogether.endSessionQuestion' => '结束会话？',
-			'watchTogether.leaveSessionQuestion' => '离开会话？',
-			'watchTogether.endSessionConfirm' => '这将为所有参与者结束会话。',
-			'watchTogether.leaveSessionConfirm' => '你将被移出会话。',
-			'watchTogether.endSessionConfirmOverlay' => '这将为所有参与者结束观看会话。',
-			'watchTogether.leaveSessionConfirmOverlay' => '你将断开与观看会话的连接。',
+			'watchTogether.endSession' => '结束房间',
+			'watchTogether.leaveSession' => '离开房间',
+			'watchTogether.endSessionQuestion' => '结束房间？',
+			'watchTogether.leaveSessionQuestion' => '离开房间？',
+			'watchTogether.endSessionConfirm' => '这将为所有参与者结束房间。',
+			'watchTogether.leaveSessionConfirm' => '你将被移出房间。',
+			'watchTogether.endSessionConfirmOverlay' => '这将为所有参与者结束观看房间。',
+			'watchTogether.leaveSessionConfirmOverlay' => '你将断开与观看房间的连接。',
 			'watchTogether.end' => '结束',
 			'watchTogether.leave' => '离开',
 			'watchTogether.syncing' => '正在同步…',
-			'watchTogether.joinWatchSession' => '加入观看会话',
+			'watchTogether.joinWatchSession' => '加入观看房间',
 			'watchTogether.enterCodeHint' => '输入房主的房间码',
 			'watchTogether.pasteFromClipboard' => '从剪贴板粘贴',
-			'watchTogether.pleaseEnterCode' => '请输入会话代码',
+			'watchTogether.pleaseEnterCode' => '请输入邀请码',
 			'watchTogether.roomNotFound' => '未找到房间，请检查邀请码后重试。',
 			'watchTogether.roomFull' => '房间人数已满。',
-			'watchTogether.joinInstructions' => '输入主持人的会话代码以加入。',
-			'watchTogether.failedToCreate' => '创建会话失败',
-			'watchTogether.failedToJoin' => '加入会话失败',
-			'watchTogether.sessionCodeCopied' => '会话代码已复制到剪贴板',
+			'watchTogether.joinInstructions' => '输入房主的邀请码以加入房间。',
+			'watchTogether.failedToCreate' => '创建房间失败',
+			'watchTogether.failedToJoin' => '加入房间失败',
+			'watchTogether.sessionCodeCopied' => '邀请码已复制到剪贴板',
 			'watchTogether.relayUnreachable' => '无法访问中继服务器。网络运营商的屏蔽可能导致“一起看”不可用。',
 			'watchTogether.reconnectingToHost' => '正在重新连接到主持人…',
 			'watchTogether.currentPlayback' => '当前播放',
@@ -5208,18 +5213,18 @@ extension on TranslationsZh {
 			'watchTogether.resumingWithout' => ({required Object name}) => '不再等待 ${name}，继续播放',
 			'watchTogether.waitingForParticipants' => '正在等待其他人加载…',
 			'watchTogether.waitingForName' => ({required Object name}) => '正在等待 ${name}…',
-			'watchTogether.recentRooms' => '最近的房间',
+			'watchTogether.recentRooms' => '我的房间',
 			'watchTogether.renameRoom' => '重命名房间',
 			'watchTogether.removeRoom' => '移除',
 			'watchTogether.guestSwitchUnavailable' => '无法切换 — 服务器不可用于同步',
 			'watchTogether.guestSwitchFailed' => '无法切换 — 在此服务器上未找到内容',
 			'watchTogether.defaultDisplayName' => '用户',
 			'watchTogether.errors.timedOut' => '中继服务器未及时响应',
-			'watchTogether.errors.connectionLost' => '会话准备就绪前连接已断开',
+			'watchTogether.errors.connectionLost' => '房间准备就绪前连接已断开',
 			'watchTogether.errors.invalidRelayResponse' => '中继服务器返回了意外的响应',
-			'watchTogether.errors.sessionEnded' => '主持人已结束会话',
-			'watchTogether.errors.sessionUnavailable' => '无法恢复此会话。请加入或创建房间以继续。',
-			'watchTogether.introHeading' => '相隔两地，一起入戏。',
+			'watchTogether.errors.sessionEnded' => '主持人已结束房间',
+			'watchTogether.errors.sessionUnavailable' => '无法恢复此房间。请加入或创建房间以继续。',
+			'watchTogether.introHeading' => '隔着距离，\n也能一起入戏。',
 			'watchTogether.recentRoomsDescription' => '仅显示当前用户与中继的最近房间；重新进入空房间时，你可能成为房主。',
 			'watchTogether.noRecentRooms' => '创建或加入后，房间会显示在这里。',
 			'watchTogether.lastUsed' => ({required Object date}) => '上次使用 ${date}',
@@ -5245,6 +5250,11 @@ extension on TranslationsZh {
 			'watchTogether.useMatch' => '使用此资源',
 			'watchTogether.noMatchingMedia' => '已连接服务器中没有找到可播放资源。',
 			'watchTogether.matchSearchFailed' => '部分服务器搜索失败，请重试或检查连接。',
+			'watchTogether.joinByCode' => '邀请码加入',
+			'watchTogether.introLabel' => 'WATCH TOGETHER',
+			'watchTogether.recentLabel' => '最近',
+			'watchTogether.inviteOnlyDescription' => '房间仅通过邀请加入。',
+			'watchTogether.introDescription' => '邀请朋友加入房间，同步播放与暂停。\n各自连接媒体服务器。',
 			'downloads.title' => '下载',
 			'downloads.manage' => '管理',
 			'downloads.tvShows' => '电视剧',
@@ -5507,13 +5517,13 @@ extension on TranslationsZh {
 			'performanceOverlay.renderFps' => '渲染 FPS',
 			'performanceOverlay.displayFps' => '显示 FPS',
 			'performanceOverlay.avSync' => 'A/V 同步',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.dropped' => '丢帧',
 			'performanceOverlay.dvRpus' => 'DV RPU',
 			'performanceOverlay.dvRpuAverage' => 'DV RPU 平均',
 			'performanceOverlay.dvSampleAverage' => 'DV 采样平均',
 			'performanceOverlay.maxLuma' => '最大亮度',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.minLuma' => '最小亮度',
 			'performanceOverlay.maxCll' => 'MaxCLL',
 			'performanceOverlay.maxFall' => 'MaxFALL',

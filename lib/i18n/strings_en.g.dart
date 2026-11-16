@@ -4646,8 +4646,8 @@ class Translations$watchTogether$en {
 	/// en: 'Watch content in sync with friends and family'
 	String get description => 'Watch content in sync with friends and family';
 
-	/// en: 'Create Session'
-	String get createSession => 'Create Session';
+	/// en: 'Create Room'
+	String get createSession => 'Create Room';
 
 	/// en: 'Room name (optional)'
 	String get optionalRoomName => 'Room name (optional)';
@@ -4658,8 +4658,8 @@ class Translations$watchTogether$en {
 	/// en: 'Creating...'
 	String get creating => 'Creating...';
 
-	/// en: 'Join Session'
-	String get joinSession => 'Join Session';
+	/// en: 'Join Room'
+	String get joinSession => 'Join Room';
 
 	/// en: 'Joining...'
 	String get joining => 'Joining...';
@@ -4676,20 +4676,20 @@ class Translations$watchTogether$en {
 	/// en: 'Anyone'
 	String get anyone => 'Anyone';
 
-	/// en: 'Hosting Session'
-	String get hostingSession => 'Hosting Session';
+	/// en: 'Hosting Room'
+	String get hostingSession => 'Hosting Room';
 
-	/// en: 'In Session'
-	String get inSession => 'In Session';
+	/// en: 'In Room'
+	String get inSession => 'In Room';
 
-	/// en: 'Session Code'
-	String get sessionCode => 'Session Code';
+	/// en: 'Room Code'
+	String get sessionCode => 'Room Code';
 
-	/// en: 'Open Watch Together session controls'
-	String get openSessionControls => 'Open Watch Together session controls';
+	/// en: 'Open Watch Together room controls'
+	String get openSessionControls => 'Open Watch Together room controls';
 
-	/// en: 'Copy session code'
-	String get copySessionCode => 'Copy session code';
+	/// en: 'Copy room code'
+	String get copySessionCode => 'Copy room code';
 
 	/// en: 'Host controls playback'
 	String get hostControlsPlayback => 'Host controls playback';
@@ -4721,8 +4721,8 @@ class Translations$watchTogether$en {
 	/// en: 'Transfer host?'
 	String get makeHostQuestion => 'Transfer host?';
 
-	/// en: '${name} will control playback and drive the session for everyone.'
-	String makeHostConfirm({required Object name}) => '${name} will control playback and drive the session for everyone.';
+	/// en: '${name} will control playback and drive the room for everyone.'
+	String makeHostConfirm({required Object name}) => '${name} will control playback and drive the room for everyone.';
 
 	/// en: 'Transfer'
 	String get transfer => 'Transfer';
@@ -4739,29 +4739,29 @@ class Translations$watchTogether$en {
 	/// en: 'Watching with others'
 	String get watchingWithOthers => 'Watching with others';
 
-	/// en: 'End Session'
-	String get endSession => 'End Session';
+	/// en: 'End Room'
+	String get endSession => 'End Room';
 
-	/// en: 'Leave Session'
-	String get leaveSession => 'Leave Session';
+	/// en: 'Leave Room'
+	String get leaveSession => 'Leave Room';
 
-	/// en: 'End Session?'
-	String get endSessionQuestion => 'End Session?';
+	/// en: 'End Room?'
+	String get endSessionQuestion => 'End Room?';
 
-	/// en: 'Leave Session?'
-	String get leaveSessionQuestion => 'Leave Session?';
+	/// en: 'Leave Room?'
+	String get leaveSessionQuestion => 'Leave Room?';
 
-	/// en: 'This will end the session for all participants.'
-	String get endSessionConfirm => 'This will end the session for all participants.';
+	/// en: 'This will end the room for all participants.'
+	String get endSessionConfirm => 'This will end the room for all participants.';
 
-	/// en: 'You will be removed from the session.'
-	String get leaveSessionConfirm => 'You will be removed from the session.';
+	/// en: 'You will be removed from the room.'
+	String get leaveSessionConfirm => 'You will be removed from the room.';
 
-	/// en: 'This will end the watch session for all participants.'
-	String get endSessionConfirmOverlay => 'This will end the watch session for all participants.';
+	/// en: 'This will end the watch room for all participants.'
+	String get endSessionConfirmOverlay => 'This will end the watch room for all participants.';
 
-	/// en: 'You will be disconnected from the watch session.'
-	String get leaveSessionConfirmOverlay => 'You will be disconnected from the watch session.';
+	/// en: 'You will be disconnected from the watch room.'
+	String get leaveSessionConfirmOverlay => 'You will be disconnected from the watch room.';
 
 	/// en: 'End'
 	String get end => 'End';
@@ -4772,8 +4772,8 @@ class Translations$watchTogether$en {
 	/// en: 'Syncing...'
 	String get syncing => 'Syncing...';
 
-	/// en: 'Join Watch Session'
-	String get joinWatchSession => 'Join Watch Session';
+	/// en: 'Join Watch Room'
+	String get joinWatchSession => 'Join Watch Room';
 
 	/// en: 'Enter the host’s room code'
 	String get enterCodeHint => 'Enter the host’s room code';
@@ -4781,8 +4781,8 @@ class Translations$watchTogether$en {
 	/// en: 'Paste from clipboard'
 	String get pasteFromClipboard => 'Paste from clipboard';
 
-	/// en: 'Please enter a session code'
-	String get pleaseEnterCode => 'Please enter a session code';
+	/// en: 'Please enter a room code'
+	String get pleaseEnterCode => 'Please enter a room code';
 
 	/// en: 'Room not found. Check the code and try again.'
 	String get roomNotFound => 'Room not found. Check the code and try again.';
@@ -4790,17 +4790,17 @@ class Translations$watchTogether$en {
 	/// en: 'This room is full.'
 	String get roomFull => 'This room is full.';
 
-	/// en: 'Enter the host's session code to join.'
-	String get joinInstructions => 'Enter the host\'s session code to join.';
+	/// en: 'Enter the host's room code to join.'
+	String get joinInstructions => 'Enter the host\'s room code to join.';
 
-	/// en: 'Failed to create session'
-	String get failedToCreate => 'Failed to create session';
+	/// en: 'Failed to create room'
+	String get failedToCreate => 'Failed to create room';
 
-	/// en: 'Failed to join session'
-	String get failedToJoin => 'Failed to join session';
+	/// en: 'Failed to join room'
+	String get failedToJoin => 'Failed to join room';
 
-	/// en: 'Session code copied to clipboard'
-	String get sessionCodeCopied => 'Session code copied to clipboard';
+	/// en: 'Room code copied to clipboard'
+	String get sessionCodeCopied => 'Room code copied to clipboard';
 
 	/// en: 'Relay server unreachable. ISP blocking may prevent Watch Together.'
 	String get relayUnreachable => 'Relay server unreachable. ISP blocking may prevent Watch Together.';
@@ -4853,8 +4853,8 @@ class Translations$watchTogether$en {
 	/// en: 'Waiting for ${name}...'
 	String waitingForName({required Object name}) => 'Waiting for ${name}...';
 
-	/// en: 'Recent Rooms'
-	String get recentRooms => 'Recent Rooms';
+	/// en: 'My Rooms'
+	String get recentRooms => 'My Rooms';
 
 	/// en: 'Rename Room'
 	String get renameRoom => 'Rename Room';
@@ -4873,8 +4873,8 @@ class Translations$watchTogether$en {
 
 	late final Translations$watchTogether$errors$en errors = Translations$watchTogether$errors$en.internal(_root);
 
-	/// en: 'Apart, but watching together.'
-	String get introHeading => 'Apart, but watching together.';
+	/// en: 'Distance apart, immersed together.'
+	String get introHeading => 'Distance apart,\nimmersed together.';
 
 	/// en: 'Rooms saved for this profile and relay. Re-entering an empty room may make you its host.'
 	String get recentRoomsDescription => 'Rooms saved for this profile and relay. Re-entering an empty room may make you its host.';
@@ -4950,6 +4950,21 @@ class Translations$watchTogether$en {
 
 	/// en: 'Some servers could not be searched. Retry or check your connection.'
 	String get matchSearchFailed => 'Some servers could not be searched. Retry or check your connection.';
+
+	/// en: 'Join with Code'
+	String get joinByCode => 'Join with Code';
+
+	/// en: 'WATCH TOGETHER'
+	String get introLabel => 'WATCH TOGETHER';
+
+	/// en: 'Recent'
+	String get recentLabel => 'Recent';
+
+	/// en: 'Rooms are joined by invitation only.'
+	String get inviteOnlyDescription => 'Rooms are joined by invitation only.';
+
+	/// en: 'Invite friends to a room and sync playback and pauses. Everyone connects to their own media server.'
+	String get introDescription => 'Invite friends to a room and sync playback and pauses.\nEveryone connects to their own media server.';
 }
 
 // Path: downloads
@@ -7877,17 +7892,17 @@ class Translations$watchTogether$errors$en {
 	/// en: 'The relay did not respond in time'
 	String get timedOut => 'The relay did not respond in time';
 
-	/// en: 'The connection closed before the session was ready'
-	String get connectionLost => 'The connection closed before the session was ready';
+	/// en: 'The connection closed before the room was ready'
+	String get connectionLost => 'The connection closed before the room was ready';
 
 	/// en: 'The relay sent an unexpected response'
 	String get invalidRelayResponse => 'The relay sent an unexpected response';
 
-	/// en: 'The host ended the session'
-	String get sessionEnded => 'The host ended the session';
+	/// en: 'The host ended the room'
+	String get sessionEnded => 'The host ended the room';
 
-	/// en: 'Unable to resume this session. Join or create a room to continue.'
-	String get sessionUnavailable => 'Unable to resume this session. Join or create a room to continue.';
+	/// en: 'Unable to resume this room. Join or create a room to continue.'
+	String get sessionUnavailable => 'Unable to resume this room. Join or create a room to continue.';
 }
 
 // Path: downloads.backgroundWarning
@@ -10047,21 +10062,21 @@ extension on Translations {
 			'music.discography.compilations' => 'Compilations',
 			'watchTogether.title' => 'Watch Together',
 			'watchTogether.description' => 'Watch content in sync with friends and family',
-			'watchTogether.createSession' => 'Create Session',
+			'watchTogether.createSession' => 'Create Room',
 			'watchTogether.optionalRoomName' => 'Room name (optional)',
 			'watchTogether.createRoomHostDescription' => 'You will be the host and can control playback and pause.',
 			'watchTogether.creating' => 'Creating...',
-			'watchTogether.joinSession' => 'Join Session',
+			'watchTogether.joinSession' => 'Join Room',
 			'watchTogether.joining' => 'Joining...',
 			'watchTogether.controlMode' => 'Control Mode',
 			'watchTogether.controlModeQuestion' => 'Who can control playback?',
 			'watchTogether.hostOnly' => 'Host Only',
 			'watchTogether.anyone' => 'Anyone',
-			'watchTogether.hostingSession' => 'Hosting Session',
-			'watchTogether.inSession' => 'In Session',
-			'watchTogether.sessionCode' => 'Session Code',
-			'watchTogether.openSessionControls' => 'Open Watch Together session controls',
-			'watchTogether.copySessionCode' => 'Copy session code',
+			'watchTogether.hostingSession' => 'Hosting Room',
+			'watchTogether.inSession' => 'In Room',
+			'watchTogether.sessionCode' => 'Room Code',
+			'watchTogether.openSessionControls' => 'Open Watch Together room controls',
+			'watchTogether.copySessionCode' => 'Copy room code',
 			'watchTogether.hostControlsPlayback' => 'Host controls playback',
 			'watchTogether.anyoneCanControl' => 'Anyone can control playback',
 			'watchTogether.hostControls' => 'Host controls',
@@ -10072,33 +10087,33 @@ extension on Translations {
 			'watchTogether.youAreHost' => 'You are the host',
 			'watchTogether.makeHost' => 'Make host',
 			'watchTogether.makeHostQuestion' => 'Transfer host?',
-			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} will control playback and drive the session for everyone.',
+			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} will control playback and drive the room for everyone.',
 			'watchTogether.transfer' => 'Transfer',
 			'watchTogether.hostChangedTo' => ({required Object name}) => '${name} is now the host',
 			'watchTogether.youAreNowHost' => 'You are now the host',
 			'watchTogether.hostTransferFailed' => ({required Object name}) => 'Couldn\'t make ${name} the host',
 			'watchTogether.watchingWithOthers' => 'Watching with others',
-			'watchTogether.endSession' => 'End Session',
-			'watchTogether.leaveSession' => 'Leave Session',
-			'watchTogether.endSessionQuestion' => 'End Session?',
-			'watchTogether.leaveSessionQuestion' => 'Leave Session?',
-			'watchTogether.endSessionConfirm' => 'This will end the session for all participants.',
-			'watchTogether.leaveSessionConfirm' => 'You will be removed from the session.',
-			'watchTogether.endSessionConfirmOverlay' => 'This will end the watch session for all participants.',
-			'watchTogether.leaveSessionConfirmOverlay' => 'You will be disconnected from the watch session.',
+			'watchTogether.endSession' => 'End Room',
+			'watchTogether.leaveSession' => 'Leave Room',
+			'watchTogether.endSessionQuestion' => 'End Room?',
+			'watchTogether.leaveSessionQuestion' => 'Leave Room?',
+			'watchTogether.endSessionConfirm' => 'This will end the room for all participants.',
+			'watchTogether.leaveSessionConfirm' => 'You will be removed from the room.',
+			'watchTogether.endSessionConfirmOverlay' => 'This will end the watch room for all participants.',
+			'watchTogether.leaveSessionConfirmOverlay' => 'You will be disconnected from the watch room.',
 			'watchTogether.end' => 'End',
 			'watchTogether.leave' => 'Leave',
 			'watchTogether.syncing' => 'Syncing...',
-			'watchTogether.joinWatchSession' => 'Join Watch Session',
+			'watchTogether.joinWatchSession' => 'Join Watch Room',
 			'watchTogether.enterCodeHint' => 'Enter the host’s room code',
 			'watchTogether.pasteFromClipboard' => 'Paste from clipboard',
-			'watchTogether.pleaseEnterCode' => 'Please enter a session code',
+			'watchTogether.pleaseEnterCode' => 'Please enter a room code',
 			'watchTogether.roomNotFound' => 'Room not found. Check the code and try again.',
 			'watchTogether.roomFull' => 'This room is full.',
-			'watchTogether.joinInstructions' => 'Enter the host\'s session code to join.',
-			'watchTogether.failedToCreate' => 'Failed to create session',
-			'watchTogether.failedToJoin' => 'Failed to join session',
-			'watchTogether.sessionCodeCopied' => 'Session code copied to clipboard',
+			'watchTogether.joinInstructions' => 'Enter the host\'s room code to join.',
+			'watchTogether.failedToCreate' => 'Failed to create room',
+			'watchTogether.failedToJoin' => 'Failed to join room',
+			'watchTogether.sessionCodeCopied' => 'Room code copied to clipboard',
 			'watchTogether.relayUnreachable' => 'Relay server unreachable. ISP blocking may prevent Watch Together.',
 			'watchTogether.reconnectingToHost' => 'Reconnecting to host...',
 			'watchTogether.currentPlayback' => 'Current Playback',
@@ -10116,18 +10131,18 @@ extension on Translations {
 			'watchTogether.resumingWithout' => ({required Object name}) => 'Resuming without ${name}',
 			'watchTogether.waitingForParticipants' => 'Waiting for others to load...',
 			'watchTogether.waitingForName' => ({required Object name}) => 'Waiting for ${name}...',
-			'watchTogether.recentRooms' => 'Recent Rooms',
+			'watchTogether.recentRooms' => 'My Rooms',
 			'watchTogether.renameRoom' => 'Rename Room',
 			'watchTogether.removeRoom' => 'Remove',
 			'watchTogether.guestSwitchUnavailable' => 'Couldn\'t switch — server unavailable for sync',
 			'watchTogether.guestSwitchFailed' => 'Couldn\'t switch — content not found on this server',
 			'watchTogether.defaultDisplayName' => 'User',
 			'watchTogether.errors.timedOut' => 'The relay did not respond in time',
-			'watchTogether.errors.connectionLost' => 'The connection closed before the session was ready',
+			'watchTogether.errors.connectionLost' => 'The connection closed before the room was ready',
 			'watchTogether.errors.invalidRelayResponse' => 'The relay sent an unexpected response',
-			'watchTogether.errors.sessionEnded' => 'The host ended the session',
-			'watchTogether.errors.sessionUnavailable' => 'Unable to resume this session. Join or create a room to continue.',
-			'watchTogether.introHeading' => 'Apart, but watching together.',
+			'watchTogether.errors.sessionEnded' => 'The host ended the room',
+			'watchTogether.errors.sessionUnavailable' => 'Unable to resume this room. Join or create a room to continue.',
+			'watchTogether.introHeading' => 'Distance apart,\nimmersed together.',
 			'watchTogether.recentRoomsDescription' => 'Rooms saved for this profile and relay. Re-entering an empty room may make you its host.',
 			'watchTogether.noRecentRooms' => 'Your rooms appear here after you create or join one.',
 			'watchTogether.lastUsed' => ({required Object date}) => 'Last used ${date}',
@@ -10153,6 +10168,11 @@ extension on Translations {
 			'watchTogether.useMatch' => 'Use this resource',
 			'watchTogether.noMatchingMedia' => 'No playable results on your connected servers.',
 			'watchTogether.matchSearchFailed' => 'Some servers could not be searched. Retry or check your connection.',
+			'watchTogether.joinByCode' => 'Join with Code',
+			'watchTogether.introLabel' => 'WATCH TOGETHER',
+			'watchTogether.recentLabel' => 'Recent',
+			'watchTogether.inviteOnlyDescription' => 'Rooms are joined by invitation only.',
+			'watchTogether.introDescription' => 'Invite friends to a room and sync playback and pauses.\nEveryone connects to their own media server.',
 			'downloads.title' => 'Downloads',
 			'downloads.manage' => 'Manage',
 			'downloads.tvShows' => 'TV Shows',
@@ -10415,13 +10435,13 @@ extension on Translations {
 			'performanceOverlay.renderFps' => 'Render FPS',
 			'performanceOverlay.displayFps' => 'Display FPS',
 			'performanceOverlay.avSync' => 'A/V Sync',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.dropped' => 'Dropped',
 			'performanceOverlay.dvRpus' => 'DV RPUs',
 			'performanceOverlay.dvRpuAverage' => 'DV RPU Avg',
 			'performanceOverlay.dvSampleAverage' => 'DV Sample Avg',
 			'performanceOverlay.maxLuma' => 'Max Luma',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.minLuma' => 'Min Luma',
 			'performanceOverlay.maxCll' => 'MaxCLL',
 			'performanceOverlay.maxFall' => 'MaxFALL',

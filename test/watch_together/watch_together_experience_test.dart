@@ -210,7 +210,7 @@ void main() {
     await tester.tap(find.text(t.common.cancel));
     await tester.pumpAndSettle();
     expect(together.isInSession, isFalse);
-    await tester.tap(find.text(t.watchTogether.joinSession));
+    await tester.tap(find.text(t.watchTogether.joinByCode));
     await tester.pumpAndSettle();
     expect(find.text(t.watchTogether.joinInstructions), findsOneWidget);
     expect(tester.takeException(), isNull);

@@ -229,47 +229,62 @@ class _NotInSessionViewState extends State<_NotInSessionView> with MountedSetSta
     final endedMessage = widget.watchTogether.sessionEndedMessage;
     final intro = _RoomSurface(
       highlighted: true,
+      introductory: true,
       child: Column(
         crossAxisAlignment: .stretch,
         children: [
           Align(
             alignment: Alignment.centerLeft,
-            child: AppIcon(Symbols.groups_rounded, size: 28, color: theme.colorScheme.onSurfaceVariant),
+            child: AppIcon(Symbols.group, size: 31, fill: 0, color: theme.colorScheme.onSurfaceVariant),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
+          Text(
+            t.watchTogether.introLabel,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontSize: 9,
+              letterSpacing: 2,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
           Text(
             t.watchTogether.introHeading,
             style: theme.textTheme.titleLarge?.copyWith(
-              fontSize: 25,
+              fontSize: PlatformDetector.isTV() ? 30 : 25,
+              letterSpacing: -0.7,
               fontWeight: FontWeight.w500,
               fontVariations: const [FontVariation('wght', 550)],
               height: 1.5,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 11),
           Text(
-            t.watchTogether.description,
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 20),
-          FocusableButton(
-            autofocus: _recentRooms.isEmpty,
-            onPressed: _isBusy ? null : _createSession,
-            useBackgroundFocus: true,
-            child: FilledButton.icon(
-              onPressed: _isBusy ? null : _createSession,
-              icon: _isCreating ? const LoadingIndicatorBox(size: 20) : const AppIcon(Symbols.add_rounded),
-              label: Text(_isCreating ? t.watchTogether.creating : t.watchTogether.createSession),
+            t.watchTogether.introDescription,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 11,
+              height: 1.8,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 12),
-          FocusableButton(
-            onPressed: _isBusy ? null : _joinSession,
-            child: OutlinedButton.icon(
-              onPressed: _isBusy ? null : _joinSession,
-              icon: _isJoining ? const LoadingIndicatorBox(size: 20) : const AppIcon(Symbols.group_add_rounded),
-              label: Text(_isJoining ? t.watchTogether.joining : t.watchTogether.joinSession),
-            ),
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              Flexible(
+                child: _RoomEntryButton(
+                  autofocus: _recentRooms.isEmpty,
+                  primary: true,
+                  onPressed: _isBusy ? null : _createSession,
+                  label: _isCreating ? t.watchTogether.creating : t.watchTogether.createSession,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: _RoomEntryButton(
+                  onPressed: _isBusy ? null : _joinSession,
+                  label: _isJoining ? t.watchTogether.joining : t.watchTogether.joinByCode,
+                ),
+              ),
+            ],
           ),
           if (_healthOk == false) ...[
             const SizedBox(height: 20),
@@ -286,13 +301,21 @@ class _NotInSessionViewState extends State<_NotInSessionView> with MountedSetSta
     final recent = Column(
       crossAxisAlignment: .stretch,
       children: [
-        Text(t.watchTogether.recentRooms, style: theme.textTheme.titleLarge),
-        const SizedBox(height: 8),
-        Text(
-          t.watchTogether.recentRoomsDescription,
-          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                t.watchTogether.recentRooms,
+                style: theme.textTheme.titleSmall?.copyWith(fontSize: 13, fontWeight: FontWeight.w700),
+              ),
+            ),
+            Text(
+              t.watchTogether.recentLabel,
+              style: theme.textTheme.bodySmall?.copyWith(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         if (_recentRooms.isEmpty)
           _RoomSurface(
             child: Padding(
@@ -309,6 +332,11 @@ class _NotInSessionViewState extends State<_NotInSessionView> with MountedSetSta
             onRename: () => _renameRoom(room),
             onRemove: () => _removeRoom(room),
           ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          t.watchTogether.inviteOnlyDescription,
+          style: theme.textTheme.bodySmall?.copyWith(fontSize: 11, color: theme.colorScheme.onSurfaceVariant),
         ),
       ],
     );
@@ -1073,6 +1101,39 @@ class _JoinCurrentPlaybackCardState extends State<_JoinCurrentPlaybackCard> {
   }
 }
 
+class _RoomEntryButton extends StatelessWidget {
+  const _RoomEntryButton({required this.label, this.onPressed, this.autofocus = false, this.primary = false});
+
+  final String label;
+  final VoidCallback? onPressed;
+  final bool autofocus;
+  final bool primary;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return FocusableButton(
+      autofocus: autofocus,
+      onPressed: onPressed,
+      dimWhenUnfocused: false,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: primary ? const Color(0xfff4f5f6) : colors.onSurface.withValues(alpha: 0.086),
+          foregroundColor: primary ? const Color(0xff202126) : colors.onSurface,
+          minimumSize: const Size(0, 40),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: const StadiumBorder(),
+          side: primary ? BorderSide.none : BorderSide(color: colors.onSurface.withValues(alpha: 0.035)),
+          textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 12, height: 1.2),
+        ),
+        child: Text(label, textAlign: TextAlign.center),
+      ),
+    );
+  }
+}
+
 class _AdaptiveRoomColumns extends StatelessWidget {
   const _AdaptiveRoomColumns({required this.leading, required this.trailing});
 
@@ -1102,9 +1163,10 @@ class _AdaptiveRoomColumns extends StatelessWidget {
 }
 
 class _RoomSurface extends StatelessWidget {
-  const _RoomSurface({required this.child, this.highlighted = false});
+  const _RoomSurface({required this.child, this.highlighted = false, this.introductory = false});
   final Widget child;
   final bool highlighted;
+  final bool introductory;
 
   @override
   Widget build(BuildContext context) {
@@ -1113,11 +1175,14 @@ class _RoomSurface extends StatelessWidget {
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(introductory ? 20 : 16),
         side: BorderSide(color: colors.outline.withValues(alpha: 0.22)),
       ),
       color: Color.alphaBlend(colors.onSurface.withValues(alpha: highlighted ? 0.045 : 0.025), colors.surface),
-      child: Padding(padding: const EdgeInsets.all(16), child: child),
+      child: Padding(
+        padding: introductory ? const EdgeInsets.symmetric(horizontal: 20, vertical: 23) : const EdgeInsets.all(16),
+        child: child,
+      ),
     );
   }
 }

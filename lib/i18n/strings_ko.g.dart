@@ -1690,19 +1690,19 @@ class _Translations$watchTogether$ko extends Translations$watchTogether$en {
 	// Translations
 	@override String get title => '함께 보기';
 	@override String get description => '친구 및 가족과 콘텐츠를 동시에 시청하세요';
-	@override String get createSession => '세션 생성';
+	@override String get createSession => '방 생성';
 	@override String get creating => '생성 중...';
-	@override String get joinSession => '세션 참여';
+	@override String get joinSession => '방 참여';
 	@override String get joining => '참가 중...';
 	@override String get controlMode => '제어 모드';
 	@override String get controlModeQuestion => '누가 재생을 제어할 수 있나요?';
 	@override String get hostOnly => '호스트만';
 	@override String get anyone => '누구나';
-	@override String get hostingSession => '세션 호스팅 중';
-	@override String get inSession => '세션 중';
-	@override String get sessionCode => '세션 코드';
-	@override String get openSessionControls => '함께 보기 세션 제어 열기';
-	@override String get copySessionCode => '세션 코드 복사';
+	@override String get hostingSession => '방 호스팅 중';
+	@override String get inSession => '방 중';
+	@override String get sessionCode => '방 코드';
+	@override String get openSessionControls => '함께 보기 방 제어 열기';
+	@override String get copySessionCode => '방 코드 복사';
 	@override String get hostControlsPlayback => '호스트 재생 제어';
 	@override String get anyoneCanControl => '누구나 재생 제어 가능';
 	@override String get hostControls => '호스트 제어';
@@ -1713,31 +1713,31 @@ class _Translations$watchTogether$ko extends Translations$watchTogether$en {
 	@override String get youAreHost => '호스트입니다';
 	@override String get makeHost => '호스트로 지정';
 	@override String get makeHostQuestion => '호스트를 이전하시겠습니까?';
-	@override String makeHostConfirm({required Object name}) => '${name}님이 재생을 제어하고 모든 참가자의 세션을 이끕니다.';
+	@override String makeHostConfirm({required Object name}) => '${name}님이 재생을 제어하고 모든 참가자의 방을 이끕니다.';
 	@override String get transfer => '이전';
 	@override String hostChangedTo({required Object name}) => '${name}님이 호스트가 되었습니다';
 	@override String get youAreNowHost => '이제 호스트입니다';
 	@override String hostTransferFailed({required Object name}) => '${name}님을 호스트로 지정할 수 없습니다';
 	@override String get watchingWithOthers => '다른 사람과 함께 시청 중';
-	@override String get endSession => '세션 종료';
-	@override String get leaveSession => '세션 나가기';
-	@override String get endSessionQuestion => '세션을 종료하시겠습니까?';
-	@override String get leaveSessionQuestion => '세션에서 나가시겠습니까?';
-	@override String get endSessionConfirm => '모든 참가자의 세션이 종료됩니다.';
-	@override String get leaveSessionConfirm => '세션에서 나가게 됩니다.';
-	@override String get endSessionConfirmOverlay => '모든 참가자의 함께 보기 세션이 종료됩니다.';
-	@override String get leaveSessionConfirmOverlay => '함께 보기 세션의 연결이 끊어집니다.';
+	@override String get endSession => '방 종료';
+	@override String get leaveSession => '방 나가기';
+	@override String get endSessionQuestion => '방을 종료하시겠습니까?';
+	@override String get leaveSessionQuestion => '방에서 나가시겠습니까?';
+	@override String get endSessionConfirm => '모든 참가자의 방이 종료됩니다.';
+	@override String get leaveSessionConfirm => '방에서 나가게 됩니다.';
+	@override String get endSessionConfirmOverlay => '모든 참가자의 함께 보기 방이 종료됩니다.';
+	@override String get leaveSessionConfirmOverlay => '함께 보기 방의 연결이 끊어집니다.';
 	@override String get end => '종료';
 	@override String get leave => '나가기';
 	@override String get syncing => '동기화 중...';
-	@override String get joinWatchSession => '시청 세션에 참여';
+	@override String get joinWatchSession => '시청 방에 참여';
 	@override String get enterCodeHint => '5자리 코드 입력';
 	@override String get pasteFromClipboard => '클립보드에서 붙여넣기';
-	@override String get pleaseEnterCode => '세션 코드를 입력하세요';
-	@override String get joinInstructions => '참여하려면 호스트의 세션 코드를 입력하세요.';
-	@override String get failedToCreate => '세션 생성 실패';
-	@override String get failedToJoin => '세션 참여 실패';
-	@override String get sessionCodeCopied => '세션 코드가 클립보드에 복사되었습니다';
+	@override String get pleaseEnterCode => '방 코드를 입력하세요';
+	@override String get joinInstructions => '참여하려면 호스트의 방 코드를 입력하세요.';
+	@override String get failedToCreate => '방 생성 실패';
+	@override String get failedToJoin => '방 참여 실패';
+	@override String get sessionCodeCopied => '방 코드가 클립보드에 복사되었습니다';
 	@override String get relayUnreachable => '릴레이 서버에 연결할 수 없습니다. ISP 차단으로 함께 보기를 사용하지 못할 수 있습니다.';
 	@override String get reconnectingToHost => '호스트에 재연결 중...';
 	@override String get currentPlayback => '현재 재생';
@@ -1755,13 +1755,15 @@ class _Translations$watchTogether$ko extends Translations$watchTogether$en {
 	@override String resumingWithout({required Object name}) => '${name}님 없이 재생을 재개합니다';
 	@override String get waitingForParticipants => '다른 참가자의 로딩을 기다리는 중...';
 	@override String waitingForName({required Object name}) => '${name}님을 기다리는 중...';
-	@override String get recentRooms => '최근 참여한 방';
+	@override String get recentRooms => '내 방';
 	@override String get renameRoom => '방 이름 변경';
 	@override String get removeRoom => '제거';
 	@override String get guestSwitchUnavailable => '전환할 수 없음 — 동기화 서버를 사용할 수 없습니다';
 	@override String get guestSwitchFailed => '전환할 수 없음 — 이 서버에서 콘텐츠를 찾을 수 없습니다';
 	@override String get defaultDisplayName => '사용자';
 	@override late final _Translations$watchTogether$errors$ko errors = _Translations$watchTogether$errors$ko._(_root);
+	@override String get recentLabel => '최근';
+	@override String get joinByCode => '초대 코드로 참여';
 }
 
 // Path: downloads
@@ -2815,10 +2817,10 @@ class _Translations$watchTogether$errors$ko extends Translations$watchTogether$e
 
 	// Translations
 	@override String get timedOut => '릴레이 서버가 제시간에 응답하지 않았습니다';
-	@override String get connectionLost => '세션이 준비되기 전에 연결이 종료되었습니다';
+	@override String get connectionLost => '방이 준비되기 전에 연결이 종료되었습니다';
 	@override String get invalidRelayResponse => '릴레이 서버가 예기치 않은 응답을 보냈습니다';
-	@override String get sessionEnded => '호스트가 세션을 종료했습니다';
-	@override String get sessionUnavailable => '이 세션을 재개할 수 없습니다. 방에 참여하거나 만들어 계속하세요.';
+	@override String get sessionEnded => '호스트가 방을 종료했습니다';
+	@override String get sessionUnavailable => '이 방을 재개할 수 없습니다. 방에 참여하거나 만들어 계속하세요.';
 }
 
 // Path: downloads.backgroundWarning
@@ -4521,19 +4523,19 @@ extension on TranslationsKo {
 			'music.discography.compilations' => '컴필레이션',
 			'watchTogether.title' => '함께 보기',
 			'watchTogether.description' => '친구 및 가족과 콘텐츠를 동시에 시청하세요',
-			'watchTogether.createSession' => '세션 생성',
+			'watchTogether.createSession' => '방 생성',
 			'watchTogether.creating' => '생성 중...',
-			'watchTogether.joinSession' => '세션 참여',
+			'watchTogether.joinSession' => '방 참여',
 			'watchTogether.joining' => '참가 중...',
 			'watchTogether.controlMode' => '제어 모드',
 			'watchTogether.controlModeQuestion' => '누가 재생을 제어할 수 있나요?',
 			'watchTogether.hostOnly' => '호스트만',
 			'watchTogether.anyone' => '누구나',
-			'watchTogether.hostingSession' => '세션 호스팅 중',
-			'watchTogether.inSession' => '세션 중',
-			'watchTogether.sessionCode' => '세션 코드',
-			'watchTogether.openSessionControls' => '함께 보기 세션 제어 열기',
-			'watchTogether.copySessionCode' => '세션 코드 복사',
+			'watchTogether.hostingSession' => '방 호스팅 중',
+			'watchTogether.inSession' => '방 중',
+			'watchTogether.sessionCode' => '방 코드',
+			'watchTogether.openSessionControls' => '함께 보기 방 제어 열기',
+			'watchTogether.copySessionCode' => '방 코드 복사',
 			'watchTogether.hostControlsPlayback' => '호스트 재생 제어',
 			'watchTogether.anyoneCanControl' => '누구나 재생 제어 가능',
 			'watchTogether.hostControls' => '호스트 제어',
@@ -4544,31 +4546,31 @@ extension on TranslationsKo {
 			'watchTogether.youAreHost' => '호스트입니다',
 			'watchTogether.makeHost' => '호스트로 지정',
 			'watchTogether.makeHostQuestion' => '호스트를 이전하시겠습니까?',
-			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name}님이 재생을 제어하고 모든 참가자의 세션을 이끕니다.',
+			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name}님이 재생을 제어하고 모든 참가자의 방을 이끕니다.',
 			'watchTogether.transfer' => '이전',
 			'watchTogether.hostChangedTo' => ({required Object name}) => '${name}님이 호스트가 되었습니다',
 			'watchTogether.youAreNowHost' => '이제 호스트입니다',
 			'watchTogether.hostTransferFailed' => ({required Object name}) => '${name}님을 호스트로 지정할 수 없습니다',
 			'watchTogether.watchingWithOthers' => '다른 사람과 함께 시청 중',
-			'watchTogether.endSession' => '세션 종료',
-			'watchTogether.leaveSession' => '세션 나가기',
-			'watchTogether.endSessionQuestion' => '세션을 종료하시겠습니까?',
-			'watchTogether.leaveSessionQuestion' => '세션에서 나가시겠습니까?',
-			'watchTogether.endSessionConfirm' => '모든 참가자의 세션이 종료됩니다.',
-			'watchTogether.leaveSessionConfirm' => '세션에서 나가게 됩니다.',
-			'watchTogether.endSessionConfirmOverlay' => '모든 참가자의 함께 보기 세션이 종료됩니다.',
-			'watchTogether.leaveSessionConfirmOverlay' => '함께 보기 세션의 연결이 끊어집니다.',
+			'watchTogether.endSession' => '방 종료',
+			'watchTogether.leaveSession' => '방 나가기',
+			'watchTogether.endSessionQuestion' => '방을 종료하시겠습니까?',
+			'watchTogether.leaveSessionQuestion' => '방에서 나가시겠습니까?',
+			'watchTogether.endSessionConfirm' => '모든 참가자의 방이 종료됩니다.',
+			'watchTogether.leaveSessionConfirm' => '방에서 나가게 됩니다.',
+			'watchTogether.endSessionConfirmOverlay' => '모든 참가자의 함께 보기 방이 종료됩니다.',
+			'watchTogether.leaveSessionConfirmOverlay' => '함께 보기 방의 연결이 끊어집니다.',
 			'watchTogether.end' => '종료',
 			'watchTogether.leave' => '나가기',
 			'watchTogether.syncing' => '동기화 중...',
-			'watchTogether.joinWatchSession' => '시청 세션에 참여',
+			'watchTogether.joinWatchSession' => '시청 방에 참여',
 			'watchTogether.enterCodeHint' => '5자리 코드 입력',
 			'watchTogether.pasteFromClipboard' => '클립보드에서 붙여넣기',
-			'watchTogether.pleaseEnterCode' => '세션 코드를 입력하세요',
-			'watchTogether.joinInstructions' => '참여하려면 호스트의 세션 코드를 입력하세요.',
-			'watchTogether.failedToCreate' => '세션 생성 실패',
-			'watchTogether.failedToJoin' => '세션 참여 실패',
-			'watchTogether.sessionCodeCopied' => '세션 코드가 클립보드에 복사되었습니다',
+			'watchTogether.pleaseEnterCode' => '방 코드를 입력하세요',
+			'watchTogether.joinInstructions' => '참여하려면 호스트의 방 코드를 입력하세요.',
+			'watchTogether.failedToCreate' => '방 생성 실패',
+			'watchTogether.failedToJoin' => '방 참여 실패',
+			'watchTogether.sessionCodeCopied' => '방 코드가 클립보드에 복사되었습니다',
 			'watchTogether.relayUnreachable' => '릴레이 서버에 연결할 수 없습니다. ISP 차단으로 함께 보기를 사용하지 못할 수 있습니다.',
 			'watchTogether.reconnectingToHost' => '호스트에 재연결 중...',
 			'watchTogether.currentPlayback' => '현재 재생',
@@ -4588,17 +4590,19 @@ extension on TranslationsKo {
 			_ => null,
 		} ?? switch (path) {
 			'watchTogether.waitingForName' => ({required Object name}) => '${name}님을 기다리는 중...',
-			'watchTogether.recentRooms' => '최근 참여한 방',
+			'watchTogether.recentRooms' => '내 방',
 			'watchTogether.renameRoom' => '방 이름 변경',
 			'watchTogether.removeRoom' => '제거',
 			'watchTogether.guestSwitchUnavailable' => '전환할 수 없음 — 동기화 서버를 사용할 수 없습니다',
 			'watchTogether.guestSwitchFailed' => '전환할 수 없음 — 이 서버에서 콘텐츠를 찾을 수 없습니다',
 			'watchTogether.defaultDisplayName' => '사용자',
 			'watchTogether.errors.timedOut' => '릴레이 서버가 제시간에 응답하지 않았습니다',
-			'watchTogether.errors.connectionLost' => '세션이 준비되기 전에 연결이 종료되었습니다',
+			'watchTogether.errors.connectionLost' => '방이 준비되기 전에 연결이 종료되었습니다',
 			'watchTogether.errors.invalidRelayResponse' => '릴레이 서버가 예기치 않은 응답을 보냈습니다',
-			'watchTogether.errors.sessionEnded' => '호스트가 세션을 종료했습니다',
-			'watchTogether.errors.sessionUnavailable' => '이 세션을 재개할 수 없습니다. 방에 참여하거나 만들어 계속하세요.',
+			'watchTogether.errors.sessionEnded' => '호스트가 방을 종료했습니다',
+			'watchTogether.errors.sessionUnavailable' => '이 방을 재개할 수 없습니다. 방에 참여하거나 만들어 계속하세요.',
+			'watchTogether.recentLabel' => '최근',
+			'watchTogether.joinByCode' => '초대 코드로 참여',
 			'downloads.title' => '다운로드',
 			'downloads.manage' => '관리',
 			'downloads.tvShows' => 'TV 프로그램',
@@ -5097,10 +5101,10 @@ extension on TranslationsKo {
 			'addServer.addConnectionTitleScoped' => ({required Object name}) => '${name}에 추가',
 			'addServer.signInWithPlexCard' => 'Plex로 로그인',
 			'addServer.signInWithPlexCardSubtitle' => '이 기기를 승인합니다. 공유 서버가 추가됩니다.',
-			'addServer.signInWithPlexCardSubtitleScoped' => 'Plex 계정을 승인합니다. Home 사용자는 프로필이 됩니다.',
-			'addServer.connectToMediaBrowserCard' => ({required Object product}) => '${product}에 연결',
 			_ => null,
 		} ?? switch (path) {
+			'addServer.signInWithPlexCardSubtitleScoped' => 'Plex 계정을 승인합니다. Home 사용자는 프로필이 됩니다.',
+			'addServer.connectToMediaBrowserCard' => ({required Object product}) => '${product}에 연결',
 			'addServer.connectToMediaBrowserCardSubtitle' => '서버 URL, 사용자 이름, 비밀번호를 입력하세요.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => '${product} 서버에 로그인하세요. ${name}에 연결됩니다.',
 			'addServer.borrowFromAnotherProfile' => '다른 프로필에서 빌리기',

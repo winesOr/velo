@@ -1717,19 +1717,19 @@ class _Translations$watchTogether$pl extends Translations$watchTogether$en {
 	// Translations
 	@override String get title => 'Oglądaj razem';
 	@override String get description => 'Oglądaj treści wspólnie z rodziną i znajomymi dzięki synchronizacji odtwarzania';
-	@override String get createSession => 'Utwórz sesję';
+	@override String get createSession => 'Utwórz pokój';
 	@override String get creating => 'Tworzenie...';
-	@override String get joinSession => 'Dołącz do sesji';
+	@override String get joinSession => 'Dołącz do pokoju';
 	@override String get joining => 'Dołączanie...';
 	@override String get controlMode => 'Tryb kontroli';
 	@override String get controlModeQuestion => 'Kto może kontrolować odtwarzanie?';
 	@override String get hostOnly => 'Tylko gospodarz';
 	@override String get anyone => 'Każdy';
-	@override String get hostingSession => 'Prowadzenie sesji';
-	@override String get inSession => 'W sesji';
-	@override String get sessionCode => 'Kod sesji';
-	@override String get openSessionControls => 'Otwórz sterowanie sesją „Oglądaj razem”';
-	@override String get copySessionCode => 'Skopiuj kod sesji';
+	@override String get hostingSession => 'Prowadzenie pokoju';
+	@override String get inSession => 'W pokoju';
+	@override String get sessionCode => 'Kod pokoju';
+	@override String get openSessionControls => 'Otwórz sterowanie pokojem „Oglądaj razem”';
+	@override String get copySessionCode => 'Skopiuj kod pokoju';
 	@override String get hostControlsPlayback => 'Gospodarz steruje odtwarzaniem';
 	@override String get anyoneCanControl => 'Każdy może sterować odtwarzaniem';
 	@override String get hostControls => 'Steruje gospodarz';
@@ -1740,31 +1740,31 @@ class _Translations$watchTogether$pl extends Translations$watchTogether$en {
 	@override String get youAreHost => 'Jesteś gospodarzem';
 	@override String get makeHost => 'Uczyń gospodarzem';
 	@override String get makeHostQuestion => 'Przekazać rolę gospodarza?';
-	@override String makeHostConfirm({required Object name}) => '${name} będzie sterować odtwarzaniem i prowadzić sesję dla wszystkich.';
+	@override String makeHostConfirm({required Object name}) => '${name} będzie sterować odtwarzaniem i prowadzić pokój dla wszystkich.';
 	@override String get transfer => 'Przekaż';
 	@override String hostChangedTo({required Object name}) => '${name} jest teraz gospodarzem';
 	@override String get youAreNowHost => 'Jesteś teraz gospodarzem';
 	@override String hostTransferFailed({required Object name}) => 'Nie udało się uczynić ${name} gospodarzem';
 	@override String get watchingWithOthers => 'Oglądasz z innymi';
-	@override String get endSession => 'Zakończ sesję';
-	@override String get leaveSession => 'Opuść sesję';
-	@override String get endSessionQuestion => 'Zakończyć sesję?';
-	@override String get leaveSessionQuestion => 'Opuścić sesję?';
-	@override String get endSessionConfirm => 'To zakończy sesję dla wszystkich uczestników.';
-	@override String get leaveSessionConfirm => 'Zostaniesz usunięty z sesji.';
-	@override String get endSessionConfirmOverlay => 'To zakończy sesję oglądania dla wszystkich uczestników.';
-	@override String get leaveSessionConfirmOverlay => 'Zostaniesz odłączony od sesji oglądania.';
+	@override String get endSession => 'Zakończ pokój';
+	@override String get leaveSession => 'Opuść pokój';
+	@override String get endSessionQuestion => 'Zakończyć pokój?';
+	@override String get leaveSessionQuestion => 'Opuścić pokój?';
+	@override String get endSessionConfirm => 'To zakończy pokój dla wszystkich uczestników.';
+	@override String get leaveSessionConfirm => 'Zostaniesz usunięty z pokoju.';
+	@override String get endSessionConfirmOverlay => 'To zakończy pokój oglądania dla wszystkich uczestników.';
+	@override String get leaveSessionConfirmOverlay => 'Zostaniesz odłączony od pokoju oglądania.';
 	@override String get end => 'Zakończ';
 	@override String get leave => 'Opuść';
 	@override String get syncing => 'Synchronizacja...';
-	@override String get joinWatchSession => 'Dołącz do sesji oglądania';
+	@override String get joinWatchSession => 'Dołącz do pokoju oglądania';
 	@override String get enterCodeHint => 'Wprowadź 5-znakowy kod';
 	@override String get pasteFromClipboard => 'Wklej ze schowka';
-	@override String get pleaseEnterCode => 'Wprowadź kod sesji';
-	@override String get joinInstructions => 'Wpisz kod sesji hosta, aby dołączyć.';
-	@override String get failedToCreate => 'Nie udało się utworzyć sesji';
-	@override String get failedToJoin => 'Nie udało się dołączyć do sesji';
-	@override String get sessionCodeCopied => 'Kod sesji skopiowany do schowka';
+	@override String get pleaseEnterCode => 'Wprowadź kod pokoju';
+	@override String get joinInstructions => 'Wpisz kod pokoju hosta, aby dołączyć.';
+	@override String get failedToCreate => 'Nie udało się utworzyć pokoju';
+	@override String get failedToJoin => 'Nie udało się dołączyć do pokoju';
+	@override String get sessionCodeCopied => 'Kod pokoju skopiowany do schowka';
 	@override String get relayUnreachable => 'Serwer pośredniczący jest nieosiągalny. Blokada operatora internetowego może uniemożliwiać korzystanie z funkcji „Oglądaj razem”.';
 	@override String get reconnectingToHost => 'Ponowne łączenie z gospodarzem...';
 	@override String get currentPlayback => 'Bieżące odtwarzanie';
@@ -1782,13 +1782,15 @@ class _Translations$watchTogether$pl extends Translations$watchTogether$en {
 	@override String resumingWithout({required Object name}) => 'Wznawianie bez ${name}';
 	@override String get waitingForParticipants => 'Oczekiwanie na załadowanie u innych...';
 	@override String waitingForName({required Object name}) => 'Oczekiwanie na ${name}...';
-	@override String get recentRooms => 'Ostatnie pokoje';
+	@override String get recentRooms => 'Moje pokoje';
 	@override String get renameRoom => 'Zmień nazwę pokoju';
 	@override String get removeRoom => 'Usuń';
 	@override String get guestSwitchUnavailable => 'Nie można przełączyć — serwer niedostępny do synchronizacji';
 	@override String get guestSwitchFailed => 'Nie można przełączyć — nie znaleziono treści na tym serwerze';
 	@override String get defaultDisplayName => 'Użytkownik';
 	@override late final _Translations$watchTogether$errors$pl errors = _Translations$watchTogether$errors$pl._(_root);
+	@override String get recentLabel => 'Ostatnie';
+	@override String get joinByCode => 'Dołącz za pomocą kodu';
 }
 
 // Path: downloads
@@ -2848,10 +2850,10 @@ class _Translations$watchTogether$errors$pl extends Translations$watchTogether$e
 
 	// Translations
 	@override String get timedOut => 'Serwer pośredniczący nie odpowiedział w wymaganym czasie';
-	@override String get connectionLost => 'Połączenie zostało zamknięte, zanim sesja była gotowa';
+	@override String get connectionLost => 'Połączenie zostało zamknięte, zanim pokój był gotowy';
 	@override String get invalidRelayResponse => 'Serwer pośredniczący wysłał nieoczekiwaną odpowiedź';
-	@override String get sessionEnded => 'Gospodarz zakończył sesję';
-	@override String get sessionUnavailable => 'Nie można wznowić tej sesji. Dołącz do pokoju lub utwórz go, aby kontynuować.';
+	@override String get sessionEnded => 'Gospodarz zakończył pokój';
+	@override String get sessionUnavailable => 'Nie można wznowić tego pokoju. Dołącz do pokoju lub utwórz go, aby kontynuować.';
 }
 
 // Path: downloads.backgroundWarning
@@ -4554,19 +4556,19 @@ extension on TranslationsPl {
 			'music.discography.compilations' => 'Kompilacje',
 			'watchTogether.title' => 'Oglądaj razem',
 			'watchTogether.description' => 'Oglądaj treści wspólnie z rodziną i znajomymi dzięki synchronizacji odtwarzania',
-			'watchTogether.createSession' => 'Utwórz sesję',
+			'watchTogether.createSession' => 'Utwórz pokój',
 			'watchTogether.creating' => 'Tworzenie...',
-			'watchTogether.joinSession' => 'Dołącz do sesji',
+			'watchTogether.joinSession' => 'Dołącz do pokoju',
 			'watchTogether.joining' => 'Dołączanie...',
 			'watchTogether.controlMode' => 'Tryb kontroli',
 			'watchTogether.controlModeQuestion' => 'Kto może kontrolować odtwarzanie?',
 			'watchTogether.hostOnly' => 'Tylko gospodarz',
 			'watchTogether.anyone' => 'Każdy',
-			'watchTogether.hostingSession' => 'Prowadzenie sesji',
-			'watchTogether.inSession' => 'W sesji',
-			'watchTogether.sessionCode' => 'Kod sesji',
-			'watchTogether.openSessionControls' => 'Otwórz sterowanie sesją „Oglądaj razem”',
-			'watchTogether.copySessionCode' => 'Skopiuj kod sesji',
+			'watchTogether.hostingSession' => 'Prowadzenie pokoju',
+			'watchTogether.inSession' => 'W pokoju',
+			'watchTogether.sessionCode' => 'Kod pokoju',
+			'watchTogether.openSessionControls' => 'Otwórz sterowanie pokojem „Oglądaj razem”',
+			'watchTogether.copySessionCode' => 'Skopiuj kod pokoju',
 			'watchTogether.hostControlsPlayback' => 'Gospodarz steruje odtwarzaniem',
 			'watchTogether.anyoneCanControl' => 'Każdy może sterować odtwarzaniem',
 			'watchTogether.hostControls' => 'Steruje gospodarz',
@@ -4577,31 +4579,31 @@ extension on TranslationsPl {
 			'watchTogether.youAreHost' => 'Jesteś gospodarzem',
 			'watchTogether.makeHost' => 'Uczyń gospodarzem',
 			'watchTogether.makeHostQuestion' => 'Przekazać rolę gospodarza?',
-			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} będzie sterować odtwarzaniem i prowadzić sesję dla wszystkich.',
+			'watchTogether.makeHostConfirm' => ({required Object name}) => '${name} będzie sterować odtwarzaniem i prowadzić pokój dla wszystkich.',
 			'watchTogether.transfer' => 'Przekaż',
 			'watchTogether.hostChangedTo' => ({required Object name}) => '${name} jest teraz gospodarzem',
 			'watchTogether.youAreNowHost' => 'Jesteś teraz gospodarzem',
 			'watchTogether.hostTransferFailed' => ({required Object name}) => 'Nie udało się uczynić ${name} gospodarzem',
 			'watchTogether.watchingWithOthers' => 'Oglądasz z innymi',
-			'watchTogether.endSession' => 'Zakończ sesję',
-			'watchTogether.leaveSession' => 'Opuść sesję',
-			'watchTogether.endSessionQuestion' => 'Zakończyć sesję?',
-			'watchTogether.leaveSessionQuestion' => 'Opuścić sesję?',
-			'watchTogether.endSessionConfirm' => 'To zakończy sesję dla wszystkich uczestników.',
-			'watchTogether.leaveSessionConfirm' => 'Zostaniesz usunięty z sesji.',
-			'watchTogether.endSessionConfirmOverlay' => 'To zakończy sesję oglądania dla wszystkich uczestników.',
-			'watchTogether.leaveSessionConfirmOverlay' => 'Zostaniesz odłączony od sesji oglądania.',
+			'watchTogether.endSession' => 'Zakończ pokój',
+			'watchTogether.leaveSession' => 'Opuść pokój',
+			'watchTogether.endSessionQuestion' => 'Zakończyć pokój?',
+			'watchTogether.leaveSessionQuestion' => 'Opuścić pokój?',
+			'watchTogether.endSessionConfirm' => 'To zakończy pokój dla wszystkich uczestników.',
+			'watchTogether.leaveSessionConfirm' => 'Zostaniesz usunięty z pokoju.',
+			'watchTogether.endSessionConfirmOverlay' => 'To zakończy pokój oglądania dla wszystkich uczestników.',
+			'watchTogether.leaveSessionConfirmOverlay' => 'Zostaniesz odłączony od pokoju oglądania.',
 			'watchTogether.end' => 'Zakończ',
 			'watchTogether.leave' => 'Opuść',
 			'watchTogether.syncing' => 'Synchronizacja...',
-			'watchTogether.joinWatchSession' => 'Dołącz do sesji oglądania',
+			'watchTogether.joinWatchSession' => 'Dołącz do pokoju oglądania',
 			'watchTogether.enterCodeHint' => 'Wprowadź 5-znakowy kod',
 			'watchTogether.pasteFromClipboard' => 'Wklej ze schowka',
-			'watchTogether.pleaseEnterCode' => 'Wprowadź kod sesji',
-			'watchTogether.joinInstructions' => 'Wpisz kod sesji hosta, aby dołączyć.',
-			'watchTogether.failedToCreate' => 'Nie udało się utworzyć sesji',
-			'watchTogether.failedToJoin' => 'Nie udało się dołączyć do sesji',
-			'watchTogether.sessionCodeCopied' => 'Kod sesji skopiowany do schowka',
+			'watchTogether.pleaseEnterCode' => 'Wprowadź kod pokoju',
+			'watchTogether.joinInstructions' => 'Wpisz kod pokoju hosta, aby dołączyć.',
+			'watchTogether.failedToCreate' => 'Nie udało się utworzyć pokoju',
+			'watchTogether.failedToJoin' => 'Nie udało się dołączyć do pokoju',
+			'watchTogether.sessionCodeCopied' => 'Kod pokoju skopiowany do schowka',
 			'watchTogether.relayUnreachable' => 'Serwer pośredniczący jest nieosiągalny. Blokada operatora internetowego może uniemożliwiać korzystanie z funkcji „Oglądaj razem”.',
 			'watchTogether.reconnectingToHost' => 'Ponowne łączenie z gospodarzem...',
 			'watchTogether.currentPlayback' => 'Bieżące odtwarzanie',
@@ -4621,17 +4623,19 @@ extension on TranslationsPl {
 			_ => null,
 		} ?? switch (path) {
 			'watchTogether.waitingForName' => ({required Object name}) => 'Oczekiwanie na ${name}...',
-			'watchTogether.recentRooms' => 'Ostatnie pokoje',
+			'watchTogether.recentRooms' => 'Moje pokoje',
 			'watchTogether.renameRoom' => 'Zmień nazwę pokoju',
 			'watchTogether.removeRoom' => 'Usuń',
 			'watchTogether.guestSwitchUnavailable' => 'Nie można przełączyć — serwer niedostępny do synchronizacji',
 			'watchTogether.guestSwitchFailed' => 'Nie można przełączyć — nie znaleziono treści na tym serwerze',
 			'watchTogether.defaultDisplayName' => 'Użytkownik',
 			'watchTogether.errors.timedOut' => 'Serwer pośredniczący nie odpowiedział w wymaganym czasie',
-			'watchTogether.errors.connectionLost' => 'Połączenie zostało zamknięte, zanim sesja była gotowa',
+			'watchTogether.errors.connectionLost' => 'Połączenie zostało zamknięte, zanim pokój był gotowy',
 			'watchTogether.errors.invalidRelayResponse' => 'Serwer pośredniczący wysłał nieoczekiwaną odpowiedź',
-			'watchTogether.errors.sessionEnded' => 'Gospodarz zakończył sesję',
-			'watchTogether.errors.sessionUnavailable' => 'Nie można wznowić tej sesji. Dołącz do pokoju lub utwórz go, aby kontynuować.',
+			'watchTogether.errors.sessionEnded' => 'Gospodarz zakończył pokój',
+			'watchTogether.errors.sessionUnavailable' => 'Nie można wznowić tego pokoju. Dołącz do pokoju lub utwórz go, aby kontynuować.',
+			'watchTogether.recentLabel' => 'Ostatnie',
+			'watchTogether.joinByCode' => 'Dołącz za pomocą kodu',
 			'downloads.title' => 'Pobrania',
 			'downloads.manage' => 'Zarządzaj',
 			'downloads.tvShows' => 'Seriale TV',
@@ -5130,10 +5134,10 @@ extension on TranslationsPl {
 			'addServer.addConnectionTitleScoped' => ({required Object name}) => 'Dodaj do ${name}',
 			'addServer.signInWithPlexCard' => 'Zaloguj się przez Plex',
 			'addServer.signInWithPlexCardSubtitle' => 'Autoryzuj to urządzenie. Serwery udostępnione zostaną dodane.',
-			'addServer.signInWithPlexCardSubtitleScoped' => 'Autoryzuj konto Plex. Użytkownicy Home staną się profilami.',
-			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Połącz z ${product}',
 			_ => null,
 		} ?? switch (path) {
+			'addServer.signInWithPlexCardSubtitleScoped' => 'Autoryzuj konto Plex. Użytkownicy Home staną się profilami.',
+			'addServer.connectToMediaBrowserCard' => ({required Object product}) => 'Połącz z ${product}',
 			'addServer.connectToMediaBrowserCardSubtitle' => 'Podaj adres URL serwera, nazwę użytkownika i hasło.',
 			'addServer.connectToMediaBrowserCardSubtitleScoped' => ({required Object product, required Object name}) => 'Zaloguj się do serwera ${product}. Powiązane z ${name}.',
 			'addServer.borrowFromAnotherProfile' => 'Pożycz z innego profilu',
