@@ -287,6 +287,10 @@ class Translations$settings$zh extends Translations$settings$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String serverCount({required Object count}) => '${count} 台';
+	@override String get followPoster => '跟随海报';
+	@override String get footer => 'VELO · YOUR MEDIA, YOUR WAY';
+	@override String get aboutVelo => '关于 Velo';
 	@override String get ratings => '评分展示';
 	@override String get showRatingBadges => '显示海报评分';
 	@override String get showRatingBadgesDescription => '优先显示你的评分，否则显示首个可用的已启用来源。继续观看不显示评分。';
@@ -3592,6 +3596,10 @@ extension on TranslationsZh {
 			'update.updateFailed' => '无法下载或安装更新，请重试或查看发布详情。',
 			'update.downloadContinues' => '关闭此窗口后，下载仍会继续。',
 			'update.manualUpdateRequired' => '此版本无法自动安装，请查看发布详情中的下载文件。',
+			'settings.serverCount' => ({required Object count}) => '${count} 台',
+			'settings.followPoster' => '跟随海报',
+			'settings.footer' => 'VELO · YOUR MEDIA, YOUR WAY',
+			'settings.aboutVelo' => '关于 Velo',
 			'settings.ratings' => '评分展示',
 			'settings.showRatingBadges' => '显示海报评分',
 			'settings.showRatingBadgesDescription' => '优先显示你的评分，否则显示首个可用的已启用来源。继续观看不显示评分。',
@@ -3949,12 +3957,12 @@ extension on TranslationsZh {
 			'settings.connectionsIntegrations' => '连接与集成',
 			'settings.appearanceAndHome' => '外观与首页',
 			'settings.application' => '应用',
+			_ => null,
+		} ?? switch (path) {
 			'settings.noDanmakuSources' => '未添加源',
 			'search.hint' => '搜索电影、剧集、音乐…',
 			'search.tryDifferentTerm' => '尝试不同的搜索词',
 			'search.searchYourMedia' => '搜索媒体',
-			_ => null,
-		} ?? switch (path) {
 			'search.enterTitleActorOrKeyword' => '输入标题、演员或关键词',
 			'search.people' => '人物',
 			'hotkeys.setShortcutFor' => ({required Object actionName}) => '为 ${actionName} 设置快捷键',
@@ -4463,12 +4471,12 @@ extension on TranslationsZh {
 			'profiles.plexAccountChip' => ({required Object account}) => 'Plex 账户：${account}',
 			'profiles.plexAccountUserChip' => ({required Object account, required Object user}) => '${account} 账户下的 ${user}',
 			'profiles.connectionDefault' => '默认',
+			_ => null,
+		} ?? switch (path) {
 			'profiles.connectionAs' => ({required Object displayName}) => '以 ${displayName} 身份',
 			'profiles.makeDefault' => '设为默认',
 			'profiles.removeConnection' => '移除',
 			'profiles.profileRenamed' => '用户资料已重命名。',
-			_ => null,
-		} ?? switch (path) {
 			'profiles.borrowAddTo' => ({required Object displayName}) => '添加到 ${displayName}',
 			'profiles.borrowExplain' => '使用另一个用户资料的连接。受 PIN 保护的用户资料需要输入 PIN。',
 			'profiles.borrowEmpty' => '暂无可用连接。',
@@ -4977,12 +4985,12 @@ extension on TranslationsZh {
 			'liveTv.watchLive' => '观看直播',
 			'liveTv.goToLive' => '跳至直播',
 			'liveTv.record' => '录制',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.recordEpisode' => '录制单集',
 			'liveTv.recordSeries' => '录制系列节目',
 			'liveTv.recordOptions' => '录制选项',
 			'liveTv.saveTo' => '保存到',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordings' => '录制内容',
 			'liveTv.scheduledRecordings' => '计划录制',
 			'liveTv.recordingRules' => '录制规则',
@@ -5491,12 +5499,12 @@ extension on TranslationsZh {
 			'performanceOverlay.decoderAndroidHw' => 'Android 硬件',
 			'performanceOverlay.decoderNvidiaHw' => 'NVIDIA 硬件',
 			'performanceOverlay.decoderQualcommHw' => 'Qualcomm 硬件',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.decoderMediatekHw' => 'MediaTek 硬件',
 			'performanceOverlay.decoderExynosHw' => 'Exynos 硬件',
 			'performanceOverlay.decoderSoftware' => '软件',
 			'performanceOverlay.decoderHardware' => '硬件',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.tunnelingActive' => '已启用',
 			'performanceOverlay.dvRpuFailed' => ({required Object converted, required Object failures}) => '${converted}（${failures} 个失败）',
 			'externalPlayer.title' => '外部播放器',

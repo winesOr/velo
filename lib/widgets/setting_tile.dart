@@ -13,6 +13,7 @@ import '../utils/selection_feedback.dart';
 import 'app_icon.dart';
 import 'focusable_list_tile.dart';
 import 'settings_section.dart';
+import 'settings_icon.dart';
 
 /// Reactive setting tiles bound to a [Pref] via [SettingsService.listenable].
 /// Eliminates the field-mirror + setState + manual reload pattern that used to
@@ -76,7 +77,7 @@ class _SettingRow extends StatelessWidget {
               );
         return FocusableListTile(
           focusNode: focusNode,
-          leading: AppIcon(icon),
+          leading: SettingsIcon(icon),
           title: Text(title),
           subtitle: stacked && valueText != null
               ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [?subtitle, valueText])
@@ -131,7 +132,7 @@ class SettingSwitchTile extends StatelessWidget {
       valueListenable: SettingsService.instance.listenable(pref),
       builder: (_, value, _) => FocusableSwitchListTile(
         focusNode: focusNode,
-        secondary: AppIcon(icon),
+        secondary: SettingsIcon(icon),
         title: Text(title),
         subtitle: subtitle != null ? Text(subtitle!) : null,
         value: value,

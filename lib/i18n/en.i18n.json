@@ -167,6 +167,10 @@
     "manualUpdateRequired": "This release cannot be installed automatically. Open the release to see the available downloads."
   },
   "settings": {
+    "serverCount": "${count} servers",
+    "followPoster": "Follow poster",
+    "footer": "VELO · YOUR MEDIA, YOUR WAY",
+    "aboutVelo": "About Velo",
     "ratings": "Ratings",
     "showRatingBadges": "Show ratings on posters",
     "showRatingBadgesDescription": "Show your score first, or the first available enabled source. Continue Watching stays score-free.",

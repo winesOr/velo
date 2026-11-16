@@ -548,6 +548,18 @@ class Translations$settings$en {
 
 	// Translations
 
+	/// en: '${count} servers'
+	String serverCount({required Object count}) => '${count} servers';
+
+	/// en: 'Follow poster'
+	String get followPoster => 'Follow poster';
+
+	/// en: 'VELO · YOUR MEDIA, YOUR WAY'
+	String get footer => 'VELO · YOUR MEDIA, YOUR WAY';
+
+	/// en: 'About Velo'
+	String get aboutVelo => 'About Velo';
+
 	/// en: 'Ratings'
 	String get ratings => 'Ratings';
 
@@ -8466,6 +8478,10 @@ extension on Translations {
 			'update.updateFailed' => 'Could not download or install the update. Retry or view the release for details.',
 			'update.downloadContinues' => 'You can close this dialog while the download continues.',
 			'update.manualUpdateRequired' => 'This release cannot be installed automatically. Open the release to see the available downloads.',
+			'settings.serverCount' => ({required Object count}) => '${count} servers',
+			'settings.followPoster' => 'Follow poster',
+			'settings.footer' => 'VELO · YOUR MEDIA, YOUR WAY',
+			'settings.aboutVelo' => 'About Velo',
 			'settings.ratings' => 'Ratings',
 			'settings.showRatingBadges' => 'Show ratings on posters',
 			'settings.showRatingBadgesDescription' => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.',
@@ -8823,12 +8839,12 @@ extension on Translations {
 			'settings.connectionsIntegrations' => 'Connections & Integrations',
 			'settings.appearanceAndHome' => 'Appearance & Home',
 			'settings.application' => 'Application',
+			_ => null,
+		} ?? switch (path) {
 			'settings.noDanmakuSources' => 'No sources added',
 			'search.hint' => 'Search movies, shows, music...',
 			'search.tryDifferentTerm' => 'Try a different search term',
 			'search.searchYourMedia' => 'Search your media',
-			_ => null,
-		} ?? switch (path) {
 			'search.enterTitleActorOrKeyword' => 'Enter a title, actor, or keyword',
 			'search.people' => 'People',
 			'hotkeys.setShortcutFor' => ({required Object actionName}) => 'Set Shortcut for ${actionName}',
@@ -9337,12 +9353,12 @@ extension on Translations {
 			'profiles.plexAccountChip' => ({required Object account}) => 'Plex account: ${account}',
 			'profiles.plexAccountUserChip' => ({required Object user, required Object account}) => '${user} via ${account}',
 			'profiles.connectionDefault' => 'Default',
+			_ => null,
+		} ?? switch (path) {
 			'profiles.connectionAs' => ({required Object displayName}) => 'as ${displayName}',
 			'profiles.makeDefault' => 'Make default',
 			'profiles.removeConnection' => 'Remove',
 			'profiles.profileRenamed' => 'Profile renamed.',
-			_ => null,
-		} ?? switch (path) {
 			'profiles.borrowAddTo' => ({required Object displayName}) => 'Add to ${displayName}',
 			'profiles.borrowExplain' => 'Borrow another profile\'s connection. PIN-protected profiles require a PIN.',
 			'profiles.borrowEmpty' => 'Nothing to borrow yet.',
@@ -9851,12 +9867,12 @@ extension on Translations {
 			'liveTv.watchLive' => 'Watch Live',
 			'liveTv.goToLive' => 'Go to Live',
 			'liveTv.record' => 'Record',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.recordEpisode' => 'Record Episode',
 			'liveTv.recordSeries' => 'Record Series',
 			'liveTv.recordOptions' => 'Record Options',
 			'liveTv.saveTo' => 'Save to',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordings' => 'Recordings',
 			'liveTv.scheduledRecordings' => 'Scheduled',
 			'liveTv.recordingRules' => 'Recording Rules',
@@ -10365,12 +10381,12 @@ extension on Translations {
 			'performanceOverlay.decoderAndroidHw' => 'Android HW',
 			'performanceOverlay.decoderNvidiaHw' => 'NVIDIA HW',
 			'performanceOverlay.decoderQualcommHw' => 'Qualcomm HW',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.decoderMediatekHw' => 'MediaTek HW',
 			'performanceOverlay.decoderExynosHw' => 'Exynos HW',
 			'performanceOverlay.decoderSoftware' => 'Software',
 			'performanceOverlay.decoderHardware' => 'Hardware',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.tunnelingActive' => 'Active',
 			'performanceOverlay.dvRpuFailed' => ({required Object converted, required Object failures}) => '${converted} (${failures} failed)',
 			'externalPlayer.title' => 'External Player',

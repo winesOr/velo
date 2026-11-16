@@ -7,10 +7,15 @@ import 'velo_brand.dart';
 /// of media titles and the player's HUD. Keep the platform font and text scaler.
 abstract final class SettingsPresentation {
   static bool _dark(BuildContext context) => Theme.of(context).brightness == Brightness.dark;
-  static double get rowHeight => PlatformDetector.isTV() ? 64 : 48;
+  static double get rowHeight => 51;
   static double get rowFontSize => PlatformDetector.isTV() ? 17 : 15;
   static double get rowHorizontalPadding => PlatformDetector.isTV() ? 22 : 17;
-  static double get groupRadius => PlatformDetector.isTV() ? 18 : 15;
+  static double get groupRadius => 15;
+
+  static const switchActiveTrack = Color(0xffd5d8df);
+  static const switchActiveThumb = Color(0xff202020);
+  static Color switchInactiveTrack(BuildContext context) =>
+      VeloPalette.text(Theme.of(context).brightness).withValues(alpha: .15);
 
   static Color surface(BuildContext context) => Theme.of(context).colorScheme.surface;
 
@@ -77,7 +82,6 @@ class SettingsAppearance extends StatelessWidget {
     // Respect an explicitly requested OLED black page.
     final oled = dark && theme.colorScheme.surface == VeloPalette.oledSurface;
     final background = oled ? VeloPalette.oledBackground : VeloPalette.background(theme.brightness);
-    final glow = oled ? VeloPalette.oledBackground : VeloPalette.surface(theme.brightness);
     final tv = PlatformDetector.isTV();
     final themed = _SettingsAppearanceScope(
       child: Theme(
@@ -113,30 +117,19 @@ class SettingsAppearance extends StatelessWidget {
           switchTheme: theme.switchTheme.copyWith(
             padding: EdgeInsets.zero,
             trackOutlineWidth: const WidgetStatePropertyAll(1),
-            trackOutlineColor: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.disabled)) return Colors.transparent;
-              return states.contains(WidgetState.selected)
-                  ? const Color(0x5cddd6ff)
-                  : dark
-                  ? const Color(0xff60606e)
-                  : const Color(0xffbcb9ce);
-            }),
+            trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
             trackColor: WidgetStateProperty.resolveWith((states) {
-              final selected = states.contains(WidgetState.selected);
               if (states.contains(WidgetState.disabled)) return theme.disabledColor.withValues(alpha: .12);
-              return selected
-                  ? VeloBrand.accent
-                  : dark
-                  ? const Color(0xff41424e)
-                  : const Color(0xffd4d3df);
+              return states.contains(WidgetState.selected)
+                  ? SettingsPresentation.switchActiveTrack
+                  : SettingsPresentation.switchInactiveTrack(context);
             }),
-            thumbColor: WidgetStateProperty.resolveWith(
-              (states) => states.contains(WidgetState.selected)
-                  ? Colors.white
-                  : theme.brightness == Brightness.dark
-                  ? const Color(0xffb0b4bc)
-                  : Colors.white,
-            ),
+            thumbColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.disabled)) return theme.disabledColor;
+              return states.contains(WidgetState.selected)
+                  ? SettingsPresentation.switchActiveThumb
+                  : VeloPalette.text(theme.brightness);
+            }),
           ),
         ),
         child: child,
@@ -144,15 +137,7 @@ class SettingsAppearance extends StatelessWidget {
     );
     if (nested) return themed;
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: background,
-        gradient: RadialGradient(
-          center: const Alignment(-.6, -1.4),
-          radius: 1.3,
-          colors: [glow, background],
-          stops: const [0, .9],
-        ),
-      ),
+      decoration: BoxDecoration(color: background),
       child: themed,
     );
   }

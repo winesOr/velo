@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../focus/focus_memory_tracker.dart';
 import '../../focus/focusable_text_field.dart';
@@ -26,11 +27,11 @@ import '../../services/download_storage_service.dart';
 import '../../services/file_picker_service.dart';
 import '../../services/saf_storage_service.dart';
 import '../../services/settings_export_service.dart';
-import '../../providers/theme_provider.dart';
 import '../../providers/multi_server_provider.dart';
 import '../../media/ids.dart';
 import '../../media/media_backend.dart';
 import '../../widgets/backend_badge.dart';
+import '../../widgets/settings_icon.dart';
 import '../../theme/mono_presentation.dart';
 import '../../theme/settings_presentation.dart';
 import '../../providers/seerr_account_provider.dart';
@@ -121,6 +122,11 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
       widget.backgroundWorkDiagnosticsService ?? BackgroundWorkDiagnosticsService.instance;
   late final FocusMemoryTracker _focusTracker;
   final _categoryPaneKey = GlobalKey<SettingsCategoryPaneState>();
+  // Keep unavailable platform metadata empty rather than inventing a version.
+  late final Future<PackageInfo?> _packageInfo = PackageInfo.fromPlatform().then<PackageInfo?>(
+    (info) => info,
+    onError: (Object _, StackTrace _) => null,
+  );
 
   // Focus tracking keys
   static const _kGeneral = 'general';
@@ -269,6 +275,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
                     SettingNavigationTile(
                       icon: Symbols.dns_rounded,
                       title: t.settings.serverAccounts,
+                      value: t.settings.serverCount(count: _serverIds(sheetContext).length),
                       onTap: () => _openDestination(_SettingsDestination.connections),
                     ),
                     if (!PlatformDetector.isAppleTV())
@@ -282,25 +289,32 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
                       title: t.settings.connectionsIntegrations,
                       onTap: () => _openDestination(_SettingsDestination.integrations),
                     ),
-                    SettingNavigationTile(
-                      icon: Symbols.network_check_rounded,
-                      title: t.settings.networkCache,
-                      onTap: () => _openDestination(_SettingsDestination.network),
-                    ),
+                    _buildNetworkTile(),
                   ],
                 ),
                 SettingsGroup(
                   title: t.settings.application,
                   children: [
-                    SettingNavigationTile(
-                      focusNode: _focusTracker.get(_kAbout),
-                      icon: Symbols.info_rounded,
-                      title: t.settings.about,
-                      onTap: () => _openDestination(_SettingsDestination.application),
+                    FutureBuilder<PackageInfo?>(
+                      future: _packageInfo,
+                      builder: (context, snapshot) => SettingNavigationTile(
+                        focusNode: _focusTracker.get(_kAbout),
+                        icon: Symbols.info_rounded,
+                        title: t.settings.aboutVelo,
+                        value: snapshot.data?.version,
+                        onTap: () => _openDestination(_SettingsDestination.application),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(17, 24, 17, 14),
+                  child: Text(
+                    t.settings.footer,
+                    textAlign: TextAlign.center,
+                    style: SettingsPresentation.value(sheetContext).copyWith(fontSize: 10),
+                  ),
+                ),
               ]),
             ),
             const SliverSystemBottomInset(),
@@ -390,7 +404,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
         ),
         SettingsCategory(
           id: 'playback',
-          title: t.settings.videoPlayback,
+          title: t.common.play,
           icon: Symbols.play_circle_rounded,
           builder: (_) => const PlaybackSettingsScreen(),
         ),
@@ -463,7 +477,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
     final profile = profiles.active;
     final libraries = context.watch<LibrariesProvider>().libraries;
     final servers = context.watch<MultiServerProvider?>();
-    final ids = servers?.expectedServerIds ?? libraries.map((library) => library.serverId).nonNulls.toSet().toList();
+    final ids = _serverIds(context);
     final connectionIds = <String>{
       ?profile?.parentConnectionId,
       if (profile != null) ...?profiles.connectionsByProfile[profile.id]?.map((connection) => connection.connectionId),
@@ -490,7 +504,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
           visualDensity: VisualDensity.standard,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           leading: backends.isEmpty
-              ? const AppIcon(Symbols.dns_rounded, size: 39)
+              ? const SettingsIcon(Symbols.dns_rounded, size: 39)
               : Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -505,7 +519,13 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
             profile?.displayName ?? t.connections.sectionTitle,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 15, fontWeight: FontWeight.w500),
           ),
-          subtitle: Text(t.settings.serverSummary(count: ids.length), style: SettingsPresentation.value(context)),
+          subtitle: Text(
+            [
+              if (backends.isNotEmpty) backends.map((backend) => backend.dialect?.productName ?? 'Plex').join(' / '),
+              t.settings.serverSummary(count: ids.length),
+            ].join(' · '),
+            style: SettingsPresentation.value(context),
+          ),
           trailing: AppIcon(Symbols.chevron_right_rounded, size: 13, color: SettingsPresentation.muted(context)),
           onTap: () => _openDestination(_SettingsDestination.connections),
         ),
@@ -536,20 +556,35 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
     );
   }
 
-  Widget _buildAppearanceTile() {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, _) {
-        final summary = themeModeLabel(themeProvider.themeMode);
-        return SettingNavigationTile(
-          focusNode: _focusTracker.get(_kAppearance),
-          icon: Symbols.palette_rounded,
-          title: t.settings.appearanceAndHome,
-          value: summary,
-          destinationBuilder: (context) => const AppearanceSettingsScreen(),
-        );
-      },
-    );
+  Widget _buildAppearanceTile() => SettingNavigationTile(
+    focusNode: _focusTracker.get(_kAppearance),
+    icon: Symbols.palette_rounded,
+    title: t.settings.appearanceAndHome,
+    // HomeThemeController and the detail page always derive their surface
+    // from the current artwork; this is independent of light/dark mode.
+    value: t.settings.followPoster,
+    destinationBuilder: (context) => const AppearanceSettingsScreen(),
+  );
+
+  List<String> _serverIds(BuildContext context) {
+    final servers = context.watch<MultiServerProvider?>();
+    final libraries = context.watch<LibrariesProvider>().libraries;
+    return servers?.expectedServerIds ?? libraries.map((library) => library.serverId).nonNulls.toSet().toList();
   }
+
+  Widget _buildNetworkTile() => SettingValueBuilder<settings.PlaybackBufferTier>(
+    pref: settings.SettingsService.playbackBufferTier,
+    builder: (context, tier, _) => SettingNavigationTile(
+      icon: Symbols.network_check_rounded,
+      title: t.settings.networkCache,
+      value: switch (tier) {
+        settings.PlaybackBufferTier.auto => t.settings.playbackBufferAuto,
+        settings.PlaybackBufferTier.large => t.settings.playbackBufferLarge,
+        settings.PlaybackBufferTier.extraLarge => t.settings.playbackBufferExtraLarge,
+      },
+      onTap: () => _openDestination(_SettingsDestination.network),
+    ),
+  );
 
   Widget _buildPlaybackTile() {
     return SettingValueBuilder<bool>(
@@ -558,7 +593,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
         focusNode: _focusTracker.get(_kPlayback),
         icon: Symbols.play_circle_rounded,
         title: t.common.play,
-        value: Platform.isAndroid && useExoPlayer ? t.settings.exoPlayer : t.settings.mpv,
+        value: Platform.isAndroid && useExoPlayer ? t.settings.exoPlayer : t.settings.skipMarkerModeAuto,
         destinationBuilder: (context) => const PlaybackSettingsScreen(),
       ),
     );

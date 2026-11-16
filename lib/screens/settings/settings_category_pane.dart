@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../widgets/app_icon.dart';
+import '../../widgets/settings_icon.dart';
 import '../../widgets/focusable_list_tile.dart';
 import '../../widgets/settings_page.dart';
 import '../../focus/key_event_utils.dart';
@@ -9,6 +9,7 @@ import '../../focus/dpad_navigator.dart';
 import '../../focus/input_mode_tracker.dart';
 import '../../theme/mono_presentation.dart';
 import '../../theme/settings_presentation.dart';
+import '../../theme/velo_brand.dart';
 import '../../i18n/strings.g.dart';
 import '../../utils/platform_detector.dart';
 
@@ -78,6 +79,9 @@ class SettingsCategoryPaneState extends State<SettingsCategoryPane> {
   Widget build(BuildContext context) {
     final category = widget.categories.where((c) => c.id == _selectedId).firstOrNull ?? widget.categories.first;
     final tv = PlatformDetector.isTV();
+    final brightness = Theme.of(context).brightness;
+    final foreground = brightness == Brightness.dark ? Colors.white : VeloPalette.text(brightness);
+    final selectedBackground = foreground.withValues(alpha: brightness == Brightness.dark ? .18 : .10);
     return SettingsAppearance(
       child: SafeArea(
         bottom: false,
@@ -121,9 +125,7 @@ class SettingsCategoryPaneState extends State<SettingsCategoryPane> {
                           child: Padding(
                             padding: EdgeInsets.only(bottom: tv ? 4 : 7),
                             child: Material(
-                              color: category.id == item.id
-                                  ? Theme.of(context).colorScheme.primaryContainer
-                                  : Colors.transparent,
+                              color: category.id == item.id ? selectedBackground : Colors.transparent,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(tv ? 16 : 12),
                                 side: BorderSide(
@@ -135,19 +137,25 @@ class SettingsCategoryPaneState extends State<SettingsCategoryPane> {
                               clipBehavior: Clip.antiAlias,
                               // TV rows stay compact so the whole category list fits a 540 dp screen.
                               child: ListTileTheme.merge(
-                                minTileHeight: tv ? 50 : null,
+                                minTileHeight: SettingsPresentation.rowHeight,
+                                selectedColor: foreground,
                                 child: FocusableListTile(
                                   focusNode: _node(item.id),
                                   selected: category.id == item.id,
                                   contentPadding: EdgeInsets.symmetric(horizontal: tv ? 16 : 13, vertical: tv ? 2 : 4),
                                   horizontalTitleGap: tv ? 15 : 12,
-                                  leading: AppIcon(item.icon, size: tv ? 25 : 24),
+                                  leading: SettingsIcon(
+                                    item.icon,
+                                    size: tv ? 25 : 24,
+                                    color: category.id == item.id ? foreground : SettingsPresentation.icon(context),
+                                  ),
                                   title: Text(
                                     item.title,
                                     style: SettingsPresentation.title(context).copyWith(
                                       fontSize: tv ? 16 : 15,
-                                      color: category.id == item.id ? Theme.of(context).colorScheme.primary : null,
-                                      fontWeight: category.id == item.id ? FontWeight.w600 : FontWeight.w400,
+                                      color: category.id == item.id ? foreground : null,
+                                      fontWeight: FontWeight.w400,
+                                      fontVariations: const [FontVariation('wght', 400)],
                                     ),
                                   ),
                                   onTap: () {

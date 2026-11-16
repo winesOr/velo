@@ -264,6 +264,10 @@ class _Translations$settings$zh_Hant extends Translations$settings$zh {
 	final TranslationsZhHant _root; // ignore: unused_field
 
 	// Translations
+	@override String serverCount({required Object count}) => '${count} 台';
+	@override String get followPoster => '跟隨海報';
+	@override String get footer => 'VELO · YOUR MEDIA, YOUR WAY';
+	@override String get aboutVelo => '關於 Velo';
 	@override String get ratings => '評分顯示';
 	@override String get showRatingBadges => '顯示海報評分';
 	@override String get showRatingBadgesDescription => '優先顯示你的評分，否則顯示首個可用的已啟用來源。繼續觀看不顯示評分。';
@@ -3493,6 +3497,10 @@ extension on TranslationsZhHant {
 			'update.updateFailed' => '無法下載或安裝更新，請重試或查看版本詳情。',
 			'update.downloadContinues' => '關閉此視窗後，下載仍會繼續。',
 			'update.manualUpdateRequired' => '此版本無法自動安裝，請查看版本詳情中的下載檔案。',
+			'settings.serverCount' => ({required Object count}) => '${count} 台',
+			'settings.followPoster' => '跟隨海報',
+			'settings.footer' => 'VELO · YOUR MEDIA, YOUR WAY',
+			'settings.aboutVelo' => '關於 Velo',
 			'settings.ratings' => '評分顯示',
 			'settings.showRatingBadges' => '顯示海報評分',
 			'settings.showRatingBadgesDescription' => '優先顯示你的評分，否則顯示首個可用的已啟用來源。繼續觀看不顯示評分。',
@@ -3863,12 +3871,12 @@ extension on TranslationsZhHant {
 			'hotkeys.actions.fullscreenToggle' => '切換全螢幕',
 			'hotkeys.actions.muteToggle' => '切換靜音',
 			'hotkeys.actions.subtitleToggle' => '切換字幕',
+			_ => null,
+		} ?? switch (path) {
 			'hotkeys.actions.audioTrackNext' => '下一個音軌',
 			'hotkeys.actions.subtitleTrackNext' => '下一個字幕軌',
 			'hotkeys.actions.chapterNext' => '下一個章節',
 			'hotkeys.actions.chapterPrevious' => '上一個章節',
-			_ => null,
-		} ?? switch (path) {
 			'hotkeys.actions.episodeNext' => '下一集',
 			'hotkeys.actions.episodePrevious' => '上一集',
 			'hotkeys.actions.speedIncrease' => '加速播放',
@@ -4377,12 +4385,12 @@ extension on TranslationsZhHant {
 			'connections.accessDeniedMany' => ({required Object count}) => '${count} 台伺服器拒絕此帳戶存取',
 			'connections.signInAgain' => '重新登入',
 			'connections.editMediaBrowserTitle' => ({required Object product}) => '編輯 ${product} 連線',
+			_ => null,
+		} ?? switch (path) {
 			'connections.editMediaBrowserIntro' => ({required Object serverName}) => '為 ${serverName} 新增或移除 URL。Velo 將使用延遲最低且可連線的 URL。',
 			'accountPreferences.sectionTitle' => '帳戶偏好設定',
 			'accountPreferences.hubSubtitleSingle' => ({required Object account}) => '已在 ${account} 上儲存音訊、字幕與媒體庫選項',
 			'accountPreferences.hubSubtitleMultiple' => ({required Object count}) => '已在 ${count} 個帳戶上儲存音訊、字幕與媒體庫選項',
-			_ => null,
-		} ?? switch (path) {
 			'accountPreferences.pickAccount' => '每個帳戶都會儲存各自的偏好設定。請選擇要編輯的帳戶。',
 			'accountPreferences.storedOnAccount' => '這些選項會儲存在帳戶本身，因此登入該帳戶的所有應用程式都會使用它們，包括您其他裝置上的 Velo。',
 			'accountPreferences.noAccounts' => '沒有可設定的帳戶',
@@ -4891,12 +4899,12 @@ extension on TranslationsZhHant {
 			'liveTv.recordSettings.newOnly' => '僅新劇集',
 			'liveTv.recordSettings.anyChannel' => '在任何頻道錄影',
 			'liveTv.recordSettings.anyTime' => '在任何時間錄影',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.recordSettings.skipInLibrary' => '略過媒體庫中已有的劇集',
 			'liveTv.recordSettings.keepUpTo' => '要保留的劇集數',
 			'liveTv.recordSettings.keepUpToHint' => '0 表示保留所有劇集',
 			'liveTv.startingInMinutes' => ({required Object minutes}) => '${minutes} 分鐘後開始',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.dayAtTime' => ({required Object day, required Object time}) => '${day} ${time}',
 			'liveTv.invalidPlaybackData' => ({required Object product}) => '${product} 傳回了無效的直播電視播放資料',
 			'liveTv.failedToStartChannel' => '無法啟動直播頻道',
@@ -5405,12 +5413,12 @@ extension on TranslationsZhHant {
 			'metadataEdit.metadataUpdated' => '中繼資料已更新',
 			'metadataEdit.metadataUpdateFailed' => '中繼資料更新失敗',
 			'metadataEdit.artworkUpdated' => '封面圖片已更新',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.artworkUpdateFailed' => '封面圖片更新失敗',
 			'metadataEdit.noArtworkAvailable' => '沒有可用的封面圖片',
 			'metadataEdit.artworkOption' => ({required Object index}) => '封面圖片選項 ${index}',
 			'metadataEdit.selectedArtworkOption' => ({required Object index}) => '封面圖片選項 ${index}，已選擇',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.notSet' => '未設定',
 			'metadataEdit.libraryDefault' => '媒體庫預設',
 			'metadataEdit.accountDefault' => '帳戶預設',

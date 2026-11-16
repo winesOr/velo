@@ -49,6 +49,7 @@ import 'package:plezy/widgets/focusable_list_tile.dart';
 import 'package:plezy/widgets/loading_indicator_box.dart';
 import 'package:plezy/widgets/setting_tile.dart';
 import 'package:provider/provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../test_helpers/io_fakes.dart';
 import '../../test_helpers/prefs.dart';
@@ -65,6 +66,13 @@ void main() {
   setUpAll(() {
     originalPathProvider = PathProviderPlatform.instance;
     LocaleSettings.setLocaleSync(AppLocale.en);
+    PackageInfo.setMockInitialValues(
+      appName: 'Velo',
+      packageName: 'com.test.velo',
+      version: '9.8.7',
+      buildNumber: '42',
+      buildSignature: '',
+    );
   });
 
   setUp(() async {
@@ -293,11 +301,23 @@ void main() {
     expect(find.text(t.settings.personalization), findsOneWidget);
     expect(find.text(t.settings.resourcesServices), findsOneWidget);
     final identity = find.byKey(const ValueKey('settings-identity-summary'));
-    expect(find.descendant(of: identity, matching: find.text(t.settings.serverSummary(count: 1))), findsOneWidget);
+    expect(
+      find.descendant(of: identity, matching: find.text('Emby · ${t.settings.serverSummary(count: 1)}')),
+      findsOneWidget,
+    );
     expect(
       tester.widget<BackendBadge>(find.descendant(of: identity, matching: find.byType(BackendBadge))).backend,
       MediaBackend.emby,
     );
+    expect(find.text(t.settings.serverCount(count: 1)), findsOneWidget);
+    expect(find.text(t.settings.followPoster), findsOneWidget);
+    expect(find.text(t.settings.skipMarkerModeAuto), findsOneWidget);
+    expect(find.text('9.8.7'), findsOneWidget);
+    expect(find.text(t.settings.playbackBufferAuto), findsOneWidget);
+    await SettingsService.instance.write(SettingsService.playbackBufferTier, PlaybackBufferTier.large);
+    await _pumpUi(tester);
+    expect(find.text(t.settings.playbackBufferLarge), findsOneWidget);
+    expect(find.text(t.settings.playbackBufferAuto), findsNothing);
     await tester.tap(find.text(t.settings.subtitles).last);
     await _pumpUi(tester);
     expect(find.byType(SubtitleStylingScreen), findsOneWidget);
@@ -340,7 +360,7 @@ void main() {
     addTearDown(() => harness.dispose(tester));
     final title = tester.widget<Text>(find.text(t.settings.title));
     expect(title.style!.fontSize, 22);
-    expect(find.text(t.settings.serverSummary(count: 3)), findsOneWidget);
+    expect(find.text('Emby / Jellyfin / Plex · ${t.settings.serverSummary(count: 3)}'), findsOneWidget);
     final subtitles = find.text(t.settings.subtitles);
     await tester.ensureVisible(subtitles);
     await _pumpUi(tester);
@@ -408,7 +428,7 @@ void main() {
     await _pumpUi(tester);
     Navigator.of(tester.element(find.text(t.settings.watchTogetherRelay))).pop();
     await _pumpUi(tester);
-    await tester.tap(find.text(t.settings.about));
+    await tester.tap(find.text(t.settings.aboutVelo));
     await _pumpUi(tester);
     expect(_navigationTileFor(t.settings.exportSettings), findsOneWidget);
     expect(_navigationTileFor(t.settings.importSettings), findsOneWidget);
@@ -520,7 +540,7 @@ void main() {
 
     Navigator.of(tester.element(find.text(t.settings.downloads))).pop();
     await _pumpUi(tester);
-    await tester.tap(find.text(t.settings.about));
+    await tester.tap(find.text(t.settings.aboutVelo));
     await _pumpUi(tester);
 
     if (!UpdateService.isUpdateCheckAvailable) {
@@ -692,7 +712,7 @@ void main() {
     final requirements = <RequireWiFi>[];
     final harness = await _pumpSettingsScreen(
       tester,
-      openCategory: t.settings.about,
+      openCategory: t.settings.aboutVelo,
       requireWiFiOverride: (requirement) async {
         requirements.add(requirement);
         return true;
@@ -737,7 +757,7 @@ void main() {
       '${temporaryDirectory.path}/old-downloads',
     );
     await SettingsService.instance.write(SettingsService.customDownloadPathType, 'file');
-    final harness = await _pumpSettingsScreen(tester, openCategory: t.settings.about);
+    final harness = await _pumpSettingsScreen(tester, openCategory: t.settings.aboutVelo);
     addTearDown(() => harness.dispose(tester));
 
     await tester.tap(find.text(t.settings.resetSettings));
@@ -752,7 +772,7 @@ void main() {
 
   testWidgets('crash reporting follows the build capability and preserves its privacy preference', (tester) async {
     await SettingsService.instance.write(SettingsService.crashReporting, false);
-    final harness = await _pumpSettingsScreen(tester, openCategory: t.settings.about);
+    final harness = await _pumpSettingsScreen(tester, openCategory: t.settings.aboutVelo);
     addTearDown(() => harness.dispose(tester));
     await tester.scrollUntilVisible(find.text(t.settings.debugLogging), 300, scrollable: find.byType(Scrollable).first);
     await _pumpUi(tester);
@@ -854,7 +874,7 @@ void main() {
     final exportGate = Completer<String?>();
     final harness = await _pumpSettingsScreen(
       tester,
-      openCategory: t.settings.about,
+      openCategory: t.settings.aboutVelo,
       settingsExporter: () => exportGate.future,
     );
 
@@ -872,7 +892,7 @@ void main() {
     final importGate = Completer<ImportResult?>();
     final harness = await _pumpSettingsScreen(
       tester,
-      openCategory: t.settings.about,
+      openCategory: t.settings.aboutVelo,
       settingsImporter: () => importGate.future,
     );
 
@@ -891,7 +911,7 @@ void main() {
   testWidgets('settings export platform failure uses shared settings feedback', (tester) async {
     final harness = await _pumpSettingsScreen(
       tester,
-      openCategory: t.settings.about,
+      openCategory: t.settings.aboutVelo,
       settingsExporter: () async => throw PlatformException(code: 'save_failed'),
     );
     addTearDown(() => harness.dispose(tester));
@@ -906,7 +926,7 @@ void main() {
   testWidgets('settings import platform failure uses shared settings feedback', (tester) async {
     final harness = await _pumpSettingsScreen(
       tester,
-      openCategory: t.settings.about,
+      openCategory: t.settings.aboutVelo,
       settingsImporter: () async => throw PlatformException(code: 'pick_failed'),
     );
     addTearDown(() => harness.dispose(tester));

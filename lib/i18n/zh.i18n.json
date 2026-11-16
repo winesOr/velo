@@ -167,6 +167,10 @@
     "manualUpdateRequired": "此版本无法自动安装，请查看发布详情中的下载文件。"
   },
   "settings": {
+    "serverCount": "${count} 台",
+    "followPoster": "跟随海报",
+    "footer": "VELO · YOUR MEDIA, YOUR WAY",
+    "aboutVelo": "关于 Velo",
     "ratings": "评分展示",
     "showRatingBadges": "显示海报评分",
     "showRatingBadgesDescription": "优先显示你的评分，否则显示首个可用的已启用来源。继续观看不显示评分。",
