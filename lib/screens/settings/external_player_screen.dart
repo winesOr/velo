@@ -139,6 +139,7 @@ class _PlayerTile extends StatelessWidget {
               onPressed: () => svc.removeCustomExternalPlayer(player.id),
               autoScroll: false,
               child: IconButton(
+                tooltip: '${t.common.delete} ${player.name}',
                 icon: const AppIcon(Symbols.delete_rounded, fill: 1, size: 20),
                 onPressed: () => svc.removeCustomExternalPlayer(player.id),
               ),

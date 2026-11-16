@@ -38,6 +38,7 @@ import '../../../widgets/clickable_cursor.dart';
 import '../../../widgets/optimized_media_image.dart';
 import '../live_tv_load_error.dart';
 import '../livetv_styles.dart';
+import '../../../widgets/press_feedback.dart';
 
 class GuideTab extends StatefulWidget {
   final List<LiveTvChannel> channels;
@@ -1526,6 +1527,7 @@ class GuideTabState extends State<GuideTab>
           _timeNavFocusWrap(
             index: 0,
             child: IconButton(
+              tooltip: t.liveTv.previousPrograms,
               icon: const AppIcon(Symbols.chevron_left_rounded),
               onPressed: () => _shiftTimeRange(-2),
               iconSize: 20,
@@ -1568,6 +1570,7 @@ class GuideTabState extends State<GuideTab>
           _timeNavFocusWrap(
             index: 2,
             child: IconButton(
+              tooltip: t.liveTv.nextPrograms,
               icon: const AppIcon(Symbols.chevron_right_rounded),
               onPressed: () => _shiftTimeRange(2),
               iconSize: 20,
@@ -1824,7 +1827,7 @@ class GuideTabState extends State<GuideTab>
           child: Material(
             color: fillColor,
             shape: RoundedRectangleBorder(borderRadius: radius),
-            child: InkWell(
+            child: PressFeedbackInkWell(
               borderRadius: radius,
               mouseCursor: SystemMouseCursors.click,
               canRequestFocus: false,
@@ -2018,7 +2021,7 @@ class _ChannelCellState extends State<_ChannelCell> {
             child: Material(
               color: widget.isFocused ? theme.colorScheme.primary : tk.surface,
               shape: RoundedRectangleBorder(borderRadius: radius),
-              child: InkWell(
+              child: PressFeedbackInkWell(
                 borderRadius: radius,
                 canRequestFocus: false,
                 onTap: widget.onTap,

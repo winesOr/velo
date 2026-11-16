@@ -622,10 +622,12 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     await _toggleWatchlistOn(metadata, choice);
   }
 
-  Future<void> _toggleWatchlistOn(MediaItem metadata, WatchlistCandidate candidate) async {
+  Future<void> _toggleWatchlistOn(MediaItem metadata, WatchlistCandidate candidate, {bool? add}) async {
     if (!_canUseDetail) return;
     final current = candidate.source.isOnWatchlist(metadata.kind, candidate.ids);
     if (current == null || (_watchlistTarget == metadata.globalKey)) return;
+    final desired = add ?? !current;
+    if (current == desired) return;
     final target = metadata.globalKey;
     final request = Object();
     _watchlistToast?.dismiss();
@@ -637,11 +639,20 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     try {
       // Optimistic inside the source; the row/screens listening to
       // watchlistChanges (including this one) rebuild immediately.
-      await mutateWatchlistMembership(metadata.kind, candidate, add: !current);
+      await mutateWatchlistMembership(metadata.kind, candidate, add: desired);
       toast.dismiss();
     } catch (_) {
       if (_canUseDetail && _metadata.globalKey == target) {
-        toast.update(t.explore.watchlistUpdateFailed, type: AppToastType.error);
+        toast.update(
+          t.explore.watchlistUpdateFailed,
+          type: AppToastType.error,
+          actionLabel: t.common.retry,
+          onAction: () {
+            if (_canUseDetail && _metadata.globalKey == target) {
+              unawaited(_toggleWatchlistOn(_metadata, candidate, add: desired));
+            }
+          },
+        );
       } else {
         toast.dismiss();
       }
@@ -655,11 +666,13 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     }
   }
 
-  Future<void> _handleWatchedTogglePressed(MediaItem metadata) async {
+  Future<void> _handleWatchedTogglePressed(MediaItem metadata, {bool? watched}) async {
     if (!_canUseDetail || _watchedTarget == metadata.globalKey) return;
     final request = Object();
     final target = metadata.globalKey;
     final isWatched = metadata.isWatched;
+    final next = watched ?? !isWatched;
+    if (watched != null && watched == isWatched) return;
     _watchedToast?.dismiss();
     _watchedRequest = request;
     _watchedTarget = target;
@@ -667,7 +680,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     _watchedToast = toast;
     setStateIfMounted(() {});
     try {
-      final outcome = await WatchActions.setWatched(context, metadata, watched: !isWatched, offline: widget.isOffline);
+      final outcome = await WatchActions.setWatched(context, metadata, watched: next, offline: widget.isOffline);
       if (!_canUseDetail || _metadata.globalKey != target) {
         toast.dismiss();
         return;
@@ -686,7 +699,16 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       }
     } catch (error) {
       if (_canUseDetail && _metadata.globalKey == target) {
-        toast.update(t.messages.errorLoading(error: localizedErrorReason(error)), type: AppToastType.error);
+        toast.update(
+          t.messages.errorLoading(error: localizedErrorReason(error)),
+          type: AppToastType.error,
+          actionLabel: t.common.retry,
+          onAction: () {
+            if (_canUseDetail && _metadata.globalKey == target) {
+              unawaited(_handleWatchedTogglePressed(_metadata, watched: next));
+            }
+          },
+        );
       } else {
         toast.dismiss();
       }
@@ -780,7 +802,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                 ])
                   FocusableWrapper(
                     onSelect: () => Navigator.of(dialogContext).pop(id),
-                    child: ListTile(
+                    child: PressFeedbackListTile(
                       minTileHeight: 48,
                       leading: AppIcon(icon, size: 20),
                       title: Text(label),
@@ -840,7 +862,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                     for (final extra in extras)
                       FocusableWrapper(
                         onSelect: () => Navigator.of(dialogContext).pop(extra),
-                        child: ListTile(
+                        child: PressFeedbackListTile(
                           title: Text(extra.displayTitle),
                           leading: const AppIcon(Symbols.play_arrow_rounded),
                           onTap: () => Navigator.of(dialogContext).pop(extra),

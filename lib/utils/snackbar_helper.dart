@@ -1,4 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../profiles/active_profile_provider.dart';
+
+import '../i18n/strings.g.dart';
 
 import '../widgets/app_toast.dart';
 import 'layout_constants.dart';
@@ -8,15 +15,18 @@ final rootToastContextKey = GlobalKey();
 
 enum SnackBarType { info, success, error }
 
-void showSnackBar(
+AppToastHandle? showSnackBar(
   BuildContext context,
   String message, {
   SnackBarType type = SnackBarType.info,
   Duration? duration,
   bool? dismissible,
+  String? actionLabel,
+  VoidCallback? onAction,
+  VoidCallback? onDismiss,
 }) {
-  if (!context.mounted) return;
-  AppToast.show(
+  if (!context.mounted) return null;
+  return AppToast.show(
     context,
     message,
     type: switch (type) {
@@ -26,6 +36,9 @@ void showSnackBar(
     },
     duration: duration,
     dismissible: dismissible ?? true,
+    actionLabel: actionLabel,
+    onAction: onAction,
+    onDismiss: onDismiss,
   );
 }
 
@@ -33,8 +46,8 @@ void showAppSnackBar(BuildContext context, String message, {Duration? duration})
   showSnackBar(context, message, type: SnackBarType.info, duration: duration);
 }
 
-void showErrorSnackBar(BuildContext context, String message) {
-  showSnackBar(context, message, type: SnackBarType.error);
+void showErrorSnackBar(BuildContext context, String message, {String? actionLabel, VoidCallback? onAction}) {
+  showSnackBar(context, message, type: SnackBarType.error, actionLabel: actionLabel, onAction: onAction);
 }
 
 void showGlobalErrorSnackBar(String message) {
@@ -47,6 +60,36 @@ void showMainSnackBar(String message, {Duration duration = AppDurations.snackBar
   if (context != null) showAppSnackBar(context, message, duration: duration);
 }
 
-void showSuccessSnackBar(BuildContext context, String message) {
-  showSnackBar(context, message, type: SnackBarType.success);
+void showSuccessSnackBar(BuildContext context, String message, {String? actionLabel, VoidCallback? onAction}) {
+  showSnackBar(context, message, type: SnackBarType.success, actionLabel: actionLabel, onAction: onAction);
+}
+
+/// Gives the user the toast's full (pause-aware) action window before a
+/// destructive request starts. Replacing or dismissing the notice ends the
+/// window; Undo cancels it. Callers recheck their route/session before writing.
+Future<bool> confirmUndoableAction(BuildContext context, String message) async {
+  if (!context.mounted || Overlay.maybeOf(context, rootOverlay: true) == null) return false;
+  final profiles = context.read<ActiveProfileProvider?>();
+  final profileId = profiles?.activeId;
+  final generation = profiles?.identityMutationGeneration;
+  final result = Completer<bool>();
+  AppToastHandle? handle;
+  handle = showSnackBar(
+    context,
+    message,
+    actionLabel: t.common.undo,
+    onAction: () {
+      if (!result.isCompleted) result.complete(false);
+      handle?.dismiss();
+    },
+    onDismiss: () {
+      if (!result.isCompleted) result.complete(true);
+    },
+  );
+  if (handle == null) result.complete(false);
+  final confirmed = await result.future;
+  return confirmed &&
+      context.mounted &&
+      profiles?.activeId == profileId &&
+      profiles?.identityMutationGeneration == generation;
 }

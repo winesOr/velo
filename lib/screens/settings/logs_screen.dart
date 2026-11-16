@@ -295,6 +295,7 @@ class _LogsScreenState extends State<LogsScreen> with MountedSetStateMixin {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
+                      tooltip: t.startup.copyDetails,
                       icon: const AppIcon(Symbols.content_copy_rounded, size: 20),
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: id));

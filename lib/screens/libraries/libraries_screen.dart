@@ -40,6 +40,7 @@ import 'tabs/library_recommended_tab.dart';
 import 'tabs/library_collections_tab.dart';
 import 'tabs/library_playlists_tab.dart';
 import 'tabs/base_library_tab.dart';
+import '../../widgets/press_feedback.dart';
 
 enum LibraryTabType { recommended, browse, collections, playlists }
 
@@ -789,7 +790,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                 for (final library in libraries.where(
                   (library) => _wallServerId == null || library.serverId == _wallServerId,
                 ))
-                  SwitchListTile(
+                  PressFeedbackSwitchListTile(
                     title: Text(library.title),
                     secondary: BackendBadge(backend: library.backend, size: 20),
                     value: !hidden.hiddenLibraryKeys.contains(library.globalKey),

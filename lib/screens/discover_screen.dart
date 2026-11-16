@@ -80,6 +80,7 @@ import '../watch_together/watch_together.dart';
 import '../providers/companion_remote_provider.dart';
 import '../widgets/companion_remote/remote_session_dialog.dart';
 import 'companion_remote/mobile_remote_screen.dart';
+import '../widgets/press_feedback.dart';
 
 class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({super.key, this.heroRandom});
@@ -1407,7 +1408,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide(color: Colors.white.withValues(alpha: .08)),
               ),
-              child: InkWell(
+              child: PressFeedbackInkWell(
                 onTap: openTogether,
                 canRequestFocus: false,
                 borderRadius: BorderRadius.circular(16),
@@ -1568,7 +1569,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       child: Material(
         color: primary ? Colors.white : Colors.white.withValues(alpha: .12),
         borderRadius: BorderRadius.circular(24),
-        child: InkWell(
+        child: PressFeedbackInkWell(
           onTap: onPressed,
           canRequestFocus: false,
           borderRadius: BorderRadius.circular(24),

@@ -145,6 +145,7 @@ class _AlbumDetailScreenState extends BaseMediaListDetailScreen<AlbumDetailScree
           builder: (buttonContext) => Container(
             decoration: FocusTheme.focusBackgroundDecoration(isFocused: state.showFocus, borderRadius: 20),
             child: IconButton(
+              tooltip: t.videoControls.moreButton,
               icon: const AppIcon(Symbols.more_vert_rounded, fill: 1),
               onPressed: () => _showOverflowMenuAt(buttonContext),
             ),

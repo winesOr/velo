@@ -638,12 +638,14 @@ Future<void> deletePlaylistWithConfirm(
   required String confirmTitle,
   required VoidCallback onDeleted,
 }) async {
+  final session = client.authenticationSessionId;
   final confirmed = await showDeleteConfirmation(
     context,
     title: confirmTitle,
     message: t.playlists.deleteMessage(name: playlist.title),
   );
   if (!confirmed || !context.mounted) return;
+  if (!identical(client.authenticationSessionId, session)) return;
 
   bool success = false;
   try {

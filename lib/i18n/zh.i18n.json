@@ -59,6 +59,7 @@
     "personalExplanation": "你保存的评分 · ${scale}。"
   },
   "common": {
+    "undo": "撤销",
     "seasonCount": "共 ${count} 季",
     "ratingValue": "${value}分",
     "toastRepeated": "重复 ${count} 次",
@@ -924,6 +925,9 @@
   },
   "userStatus": {},
   "messages": {
+    "removingFromContinueWatching": "正在移出继续观看…",
+    "pendingRemoval": "即将删除或移除…",
+
     "addedToFavorites": "已收藏",
     "removedFromFavorites": "已取消收藏",
     "markedAsWatched": "已标记为已观看",
@@ -1672,6 +1676,9 @@
     }
   },
   "liveTv": {
+    "removeFavorite": "从收藏移除",
+    "previousPrograms": "更早的节目",
+    "nextPrograms": "更晚的节目",
     "title": "直播电视",
     "guide": "节目指南",
     "noChannels": "没有可用的频道",
@@ -1818,6 +1825,7 @@
     "errorRemoving": "从播放列表中移除失败"
   },
   "music": {
+    "removeFromQueue": "从队列移除",
     "goToAlbum": "前往专辑",
     "goToArtist": "前往艺术家",
     "instantMix": "即时混合播放",

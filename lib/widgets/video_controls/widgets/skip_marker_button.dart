@@ -7,6 +7,7 @@ import '../../../i18n/strings.g.dart';
 import '../../../media/media_source_info.dart';
 import '../../../theme/mono_tokens.dart';
 import '../../app_icon.dart';
+import '../../press_feedback.dart';
 
 class SkipMarkerButton extends StatelessWidget {
   final MediaMarker marker;
@@ -83,7 +84,7 @@ class SkipMarkerButton extends StatelessWidget {
       },
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
+        child: PressFeedbackInkWell(
           canRequestFocus: false,
           onTap: _activate,
           borderRadius: BorderRadius.circular(tokens(context).radiusSm),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:plezy/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -54,6 +55,37 @@ void main() {
       _urlLauncherChannel,
       null,
     );
+  });
+
+  testWidgets('helper undo cancels a deferred write and expiry commits only once', (tester) async {
+    final context = await _pumpHost(tester, size: const Size(390, 844), dark: true);
+    addTearDown(() => AppToast.dismiss(immediately: true));
+    bool? commit;
+    unawaited(notifications.confirmUndoableAction(context, 'Removal pending').then((value) => commit = value));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(commit, isNull);
+    await tester.tap(find.text(t.common.undo));
+    await tester.pumpAndSettle();
+    expect(commit, isFalse);
+
+    commit = null;
+    unawaited(notifications.confirmUndoableAction(context, 'Removal pending').then((value) => commit = value));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    final hold = await tester.startGesture(tester.getCenter(find.text('Removal pending')));
+    await tester.pump(const Duration(seconds: 7));
+    expect(commit, isNull, reason: 'holding the notice pauses the undo window');
+    await hold.cancel();
+    await tester.pumpAndSettle();
+    expect(commit, isTrue);
+
+    AppToast.show(context, 'Old notice');
+    await tester.pump();
+    final interrupted = notifications.confirmUndoableAction(context, 'New removal');
+    await tester.pump(const Duration(milliseconds: 40));
+    await tester.pumpWidget(const SizedBox());
+    expect(await interrupted, isFalse, reason: 'overlay disposal cancels even during replacement');
   });
 
   testWidgets('toast slot merges, pauses, replaces and keeps page focus', (tester) async {

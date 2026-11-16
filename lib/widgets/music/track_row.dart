@@ -1,3 +1,4 @@
+import '../../i18n/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +17,7 @@ import '../app_icon.dart';
 import '../download_status_icon.dart';
 import '../media_context_menu.dart';
 import 'equalizer_icon.dart';
+import '../press_feedback.dart';
 
 /// List row for a music track:
 /// `[track # | equalizer] [title + optional artist] [duration] [⋮]`.
@@ -204,7 +206,7 @@ class _TrackRowState extends State<TrackRow> with ContextMenuTapMixin<TrackRow>,
         color: tk.surface,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(borderRadius: radii),
-        child: InkWell(
+        child: PressFeedbackInkWell(
           mouseCursor: SystemMouseCursors.click,
           onTap: widget.onTap,
           onTapDown: withContextMenu ? storeTapPosition : null,
@@ -273,6 +275,7 @@ class _TrackRowState extends State<TrackRow> with ContextMenuTapMixin<TrackRow>,
                   ),
                   child: Builder(
                     builder: (buttonContext) => IconButton(
+                      tooltip: widget.onTrailingTap != null ? t.music.removeFromQueue : t.videoControls.moreButton,
                       icon: AppIcon(
                         widget.trailingIcon ?? Symbols.more_vert_rounded,
                         fill: 1,

@@ -17,6 +17,7 @@ import 'backend_badge.dart';
 import 'media_card_list_layout.dart';
 import 'optimized_media_image.dart';
 import 'settings_builder.dart';
+import 'press_feedback.dart';
 
 /// A person search result, laid out like the search screen's list-mode media
 /// rows (a `FocusableMediaCard` with `ViewMode.list` and `disableScale`): a
@@ -223,7 +224,7 @@ class _RowTapRegion extends StatelessWidget {
     if (!PlatformDetector.isDesktopOS()) {
       return GestureDetector(excludeFromSemantics: true, behavior: HitTestBehavior.opaque, onTap: onTap, child: child);
     }
-    return InkWell(
+    return PressFeedbackInkWell(
       excludeFromSemantics: true,
       mouseCursor: SystemMouseCursors.click,
       canRequestFocus: false,

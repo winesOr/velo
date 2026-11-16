@@ -4,6 +4,7 @@ import '../focus/input_mode_tracker.dart';
 import '../utils/platform_detector.dart';
 import '../utils/selection_feedback.dart';
 import 'clickable_cursor.dart';
+import 'press_feedback.dart';
 
 /// A ListTile that accepts a FocusNode for keyboard/controller navigation.
 ///
@@ -106,7 +107,7 @@ class _FocusableListTileState extends State<FocusableListTile> with FocusableTil
           borderRadius: BorderRadius.circular(12),
           border: tvFocus ? Border.all(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .18)) : null,
         ),
-        child: ListTile(
+        child: PressFeedbackListTile(
           // Paint the focus fill on Material's ink layer, so it cannot cover
           // the native tile highlight or trigger an obscured-ink diagnostic.
           tileColor: tvFocus ? Theme.of(context).colorScheme.onSurface.withValues(alpha: .1) : Colors.transparent,
@@ -206,7 +207,7 @@ class _FocusableSwitchListTileState extends State<FocusableSwitchListTile>
     final listTileTheme = ListTileTheme.of(context);
     return ClickableCursor(
       enabled: widget.onChanged != null,
-      child: SwitchListTile(
+      child: PressFeedbackSwitchListTile(
         title: widget.title,
         subtitle: widget.subtitle,
         secondary: widget.secondary,
@@ -278,7 +279,7 @@ class _FocusableCheckboxListTileState extends State<FocusableCheckboxListTile>
     final automotive = PlatformDetector.isAutomotive();
     return ClickableCursor(
       enabled: widget.onChanged != null,
-      child: CheckboxListTile(
+      child: PressFeedbackCheckboxListTile(
         title: widget.title,
         subtitle: widget.subtitle,
         secondary: widget.secondary,

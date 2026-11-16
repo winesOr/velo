@@ -1,3 +1,4 @@
+import 'package:plezy/widgets/app_toast.dart';
 import 'dart:convert';
 
 import 'package:drift/native.dart';
@@ -949,7 +950,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(routeCompleted, isFalse);
-    expect(find.textContaining('Sign-in failed'), findsOneWidget);
+    expect(find.textContaining('Sign-in failed'), findsNWidgets(2));
+    expect(find.descendant(of: find.byType(AppToast), matching: find.text('Retry')), findsOneWidget);
     final bundle = await tester.runAsync(() async {
       return (
         profiles: await harness.profiles.list(),

@@ -86,6 +86,7 @@ import 'video_player_screen.dart';
 import 'profile/profile_teardown.dart';
 import '../services/system_shelf_service.dart';
 import '../watch_together/watch_together.dart';
+import '../widgets/press_feedback.dart';
 
 /// Provides access to the main screen's focus control.
 // MainScreenFocusScope and SideNavigationBleedBuilder live in
@@ -2411,7 +2412,7 @@ class _MainScreenState extends State<MainScreen>
           if (_isOffline)
             Material(
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: InkWell(
+              child: PressFeedbackInkWell(
                 onTap: _isReconnecting ? null : _triggerReconnect,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

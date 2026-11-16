@@ -1014,6 +1014,12 @@ class MediaContextMenuState extends State<MediaContextMenu> {
   /// mark unwatched next episodes as watched.
   Future<void> _handleRemoveFromContinueWatching(BuildContext context, MediaItem item) async {
     try {
+      final client = _getMediaClientForItem();
+      final session = client.authenticationSessionId;
+      if (!await confirmUndoableAction(context, t.messages.removingFromContinueWatching) || !context.mounted) return;
+      if (!identical(_tryGetMediaClientForItem(), client) || !identical(client.authenticationSessionId, session)) {
+        return;
+      }
       await WatchActions.removeFromContinueWatching(context, item);
       if (context.mounted) {
         showSuccessSnackBar(context, t.messages.removedFromContinueWatching);
@@ -1099,7 +1105,28 @@ class MediaContextMenuState extends State<MediaContextMenu> {
       candidates = await catalogSources.watchlistCandidatesFor(item, client: client);
     } catch (e, st) {
       appLogger.w('Watchlist candidate resolution failed', error: e, stackTrace: st);
-      if (context.mounted) showErrorSnackBar(context, t.explore.watchlistUpdateFailed);
+      if (context.mounted) {
+        showErrorSnackBar(
+          context,
+          t.explore.watchlistUpdateFailed,
+          actionLabel: t.common.retry,
+          onAction: () {
+            if (context.mounted) {
+              unawaited(
+                _handleWatchlistToggle(
+                  context,
+                  item,
+                  catalogSources,
+                  client,
+                  removeOffered: removeOffered,
+                  position: position,
+                  openedFromKeyboard: openedFromKeyboard,
+                ),
+              );
+            }
+          },
+        );
+      }
       return;
     }
     if (!context.mounted) return;
@@ -1134,7 +1161,28 @@ class MediaContextMenuState extends State<MediaContextMenu> {
       showSuccessSnackBar(context, add ? t.explore.addedToWatchlist : t.explore.removedFromWatchlist);
     } catch (e, st) {
       appLogger.w('Watchlist update failed', error: e, stackTrace: st);
-      if (context.mounted) showErrorSnackBar(context, t.explore.watchlistUpdateFailed);
+      if (context.mounted) {
+        showErrorSnackBar(
+          context,
+          t.explore.watchlistUpdateFailed,
+          actionLabel: t.common.retry,
+          onAction: () {
+            if (context.mounted) {
+              unawaited(
+                _handleWatchlistToggle(
+                  context,
+                  item,
+                  catalogSources,
+                  client,
+                  removeOffered: removeOffered,
+                  position: position,
+                  openedFromKeyboard: openedFromKeyboard,
+                ),
+              );
+            }
+          },
+        );
+      }
     }
   }
 
@@ -1149,7 +1197,14 @@ class MediaContextMenuState extends State<MediaContextMenu> {
     } catch (e) {
       if (context.mounted) {
         final reason = e is _ItemServerUnavailable ? t.errors.reasonUnreachable : localizedErrorReason(e);
-        showErrorSnackBar(context, t.messages.errorLoading(error: reason));
+        showErrorSnackBar(
+          context,
+          t.messages.errorLoading(error: reason),
+          actionLabel: t.common.retry,
+          onAction: () {
+            if (context.mounted) unawaited(_executeAction(context, action, successMessage));
+          },
+        );
       }
     }
   }
@@ -1162,6 +1217,8 @@ class MediaContextMenuState extends State<MediaContextMenu> {
   }
 
   Future<void> _handleUnmatch(BuildContext context, MediaItem item) async {
+    final expectedClient = _tryGetMediaClientForItem();
+    final expectedSession = expectedClient?.authenticationSessionId;
     final confirmed = await showConfirmDialog(
       context,
       title: t.matchScreen.unmatch,
@@ -1170,6 +1227,10 @@ class MediaContextMenuState extends State<MediaContextMenu> {
       isDestructive: true,
     );
     if (!confirmed || !context.mounted) return;
+    if (!identical(_tryGetMediaClientForItem(), expectedClient) ||
+        !identical(expectedClient?.authenticationSessionId, expectedSession)) {
+      return;
+    }
 
     final client = _getClientForItem();
     try {
@@ -1649,6 +1710,8 @@ class MediaContextMenuState extends State<MediaContextMenu> {
     }
 
     // Show confirmation dialog
+    final expectedClient = _tryGetMediaClientForItem();
+    final expectedSession = expectedClient?.authenticationSessionId;
     final confirmed = await showDeleteConfirmation(
       context,
       title: t.collections.removeFromCollection,
@@ -1656,6 +1719,10 @@ class MediaContextMenuState extends State<MediaContextMenu> {
     );
 
     if (!confirmed || !context.mounted) return;
+    if (!identical(_tryGetMediaClientForItem(), expectedClient) ||
+        !identical(expectedClient?.authenticationSessionId, expectedSession)) {
+      return;
+    }
 
     try {
       appLogger.d('Removing item ${item.id} from collection ${widget.collectionId}');
@@ -1730,12 +1797,18 @@ class MediaContextMenuState extends State<MediaContextMenu> {
       return;
     }
 
+    final expectedClient = _tryGetMediaClientForItem();
+    final expectedSession = expectedClient?.authenticationSessionId;
     final confirmed = await showDeleteConfirmation(
       context,
       title: t.collections.deleteCollection,
       message: t.collections.deleteConfirm(title: _itemDisplayTitle()),
     );
     if (!confirmed || !context.mounted) return;
+    if (!identical(_tryGetMediaClientForItem(), expectedClient) ||
+        !identical(expectedClient?.authenticationSessionId, expectedSession)) {
+      return;
+    }
 
     try {
       final success = await client.deleteCollection(_mediaItem!);
@@ -1839,6 +1912,8 @@ class MediaContextMenuState extends State<MediaContextMenu> {
     final item = _mediaItem!;
     final globalKey = item.globalKey;
 
+    final expectedClient = _tryGetMediaClientForItem();
+    final expectedSession = expectedClient?.authenticationSessionId;
     final confirmed = await showDeleteConfirmation(
       context,
       title: t.downloads.deleteDownload,
@@ -1846,6 +1921,10 @@ class MediaContextMenuState extends State<MediaContextMenu> {
     );
 
     if (!confirmed || !context.mounted) return;
+    if (!identical(_tryGetMediaClientForItem(), expectedClient) ||
+        !identical(expectedClient?.authenticationSessionId, expectedSession)) {
+      return;
+    }
 
     try {
       // Use smart deletion handler (shows progress only if >500ms)
@@ -1976,6 +2055,8 @@ class MediaContextMenuState extends State<MediaContextMenu> {
       if (!context.mounted) return;
     }
 
+    final expectedClient = _tryGetMediaClientForItem();
+    final expectedSession = expectedClient?.authenticationSessionId;
     final confirmed = await showDeleteConfirmation(
       context,
       title: _deleteDialogTitle(mediaKind),
@@ -1985,6 +2066,10 @@ class MediaContextMenuState extends State<MediaContextMenu> {
     );
 
     if (!confirmed || !context.mounted) return;
+    if (!identical(_tryGetMediaClientForItem(), expectedClient) ||
+        !identical(expectedClient?.authenticationSessionId, expectedSession)) {
+      return;
+    }
 
     try {
       final success = await client.deleteMediaItem(item);

@@ -384,8 +384,16 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
   Future<void> _removeItem(int index) async {
     if (!_canMutatePlaylist) return;
     if (items.isEmpty || index < 0 || index >= items.length) return;
-    final originalOrder = List<MediaItem>.of(items);
     final item = items[index];
+    final owner = mediaClient;
+    final session = owner.authenticationSessionId;
+    if (!await confirmUndoableAction(context, t.messages.pendingRemoval) || !mounted || !_canMutatePlaylist) return;
+    if (!identical(mediaClient, owner) ||
+        !identical(owner.authenticationSessionId, session) ||
+        index >= items.length ||
+        !identical(items[index], item))
+      return;
+    final originalOrder = List<MediaItem>.of(items);
     appLogger.d('Removing item ${item.title} from playlist');
 
     setState(() {

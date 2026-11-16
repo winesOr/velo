@@ -20,6 +20,7 @@ import '../models/watch_session.dart';
 import '../screens/watch_together_screen.dart';
 import '../../widgets/video_controls/sheets/player_settings_drawer.dart';
 import '../providers/watch_together_provider.dart';
+import '../../widgets/press_feedback.dart';
 
 /// Opens the real session controls or the existing create/join flow.
 Future<void> showWatchTogetherPlayerDrawer(BuildContext context) async {
@@ -109,7 +110,7 @@ class _SessionIndicator extends StatelessWidget {
       child: Material(
         color: const Color(0x476FD6CF),
         borderRadius: const BorderRadius.all(Radius.circular(20)),
-        child: InkWell(
+        child: PressFeedbackInkWell(
           canRequestFocus: false,
           onTap: onTap,
           borderRadius: const BorderRadius.all(Radius.circular(20)),
@@ -169,7 +170,7 @@ class _SessionMenuSheet extends StatelessWidget {
               descendantsAreFocusable: false,
               borderRadius: 8,
               useBackgroundFocus: true,
-              child: InkWell(
+              child: PressFeedbackInkWell(
                 canRequestFocus: false,
                 onTap: () => _copySessionCode(context, provider.sessionId!),
                 borderRadius: const BorderRadius.all(Radius.circular(8)),
@@ -215,7 +216,7 @@ class _SessionMenuSheet extends StatelessWidget {
                 contentPadding: .zero,
               )
             else
-              ListTile(
+              PressFeedbackListTile(
                 leading: _participantAvatar(theme, participant),
                 title: Text(participant.displayName),
                 subtitle: participant.isHost ? Text(t.watchTogether.host) : null,

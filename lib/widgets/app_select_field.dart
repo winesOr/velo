@@ -189,7 +189,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             ),
           ),
           clipBehavior: Clip.antiAlias,
-          child: InkWell(
+          child: PressFeedbackInkWell(
             canRequestFocus: false,
             enableFeedback: false,
             onTap: _canOpen ? _open : null,

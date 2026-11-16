@@ -42,6 +42,7 @@ import '../../widgets/optimized_media_image.dart';
 import '../../widgets/overlay_sheet.dart';
 import 'queue_sheet.dart';
 import '../../utils/error_message_utils.dart';
+import '../../widgets/press_feedback.dart';
 
 /// Full-screen music player. Pushed via [openNowPlaying]; popping never
 /// touches playback — audio continues under the mini-player.
@@ -980,7 +981,7 @@ class _PlayPauseButton extends StatelessWidget {
         ),
         child: Material(
           type: MaterialType.transparency,
-          child: InkWell(
+          child: PressFeedbackInkWell(
             mouseCursor: SystemMouseCursors.click,
             onTap: onPressed,
             child: Center(

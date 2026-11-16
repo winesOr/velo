@@ -28,6 +28,7 @@ import 'add_local_profile_screen.dart';
 import 'pin_entry_dialog.dart';
 import 'profile_teardown.dart';
 import 'profile_detail_screen.dart';
+import '../../widgets/press_feedback.dart';
 
 /// Flat picker showing every [Profile] in the system — Plex Home users
 /// auto-surfaced from connected accounts, plus user-created locals.
@@ -437,7 +438,7 @@ class _ProfileTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final hasMenu = onManage != null || onDelete != null || onSignOut != null;
-    return InkWell(
+    return PressFeedbackInkWell(
       canRequestFocus: false,
       onTap: isActive ? null : onTap,
       onLongPress: onLongPress,

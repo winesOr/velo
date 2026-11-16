@@ -21,6 +21,7 @@ import '../../utils/dialogs.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/overlay_sheet.dart';
 import 'livetv_recording_actions.dart';
+import '../../widgets/press_feedback.dart';
 
 /// Sub-page rendered inside the open program-details [OverlaySheetController].
 /// Displays editable [SubscriptionSetting]s for the chosen template entry and
@@ -514,7 +515,7 @@ class _BoolSettingRow extends StatelessWidget {
       autoScroll: true,
       useBackgroundFocus: true,
       onSelect: toggle,
-      child: InkWell(
+      child: PressFeedbackInkWell(
         canRequestFocus: false,
         onTap: toggle,
         child: Padding(
@@ -609,7 +610,7 @@ class _PickerRow extends StatelessWidget {
       autoScroll: true,
       useBackgroundFocus: true,
       onSelect: onTap,
-      child: InkWell(canRequestFocus: false, onTap: onTap, child: row),
+      child: PressFeedbackInkWell(canRequestFocus: false, onTap: onTap, child: row),
     );
   }
 }

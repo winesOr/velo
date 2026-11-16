@@ -12,6 +12,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/focusable_list_tile.dart';
 import '../../widgets/settings_page.dart';
 import '../../widgets/settings_section.dart';
+import '../../widgets/press_feedback.dart';
 
 /// Connected-state settings for the Seerr instance: who is signed in,
 /// which instance, and disconnect.
@@ -58,12 +59,12 @@ class SeerrSettingsScreen extends StatelessWidget {
           children: [
             SettingsGroup(
               children: [
-                ListTile(
+                PressFeedbackListTile(
                   leading: const AppIcon(Symbols.account_circle_rounded, fill: 1),
                   title: Text(t.services.connectedAs(username: session.displayName)),
                   subtitle: Text(methodLabel),
                 ),
-                ListTile(
+                PressFeedbackListTile(
                   leading: const AppIcon(Symbols.dns_rounded, fill: 1),
                   title: Text(session.instanceLabel.isNotEmpty ? session.instanceLabel : t.seerr.instance),
                   subtitle: Text(session.baseUrl),

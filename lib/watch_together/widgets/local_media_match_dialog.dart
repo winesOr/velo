@@ -17,6 +17,7 @@ import '../../utils/media_server_http_client.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/dialog_action_button.dart';
 import '../../widgets/loading_indicator_box.dart';
+import '../../widgets/press_feedback.dart';
 
 class LocalMediaSelection {
   const LocalMediaSelection(this.item, this.version);
@@ -221,7 +222,7 @@ class _LocalMediaMatchDialogState extends State<LocalMediaMatchDialog> {
               FocusableWrapper(
                 descendantsAreFocusable: false,
                 onSelect: _choosing ? null : () => _choose(result.item),
-                child: ListTile(
+                child: PressFeedbackListTile(
                   title: Text(_describe(result.item)),
                   subtitle: Text(result.serverName),
                   onTap: _choosing ? null : () => _choose(result.item),

@@ -24,6 +24,7 @@ import '../live_tv_refresh_mixin.dart';
 import '../live_tv_server_iteration.dart';
 import '../livetv_recording_actions.dart';
 import '../livetv_styles.dart';
+import '../../../widgets/press_feedback.dart';
 
 class RecordingsTab extends StatefulWidget {
   final VoidCallback? onNavigateUp;
@@ -411,7 +412,7 @@ class _GrabTile extends StatelessWidget {
       onSelect: onTap,
       onNavigateUp: onNavigateUp,
       onBack: onBack,
-      child: InkWell(
+      child: PressFeedbackInkWell(
         canRequestFocus: false,
         onTap: onTap,
         child: Container(
@@ -502,7 +503,7 @@ class _RuleTile extends StatelessWidget {
       onSelect: onTap,
       onNavigateUp: onNavigateUp,
       onBack: onBack,
-      child: InkWell(
+      child: PressFeedbackInkWell(
         canRequestFocus: false,
         onTap: onTap,
         child: Padding(

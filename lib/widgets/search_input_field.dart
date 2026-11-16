@@ -1,3 +1,4 @@
+import '../i18n/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -94,7 +95,11 @@ class _SearchInputFieldState extends State<SearchInputField> {
               onNavigateLeft: widget.focusNode.requestFocus,
               onNavigateDown: widget.onNavigateDown,
               autoScroll: false,
-              child: IconButton(icon: const AppIcon(Symbols.clear_rounded, fill: 1), onPressed: _clearSearch),
+              child: IconButton(
+                tooltip: t.common.clear,
+                icon: const AppIcon(Symbols.clear_rounded, fill: 1),
+                onPressed: _clearSearch,
+              ),
             ),
         ],
       ),

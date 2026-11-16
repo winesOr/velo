@@ -42,6 +42,7 @@ import '../widgets/join_session_dialog.dart';
 import '../widgets/create_session_dialog.dart';
 import '../widgets/local_media_match_dialog.dart';
 import '../../widgets/loading_indicator_box.dart';
+import '../../widgets/press_feedback.dart';
 
 /// The existing create/join flow embedded in a player's hosted drawer.
 class WatchTogetherSetupPanel extends StatelessWidget {
@@ -549,7 +550,13 @@ class _NotInSessionViewState extends State<_NotInSessionView> with MountedSetSta
   Future<void> _removeRoom(RecentRoom room) async {
     final profileId = _profileId;
     if (profileId == null || profileId.isEmpty) return;
-    await RecentRoomsService.removeRoom(room.code, profileId: profileId, endpoint: _relayEndpoint);
+    final endpoint = _relayEndpoint;
+    if (!await confirmUndoableAction(context, t.messages.pendingRemoval) ||
+        !mounted ||
+        _profileId != profileId ||
+        _relayEndpoint != endpoint)
+      return;
+    await RecentRoomsService.removeRoom(room.code, profileId: profileId, endpoint: endpoint);
     setStateIfMounted(() => _recentRooms = _loadRecentRooms());
   }
 }
@@ -1335,7 +1342,7 @@ class _SessionCodeHero extends StatelessWidget {
         semanticValue: sessionId,
         descendantsAreFocusable: false,
         onSelect: () => _copySessionCode(context),
-        child: InkWell(
+        child: PressFeedbackInkWell(
           canRequestFocus: false,
           onTap: () => _copySessionCode(context),
           borderRadius: const BorderRadius.all(Radius.circular(12)),

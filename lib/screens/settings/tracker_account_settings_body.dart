@@ -13,6 +13,7 @@ import '../../widgets/settings_builder.dart';
 import '../../widgets/settings_page.dart';
 import '../../widgets/settings_section.dart';
 import 'tracker_library_filter_screen.dart';
+import '../../widgets/press_feedback.dart';
 
 class TrackerSettingsToggle {
   final Pref<bool> pref;
@@ -52,7 +53,7 @@ class TrackerAccountSettingsBody extends StatelessWidget {
       children: [
         SettingsGroup(
           children: [
-            ListTile(
+            PressFeedbackListTile(
               leading: const AppIcon(Symbols.account_circle_rounded, fill: 1),
               title: Text(accountTitle),
               subtitle: accountSubtitle != null ? Text(accountSubtitle!) : null,

@@ -18,6 +18,7 @@ import '../../../watch_together/widgets/watch_together_overlay.dart';
 import '../../../watch_together/providers/watch_together_provider.dart';
 import '../../app_bar_back_button.dart';
 import '../../system_clock.dart';
+import '../../press_feedback.dart';
 
 /// Header layout style for video controls
 enum VideoHeaderStyle {
@@ -213,7 +214,7 @@ class VideoControlsHeader extends StatelessWidget {
               child: Material(
                 color: const Color(0x4D6FD6CF),
                 borderRadius: BorderRadius.circular(22 * scale),
-                child: InkWell(
+                child: PressFeedbackInkWell(
                   onTap: openDrawer,
                   canRequestFocus: false,
                   borderRadius: BorderRadius.circular(22 * scale),

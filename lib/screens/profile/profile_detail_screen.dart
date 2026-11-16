@@ -33,6 +33,7 @@ import 'pin_entry_dialog.dart';
 import 'pin_status_row.dart';
 import 'profile_teardown.dart';
 import 'profile_name_field.dart';
+import '../../widgets/press_feedback.dart';
 
 /// Manage one [Profile] — rename, change PIN, list/add/remove
 /// connections, set the default connection.
@@ -452,7 +453,7 @@ class _ConnectionsListState extends State<_ConnectionsList> {
                   margin: EdgeInsets.zero,
                   children: [
                     if (parentConn != null)
-                      ListTile(
+                      PressFeedbackListTile(
                         leading: BackendBadge(backend: parentConn.backend, size: 24),
                         title: Text(parentConn.displayLabel),
                         subtitle: Text(t.profiles.plexHomeAccount),
@@ -469,7 +470,7 @@ class _ConnectionsListState extends State<_ConnectionsList> {
                       ),
                     for (final pc in visiblePcs)
                       if (byId[pc.connectionId] case final conn?)
-                        ListTile(
+                        PressFeedbackListTile(
                           leading: BackendBadge(backend: conn.backend, size: 24),
                           title: Text(conn.displayLabel),
                           subtitle: _ConnectionSubtitle.build(conn: conn, pc: pc, homeCache: homeCache, theme: theme),

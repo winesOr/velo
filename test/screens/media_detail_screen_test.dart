@@ -2132,6 +2132,31 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
     }
 
+    testWidgets('failed favorite retries the same desired state from the toast', (tester) async {
+      final movie = testMediaItem(
+        id: 'favorite-retry',
+        title: 'Retry favorite',
+        kind: MediaKind.movie,
+        backend: MediaBackend.jellyfin,
+        serverId: 'server_1',
+      );
+      final client = _FakeMediaServerClient(show: movie, childrenByParent: {})..favoriteGate = Completer<void>();
+      await pumpPhoneDetail(tester, client, movie, viewport: const Size(390, 844));
+      await tester.tap(find.byTooltip(t.rateSheet.favorite));
+      await tester.pump();
+      client.favoriteGate!.completeError(StateError('offline'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(client.favoriteCalls, 1);
+      client.favoriteGate = null;
+      await tester.tap(find.text(t.common.retry));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(client.favoriteCalls, 2);
+      expect(find.byTooltip(t.rateSheet.favorited), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('favorite stays busy and ignores repeat activation until the server responds', (tester) async {
       final movie = testMediaItem(
         id: 'favorite-busy',

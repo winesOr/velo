@@ -29,6 +29,7 @@ import 'app_menu.dart';
 import 'bottom_sheet_page_scaffold.dart';
 import 'media_context_menu.dart' show isAdminActionAllowedForMediaItem;
 import 'overlay_sheet.dart';
+import 'press_feedback.dart';
 
 class ContextMenuItem {
   final String value;
@@ -529,7 +530,7 @@ class _LibraryManagementSheetState extends State<_LibraryManagementSheet>
     return Opacity(
       key: ValueKey(library.globalKey),
       opacity: isHidden ? 0.5 : 1.0,
-      child: ListTile(
+      child: PressFeedbackListTile(
         tileColor: tileColor,
         leading: Row(
           mainAxisSize: .min,

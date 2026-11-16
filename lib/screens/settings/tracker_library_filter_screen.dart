@@ -13,6 +13,7 @@ import '../../widgets/setting_tile.dart';
 import '../../widgets/settings_builder.dart';
 import '../../widgets/settings_page.dart';
 import '../../widgets/settings_section.dart';
+import '../../widgets/press_feedback.dart';
 
 /// Per-provider library whitelist/blacklist screen. Toggling a switch
 /// adds/removes the library from the filter set; "selected" means "in the
@@ -109,7 +110,7 @@ class TrackerLibraryFilterScreen extends StatelessWidget {
               children.add(
                 SettingsGroup(
                   title: t.services.libraryFilter.libraries,
-                  children: [ListTile(title: Text(t.services.libraryFilter.noLibraries))],
+                  children: [PressFeedbackListTile(title: Text(t.services.libraryFilter.noLibraries))],
                 ),
               );
             } else if (showServerHeaders) {

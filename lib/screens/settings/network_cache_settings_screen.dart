@@ -7,6 +7,7 @@ import '../../utils/app_logger.dart';
 import '../../utils/dialogs.dart';
 import '../../utils/snackbar_helper.dart';
 import '../../widgets/app_icon.dart';
+import '../../widgets/press_feedback.dart';
 import '../../widgets/setting_tile.dart';
 import '../../widgets/settings_page.dart';
 import '../../widgets/settings_section.dart';
@@ -68,7 +69,7 @@ class _NetworkCacheSettingsScreenState extends State<NetworkCacheSettingsScreen>
       SettingsGroup(
         title: t.settings.homeCache,
         children: [
-          ListTile(
+          PressFeedbackListTile(
             leading: const AppIcon(Symbols.home_rounded),
             title: Text(t.settings.homeCacheAutomatic),
             subtitle: Text(t.settings.homeCacheAutomaticDescription),

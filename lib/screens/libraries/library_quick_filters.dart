@@ -7,6 +7,7 @@ import '../../media/media_filter.dart';
 import '../../media/media_sort.dart';
 import '../../theme/mono_presentation.dart';
 import '../../theme/velo_brand.dart';
+import '../../widgets/press_feedback.dart';
 
 /// Inline prototype rows use the same backend fields and persisted clauses as
 /// the full editor. Server facet IDs remain unchanged when a tag is selected.
@@ -182,7 +183,7 @@ class _Tag extends StatelessWidget {
             child: Material(
               color: selected ? VeloBrand.selection(theme.brightness) : Colors.transparent,
               borderRadius: BorderRadius.circular(100),
-              child: InkWell(
+              child: PressFeedbackInkWell(
                 onTap: onPressed,
                 borderRadius: BorderRadius.circular(100),
                 child: Padding(

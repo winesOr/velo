@@ -19,6 +19,7 @@ import '../../utils/app_logger.dart';
 
 import '../loading_indicator_box.dart';
 import '../app_icon.dart';
+import '../press_feedback.dart';
 
 @visibleForTesting
 String companionRemotePairingErrorMessage(Object error) {
@@ -334,7 +335,7 @@ class _DiscoveryViewState extends State<DiscoveryView> with ControllerDisposerMi
         const SizedBox(height: 8),
         ..._hosts.map(
           (host) => Card(
-            child: ListTile(
+            child: PressFeedbackListTile(
               leading: AppIcon(_platformIcon(host.platform), size: 32),
               title: Text(host.name),
               subtitle: Text(host.platform),
@@ -359,7 +360,7 @@ class _DiscoveryViewState extends State<DiscoveryView> with ControllerDisposerMi
           disableScale: true,
           borderRadius: 8,
           onSelect: () => setState(() => _showManualEntry = !_showManualEntry),
-          child: InkWell(
+          child: PressFeedbackInkWell(
             canRequestFocus: false,
             borderRadius: const BorderRadius.all(Radius.circular(8)),
             onTap: () => setState(() => _showManualEntry = !_showManualEntry),

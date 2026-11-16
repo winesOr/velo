@@ -17,6 +17,7 @@ import '../../widgets/focused_scroll_scaffold.dart';
 import '../../widgets/app_icon.dart';
 import '../libraries/state_messages.dart';
 import '../../i18n/strings.g.dart';
+import '../../widgets/press_feedback.dart';
 
 class SyncRulesScreen extends StatefulWidget {
   const SyncRulesScreen({super.key});
@@ -247,7 +248,7 @@ class _SyncRuleTileState extends State<_SyncRuleTile> {
           onNavigateRight: () => _switchFocusNode.requestFocus(),
           child: Material(
             type: MaterialType.transparency,
-            child: ListTile(
+            child: PressFeedbackListTile(
               dense: true,
               visualDensity: const VisualDensity(vertical: -3),
               shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
@@ -355,7 +356,7 @@ class _SwipeRevealDeleteActionState extends State<_SwipeRevealDeleteAction> {
                         color: colorScheme.error,
                         borderRadius: BorderRadius.circular(12),
                         clipBehavior: Clip.antiAlias,
-                        child: InkWell(
+                        child: PressFeedbackInkWell(
                           key: const ValueKey('sync_rule_swipe_delete'),
                           onTap: widget.onDelete,
                           child: Tooltip(

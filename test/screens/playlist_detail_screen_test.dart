@@ -585,7 +585,7 @@ void main() {
     await _pushPlaylistRoute(tester, harness);
 
     await tester.tap(find.byTooltip(t.playlists.removeItem).first);
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(_visiblePlaylistItemIds(tester), ['item_1', 'item_2']);
     expect(harness.client.removeRequests, hasLength(1));
     expect(
@@ -598,7 +598,7 @@ void main() {
     expect(_visiblePlaylistItemIds(tester), ['item_0', 'item_1', 'item_2']);
 
     await tester.tap(find.byTooltip(t.playlists.removeItem).first);
-    await tester.pump();
+    await tester.pumpAndSettle();
     harness.client.failRemove(1, applyToServer: true);
     await tester.pumpAndSettle();
 
@@ -614,7 +614,7 @@ void main() {
     await _pushPlaylistRoute(tester, harness);
 
     await tester.tap(find.byTooltip(t.playlists.removeItem).first);
-    await tester.pump();
+    await tester.pumpAndSettle();
     harness.client.completeRemove(0, true, applyToServer: true);
     await tester.pumpAndSettle();
 
@@ -629,7 +629,7 @@ void main() {
     );
 
     await tester.tap(find.byTooltip(t.playlists.removeItem).first);
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(harness.client.removeRequests, hasLength(2));
     harness.client.completeRemove(1, true, applyToServer: true);
     await tester.pumpAndSettle();
@@ -649,7 +649,7 @@ void main() {
     expect(find.text('Item 0 (refreshed)'), findsOneWidget);
 
     await tester.tap(find.byTooltip(t.playlists.removeItem).first);
-    await tester.pump();
+    await tester.pumpAndSettle();
     final removed = harness.client.removeRequests.single.item as PlexMediaItem;
     expect(removed.playlistItemId, 100);
     harness.client.completeRemove(0, true, applyToServer: true);

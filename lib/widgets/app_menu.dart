@@ -21,6 +21,7 @@ import 'app_icon.dart';
 import 'app_dialog.dart';
 import 'clickable_cursor.dart';
 import 'overlay_sheet.dart';
+import 'press_feedback.dart';
 
 typedef AppMenuEntryBuilder<T> = List<AppMenuEntry<T>> Function(BuildContext context);
 
@@ -368,7 +369,7 @@ class AppMenuButtonState<T> extends State<AppMenuButton<T>> {
     if (child != null) {
       final button = ClickableCursor(
         enabled: widget.enabled,
-        child: InkWell(
+        child: PressFeedbackInkWell(
           onTap: widget.enabled ? _handlePressed : null,
           borderRadius: BorderRadius.circular(tokens(context).radiusSm),
           child: child,

@@ -14,6 +14,7 @@ import '../../i18n/strings.g.dart';
 import '../../widgets/media_context_menu.dart';
 import '../../widgets/watched_indicator.dart';
 import '../../widgets/optimized_media_image.dart';
+import '../../widgets/press_feedback.dart';
 
 /// Custom list item widget for playlist items
 /// Shows drag handle, poster, title/metadata, duration, and remove button.
@@ -85,7 +86,7 @@ class PlaylistItemCardState extends State<PlaylistItemCard> with ContextMenuTapM
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         color: cardColor,
         shape: cardShape,
-        child: InkWell(
+        child: PressFeedbackInkWell(
           mouseCursor: SystemMouseCursors.click,
           onTap: widget.onTap,
           onTapDown: storeTapPosition,

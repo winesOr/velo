@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 
 import '../widgets/clickable_cursor.dart';
+import '../widgets/press_feedback.dart';
 import '../utils/text_input_diagnostics.dart';
 import 'dpad_navigator.dart';
 import 'dpad_select_long_press_controller.dart';
@@ -407,6 +408,9 @@ class _FocusableWrapperState extends State<FocusableWrapper> with SingleTickerPr
   // every unmapped arrow through to framework traversal, where a chip does the
   // opposite on both counts.
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (widget.onSelect != null || widget.onLongPress != null) {
+      PressFeedbackRegion.observeKey(context, event);
+    }
     final key = event.logicalKey;
     final diagnosticsEnabled = TextInputDiagnostics.enabled;
     KeyEventResult finish(KeyEventResult result, String reason) {

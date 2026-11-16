@@ -8,6 +8,7 @@ import '../../../utils/formatters.dart';
 import '../../../utils/track_label_builder.dart';
 import '../../../watch_together/providers/watch_together_provider.dart';
 import '../../app_icon.dart';
+import '../../press_feedback.dart';
 
 /// Current player values inside the same fading HUD as the timeline.
 ///
@@ -195,7 +196,7 @@ class PlayerChip extends StatelessWidget {
           color: Colors.white.withValues(alpha: .1),
           shape: const StadiumBorder(),
           clipBehavior: Clip.antiAlias,
-          child: InkWell(
+          child: PressFeedbackInkWell(
             onTap: enabled ? tap : null,
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 28, maxWidth: 140),

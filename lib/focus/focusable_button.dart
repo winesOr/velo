@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'focus_theme.dart';
 import 'focusable_wrapper.dart';
 import 'input_mode_tracker.dart';
+import '../widgets/press_feedback.dart';
 
 class FocusableButton extends StatefulWidget {
   final Widget child;
@@ -62,24 +63,27 @@ class _FocusableButtonState extends State<FocusableButton> {
     final enabled = widget.onPressed != null;
     final opacity = widget.dimWhenUnfocused && isKeyboard && !_isFocused ? 0.6 : 1.0;
 
-    return FocusableWrapper(
-      autofocus: widget.autofocus && enabled,
-      focusNode: widget.focusNode,
-      canRequestFocus: enabled,
-      disableScale: true,
-      borderRadius: 100,
-      useBackgroundFocus: widget.useBackgroundFocus,
-      descendantsAreFocusable: false,
-      onFocusChange: (f) => setState(() => _isFocused = f),
-      autoScroll: widget.autoScroll,
-      focusColor: widget.focusColor,
-      onSelect: widget.onPressed,
-      onNavigateUp: widget.onNavigateUp,
-      onNavigateDown: widget.onNavigateDown,
-      onNavigateLeft: widget.onNavigateLeft,
-      onNavigateRight: widget.onNavigateRight,
-      onBack: widget.onBack,
-      child: AnimatedOpacity(opacity: showFocus ? 1.0 : opacity, duration: duration, child: widget.child),
+    return PressFeedbackRegion(
+      enabled: enabled,
+      child: FocusableWrapper(
+        autofocus: widget.autofocus && enabled,
+        focusNode: widget.focusNode,
+        canRequestFocus: enabled,
+        disableScale: true,
+        borderRadius: 100,
+        useBackgroundFocus: widget.useBackgroundFocus,
+        descendantsAreFocusable: false,
+        onFocusChange: (f) => setState(() => _isFocused = f),
+        autoScroll: widget.autoScroll,
+        focusColor: widget.focusColor,
+        onSelect: widget.onPressed,
+        onNavigateUp: widget.onNavigateUp,
+        onNavigateDown: widget.onNavigateDown,
+        onNavigateLeft: widget.onNavigateLeft,
+        onNavigateRight: widget.onNavigateRight,
+        onBack: widget.onBack,
+        child: AnimatedOpacity(opacity: showFocus ? 1.0 : opacity, duration: duration, child: widget.child),
+      ),
     );
   }
 }

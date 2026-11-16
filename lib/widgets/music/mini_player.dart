@@ -21,6 +21,7 @@ import '../../utils/video_player_navigation.dart';
 import '../media_context_menu.dart';
 import '../optimized_media_image.dart';
 import '../overlay_sheet.dart';
+import '../press_feedback.dart';
 
 /// Suppresses the mini-player while the top PAGE route of the profile
 /// navigator is a full-screen playback surface (the video player or the
@@ -291,7 +292,7 @@ class _MiniPlayerCardState extends State<_MiniPlayerCard> with ContextMenuTapMix
       color: tk.surface,
       clipBehavior: Clip.antiAlias,
       borderRadius: BorderRadius.circular(tk.radiusLg),
-      child: InkWell(
+      child: PressFeedbackInkWell(
         canRequestFocus: false,
         mouseCursor: SystemMouseCursors.click,
         onTap: () => unawaited(openNowPlaying(context)),

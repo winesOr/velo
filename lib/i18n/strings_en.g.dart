@@ -293,6 +293,9 @@ class Translations$common$en {
 
 	// Translations
 
+	/// en: 'Undo'
+	String get undo => 'Undo';
+
 	/// en: '${count} seasons'
 	String seasonCount({required Object count}) => '${count} seasons';
 
@@ -2731,6 +2734,12 @@ class Translations$messages$en {
 
 	// Translations
 
+	/// en: 'Removing from Continue Watching…'
+	String get removingFromContinueWatching => 'Removing from Continue Watching…';
+
+	/// en: 'Removal pending…'
+	String get pendingRemoval => 'Removal pending…';
+
 	/// en: 'Added to favorites'
 	String get addedToFavorites => 'Added to favorites';
 
@@ -4169,6 +4178,15 @@ class Translations$liveTv$en {
 
 	// Translations
 
+	/// en: 'Remove from favorites'
+	String get removeFavorite => 'Remove from favorites';
+
+	/// en: 'Earlier programs'
+	String get previousPrograms => 'Earlier programs';
+
+	/// en: 'Later programs'
+	String get nextPrograms => 'Later programs';
+
 	/// en: 'Live TV'
 	String get title => 'Live TV';
 
@@ -4587,6 +4605,9 @@ class Translations$music$en {
 	final Translations _root; // ignore: unused_field
 
 	// Translations
+
+	/// en: 'Remove from queue'
+	String get removeFromQueue => 'Remove from queue';
 
 	/// en: 'Go to album'
 	String get goToAlbum => 'Go to album';
@@ -8648,6 +8669,7 @@ extension on Translations {
 			'ratingDetails.sourceExplanation' => ({required Object source, required Object scale}) => '${source} · ${scale}.',
 			'ratingDetails.serverExplanation' => ({required Object source, required Object scale}) => 'Provided by the media server · ${source} · ${scale}.',
 			'ratingDetails.personalExplanation' => ({required Object scale}) => 'Your saved rating · ${scale}.',
+			'common.undo' => 'Undo',
 			'common.seasonCount' => ({required Object count}) => '${count} seasons',
 			'common.ratingValue' => ({required Object value}) => '${value}',
 			'common.toastRepeated' => ({required Object count}) => 'Repeated ${count} times',
@@ -9106,9 +9128,9 @@ extension on Translations {
 			'settings.gestureHorizontalSeekDescription' => 'Swipe left or right on the video to move through it',
 			'settings.longPressSpeed' => 'Hold-to-Speed Rate',
 			'settings.serverAccounts' => 'Servers & Accounts',
-			'settings.downloadsOffline' => 'Downloads & Offline',
 			_ => null,
 		} ?? switch (path) {
+			'settings.downloadsOffline' => 'Downloads & Offline',
 			'settings.connectionsIntegrations' => 'Connections & Integrations',
 			'settings.appearanceAndHome' => 'Appearance & Home',
 			'settings.application' => 'Application',
@@ -9474,6 +9496,8 @@ extension on Translations {
 			'videoControls.noAudioTracksDescription' => 'This media has no audio tracks to select.',
 			'videoControls.drawerSecondarySubtitle' => 'Secondary subtitle',
 			'videoControls.drawerAdjustments' => 'Adjustments',
+			'messages.removingFromContinueWatching' => 'Removing from Continue Watching…',
+			'messages.pendingRemoval' => 'Removal pending…',
 			'messages.addedToFavorites' => 'Added to favorites',
 			'messages.removedFromFavorites' => 'Removed from favorites',
 			'messages.markedAsWatched' => 'Marked as watched',
@@ -9618,11 +9642,11 @@ extension on Translations {
 			'profiles.confirmPinTitle' => 'Confirm PIN',
 			'profiles.pinSet' => 'PIN set',
 			'profiles.changePin' => 'Change',
+			_ => null,
+		} ?? switch (path) {
 			'profiles.removePin' => 'Remove',
 			'profiles.connectionsLabel' => 'Connections',
 			'profiles.add' => 'Add',
-			_ => null,
-		} ?? switch (path) {
 			'profiles.deleteProfileButton' => 'Delete profile',
 			'profiles.noConnectionsHint' => 'No connections — add one to use this profile.',
 			'profiles.noConnections' => 'No connections',
@@ -10128,15 +10152,18 @@ extension on Translations {
 			'explore.detail.relatedTitles' => 'Related titles',
 			'explore.detail.background' => 'Background',
 			'explore.totalResults' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} result', other: '${n} results', ), 
+			'liveTv.removeFavorite' => 'Remove from favorites',
+			'liveTv.previousPrograms' => 'Earlier programs',
+			'liveTv.nextPrograms' => 'Later programs',
 			'liveTv.title' => 'Live TV',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.guide' => 'Guide',
 			'liveTv.noChannels' => 'No channels available',
 			'liveTv.noDvr' => 'No DVR configured on any server',
 			'liveTv.serverUnavailable' => 'Live TV server is not available.',
 			'liveTv.serverNotConnected' => 'Live TV server is not connected.',
 			'liveTv.noPrograms' => 'No program data available',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.liveStreamFailed' => 'Live stream failed',
 			'liveTv.unknownProgram' => 'Unknown Program',
 			'liveTv.unknownHub' => 'Unknown',
@@ -10268,6 +10295,7 @@ extension on Translations {
 			'playlists.errorAdding' => 'Failed to add to playlist',
 			'playlists.errorReordering' => 'Failed to reorder playlist item',
 			'playlists.errorRemoving' => 'Failed to remove from playlist',
+			'music.removeFromQueue' => 'Remove from queue',
 			'music.goToAlbum' => 'Go to album',
 			'music.goToArtist' => 'Go to artist',
 			'music.instantMix' => 'Instant Mix',
@@ -10642,6 +10670,8 @@ extension on Translations {
 			'videoSettings.performanceOverlay' => 'Performance Overlay',
 			'videoSettings.audioOutputDolbyAtmos' => 'Dolby Atmos',
 			'videoSettings.audioOutputDolbyAudio' => 'Dolby Audio',
+			_ => null,
+		} ?? switch (path) {
 			'videoSettings.audioOutputSurround' => 'Surround',
 			'videoSettings.audioOutputSpatial' => 'Spatial Audio',
 			'videoSettings.audioOutputStereo' => 'Stereo',
@@ -10649,8 +10679,6 @@ extension on Translations {
 			'videoSettings.audioNormalizationDisablesPassthrough' => 'Decodes audio to PCM; passthrough is off while this is on',
 			'videoSettings.audioNormalizationStereoMix' => 'Decodes audio to a stereo mix; passthrough is off while this is on',
 			'performanceOverlay.color' => 'Color',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.performance' => 'Performance',
 			'performanceOverlay.buffer' => 'Buffer',
 			'performanceOverlay.app' => 'App',

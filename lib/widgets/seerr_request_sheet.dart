@@ -27,6 +27,7 @@ import 'loading_indicator_box.dart';
 import 'focusable_list_tile.dart';
 import 'overlay_sheet.dart';
 import 'stat_chip.dart';
+import 'press_feedback.dart';
 
 /// Why the sheet closed itself; a caller surfaces it on its own scaffold
 /// since the sheet is unmounting.
@@ -687,7 +688,7 @@ class _SeerrRequestSheetState extends State<SeerrRequestSheet> {
     final allSelected = requestable.isNotEmpty && requestable.every(_selectedSeasons.contains);
     return [
       Text(t.seerr.seasons, style: theme.textTheme.titleSmall),
-      CheckboxListTile(
+      PressFeedbackCheckboxListTile(
         value: allSelected,
         onChanged: _submitting
             ? null

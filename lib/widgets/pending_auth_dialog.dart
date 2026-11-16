@@ -15,6 +15,7 @@ import '../utils/snackbar_helper.dart';
 import 'app_icon.dart';
 import 'dialog_action_button.dart';
 import 'loading_indicator_box.dart';
+import 'press_feedback.dart';
 
 /// Shell for the "waiting for out-of-band authorization" dialogs.
 ///
@@ -243,7 +244,12 @@ class CopyTapRegion extends StatelessWidget {
       descendantsAreFocusable: false,
       useBackgroundFocus: true,
       borderRadius: 8,
-      child: InkWell(canRequestFocus: false, onTap: onCopy, borderRadius: BorderRadius.circular(8), child: child),
+      child: PressFeedbackInkWell(
+        canRequestFocus: false,
+        onTap: onCopy,
+        borderRadius: BorderRadius.circular(8),
+        child: child,
+      ),
     );
   }
 }

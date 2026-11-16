@@ -10,6 +10,7 @@ import '../focus/key_repeat_helper.dart';
 import 'app_icon.dart';
 import '../theme/mono_tokens.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'press_feedback.dart';
 
 /// Size variant for [TvNumberSpinner].
 enum TvNumberSpinnerDensity {
@@ -273,7 +274,7 @@ class _SpinnerButton extends StatelessWidget {
 
     Widget button = Material(
       color: Colors.transparent,
-      child: InkWell(
+      child: PressFeedbackInkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.all(Radius.circular(compact ? 20 : 24)),
         child: Container(

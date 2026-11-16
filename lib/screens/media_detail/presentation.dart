@@ -163,7 +163,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
     );
   }
 
-  Future<void> _toggleDetailFavorite(MediaItem metadata) async {
+  Future<void> _toggleDetailFavorite(MediaItem metadata, {bool? favorite}) async {
     final client = _getMediaClientForMetadata(context);
     if (!_canUseDetail ||
         widget.isOffline ||
@@ -173,7 +173,8 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
     }
     final request = Object();
     final target = metadata.globalKey;
-    final next = metadata.isFavorite != true;
+    final next = favorite ?? metadata.isFavorite != true;
+    if (favorite != null && (metadata.isFavorite == true) == next) return;
     _favoriteToast?.dismiss();
     _favoriteRequest = request;
     _favoriteTarget = target;
@@ -190,7 +191,16 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
       toast.update(next ? t.messages.addedToFavorites : t.messages.removedFromFavorites);
     } catch (error) {
       if (_canUseDetail && _metadata.globalKey == target) {
-        toast.update(t.messages.errorLoading(error: localizedErrorReason(error)), type: AppToastType.error);
+        toast.update(
+          t.messages.errorLoading(error: localizedErrorReason(error)),
+          type: AppToastType.error,
+          actionLabel: t.common.retry,
+          onAction: () {
+            if (_canUseDetail && _metadata.globalKey == target) {
+              unawaited(_toggleDetailFavorite(_metadata, favorite: next));
+            }
+          },
+        );
       } else {
         toast.dismiss();
       }

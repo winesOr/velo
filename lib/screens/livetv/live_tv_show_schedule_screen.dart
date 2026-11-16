@@ -21,6 +21,7 @@ import '../../widgets/settings_section.dart';
 import 'live_tv_actions_mixin.dart';
 import 'livetv_recording_actions.dart';
 import 'livetv_styles.dart';
+import '../../widgets/press_feedback.dart';
 
 /// Shows all upcoming airings of a show, matching the Plex "upcoming episodes" view.
 class LiveTvShowScheduleScreen extends StatefulWidget {
@@ -237,7 +238,7 @@ class _ScheduleListTile extends StatelessWidget {
       if (program.summary != null && program.summary!.isNotEmpty) program.summary!,
     ].join(' — ');
 
-    return InkWell(
+    return PressFeedbackInkWell(
       canRequestFocus: false,
       onTap: onTap,
       child: Container(

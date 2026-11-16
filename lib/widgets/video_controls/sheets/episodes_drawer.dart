@@ -25,6 +25,7 @@ import 'base_video_control_sheet.dart';
 import 'player_initial_focus.dart';
 import 'player_settings_controls.dart';
 import 'player_popovers.dart' show episodePopoverLabel;
+import '../../press_feedback.dart';
 
 /// Shared player drawer. Queue items retain their original queue identity.
 class EpisodesDrawer extends StatefulWidget {
@@ -539,7 +540,7 @@ class _EpisodesDrawerState extends State<EpisodesDrawer> {
                                 hideSpoilers: hideSpoilers,
                               ),
                             if (_nextSeasonFirst != null) ...[
-                              ListTile(
+                              PressFeedbackListTile(
                                 title: Text(
                                   _nextSeason?.index == null
                                       ? t.videoControls.nextPlaying
@@ -549,7 +550,7 @@ class _EpisodesDrawerState extends State<EpisodesDrawer> {
                               _row(_nextSeasonFirst!, current: false, next: true, hideSpoilers: hideSpoilers),
                             ],
                             if (_items.isEmpty && !_loading && !_failed)
-                              ListTile(title: Text(t.videoControls.noQueueItems)),
+                              PressFeedbackListTile(title: Text(t.videoControls.noQueueItems)),
                             if (_loading) const Center(child: CircularProgressIndicator()),
                             if (_failed)
                               TextButton(

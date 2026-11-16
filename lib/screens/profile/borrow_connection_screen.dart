@@ -27,6 +27,7 @@ import '../../widgets/loading_indicator_box.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
 import '../libraries/state_messages.dart';
 import 'pin_entry_dialog.dart';
+import '../../widgets/press_feedback.dart';
 
 /// Pick a connection from another profile and attach it to [targetProfile]
 /// as an independent copy.
@@ -392,7 +393,7 @@ class _BorrowTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return InkWell(
+    return PressFeedbackInkWell(
       canRequestFocus: false,
       onTap: onTap,
       borderRadius: borderRadius,

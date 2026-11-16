@@ -14,6 +14,7 @@ import '../../widgets/bottom_sheet_page_scaffold.dart';
 import '../../widgets/overlay_sheet.dart';
 import '../../widgets/optimized_media_image.dart';
 import '../../utils/tone_mapped_logo_image.dart';
+import '../../widgets/press_feedback.dart';
 
 class ReorderFavoritesSheet extends StatefulWidget {
   final List<FavoriteChannel> favorites;
@@ -162,7 +163,7 @@ class _ReorderFavoritesSheetState extends State<ReorderFavoritesSheet>
     final displayName = channel?.displayName ?? fav.title ?? fav.id;
     final channelNumber = channel?.number ?? fav.vcn;
 
-    return ListTile(
+    return PressFeedbackListTile(
       key: key,
       tileColor: tileColor,
       leading: Row(
@@ -206,6 +207,7 @@ class _ReorderFavoritesSheetState extends State<ReorderFavoritesSheet>
       trailing: Container(
         decoration: FocusTheme.focusBackgroundDecoration(isFocused: isRemoveButtonFocused, borderRadius: 20),
         child: IconButton(
+          tooltip: t.liveTv.removeFavorite,
           icon: const AppIcon(Symbols.close_rounded, fill: 1, size: 20),
           onPressed: () => _removeItem(index),
         ),

@@ -26,6 +26,7 @@ import '../utils/media_quality_labels.dart';
 import '../widgets/media_context_menu.dart';
 import '../widgets/placeholder_container.dart';
 import '../media/media_server_client.dart';
+import 'press_feedback.dart';
 
 /// Episode card widget with D-pad long-press support
 class EpisodeCard extends StatefulWidget {
@@ -156,7 +157,7 @@ class _EpisodeCardState extends State<EpisodeCard> with ContextMenuTapMixin<Epis
             item: episode,
             onRefresh: widget.onRefresh,
             onListRefresh: widget.onListRefresh,
-            child: InkWell(
+            child: PressFeedbackInkWell(
               key: Key(episode.id),
               mouseCursor: SystemMouseCursors.click,
               borderRadius: BorderRadius.circular(FocusTheme.defaultBorderRadius),

@@ -22,6 +22,7 @@ import '../../../widgets/pill_input_decoration.dart';
 import 'base_video_control_sheet.dart';
 import '../../loading_indicator_box.dart';
 import '../models/track_controls_state.dart';
+import '../../press_feedback.dart';
 
 @visibleForTesting
 String resolveSubtitleSearchLanguageCode({String? savedLanguageCode, required Locale systemLocale}) {
@@ -262,7 +263,7 @@ class _SubtitleSearchSheetState extends State<SubtitleSearchSheet> with Controll
                   child: Material(
                     color: fillColor,
                     borderRadius: pillInputRadius,
-                    child: InkWell(
+                    child: PressFeedbackInkWell(
                       borderRadius: pillInputRadius,
                       canRequestFocus: false,
                       onTap: _showLanguagePickerView,

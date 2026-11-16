@@ -13,6 +13,7 @@ import '../../widgets/focused_scroll_scaffold.dart';
 import '../profile/borrow_connection_screen.dart';
 import 'add_jellyfin_screen.dart';
 import 'add_plex_account_screen.dart';
+import '../../widgets/press_feedback.dart';
 
 /// Picker shown when the user taps "Add connection".
 ///
@@ -149,7 +150,7 @@ class _BackendCard extends StatelessWidget {
         borderRadii: borderRadius,
         descendantsAreFocusable: false,
         onSelect: onTap,
-        child: InkWell(
+        child: PressFeedbackInkWell(
           onTap: onTap,
           borderRadius: borderRadius,
           child: Padding(

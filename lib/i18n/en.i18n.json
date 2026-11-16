@@ -59,6 +59,7 @@
     "personalExplanation": "Your saved rating · ${scale}."
   },
   "common": {
+    "undo": "Undo",
     "seasonCount": "${count} seasons",
     "ratingValue": "${value}",
     "toastRepeated": "Repeated ${count} times",
@@ -927,6 +928,9 @@
   },
   "userStatus": {},
   "messages": {
+    "removingFromContinueWatching": "Removing from Continue Watching…",
+    "pendingRemoval": "Removal pending…",
+
     "addedToFavorites": "Added to favorites",
     "removedFromFavorites": "Removed from favorites",
     "markedAsWatched": "Marked as watched",
@@ -1682,6 +1686,9 @@
     }
   },
   "liveTv": {
+    "removeFavorite": "Remove from favorites",
+    "previousPrograms": "Earlier programs",
+    "nextPrograms": "Later programs",
     "title": "Live TV",
     "guide": "Guide",
     "noChannels": "No channels available",
@@ -1828,6 +1835,7 @@
     "errorRemoving": "Failed to remove from playlist"
   },
   "music": {
+    "removeFromQueue": "Remove from queue",
     "goToAlbum": "Go to album",
     "goToArtist": "Go to artist",
     "instantMix": "Instant Mix",

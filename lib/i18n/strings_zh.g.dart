@@ -184,6 +184,7 @@ class Translations$common$zh extends Translations$common$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String get undo => '撤销';
 	@override String seasonCount({required Object count}) => '共 ${count} 季';
 	@override String ratingValue({required Object value}) => '${value}分';
 	@override String toastRepeated({required Object count}) => '重复 ${count} 次';
@@ -1079,6 +1080,8 @@ class Translations$messages$zh extends Translations$messages$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String get removingFromContinueWatching => '正在移出继续观看…';
+	@override String get pendingRemoval => '即将删除或移除…';
 	@override String get addedToFavorites => '已收藏';
 	@override String get removedFromFavorites => '已取消收藏';
 	@override String get markedAsWatched => '已标记为已观看';
@@ -1683,6 +1686,9 @@ class Translations$liveTv$zh extends Translations$liveTv$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String get removeFavorite => '从收藏移除';
+	@override String get previousPrograms => '更早的节目';
+	@override String get nextPrograms => '更晚的节目';
 	@override String get title => '直播电视';
 	@override String get guide => '节目指南';
 	@override String get noChannels => '没有可用的频道';
@@ -1841,6 +1847,7 @@ class Translations$music$zh extends Translations$music$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String get removeFromQueue => '从队列移除';
 	@override String get goToAlbum => '前往专辑';
 	@override String get goToArtist => '前往艺术家';
 	@override String get instantMix => '即时混合播放';
@@ -3607,6 +3614,7 @@ extension on TranslationsZh {
 			'ratingDetails.sourceExplanation' => ({required Object source, required Object scale}) => '${source} · ${scale}。',
 			'ratingDetails.serverExplanation' => ({required Object source, required Object scale}) => '由媒体服务器提供 · ${source} · ${scale}。',
 			'ratingDetails.personalExplanation' => ({required Object scale}) => '你保存的评分 · ${scale}。',
+			'common.undo' => '撤销',
 			'common.seasonCount' => ({required Object count}) => '共 ${count} 季',
 			'common.ratingValue' => ({required Object value}) => '${value}分',
 			'common.toastRepeated' => ({required Object count}) => '重复 ${count} 次',
@@ -4065,9 +4073,9 @@ extension on TranslationsZh {
 			'settings.gestureHorizontalSeekDescription' => '在视频上左右滑动以快进或快退',
 			'settings.longPressSpeed' => '长按倍速',
 			'settings.serverAccounts' => '服务器与账户',
-			'settings.downloadsOffline' => '下载与离线',
 			_ => null,
 		} ?? switch (path) {
+			'settings.downloadsOffline' => '下载与离线',
 			'settings.connectionsIntegrations' => '连接与集成',
 			'settings.appearanceAndHome' => '外观与首页',
 			'settings.application' => '应用',
@@ -4433,6 +4441,8 @@ extension on TranslationsZh {
 			'videoControls.noAudioTracksDescription' => '此媒体没有可选择的音轨',
 			'videoControls.drawerSecondarySubtitle' => '次字幕',
 			'videoControls.drawerAdjustments' => '调整',
+			'messages.removingFromContinueWatching' => '正在移出继续观看…',
+			'messages.pendingRemoval' => '即将删除或移除…',
 			'messages.addedToFavorites' => '已收藏',
 			'messages.removedFromFavorites' => '已取消收藏',
 			'messages.markedAsWatched' => '已标记为已观看',
@@ -4577,11 +4587,11 @@ extension on TranslationsZh {
 			'profiles.confirmPinTitle' => '确认 PIN',
 			'profiles.pinSet' => '已设置 PIN',
 			'profiles.changePin' => '更改',
+			_ => null,
+		} ?? switch (path) {
 			'profiles.removePin' => '移除',
 			'profiles.connectionsLabel' => '连接',
 			'profiles.add' => '添加',
-			_ => null,
-		} ?? switch (path) {
 			'profiles.deleteProfileButton' => '删除用户资料',
 			'profiles.noConnectionsHint' => '没有连接 — 请添加连接以使用此用户资料。',
 			'profiles.noConnections' => '没有连接',
@@ -5087,15 +5097,18 @@ extension on TranslationsZh {
 			'explore.detail.relatedTitles' => '相关作品',
 			'explore.detail.background' => '背景',
 			'explore.totalResults' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('zh'))(n, other: '${n} 条结果', ), 
+			'liveTv.removeFavorite' => '从收藏移除',
+			'liveTv.previousPrograms' => '更早的节目',
+			'liveTv.nextPrograms' => '更晚的节目',
 			'liveTv.title' => '直播电视',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.guide' => '节目指南',
 			'liveTv.noChannels' => '没有可用的频道',
 			'liveTv.noDvr' => '没有服务器配置 DVR',
 			'liveTv.serverUnavailable' => '直播电视服务器不可用。',
 			'liveTv.serverNotConnected' => '直播电视服务器未连接。',
 			'liveTv.noPrograms' => '没有可用的节目数据',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.liveStreamFailed' => '直播流失败',
 			'liveTv.unknownProgram' => '未知节目',
 			'liveTv.unknownHub' => '未知',
@@ -5227,6 +5240,7 @@ extension on TranslationsZh {
 			'playlists.errorAdding' => '添加到播放列表失败',
 			'playlists.errorReordering' => '重新排序播放列表项目失败',
 			'playlists.errorRemoving' => '从播放列表中移除失败',
+			'music.removeFromQueue' => '从队列移除',
 			'music.goToAlbum' => '前往专辑',
 			'music.goToArtist' => '前往艺术家',
 			'music.instantMix' => '即时混合播放',
@@ -5601,6 +5615,8 @@ extension on TranslationsZh {
 			'videoSettings.performanceOverlay' => '性能监控',
 			'videoSettings.audioOutputDolbyAtmos' => 'Dolby Atmos',
 			'videoSettings.audioOutputDolbyAudio' => 'Dolby Audio',
+			_ => null,
+		} ?? switch (path) {
 			'videoSettings.audioOutputSurround' => '环绕声',
 			'videoSettings.audioOutputSpatial' => '空间音频',
 			'videoSettings.audioOutputStereo' => '立体声',
@@ -5608,8 +5624,6 @@ extension on TranslationsZh {
 			'videoSettings.audioNormalizationDisablesPassthrough' => '将音频解码为 PCM；开启时直通关闭',
 			'videoSettings.audioNormalizationStereoMix' => '将音频解码为立体声混音；开启时直通关闭',
 			'performanceOverlay.color' => '颜色',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.performance' => '性能',
 			'performanceOverlay.buffer' => '缓冲',
 			'performanceOverlay.app' => '应用',

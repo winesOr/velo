@@ -19,6 +19,7 @@ import '../../widgets/companion_remote/discovery_view.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/overlay_sheet.dart';
 import '../../widgets/pill_input_decoration.dart';
+import '../../widgets/press_feedback.dart';
 
 class MobileRemoteScreen extends StatefulWidget {
   const MobileRemoteScreen({super.key});
@@ -701,6 +702,7 @@ class _SearchBottomSheetState extends State<_SearchBottomSheet> with ControllerD
               hintText: t.companionRemote.remote.searchHint,
               prefixIcon: const AppIcon(Symbols.search_rounded),
               suffixIcon: IconButton(
+                tooltip: t.common.submit,
                 icon: const AppIcon(Symbols.send_rounded),
                 onPressed: () => _submit(_controller.text),
               ),
@@ -727,7 +729,7 @@ class _RemoteCard extends StatelessWidget {
       width: 100,
       height: 100,
       child: Card(
-        child: InkWell(
+        child: PressFeedbackInkWell(
           onTap: () {
             HapticFeedback.lightImpact();
             onPressed();

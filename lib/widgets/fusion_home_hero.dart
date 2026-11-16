@@ -230,7 +230,7 @@ class HomeHeroPrimaryButton extends StatelessWidget {
       pressedScale: InteractionTokens.mainPressedScale,
       enabled: action != null,
       borderRadius: radius,
-      builder: (context, setPressed, confirm) => InkWell(
+      builder: (context, setPressed, confirm) => PressFeedbackInkWell(
         onTap: action,
         onHighlightChanged: setPressed,
         borderRadius: radius,

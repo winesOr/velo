@@ -382,7 +382,7 @@ class NavigationRailItem extends StatelessWidget {
             ),
             child: Material(
               color: Colors.transparent,
-              child: InkWell(
+              child: PressFeedbackInkWell(
                 canRequestFocus: false,
                 onTap: onTap,
                 onHighlightChanged: setPressed,
@@ -1502,7 +1502,7 @@ class SideNavigationRailState extends State<SideNavigationRail> with MountedSetS
           ),
           child: Material(
             color: Colors.transparent,
-            child: InkWell(
+            child: PressFeedbackInkWell(
               canRequestFocus: false,
               onTap: onToggle,
               onHighlightChanged: setPressed,

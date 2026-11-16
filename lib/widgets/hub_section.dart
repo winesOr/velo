@@ -35,6 +35,7 @@ import 'tv_browse_rail.dart';
 import '../i18n/strings.g.dart';
 import '../utils/dialogs.dart';
 import 'rating_source_dialog.dart';
+import 'press_feedback.dart';
 
 enum HubCardSizing {
   /// Larger cards optimized for top-level TV shelves.
@@ -549,7 +550,7 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
                 ? EdgeInsets.symmetric(vertical: isTv ? 6 : 2)
                 : EdgeInsets.fromLTRB(leadingPadding - 4, isTv ? 6 : 2, 8, isTv ? 8 : 2),
             child: ExcludeFocus(
-              child: InkWell(
+              child: PressFeedbackInkWell(
                 mouseCursor: canBrowseAll ? SystemMouseCursors.click : MouseCursor.defer,
                 onTap: canBrowseAll ? () => _navigateToHubDetail(context) : null,
                 borderRadius: BorderRadius.circular(tokens(context).radiusSm),

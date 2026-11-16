@@ -21,6 +21,8 @@ import '../../utils/media_server_http_client.dart';
 import '../../utils/media_server_timeouts.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_dialog.dart';
+import '../../widgets/press_feedback.dart';
+import '../../utils/snackbar_helper.dart';
 import '../../widgets/focusable_list_tile.dart';
 import '../../widgets/setting_tile.dart';
 import '../../widgets/settings_page.dart';
@@ -64,7 +66,7 @@ class ServerRoutesScreen extends StatelessWidget {
     return SettingsPage(
       title: Text(t.routes.title),
       children: [
-        SettingsGroup(children: children.isEmpty ? [ListTile(title: Text(t.routes.noServers))] : children),
+        SettingsGroup(children: children.isEmpty ? [PressFeedbackListTile(title: Text(t.routes.noServers))] : children),
       ],
     );
   }
@@ -205,7 +207,7 @@ class _ServerRouteListState extends State<_ServerRouteList> with AsyncFormStateM
     if (connection == null) {
       return SettingsPage(
         title: Text(widget.title),
-        children: [ListTile(title: Text(t.routes.noServers))],
+        children: [PressFeedbackListTile(title: Text(t.routes.noServers))],
       );
     }
     final routes = _routes(connection);
@@ -230,14 +232,18 @@ class _ServerRouteListState extends State<_ServerRouteList> with AsyncFormStateM
                   ? null
                   : () => _perform(() => _write(connection, ServerRouteSettings(routes: routes, usePrimary: true))),
             ),
-            ListTile(title: Text(t.routes.manual), subtitle: Text(t.routes.manualDescription)),
-            ListTile(enabled: false, title: Text(t.routes.automatic), subtitle: Text(t.routes.automaticDescription)),
+            PressFeedbackListTile(title: Text(t.routes.manual), subtitle: Text(t.routes.manualDescription)),
+            PressFeedbackListTile(
+              enabled: false,
+              title: Text(t.routes.automatic),
+              subtitle: Text(t.routes.automaticDescription),
+            ),
           ],
         ),
         SettingsSectionHeader(t.routes.title),
         if (routes.isEmpty)
           SettingsGroup(
-            children: [ListTile(title: Text(t.routes.empty), subtitle: Text(t.routes.emptyDescription))],
+            children: [PressFeedbackListTile(title: Text(t.routes.empty), subtitle: Text(t.routes.emptyDescription))],
           ),
         for (final route in routes) ...[
           SettingsGroup(
@@ -265,6 +271,7 @@ class _ServerRouteListState extends State<_ServerRouteList> with AsyncFormStateM
                           confirmText: t.common.delete,
                         );
                         if (!confirmed || !mounted) return;
+                        if (!await confirmUndoableAction(this.context, t.messages.pendingRemoval) || !mounted) return;
                         final remaining = routes.where((r) => r.url != route.url).toList();
                         await _write(
                           connection,

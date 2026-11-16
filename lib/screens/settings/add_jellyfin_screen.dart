@@ -29,6 +29,7 @@ import '../../services/storage_service.dart';
 import '../../theme/mono_tokens.dart';
 import '../../theme/settings_presentation.dart';
 import '../../utils/app_logger.dart';
+import '../../utils/snackbar_helper.dart';
 import '../../utils/device_identity.dart';
 import '../../utils/platform_detector.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
@@ -38,6 +39,7 @@ import '../profile/profile_switch_screen.dart';
 import 'async_form_state_mixin.dart';
 import 'connection_persistence.dart';
 import 'quick_connect_flow_mixin.dart';
+import '../../widgets/press_feedback.dart';
 
 @visibleForTesting
 Future<String> resolveJellyfinClientVersion({Future<PackageInfo> Function()? packageInfoLoader}) async {
@@ -261,6 +263,16 @@ class _AddJellyfinScreenState extends State<AddJellyfinScreen>
       errorMapper: (e) =>
           e is MediaServerUrlException ? e.display ?? e.message : t.addServer.couldNotReachServer(error: e.toString()),
     );
+    if (mounted && errorText != null) {
+      showErrorSnackBar(
+        context,
+        errorText!,
+        actionLabel: t.common.retry,
+        onAction: () {
+          if (mounted && !busy) unawaited(_probe());
+        },
+      );
+    }
     // Sequenced after the probe's runAsync so busy stays set straight through
     // /QuickConnect/Initiate. Started from inside the probe body, the probe's
     // `finally` cleared busy mid-initiate, re-enabling the form — the focus
@@ -301,6 +313,16 @@ class _AddJellyfinScreenState extends State<AddJellyfinScreen>
         return t.addServer.signInFailed(error: e.toString());
       },
     );
+    if (mounted && errorText != null) {
+      showErrorSnackBar(
+        context,
+        errorText!,
+        actionLabel: t.common.retry,
+        onAction: () {
+          if (mounted && !busy) unawaited(_signIn());
+        },
+      );
+    }
   }
 
   Future<void> _startQuickConnect() async {
@@ -1053,7 +1075,7 @@ class _DiscoveredJellyfinServerTile extends StatelessWidget {
         child: Material(
           color: theme.colorScheme.surfaceContainerHighest,
           borderRadius: borderRadius,
-          child: InkWell(
+          child: PressFeedbackInkWell(
             onTap: onTap,
             borderRadius: borderRadius,
             child: Padding(

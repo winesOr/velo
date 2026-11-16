@@ -714,12 +714,12 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
     final homeTitle = widget.showMediaKindSubtitle
         ? const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, height: 1.4)
         : homeType?.cardTitle.copyWith(fontSize: compactHome ? 12 : 13) ??
-            const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontVariations: [FontVariation('wght', 650)],
-              fontSize: 14,
-              height: 1.1,
-            );
+              const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontVariations: [FontVariation('wght', 650)],
+                fontSize: 14,
+                height: 1.1,
+              );
 
     // The focus border hugs the poster (captions stay outside it), matching
     // the full-bleed card treatment.
@@ -1796,7 +1796,7 @@ class _CardTapRegionState extends State<_CardTapRegion> {
         child: widget.child,
       );
     } else {
-      surface = InkWell(
+      surface = PressFeedbackInkWell(
         excludeFromSemantics: true,
         mouseCursor: SystemMouseCursors.click,
         canRequestFocus: false,

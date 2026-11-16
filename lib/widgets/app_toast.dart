@@ -171,7 +171,24 @@ class _AppToastPlayerRegionState extends State<AppToastPlayerRegion> {
 }
 
 class _ToastNotice {
-  const _ToastNotice(this.message, this.type, this.duration, this.dismissible, this.actionLabel, this.onAction);
+  _ToastNotice(
+    this.message,
+    this.type,
+    this.duration,
+    this.dismissible,
+    this.actionLabel,
+    this.onAction,
+    this.onDismiss,
+  );
+  final VoidCallback? onDismiss;
+  bool _finished = false;
+
+  void finish() {
+    if (_finished) return;
+    _finished = true;
+    onDismiss?.call();
+  }
+
   final String message;
   final AppToastType type;
   final Duration? duration;
@@ -204,6 +221,7 @@ class AppToast extends StatefulWidget {
     bool dismissible = true,
     String? actionLabel,
     VoidCallback? onAction,
+    VoidCallback? onDismiss,
   }) {
     final id = Object();
     if (!context.mounted) return AppToastHandle._(id).._cancelled = true;
@@ -221,6 +239,7 @@ class AppToast extends StatefulWidget {
       dismissible: dismissible,
       actionLabel: actionLabel,
       onAction: onAction,
+      onDismiss: onDismiss,
     );
     return AppToastHandle._(id);
   }
@@ -255,10 +274,12 @@ class AppToast extends StatefulWidget {
     bool dismissible = true,
     String? actionLabel,
     VoidCallback? onAction,
+    VoidCallback? onDismiss,
   }) {
     final overlay = _overlay;
     if (_owner != id || overlay == null || !overlay.mounted) return;
-    final notice = _ToastNotice(message, type, duration, dismissible, actionLabel, onAction);
+    final notice = _ToastNotice(message, type, duration, dismissible, actionLabel, onAction, onDismiss);
+    _next?.finish();
     if (_entry != null) {
       final state = _key?.currentState;
       if (state == null) {
@@ -287,6 +308,8 @@ class AppToast extends StatefulWidget {
   }
 
   static void _remove() {
+    _key?.currentState?._notice.finish();
+    _next?.finish();
     final entry = _entry;
     _entry = null;
     _key = null;
@@ -575,7 +598,10 @@ class _AppToastState extends State<AppToast> with TickerProviderStateMixin {
       AppToast._overlay = null;
       AppToast._owner = null;
       AppToast._source = null;
+      AppToast._next?.finish();
+      AppToast._next = null;
     }
+    _notice.finish();
     super.dispose();
   }
 

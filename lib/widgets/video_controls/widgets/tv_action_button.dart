@@ -9,6 +9,7 @@ import '../../../focus/dpad_navigator.dart';
 import '../../../theme/velo_brand.dart';
 import '../../app_icon.dart';
 import 'player_focus_disc.dart';
+import '../../press_feedback.dart';
 
 /// A TV action keeps its icon and one-line current value in a single tile.
 class TvActionButton extends StatelessWidget {
@@ -68,7 +69,7 @@ class TvActionButton extends StatelessWidget {
                 filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                 child: Material(
                   color: focused ? Colors.white : Colors.white.withValues(alpha: .14),
-                  child: InkWell(
+                  child: PressFeedbackInkWell(
                     onTap: onPressed,
                     canRequestFocus: false,
                     child: Tooltip(

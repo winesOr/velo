@@ -13,6 +13,7 @@ import '../../../utils/selection_feedback.dart';
 import '../../../utils/platform_detector.dart';
 import '../../app_icon.dart';
 import '../../overlay_sheet.dart';
+import '../../press_feedback.dart';
 
 /// Sizes and colors measured from player.html's drawer, options and range rows.
 class PlayerDrawerStyle extends StatelessWidget {
@@ -193,7 +194,7 @@ class PlayerDrawerChoice extends StatelessWidget {
               type: MaterialType.transparency,
               borderRadius: radius,
               clipBehavior: Clip.antiAlias,
-              child: InkWell(
+              child: PressFeedbackInkWell(
                 canRequestFocus: false,
                 onTap: onTap == null ? null : activate,
                 onLongPress: onLongPress,
@@ -278,7 +279,7 @@ class PlayerDrawerToggle extends StatelessWidget {
           type: MaterialType.transparency,
           borderRadius: BorderRadius.circular(9),
           clipBehavior: Clip.antiAlias,
-          child: InkWell(
+          child: PressFeedbackInkWell(
             canRequestFocus: false,
             onTap: toggle,
             child: ConstrainedBox(
