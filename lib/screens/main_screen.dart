@@ -1301,6 +1301,7 @@ class _MainScreenState extends State<MainScreen>
   }
 
   static const _tvContentBelowNavigation = {
+    NavigationTabId.libraries,
     NavigationTabId.together,
     NavigationTabId.search,
     NavigationTabId.downloads,
@@ -1325,13 +1326,16 @@ class _MainScreenState extends State<MainScreen>
       NavigationTabId.together => WatchTogetherScreen(key: _screenKeys[tab], embedded: true, onBack: _focusSidebar),
     };
     // Artwork pages account for the floating TV navigation in their heroes,
-    // and Libraries flanks it with its own title and actions. Ordinary pages
+    // while the search header and ordinary pages
     // need a separate content area below the same navigation.
     if (PlatformDetector.isTV() && _tvContentBelowNavigation.contains(tab)) {
       return SafeArea(
         bottom: false,
-        minimum: const EdgeInsets.only(top: 18),
-        child: Padding(padding: const EdgeInsets.only(top: 64), child: screen),
+        minimum: EdgeInsets.only(top: tab == NavigationTabId.libraries ? 0 : 18),
+        child: Padding(
+          padding: EdgeInsets.only(top: tab == NavigationTabId.libraries ? 65 : 64),
+          child: screen,
+        ),
       );
     }
     return screen;
