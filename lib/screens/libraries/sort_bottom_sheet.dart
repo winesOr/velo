@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../focus/dpad_navigator.dart';
@@ -41,6 +42,13 @@ class _SortBottomSheetState extends State<SortBottomSheet> {
   late final FocusNode _initialFocusNode;
   final _firstItemKey = GlobalKey();
   final _scrollController = ScrollController();
+  Timer? _initialFocusTimer;
+  bool _allowInitialFocus = true;
+
+  bool _observeInitialFocusInput(KeyEvent event) {
+    if (event is KeyDownEvent || event is KeyRepeatEvent) _allowInitialFocus = false;
+    return false;
+  }
 
   @override
   void initState() {
@@ -48,6 +56,7 @@ class _SortBottomSheetState extends State<SortBottomSheet> {
     _currentSort = widget.selectedSort;
     _currentDescending = widget.isSortDescending;
     _initialFocusNode = FocusNode(debugLabel: 'SortBottomSheetInitialFocus');
+    HardwareKeyboard.instance.addHandler(_observeInitialFocusInput);
 
     final selectedIndex = widget.selectedSort != null
         ? widget.sortOptions.indexWhere((s) => s.key == widget.selectedSort!.key)
@@ -57,24 +66,30 @@ class _SortBottomSheetState extends State<SortBottomSheet> {
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Timer.run(() {
-        if (!mounted) return;
+      if (!mounted) return;
+      _initialFocusTimer = Timer(Duration.zero, () {
+        if (!mounted || !_allowInitialFocus) return;
         if (!InputModeTracker.isKeyboardMode(context)) return;
-        final ctx = _initialFocusNode.context;
-        if (ctx != null) {
-          Scrollable.ensureVisible(ctx, alignment: 0.5);
-        }
-        // Schedule after overlay's _autoFocus second callback so we override it.
+        final focusAtScheduling = FocusManager.instance.primaryFocus;
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
+          if (!mounted || !_allowInitialFocus || !TickerMode.valuesOf(context).enabled) return;
+          if (!InputModeTracker.isKeyboardMode(context) || ModalRoute.of(context)?.isCurrent == false) return;
+          if (FocusManager.instance.primaryFocus != focusAtScheduling) return;
+          final target = _initialFocusNode.context;
+          if (target == null || !_initialFocusNode.canRequestFocus) return;
+          _allowInitialFocus = false;
+          Scrollable.ensureVisible(target, alignment: 0.5);
           _initialFocusNode.requestFocus();
         });
+        WidgetsBinding.instance.ensureVisualUpdate();
       });
     });
   }
 
   @override
   void dispose() {
+    _initialFocusTimer?.cancel();
+    HardwareKeyboard.instance.removeHandler(_observeInitialFocusInput);
     _scrollController.dispose();
     _initialFocusNode.dispose();
     super.dispose();
@@ -101,87 +116,91 @@ class _SortBottomSheetState extends State<SortBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: .min,
-      children: [
-        BottomSheetHeader(
-          title: t.libraries.sortBy,
-          onBack: widget.onBack,
-          action: widget.onClear != null
-              ? FocusableButton(
-                  onPressed: _handleClear,
-                  child: TextButton(onPressed: _handleClear, child: Text(t.common.clear)),
-                )
-              : null,
-        ),
-        Flexible(
-          child: ListView.builder(
-            controller: _scrollController,
-            primary: false,
-            shrinkWrap: true,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: widget.sortOptions.length,
-            itemBuilder: (context, index) {
-              final sort = widget.sortOptions[index];
-              final isSelected = _currentSort?.key == sort.key;
-
-              return Focus(
-                key: index == 0 ? _firstItemKey : null,
-                canRequestFocus: false,
-                skipTraversal: true,
-                onKeyEvent: (node, event) {
-                  if (!event.isActionable) return KeyEventResult.ignored;
-                  if (!isSelected) return KeyEventResult.ignored;
-                  if (event.logicalKey.isLeftKey) {
-                    _handleDirectionChange(sort, false);
-                    return KeyEventResult.handled;
-                  }
-                  if (event.logicalKey.isRightKey) {
-                    _handleDirectionChange(sort, true);
-                    return KeyEventResult.handled;
-                  }
-                  return KeyEventResult.ignored;
-                },
-                child: FocusableListTile(
-                  focusNode: (widget.selectedSort?.key == sort.key || (widget.selectedSort == null && index == 0))
-                      ? _initialFocusNode
-                      : null,
-                  leading: AppIcon(
-                    isSelected ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
-                    fill: 1,
-                  ),
-                  title: Text(sort.title),
-                  trailing: Visibility(
-                    visible: isSelected,
-                    maintainAnimation: true,
-                    maintainSize: true,
-                    maintainState: true,
-                    child: SegmentedButton<bool>(
-                      // Match FocusableListTile's dense visualDensity so the segment's min
-                      // tap-target height equals ListTile's trailing-height cap. Without this
-                      // the ~48dp button overflows the ~36dp cap from the top and the arrows
-                      // render bottom-aligned instead of centered.
-                      style: SegmentedButton.styleFrom(visualDensity: const VisualDensity(vertical: -3)),
-                      showSelectedIcon: false,
-                      segments: const [
-                        ButtonSegment(value: false, label: _SortDirectionIcon(upward: true)),
-                        ButtonSegment(value: true, label: _SortDirectionIcon(upward: false)),
-                      ],
-                      selected: {_currentDescending},
-                      onSelectionChanged: isSelected
-                          ? (Set<bool> newSelection) {
-                              _handleDirectionChange(sort, newSelection.first);
-                            }
-                          : null,
-                    ),
-                  ),
-                  onTap: () => _handleSortSelect(sort),
-                ),
-              );
-            },
+    return Listener(
+      onPointerDown: (_) => _allowInitialFocus = false,
+      onPointerSignal: (_) => _allowInitialFocus = false,
+      child: Column(
+        mainAxisSize: .min,
+        children: [
+          BottomSheetHeader(
+            title: t.libraries.sortBy,
+            onBack: widget.onBack,
+            action: widget.onClear != null
+                ? FocusableButton(
+                    onPressed: _handleClear,
+                    child: TextButton(onPressed: _handleClear, child: Text(t.common.clear)),
+                  )
+                : null,
           ),
-        ),
-      ],
+          Flexible(
+            child: ListView.builder(
+              controller: _scrollController,
+              primary: false,
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: widget.sortOptions.length,
+              itemBuilder: (context, index) {
+                final sort = widget.sortOptions[index];
+                final isSelected = _currentSort?.key == sort.key;
+
+                return Focus(
+                  key: index == 0 ? _firstItemKey : null,
+                  canRequestFocus: false,
+                  skipTraversal: true,
+                  onKeyEvent: (node, event) {
+                    if (!event.isActionable) return KeyEventResult.ignored;
+                    if (!isSelected) return KeyEventResult.ignored;
+                    if (event.logicalKey.isLeftKey) {
+                      _handleDirectionChange(sort, false);
+                      return KeyEventResult.handled;
+                    }
+                    if (event.logicalKey.isRightKey) {
+                      _handleDirectionChange(sort, true);
+                      return KeyEventResult.handled;
+                    }
+                    return KeyEventResult.ignored;
+                  },
+                  child: FocusableListTile(
+                    focusNode: (widget.selectedSort?.key == sort.key || (widget.selectedSort == null && index == 0))
+                        ? _initialFocusNode
+                        : null,
+                    leading: AppIcon(
+                      isSelected ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
+                      fill: 1,
+                    ),
+                    title: Text(sort.title),
+                    trailing: Visibility(
+                      visible: isSelected,
+                      maintainAnimation: true,
+                      maintainSize: true,
+                      maintainState: true,
+                      child: SegmentedButton<bool>(
+                        // Match FocusableListTile's dense visualDensity so the segment's min
+                        // tap-target height equals ListTile's trailing-height cap. Without this
+                        // the ~48dp button overflows the ~36dp cap from the top and the arrows
+                        // render bottom-aligned instead of centered.
+                        style: SegmentedButton.styleFrom(visualDensity: const VisualDensity(vertical: -3)),
+                        showSelectedIcon: false,
+                        segments: const [
+                          ButtonSegment(value: false, label: _SortDirectionIcon(upward: true)),
+                          ButtonSegment(value: true, label: _SortDirectionIcon(upward: false)),
+                        ],
+                        selected: {_currentDescending},
+                        onSelectionChanged: isSelected
+                            ? (Set<bool> newSelection) {
+                                _handleDirectionChange(sort, newSelection.first);
+                              }
+                            : null,
+                      ),
+                    ),
+                    onTap: () => _handleSortSelect(sort),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
