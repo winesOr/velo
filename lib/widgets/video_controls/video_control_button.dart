@@ -105,7 +105,7 @@ class VideoControlButton extends StatelessWidget {
         checked: checked,
         autoScroll: false,
         delegateFocusBorder: true,
-        focusScale: PlatformDetector.isTV() ? 1.14 : FocusTheme.playerControlFocusScale,
+        focusScale: FocusTheme.playerControlFocusScale,
         child: PlayerFocusDisc(
           iconColor: idleColor,
           isActive: isActive,

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -9,11 +10,15 @@ import '../focus/dpad_navigator.dart';
 import '../focus/focusable_tile_mixin.dart';
 import '../focus/input_mode_tracker.dart';
 import '../focus/key_event_utils.dart';
+import '../focus/focus_theme.dart';
+import '../i18n/strings.g.dart';
+import '../theme/velo_brand.dart';
 import '../theme/mono_tokens.dart';
 import '../theme/overlay_tokens.dart';
 import 'app_glass_surface.dart';
 import '../utils/focus_utils.dart';
 import 'app_icon.dart';
+import 'app_dialog.dart';
 import 'clickable_cursor.dart';
 import 'overlay_sheet.dart';
 
@@ -82,6 +87,7 @@ class AppMenuHeader<T> extends AppMenuEntry<T> {
 Future<T?> showAppMenu<T>(
   BuildContext context, {
   required List<AppMenuEntry<T>> entries,
+  String? title,
   Offset? position,
   Rect? anchorRect,
   AppMenuAnchorAlignment anchorAlignment = AppMenuAnchorAlignment.start,
@@ -94,10 +100,11 @@ Future<T?> showAppMenu<T>(
     context: context,
     barrierDismissible: true,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    barrierColor: Colors.transparent,
+    barrierColor: Theme.of(context).brightness == Brightness.dark ? const Color(0x88000000) : const Color(0x4517151d),
     transitionDuration: AppGlassSurface.reduceEffects(context) ? Duration.zero : OverlayTokens.motion,
     pageBuilder: (dialogContext, _, _) => _AppMenuPopup<T>(
       entries: entries,
+      title: title ?? t.common.options,
       position: position,
       anchorRect: anchorRect,
       anchorAlignment: anchorAlignment,
@@ -274,7 +281,8 @@ Future<T?> showAdaptiveAppMenu<T>(
 
   return showAppMenu<T>(
     context,
-    entries: title == null ? entries : [AppMenuHeader<T>(label: title), ...entries],
+    entries: entries,
+    title: title,
     position: position,
     anchorRect: anchorRect,
     anchorAlignment: anchorAlignment,
@@ -616,11 +624,12 @@ class _AppMenuItemTileState<T> extends State<AppMenuItemTile<T>> with FocusableT
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 child: AnimatedContainer(
                   duration: tokens(context).fast,
-                  decoration: BoxDecoration(
-                    color: background,
-                    borderRadius: BorderRadius.circular(tokens(context).radiusSm),
-                  ),
-                  constraints: BoxConstraints(minHeight: item.minHeight ?? (subtitle == null ? 40 : 52)),
+                  decoration: FocusTheme.focusDecoration(
+                    context,
+                    isFocused: enabled && _isFocused && InputModeTracker.isKeyboardMode(context),
+                    borderRadius: 12,
+                  ).copyWith(color: background),
+                  constraints: BoxConstraints(minHeight: math.max(48, item.minHeight ?? 48)),
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   child: Row(
                     children: [
@@ -685,7 +694,7 @@ class _AppMenuItemTileState<T> extends State<AppMenuItemTile<T>> with FocusableT
     if (active && item.stateLayerColor != null) return colorScheme.onError;
     if (item.foregroundColor != null) return item.foregroundColor!;
     if (item.destructive) return _destructiveMenuForeground(context);
-    if (_selected) return colorScheme.primary;
+    if (_selected) return VeloBrand.foreground(Theme.of(context).brightness);
     return colorScheme.onSurface;
   }
 
@@ -693,8 +702,8 @@ class _AppMenuItemTileState<T> extends State<AppMenuItemTile<T>> with FocusableT
     final item = widget.item;
     final colorScheme = Theme.of(context).colorScheme;
     if (active && item.stateLayerColor != null) return item.stateLayerColor!;
-    if (active) return colorScheme.onSurface.withValues(alpha: 0.08);
-    if (_selected) return colorScheme.primary.withValues(alpha: 0.12);
+    if (_selected) return VeloBrand.selection(Theme.of(context).brightness);
+    if (active) return colorScheme.onSurface.withValues(alpha: 0.07);
     return Colors.transparent;
   }
 }
@@ -725,6 +734,7 @@ class _AppMenuHeaderTile<T> extends StatelessWidget {
 
 class _AppMenuPopup<T> extends StatefulWidget {
   final List<AppMenuEntry<T>> entries;
+  final String title;
   final Offset? position;
   final Rect? anchorRect;
   final AppMenuAnchorAlignment anchorAlignment;
@@ -733,6 +743,7 @@ class _AppMenuPopup<T> extends StatefulWidget {
 
   const _AppMenuPopup({
     required this.entries,
+    required this.title,
     required this.position,
     required this.anchorRect,
     required this.anchorAlignment,
@@ -745,15 +756,12 @@ class _AppMenuPopup<T> extends StatefulWidget {
 }
 
 class _AppMenuPopupState<T> extends State<_AppMenuPopup<T>> {
-  static const double _minMenuWidth = 220;
-
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.sizeOf(context);
-    const edgePadding = 8.0;
-    final desiredWidth = math.max(_minMenuWidth, _estimateMenuWidth(context));
-    final menuWidth = desiredWidth.clamp(_minMenuWidth, math.max(_minMenuWidth, screenSize.width - edgePadding * 2));
-    final estimatedHeight = _estimateMenuHeight(widget.entries);
+    const edgePadding = 16.0;
+    final menuWidth = math.min(286.0, math.max(0.0, screenSize.width - edgePadding * 2));
+    final estimatedHeight = 60 + _estimateMenuHeight(widget.entries);
     final availableHeight = math.max(0.0, screenSize.height - edgePadding * 2);
     final menuHeight = estimatedHeight.clamp(0.0, availableHeight).toDouble();
     final (:left, :top) = _resolvePosition(screenSize, menuWidth.toDouble(), menuHeight, edgePadding);
@@ -776,6 +784,15 @@ class _AppMenuPopupState<T> extends State<_AppMenuPopup<T>> {
           },
           child: Stack(
             children: [
+              if (!AppGlassSurface.reduceEffects(context))
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
+                ),
               Positioned(
                 left: left,
                 top: top,
@@ -783,6 +800,7 @@ class _AppMenuPopupState<T> extends State<_AppMenuPopup<T>> {
                   width: menuWidth.toDouble(),
                   maxHeight: menuHeight,
                   entries: widget.entries,
+                  title: widget.title,
                   focusFirstItem: widget.focusFirstItem,
                   selectionDelay: widget.selectionDelay,
                 ),
@@ -810,11 +828,13 @@ class _AppMenuPopupState<T> extends State<_AppMenuPopup<T>> {
       final maxLeft = screenSize.width - menuWidth - edgePadding;
       final left = leftCandidate.clamp(edgePadding, maxLeft < edgePadding ? edgePadding : maxLeft).toDouble();
 
-      const gap = 4.0;
+      const gap = 9.0;
       final below = anchorRect.bottom + gap;
-      final above = anchorRect.top - menuHeight - gap;
       final fitsBelow = below + menuHeight <= screenSize.height - edgePadding;
-      final topCandidate = fitsBelow ? below : above;
+      if (!fitsBelow) {
+        return (left: (screenSize.width - menuWidth) / 2, top: (screenSize.height - menuHeight) / 2);
+      }
+      final topCandidate = below;
       final maxTop = screenSize.height - menuHeight - edgePadding;
       final top = topCandidate.clamp(edgePadding, maxTop < edgePadding ? edgePadding : maxTop).toDouble();
       return (left: left, top: top);
@@ -831,21 +851,10 @@ class _AppMenuPopupState<T> extends State<_AppMenuPopup<T>> {
         .toDouble();
     return (left: left, top: top);
   }
-
-  double _estimateMenuWidth(BuildContext context) {
-    var longest = 0;
-    for (final entry in widget.entries) {
-      if (entry is AppMenuItem<T>) {
-        longest = math.max(longest, entry.label?.length ?? 0);
-      } else if (entry is AppMenuHeader<T>) {
-        longest = math.max(longest, entry.label?.length ?? 0);
-      }
-    }
-    return math.min(360, math.max(_minMenuWidth, 96 + longest * 7.5));
-  }
 }
 
 class _AppMenuSurface<T> extends StatelessWidget {
+  final String title;
   final double width;
   final double maxHeight;
   final List<AppMenuEntry<T>> entries;
@@ -853,6 +862,7 @@ class _AppMenuSurface<T> extends StatelessWidget {
   final Duration selectionDelay;
 
   const _AppMenuSurface({
+    required this.title,
     required this.width,
     required this.maxHeight,
     required this.entries,
@@ -868,11 +878,27 @@ class _AppMenuSurface<T> extends StatelessWidget {
         constraints: BoxConstraints(minWidth: width, maxWidth: width, maxHeight: maxHeight),
         child: PrimaryScrollController.none(
           child: SingleChildScrollView(
-            child: AppMenuList<T>(
-              entries: entries,
-              focusFirstItem: focusFirstItem,
-              selectionDelay: selectionDelay,
-              onSelected: (value) => Navigator.pop(context, value),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 12, 6),
+                  child: Row(
+                    children: [
+                      Expanded(child: Text(title, style: Theme.of(context).textTheme.titleMedium)),
+                      const SizedBox(width: 8),
+                      AppDialogCloseButton(onPressed: () => Navigator.pop(context)),
+                    ],
+                  ),
+                ),
+                AppMenuList<T>(
+                  entries: entries,
+                  focusFirstItem: focusFirstItem,
+                  selectionDelay: selectionDelay,
+                  onSelected: (value) => Navigator.pop(context, value),
+                ),
+              ],
             ),
           ),
         ),
@@ -886,7 +912,7 @@ double _estimateMenuHeight<T>(List<AppMenuEntry<T>> entries) {
   for (final entry in entries) {
     switch (entry) {
       case AppMenuItem<T>():
-        height += entry.subtitle != null || entry.subtitleWidget != null ? 54 : 42;
+        height += math.max(48, entry.minHeight ?? 48) + 2;
       case AppMenuDivider<T>():
         height += 9;
       case AppMenuHeader<T>():

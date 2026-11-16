@@ -7,28 +7,27 @@ import '../utils/platform_detector.dart';
 class FocusTheme {
   FocusTheme._();
 
-  static const double focusScale = 1.02;
-  static const double fullCardFocusScale = 1.03;
+  static const double focusScale = 1;
+  static const double fullCardFocusScale = 1;
 
-  /// Round 40px player controls: the card scale is imperceptible on a
-  /// control that small, so the focused disc grows enough to be seen move.
-  static const double playerControlFocusScale = 1.12;
+  /// Focus remains stationary; press feedback is handled independently.
+  static const double playerControlFocusScale = 1;
 
   /// The TV reference is 1920px at DPR 2, or a 960 logical-pixel viewport.
   static double tvPlayerScale(BuildContext context) =>
       PlatformDetector.isTV() ? (MediaQuery.sizeOf(context).width / 960).clamp(.75, 2.0).toDouble() : 1;
 
-  static BoxDecoration playerDrawerFocusDecoration(BuildContext context, {required bool isFocused}) => BoxDecoration(
-    border: Border.all(color: isFocused ? VeloBrand.accent : Colors.transparent, width: 1.5 * tvPlayerScale(context)),
-  );
-  static const double focusBorderWidth = 2.5;
+  static BoxDecoration playerDrawerFocusDecoration(BuildContext context, {required bool isFocused}) =>
+      focusDecoration(context, isFocused: isFocused);
+  static const double focusBorderWidth = 2;
+  static const double focusOutlineOffset = 3;
   static const double defaultBorderRadius = 8.0;
   static const double focusGlowInnerBlurRadius = 18;
   static const double focusGlowOuterBlurRadius = 34;
   static const double focusGlowSpreadRadius = 1.5;
 
   static Color getFocusBorderColor(BuildContext context) {
-    return Theme.of(context).colorScheme.primary;
+    return VeloBrand.foreground(Theme.of(context).brightness);
   }
 
   /// Ten-foot TV focus uses a soft lifted card rather than the 2.5px phone
@@ -81,17 +80,19 @@ class FocusTheme {
     required bool isFocused,
     double borderRadius = defaultBorderRadius,
     BorderRadius? radii,
-    double borderStrokeAlign = BorderSide.strokeAlignInside,
+    double borderStrokeAlign = BorderSide.strokeAlignOutside,
     Color? color,
   }) {
     final focusColor = color ?? getFocusBorderColor(context);
 
-    return BoxDecoration(
+    return _FocusOutlineDecoration(
       borderRadius: radii ?? BorderRadius.circular(borderRadius),
-      border: Border.all(
-        color: isFocused ? focusColor : Colors.transparent,
-        width: focusBorderWidth,
-        strokeAlign: borderStrokeAlign,
+      border: Border.fromBorderSide(
+        BorderSide(
+          color: isFocused ? focusColor : Colors.transparent,
+          width: focusBorderWidth,
+          strokeAlign: borderStrokeAlign + 2 * focusOutlineOffset / focusBorderWidth,
+        ),
       ),
     );
   }
@@ -145,5 +146,69 @@ class FocusTheme {
       borderRadius: radii ?? BorderRadius.circular(borderRadius),
       color: isFocused ? tokens(context).text.withValues(alpha: 0.12) : Colors.transparent,
     );
+  }
+}
+
+/// An outline outside the child reserves no layout padding. Preserve this
+/// during decoration interpolation and when callers add a background color.
+class _FocusOutlineDecoration extends BoxDecoration {
+  const _FocusOutlineDecoration({
+    super.borderRadius,
+    super.border,
+    super.color,
+    super.image,
+    super.boxShadow,
+    super.gradient,
+    super.backgroundBlendMode,
+    super.shape,
+  });
+
+  factory _FocusOutlineDecoration.from(BoxDecoration decoration) => _FocusOutlineDecoration(
+    borderRadius: decoration.borderRadius,
+    border: decoration.border,
+    color: decoration.color,
+    image: decoration.image,
+    boxShadow: decoration.boxShadow,
+    gradient: decoration.gradient,
+    backgroundBlendMode: decoration.backgroundBlendMode,
+    shape: decoration.shape,
+  );
+
+  @override
+  EdgeInsetsGeometry get padding => EdgeInsets.zero;
+
+  @override
+  BoxDecoration copyWith({
+    Color? color,
+    DecorationImage? image,
+    BoxBorder? border,
+    BorderRadiusGeometry? borderRadius,
+    List<BoxShadow>? boxShadow,
+    Gradient? gradient,
+    BlendMode? backgroundBlendMode,
+    BoxShape? shape,
+  }) => _FocusOutlineDecoration.from(
+    super.copyWith(
+      color: color,
+      image: image,
+      border: border,
+      borderRadius: borderRadius,
+      boxShadow: boxShadow,
+      gradient: gradient,
+      backgroundBlendMode: backgroundBlendMode,
+      shape: shape,
+    ),
+  );
+
+  @override
+  BoxDecoration? lerpFrom(Decoration? a, double t) {
+    final result = super.lerpFrom(a, t);
+    return result == null ? null : _FocusOutlineDecoration.from(result);
+  }
+
+  @override
+  BoxDecoration? lerpTo(Decoration? b, double t) {
+    final result = super.lerpTo(b, t);
+    return result == null ? null : _FocusOutlineDecoration.from(result);
   }
 }

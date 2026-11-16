@@ -769,7 +769,8 @@ void main() {
     // The border stays in-card; the glow now renders in an overlay that follows
     // the focused card so it paints above siblings on all sides.
     expect(borderContainer.decoration, isNull);
-    expect(border.top.strokeAlign, BorderSide.strokeAlignOutside);
+    expect(border.top.width, 2);
+    expect(border.top.strokeInset, -3);
     expect(find.byType(ShaderMask), findsNothing);
     expect(find.byType(CompositedTransformTarget), findsOneWidget);
     expect(find.byType(CompositedTransformFollower), findsOneWidget);
@@ -777,7 +778,7 @@ void main() {
       find.descendant(of: find.byType(CompositedTransformFollower), matching: find.byType(CustomPaint)),
       findsOneWidget,
     );
-    expect(focusScale.scale, closeTo(1.03, 0.0001));
+    expect(focusScale.scale, 1);
     expect(cardSize.width, closeTo(metrics.cardWidth, 0.001));
     expect(cardSize.height, closeTo(metrics.posterHeight, 0.001));
   });

@@ -152,39 +152,43 @@ class PlayerDrawerChoice extends StatelessWidget {
           builder: (focusContext) => AnimatedContainer(
             duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 180),
             constraints: BoxConstraints(minHeight: (tab ? 28 : 30) * scale),
-            decoration: BoxDecoration(
-              gradient: selected
-                  ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color.lerp(VeloBrand.selection(theme.brightness), accent, .12)!,
-                        VeloBrand.selection(theme.brightness),
-                      ],
-                    )
-                  : null,
-              color: selected
-                  ? VeloBrand.selection(theme.brightness)
-                  : tab
-                  ? Colors.transparent
-                  : glass.foreground.withValues(alpha: dark ? .07 : .05),
-              borderRadius: radius,
-              border: tv
-                  ? FocusTheme.playerDrawerFocusDecoration(
-                      focusContext,
-                      isFocused: CardFocusScope.maybeOf(focusContext) ?? false,
-                    ).border
-                  : Border.all(color: selected ? accent.withValues(alpha: .32) : Colors.transparent),
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: dark ? .14 : .06),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ]
-                  : const [],
-            ),
+            decoration:
+                (tv
+                        ? FocusTheme.playerDrawerFocusDecoration(
+                            focusContext,
+                            isFocused: CardFocusScope.maybeOf(focusContext) ?? false,
+                          )
+                        : const BoxDecoration())
+                    .copyWith(
+                      gradient: selected
+                          ? LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color.lerp(VeloBrand.selection(theme.brightness), accent, .12)!,
+                                VeloBrand.selection(theme.brightness),
+                              ],
+                            )
+                          : null,
+                      color: selected
+                          ? VeloBrand.selection(theme.brightness)
+                          : tab
+                          ? Colors.transparent
+                          : glass.foreground.withValues(alpha: dark ? .07 : .05),
+                      borderRadius: radius,
+                      border: tv
+                          ? null
+                          : Border.all(color: selected ? accent.withValues(alpha: .32) : Colors.transparent),
+                      boxShadow: selected
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: dark ? .14 : .06),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ]
+                          : const [],
+                    ),
             child: Material(
               type: MaterialType.transparency,
               borderRadius: radius,

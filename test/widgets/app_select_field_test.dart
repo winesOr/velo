@@ -115,19 +115,21 @@ void main() {
     const longSubtitle = 'DTS-HD Master Audio · 7.1 · Commentary recorded for this edition';
     await _pumpField(
       tester,
-      AppSelectField<String>(
-        label: 'Audio',
-        value: 'commentary',
-        options: const [
-          AppSelectOption(value: 'commentary', label: longTitle, subtitle: longSubtitle),
-          AppSelectOption(value: 'plain', label: 'English'),
-        ],
-        onChanged: (_) {},
+      SingleChildScrollView(
+        child: AppSelectField<String>(
+          label: 'Audio',
+          value: 'commentary',
+          options: const [
+            AppSelectOption(value: 'commentary', label: longTitle, subtitle: longSubtitle),
+            AppSelectOption(value: 'plain', label: 'English'),
+          ],
+          onChanged: (_) {},
+        ),
       ),
       textScale: 2,
     );
     final trigger = find.text(longTitle);
-    expect(tester.renderObject<RenderParagraph>(trigger).maxLines, 1);
+    expect(tester.renderObject<RenderParagraph>(trigger).maxLines, isNull);
     await tester.tap(find.byType(AppSelectField<String>));
     await tester.pumpAndSettle();
     final menuTitle = find.descendant(of: find.byType(AppMenuItemTile<String>), matching: find.text(longTitle));

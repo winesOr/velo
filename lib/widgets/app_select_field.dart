@@ -127,7 +127,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final accent = VeloBrand.foreground(theme.brightness);
+    const accent = VeloBrand.accent;
     AppSelectOption<T>? selected;
     for (final option in widget.options) {
       if (option.value == widget.value) {
@@ -148,7 +148,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
       canRequestFocus: _enabled,
       disableScale: true,
       borderRadius: 14,
-      focusColor: accent,
+      focusColor: VeloBrand.foreground(theme.brightness),
       descendantsAreFocusable: false,
       semanticLabel: widget.label,
       semanticValue: semanticValue,
@@ -173,7 +173,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
         pressed: _pressed,
         enabled: _enabled && !widget.busy,
         child: Material(
-          color: _menuOpen ? VeloBrand.selection(theme.brightness) : colors.surfaceContainer,
+          color: colors.onSurface.withValues(alpha: .04),
           shape: RoundedRectangleBorder(
             borderRadius: radius,
             side: BorderSide(
@@ -205,8 +205,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
                         children: [
                           Text(
                             title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            softWrap: true,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontSize: 15,
                               fontWeight: FontWeight.w500,
@@ -216,8 +215,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
                           if (subtitle != null)
                             Text(
                               subtitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              softWrap: true,
                               style: theme.textTheme.bodySmall?.copyWith(fontSize: 12, color: colors.onSurfaceVariant),
                             ),
                         ],

@@ -44,7 +44,7 @@ class TvActionButton extends StatelessWidget {
       descendantsAreFocusable: false,
       excludeChildSemantics: true,
       delegateFocusBorder: true,
-      focusScale: 1.14,
+      focusScale: FocusTheme.focusScale,
       child: SizedBox(
         width: 64 * scale,
         child: Column(

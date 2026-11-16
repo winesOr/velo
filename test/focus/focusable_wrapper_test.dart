@@ -12,8 +12,12 @@ import 'package:plezy/focus/input_mode_tracker.dart';
 void main() {
   Finder chromeIn(Type type) => find.descendant(of: find.byType(FocusableWrapper), matching: find.byType(type));
 
-  Widget buildWrapper() => Scaffold(
-    body: FocusableWrapper(onSelect: () {}, child: const SizedBox(width: 10, height: 10)),
+  Widget buildWrapper({bool backgroundFocus = false}) => Scaffold(
+    body: FocusableWrapper(
+      onSelect: () {},
+      useBackgroundFocus: backgroundFocus,
+      child: const SizedBox(width: 10, height: 10),
+    ),
   );
 
   testWidgets('pointer mode builds no focus chrome around the child', (tester) async {
@@ -24,14 +28,19 @@ void main() {
     expect(chromeIn(Focus), findsWidgets);
   });
 
-  testWidgets('keyboard mode builds the scale/border chrome', (tester) async {
-    await tester.pumpWidget(InputModeTracker(child: MaterialApp(home: buildWrapper())));
+  testWidgets('keyboard background focus keeps the outside outline without layout padding', (tester) async {
+    await tester.pumpWidget(InputModeTracker(child: MaterialApp(home: buildWrapper(backgroundFocus: true))));
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pump();
 
     expect(chromeIn(AnimatedBuilder), findsOneWidget);
     expect(chromeIn(AnimatedContainer), findsOneWidget);
+    final decoration = tester.widget<AnimatedContainer>(chromeIn(AnimatedContainer)).decoration! as BoxDecoration;
+    expect(decoration.border!.top.width, 2);
+    expect(decoration.border!.top.strokeInset, -3);
+    expect(decoration.padding, EdgeInsets.zero);
+    expect(tester.getSize(chromeIn(AnimatedContainer)), const Size(10, 10));
   });
 
   testWidgets('focusing in pointer mode works without a pre-built controller', (tester) async {

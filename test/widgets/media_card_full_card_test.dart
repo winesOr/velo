@@ -548,7 +548,8 @@ void main() {
     );
     expect(borderContainer.decoration, isNull);
     final border = (borderContainer.foregroundDecoration as BoxDecoration).border as Border;
-    expect(border.top.strokeAlign, BorderSide.strokeAlignOutside);
+    expect(border.top.width, 2);
+    expect(border.top.strokeInset, -3);
 
     // The glow itself is two shadows.
     expect(FocusTheme.focusGlowShadows(const Color(0xFFFFFFFF)), hasLength(2));

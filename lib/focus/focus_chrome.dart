@@ -32,15 +32,13 @@ Widget buildFocusChrome(
   if (delegateFocusBorder) {
     card = CardFocusScope(showFocus: showFocus, child: child);
   } else {
-    final decoration = useBackgroundFocus
-        ? FocusTheme.focusBackgroundDecoration(isFocused: showFocus, borderRadius: borderRadius, radii: borderRadii)
-        : FocusTheme.focusDecoration(
-            context,
-            isFocused: showFocus,
-            borderRadius: borderRadius,
-            radii: borderRadii,
-            color: focusColor,
-          );
+    final decoration = FocusTheme.focusDecoration(
+      context,
+      isFocused: showFocus,
+      borderRadius: borderRadius,
+      radii: borderRadii,
+      color: focusColor,
+    ).copyWith(color: useBackgroundFocus ? FocusTheme.focusBackgroundDecoration(isFocused: showFocus).color : null);
     card = AnimatedContainer(duration: duration, curve: Curves.easeOutCubic, decoration: decoration, child: child);
   }
 
