@@ -525,7 +525,7 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
     final titleStyle =
         Theme.of(context).extension<HomeTypography>()?.sectionTitle ??
         Theme.of(context).textTheme.titleLarge?.copyWith(
-          fontSize: isTv ? 26 : 18,
+          fontSize: isTv ? (widget.detailRelated ? 20 : 26) : 18,
           fontWeight: isTv ? FontWeight.w700 : FontWeight.w600,
           letterSpacing: isTv ? null : -.3,
         );
@@ -728,7 +728,9 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
                         : scaler.scale(homeType.cardTitle.fontSize!) * homeType.cardTitle.height! +
                               scaler.scale(homeType.caption.fontSize!) * homeType.caption.height! +
                               10;
-                    final containerHeight = posterHeight + math.max(isTv ? 48.0 : 33.0, captionHeight);
+                    final detailLabelHeight = widget.detailRelated ? MediaCard.gridLabelHeight(context) + 2 : 0.0;
+                    final containerHeight =
+                        posterHeight + math.max(isTv ? 48.0 : 33.0, math.max(captionHeight, detailLabelHeight));
                     final focusBorderWidth = FocusTheme.focusBorderWidth;
                     final focusExtra = focusBorderWidth * 2; // border on both sides
                     _itemExtent = cardWidth + focusExtra + cardGap;

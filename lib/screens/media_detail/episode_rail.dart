@@ -23,12 +23,14 @@ class DetailEpisodeRail extends StatefulWidget {
     this.canLoadMore = false,
     this.onLoadMore,
     this.onRequestIndex,
+    this.itemWidth = cardWidth,
   });
 
   static const double cardWidth = 202;
   static const double gap = 12;
   static const double itemExtent = cardWidth + gap;
 
+  final double itemWidth;
   final int episodeCount;
   final double height;
   final IndexedWidgetBuilder itemBuilder;
@@ -46,6 +48,7 @@ class DetailEpisodeRail extends StatefulWidget {
 }
 
 class _DetailEpisodeRailState extends State<DetailEpisodeRail> {
+  double get _itemExtent => widget.itemWidth + DetailEpisodeRail.gap;
   late final ScrollController _controller;
   late final ValueNotifier<int> _group;
 
@@ -84,7 +87,7 @@ class _DetailEpisodeRailState extends State<DetailEpisodeRail> {
   }
 
   double _offsetFor(int index) =>
-      (math.max(0, index) * DetailEpisodeRail.itemExtent).clamp(0.0, _controller.position.maxScrollExtent).toDouble();
+      (math.max(0, index) * _itemExtent).clamp(0.0, _controller.position.maxScrollExtent).toDouble();
 
   Future<void> _scrollToGroup(int group) async {
     final token = widget.resetToken;
@@ -98,7 +101,7 @@ class _DetailEpisodeRailState extends State<DetailEpisodeRail> {
       // Fixed-extent lists may retain the previous page's scroll metrics until
       // they move. A jump lays out the newly loaded group without letting the
       // old extent clamp an animation to the previous page's last episode.
-      _controller.jumpTo(index * DetailEpisodeRail.itemExtent);
+      _controller.jumpTo(index * _itemExtent);
     } else {
       _scrollToIndex(index);
     }
@@ -106,7 +109,7 @@ class _DetailEpisodeRailState extends State<DetailEpisodeRail> {
 
   void _scrollToIndex(int index) {
     if (!_controller.hasClients) return;
-    final offset = math.max(0, index) * DetailEpisodeRail.itemExtent;
+    final offset = math.max(0, index) * _itemExtent;
     if (MediaQuery.disableAnimationsOf(context)) {
       _controller.jumpTo(offset);
     } else {
@@ -116,17 +119,13 @@ class _DetailEpisodeRailState extends State<DetailEpisodeRail> {
 
   void _onScroll() {
     if (!_controller.hasClients) return;
-    final index = (_controller.offset / DetailEpisodeRail.itemExtent)
-        .round()
-        .clamp(0, math.max(0, widget.episodeCount - 1))
-        .toInt();
+    final index = (_controller.offset / _itemExtent).round().clamp(0, math.max(0, widget.episodeCount - 1)).toInt();
     _group.value = groupForEpisodeIndex(index);
     widget.onPositionChanged(index);
     // Measure the real tail, excluding the trailing alignment space.
     final tailDistance =
-        widget.episodeCount * DetailEpisodeRail.itemExtent -
-        (_controller.offset + _controller.position.viewportDimension);
-    if (widget.canLoadMore && tailDistance <= DetailEpisodeRail.itemExtent * 2) {
+        widget.episodeCount * _itemExtent - (_controller.offset + _controller.position.viewportDimension);
+    if (widget.canLoadMore && tailDistance <= _itemExtent * 2) {
       widget.onLoadMore?.call();
     }
   }
@@ -149,10 +148,10 @@ class _DetailEpisodeRailState extends State<DetailEpisodeRail> {
             key: const ValueKey('detail_episode_rail_scroll'),
             // Real trailing space lets even a short final group align its first
             // card with the viewport's left edge, without adding episode items.
-            padding: EdgeInsets.only(right: math.max(0, constraints.maxWidth - DetailEpisodeRail.itemExtent)),
+            padding: EdgeInsets.only(right: math.max(0, constraints.maxWidth - _itemExtent)),
             controller: _controller,
             scrollDirection: Axis.horizontal,
-            itemExtent: DetailEpisodeRail.itemExtent,
+            itemExtent: _itemExtent,
             itemCount: widget.episodeCount + (widget.hasTail ? 1 : 0),
             itemBuilder: (context, index) => Padding(
               padding: const EdgeInsets.only(right: DetailEpisodeRail.gap),

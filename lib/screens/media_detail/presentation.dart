@@ -26,47 +26,57 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
             child: Text(t.detailPlayback.selectSeason, style: Theme.of(sheetContext).textTheme.titleMedium),
           ),
-          for (var index = 0; index < _seasons.length; index++)
-            FocusableWrapper(
-              autofocus: index == _selectedSeasonIndex,
-              disableScale: true,
-              onSelect: () => OverlaySheetController.closeAdaptive(sheetContext, index),
-              onLongPress: () => _showSeasonTabContextMenu(index),
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => OverlaySheetController.closeAdaptive(sheetContext, index),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(_seasonLabel(_seasons[index])),
-                            if ((_seasons[index].leafCount ?? _seasons[index].childCount) case final count?
-                                when count > 0)
-                              Text(
-                                t.detailPlayback.episodesAvailable(n: count),
-                                style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      if (index == _selectedSeasonIndex) const AppIcon(Symbols.check_rounded, size: 20),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+          for (var index = 0; index < _seasons.length; index++) _buildDetailSeasonChoice(sheetContext, index),
         ],
       ),
     );
     if (selected != null && mounted && _canUseDetail && selected != _selectedSeasonIndex) {
       _selectSeason(selected, selectPlaybackTarget: true);
     }
+  }
+
+  Widget _buildDetailSeasonChoice(BuildContext context, int index) {
+    final menuKey = GlobalKey<MediaContextMenuState>();
+    return MediaContextMenu(
+      key: menuKey,
+      item: _fresh(_seasons[index]),
+      onRefresh: widget.isOffline ? null : _refreshItemInPlace,
+      onListRefresh: widget.isOffline ? null : _loadSeasons,
+      child: FocusableWrapper(
+        autofocus: index == _selectedSeasonIndex,
+        disableScale: true,
+        onSelect: () => OverlaySheetController.closeAdaptive(context, index),
+        enableLongPress: true,
+        onLongPress: () => menuKey.currentState?.showContextMenu(context),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => OverlaySheetController.closeAdaptive(context, index),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_seasonLabel(_seasons[index])),
+                      if ((_seasons[index].leafCount ?? _seasons[index].childCount) case final count? when count > 0)
+                        Text(
+                          t.detailPlayback.episodesAvailable(n: count),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                    ],
+                  ),
+                ),
+                if (index == _selectedSeasonIndex) const AppIcon(Symbols.check_rounded, size: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildCompactDetailEpisodeHeader(BuildContext context, MediaItem metadata, {bool chooseSeason = false}) {
@@ -78,69 +88,78 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
             : _seasons.length == 1
             ? _seasonLabel(_seasons.first)
             : t.libraries.groupings.episodes);
-    return Row(
-      key: _seasonsSectionKey,
-      children: [
-        Expanded(
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: FocusableWrapper(
-              key: const ValueKey('detail_season_picker'),
-              focusNode: chooseSeason ? _seasonTabFocusNodes[_selectedSeasonIndex] : null,
-              canRequestFocus: chooseSeason,
-              disableScale: true,
-              onSelect: chooseSeason ? () => unawaited(_chooseCompactDetailSeason(context)) : null,
-              onLongPress: chooseSeason ? () => _showSeasonTabContextMenu(_selectedSeasonIndex) : null,
-              onNavigateUp: () => _playButtonFocusNode.requestFocus(),
-              onNavigateDown: () => _firstEpisodeFocusNode.requestFocus(),
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: chooseSeason ? () => unawaited(_chooseCompactDetailSeason(context)) : null,
+    return MediaContextMenu(
+      key: chooseSeason
+          ? _seasonContextMenuKeys.putIfAbsent(_selectedSeasonIndex, () => GlobalKey<MediaContextMenuState>())
+          : null,
+      item: season ?? metadata,
+      onRefresh: widget.isOffline ? null : _refreshItemInPlace,
+      onListRefresh: widget.isOffline ? null : _loadSeasons,
+      child: Row(
+        key: _seasonsSectionKey,
+        children: [
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FocusableWrapper(
+                key: const ValueKey('detail_season_picker'),
+                focusNode: chooseSeason ? _seasonTabFocusNodes[_selectedSeasonIndex] : null,
+                canRequestFocus: chooseSeason,
+                disableScale: true,
+                onSelect: chooseSeason ? () => unawaited(_chooseCompactDetailSeason(context)) : null,
+                enableLongPress: chooseSeason,
                 onLongPress: chooseSeason ? () => _showSeasonTabContextMenu(_selectedSeasonIndex) : null,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        label,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
+                onNavigateUp: () => _playButtonFocusNode.requestFocus(),
+                onNavigateDown: () => _firstEpisodeFocusNode.requestFocus(),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: chooseSeason ? () => unawaited(_chooseCompactDetailSeason(context)) : null,
+                  onLongPress: chooseSeason ? () => _showSeasonTabContextMenu(_selectedSeasonIndex) : null,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    if (chooseSeason) ...[
-                      const SizedBox(width: 5),
-                      const DetailActionIcon(DetailActionGlyph.down, size: 13),
+                      if (chooseSeason) ...[
+                        const SizedBox(width: 5),
+                        const DetailActionIcon(DetailActionGlyph.down, size: 13),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        if (_episodes.isNotEmpty)
-          TextButton(
-            onPressed: () => unawaited(_showDetailEpisodeGrid(context)),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(0, 32),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 11, fontWeight: FontWeight.w500),
+          if (_episodes.isNotEmpty)
+            TextButton(
+              onPressed: () => unawaited(_showDetailEpisodeGrid(context)),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(0, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 11, fontWeight: FontWeight.w500),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(t.common.viewAll),
+                  const SizedBox(width: 4),
+                  const DetailActionIcon(DetailActionGlyph.next, size: 13),
+                ],
+              ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(t.common.viewAll),
-                const SizedBox(width: 4),
-                const DetailActionIcon(DetailActionGlyph.next, size: 13),
-              ],
-            ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -193,7 +212,11 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
           child: Text(
             title,
             key: titleKey,
-            style: theme.textTheme.titleLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.w600, height: 1.2),
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontSize: PlatformDetector.isTV() ? 20 : 18,
+              fontWeight: FontWeight.w600,
+              height: 1.2,
+            ),
           ),
         ),
         if (trailing != null) ...[const SizedBox(width: 12), trailing],
@@ -246,9 +269,11 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
   }
 
   Widget _buildCompactDetailHeader(BuildContext context, MediaItem metadata) {
+    final tv = PlatformDetector.isTV();
     final centered =
-        MediaQuery.sizeOf(context).width < 720 ||
-        (MonoPresentation.isTablet(context) && !MonoPresentation.isLandscapeTablet(context));
+        !tv &&
+        (MediaQuery.sizeOf(context).width < 720 ||
+            (MonoPresentation.isTablet(context) && !MonoPresentation.isLandscapeTablet(context)));
     final target = _playbackTargetItem(metadata);
     final probed = _playbackSources[target?.globalKey];
     final firstLine = <String>[
@@ -266,11 +291,17 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
           case final quality when quality.isNotEmpty)
         quality.join(' '),
     ];
-    return Column(
+    final information = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
-        _buildNaturalDetailTitle(context, metadata, centered: centered),
+        _buildNaturalDetailTitle(
+          context,
+          metadata,
+          centered: centered,
+          tv: tv,
+          scale: TvLayoutConstants.scaleOf(context),
+        ),
         const SizedBox(height: 7),
         for (final (index, labels) in [firstLine, secondLine].indexed)
           if (labels.isNotEmpty)
@@ -280,12 +311,59 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
               textAlign: centered ? TextAlign.center : TextAlign.start,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12, height: 1.6),
             ),
-        MediaRatingsStrip(
-          item: metadata,
-          alignment: centered ? WrapAlignment.center : WrapAlignment.start,
-          padding: const EdgeInsets.only(bottom: 18),
+      ],
+    );
+    void openDetails() => _openTvDetailsSheet(
+      context,
+      metadata,
+      hideSpoilers: SettingsService.instance.read(SettingsService.hideSpoilers),
+    );
+    return Column(
+      crossAxisAlignment: centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      children: [
+        if (tv)
+          Semantics(
+            key: const ValueKey('tv_detail_information_semantics'),
+            identifier: 'tv_detail_information',
+            container: true,
+            button: true,
+            label: _tvDetailInformationSemanticLabel(
+              metadata,
+              description: _tvDetailItemDescription(
+                metadata,
+                hideSpoilers: SettingsService.instance.read(SettingsService.hideSpoilers),
+              ),
+              genres: metadata.genres ?? const [],
+            ),
+            hint: t.mediaMenu.viewDetails,
+            onTap: openDetails,
+            child: ExcludeSemantics(
+              child: FocusableWrapper(
+                focusNode: _tvDetailInfoFocusNode,
+                onSelect: openDetails,
+                onNavigateUp: _backButtonFocusNode.requestFocus,
+                onNavigateDown: _focusTvRatingsOrAction,
+                disableScale: true,
+                child: GestureDetector(onTap: openDetails, child: information),
+              ),
+            ),
+          )
+        else
+          information,
+        Column(
+          key: tv ? _tvDetailRatingsGroupKey : null,
+          children: [
+            MediaRatingsStrip(
+              item: metadata,
+              alignment: centered ? WrapAlignment.center : WrapAlignment.start,
+              firstFocusNode: tv ? _tvRatingSourceFocusNode : null,
+              onNavigateUp: tv ? _tvDetailInfoFocusNode.requestFocus : null,
+              onNavigateDown: tv ? _focusTvDetailActionRow : null,
+              padding: const EdgeInsets.only(bottom: 18),
+            ),
+          ],
         ),
-        _buildActionButtons(metadata),
+        KeyedSubtree(key: tv ? _tvDetailActionGroupKey : null, child: _buildActionButtons(metadata)),
       ],
     );
   }
@@ -300,7 +378,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
         final client = widget.isOffline ? null : _getMediaClientForMetadata(context);
         return MediaDetailTechnicalInfo(
           key: _technicalInfoKey,
-          onNavigateUp: PlatformDetector.isTV() ? null : _focusSectionAboveInfoRows,
+          onNavigateUp: _focusSectionAboveInfoRows,
           targetKey: target.globalKey,
           title: [
             target.isEpisode ? target.grandparentTitle ?? metadata.displayTitle : target.displayTitle,
@@ -433,13 +511,17 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
   }
 
   Widget _buildDetailEpisodeRail() {
+    final tv = PlatformDetector.isTV();
+    final cardWidth = tv ? 210.0 : 202.0;
+    const thumbHeight = 112.0;
     final selected = _playbackTargetItem(_metadata)?.globalKey;
     final theme = Theme.of(context);
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     return DetailEpisodeRail(
       key: _detailEpisodesKey,
       episodeCount: _episodes.length,
-      height: 158 + math.max(0, textScale - 1) * 50,
+      height: thumbHeight + 46 + math.max(0, textScale - 1) * 50,
+      itemWidth: cardWidth,
       initialIndex: _detailEpisodeRailIndex,
       resetToken: _detailEpisodeRailRevision,
       onPositionChanged: (index) => _detailEpisodeRailIndex = index,
@@ -458,13 +540,14 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
             ? _offlineArtworkCandidatePath(context, episode.thumbPath!)
             : null;
         return SizedBox(
-          width: 202,
+          width: cardWidth,
           child: MediaContextMenu(
             item: episode,
             onRefresh: widget.isOffline ? null : _refreshItemInPlace,
             onListRefresh: widget.isOffline ? null : _refreshCurrentEpisodes,
             child: FocusableWrapper(
               key: ValueKey('detail_episode_${episode.id}'),
+              enableLongPress: true,
               focusNode: _episodeListFocusNode(
                 episode: episode,
                 index: index,
@@ -480,8 +563,14 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
                   isLaunchCurrent: () => _canUseDetail,
                 ),
               ),
+              onNavigateDown: PlatformDetector.isTV() ? _focusEpisodeGroups : null,
+              onFocusChange: (focused) {
+                if (focused && PlatformDetector.isTV()) {
+                  _scrollSectionIntoView(_seasonsSectionKey);
+                }
+              },
               onNavigateUp: () {
-                if (!_showEpisodesDirectly) {
+                if (_metadata.isShow && !_showEpisodesDirectly && _seasonTabFocusNodes.isNotEmpty) {
                   _focusSelectedSeasonTab();
                 } else if (!PlatformDetector.isTV() && _metadata.summary?.isNotEmpty == true) {
                   _overviewFocusNode.requestFocus();
@@ -507,7 +596,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      height: 112,
+                      height: thumbHeight,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         border: active ? Border.all(color: theme.colorScheme.onSurface, width: 2) : null,
@@ -520,8 +609,8 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
                             client: widget.isOffline ? null : _getArtworkMediaClient(context),
                             imagePath: episode.thumbPath,
                             localFilePath: local,
-                            width: 202,
-                            height: 112,
+                            width: cardWidth,
+                            height: thumbHeight,
                           ),
                           if (episodeNumber != null)
                             Positioned(
@@ -581,40 +670,56 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
     );
   }
 
-  Widget _buildDetailEpisodeGroups(int group, ValueChanged<int> scrollToGroup) => Align(
-    alignment: Alignment.centerLeft,
-    child: TabChipStrip(
-      children: [
-        for (var index = 0; index < (_detailEpisodeCount + 9) ~/ 10; index++)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Semantics(
-              selected: index == group,
-              child: FocusableWrapper(
-                disableScale: true,
-                onSelect: () => scrollToGroup(index),
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => scrollToGroup(index),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: index == group ? .125 : .035),
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: index == group ? .375 : .125),
+  Widget _buildDetailEpisodeGroups(int group, ValueChanged<int> scrollToGroup) => Focus(
+    focusNode: _episodeGroupsFocus,
+    canRequestFocus: false,
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: TabChipStrip(
+        children: [
+          for (var index = 0; index < (_detailEpisodeCount + 9) ~/ 10; index++)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Semantics(
+                selected: index == group,
+                child: FocusableWrapper(
+                  disableScale: true,
+                  onSelect: () => scrollToGroup(index),
+                  onNavigateUp: PlatformDetector.isTV() ? _focusVisibleDetailEpisode : null,
+                  onNavigateDown: PlatformDetector.isTV()
+                      ? () {
+                          if (_metadata.roles?.isNotEmpty == true) {
+                            _castStripKey.currentState?.requestFocus();
+                          } else {
+                            _focusSectionBelowCast();
+                          }
+                        }
+                      : null,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => scrollToGroup(index),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: index == group ? .125 : .035),
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: index == group ? .375 : .125),
+                        ),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      episodeGroupLabel(index, _detailEpisodeCount),
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 11, height: 1.5),
+                      child: Text(
+                        episodeGroupLabel(index, _detailEpisodeCount),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 11, height: 1.5),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     ),
   );
 }

@@ -14,15 +14,7 @@ extension _MediaDetailResponsiveLayout on _MediaDetailScreenState {
       if (target is RenderBox && viewport is RenderBox && target.hasSize && viewport.hasSize) {
         final top = target.localToGlobal(Offset.zero, ancestor: viewport).dy;
         final bottom = top + target.size.height;
-        var visibleBottom = viewport.size.height;
-        final rail = _tvDetailHubs(_metadata).isEmpty ? null : _tvDetailRailKey.currentContext?.findRenderObject();
-        if (rail is RenderBox && rail.attached && rail.hasSize) {
-          // The foreground viewport can extend into the rail's top padding.
-          // Its clip alone therefore overstates the unobscured area. Measure
-          // the actual sibling rail in the same coordinates, not an estimate.
-          final railTop = viewport.globalToLocal(rail.localToGlobal(Offset.zero)).dy;
-          visibleBottom = math.min(visibleBottom, railTop);
-        }
+        final visibleBottom = viewport.size.height;
         // ensureVisible's alignment is relative to the entire viewport's free
         // space. Convert the unobscured region's center to that coordinate so
         // the reveal itself respects the rail as well as the visibility guard.
@@ -80,111 +72,33 @@ extension _MediaDetailResponsiveLayout on _MediaDetailScreenState {
     );
   }
 
-  Widget _buildTvDetailForeground(
-    BuildContext context,
-    MediaItem metadata, {
-    required bool hideSpoilers,
-    required double scale,
-  }) {
-    final description = _tvDetailDescription(metadata, hideSpoilers: hideSpoilers);
-    final focusedEpisode = _tvDetailFocusedEpisode.value;
-    final ratingsItem = focusedEpisode == null ? metadata : _withProbedRatings(focusedEpisode);
-    void openDetails() => _openTvDetailsSheet(context, metadata, hideSpoilers: hideSpoilers);
-    return SingleChildScrollView(
-      key: const ValueKey('tv_detail_content_scroll'),
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8, right: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Semantics(
-              key: const ValueKey('tv_detail_information_semantics'),
-              identifier: 'tv_detail_information',
-              container: true,
-              button: true,
-              label: _tvDetailInformationSemanticLabel(
-                metadata,
-                description: description,
-                genres: metadata.genres ?? const [],
-              ),
-              hint: t.mediaMenu.viewDetails,
-              onTap: openDetails,
-              child: ExcludeSemantics(
-                child: FocusableWrapper(
-                  focusNode: _tvDetailInfoFocusNode,
-                  onSelect: openDetails,
-                  onNavigateUp: _backButtonFocusNode.requestFocus,
-                  onNavigateDown: () {
-                    if (preferredMediaRatingsFor(
-                          ratingsItem,
-                          fallbackItem: metadata,
-                          limit: RatingDisplayPolicy.detailLimit,
-                        ).isNotEmpty &&
-                        _tvRatingSourceFocusNode.context != null) {
-                      _tvRatingSourceFocusNode.requestFocus();
-                    } else {
-                      _focusTvDetailActionRow();
-                    }
-                  },
-                  onBack: _popMediaDetailIfBackNotSuppressed,
-                  disableScale: true,
-                  borderRadius: 8,
-                  descendantsAreFocusable: false,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: openDetails,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildNaturalDetailTitle(context, metadata, centered: false, tv: true, scale: scale),
-                        const SizedBox(height: 12),
-                        if (focusedEpisode?.title?.isNotEmpty == true)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 6),
-                            child: Text(
-                              focusedEpisode!.title!,
-                              key: const ValueKey('tv_detail_episode_title'),
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                          ),
-                        _buildTvDetailMetadataLine(context, metadata, scale),
-                        if (description?.isNotEmpty == true)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: Text(
-                              description!,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.4),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
+  Widget _buildTvScrollableHero(BuildContext context, MediaItem metadata) {
+    final scale = MediaQuery.sizeOf(context).width / 1060;
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: 320 * scale),
+      child: Stack(
+        alignment: Alignment.bottomLeft,
+        children: [
+          Positioned.fill(
+            child: TvSpotlightBackground(
+              item: metadata,
+              client: _getArtworkMediaClient(context),
+              showInfo: false,
+              localArtworkPathResolver: widget.isOffline ? (path) => _offlineArtworkCandidatePath(context, path) : null,
+              allowNetwork: !widget.isOffline,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(45 * scale, 68 * scale, 0, 24 * scale),
+            child: SizedBox(
+              width: 420 * scale,
+              child: ListenableBuilder(
+                listenable: _tvDetailForegroundListenable,
+                builder: (context, _) => _buildCompactDetailHeader(context, metadata),
               ),
             ),
-            Column(
-              key: _tvDetailRatingsGroupKey,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                MediaRatingsStrip(
-                  item: ratingsItem,
-                  fallbackItem: metadata,
-                  alignment: WrapAlignment.start,
-                  firstFocusNode: _tvRatingSourceFocusNode,
-                  onNavigateUp: _tvDetailInfoFocusNode.requestFocus,
-                  onNavigateDown: _focusTvDetailActionRow,
-                  foregroundColor: _tvDetailForegroundColor(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            KeyedSubtree(key: _tvDetailActionGroupKey, child: _buildActionButtons(metadata)),
-            const SizedBox(height: 16),
-            _buildPlaybackSelectors(context, metadata),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

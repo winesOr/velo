@@ -30,7 +30,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     final target = resolvedTarget == null ? null : _fresh(resolvedTarget);
     final episodeNumber = target?.isEpisode == true ? effectiveEpisodeIndex(target!) : null;
     final playVerb = _getPlayButtonIcon(metadata) == Symbols.resume_rounded ? t.common.resume : t.common.play;
-    final playButtonLabel = compactPresentation
+    final playButtonLabel = (compactPresentation || isTv)
         ? [
             playVerb,
             if ((metadata.isShow || metadata.isSeason) && episodeNumber != null)
@@ -57,7 +57,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       fontSize: isTv ? 17 * tvScale : (compactPresentation ? 14 : 16),
       fontWeight: compactPresentation ? FontWeight.w500 : FontWeight.w700,
     );
-    final Widget playButtonIcon = compactPresentation
+    final Widget playButtonIcon = (compactPresentation || isTv)
         ? const DetailActionIcon(DetailActionGlyph.play, size: 19)
         : AppIcon(playIcon, fill: 1, size: playIconSize);
 
@@ -123,10 +123,10 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       bool showFocus = false,
       OutlinedBorder? shape,
     }) {
-      if (compactPresentation && padding == null) {
+      if ((compactPresentation || isTv) && padding == null) {
         return IconButton.styleFrom(
-          minimumSize: const Size(48, 48),
-          maximumSize: const Size(48, 48),
+          minimumSize: isTv ? const Size(42, 42) : const Size(48, 48),
+          maximumSize: isTv ? const Size(42, 42) : const Size(48, 48),
           padding: EdgeInsets.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.standard,
@@ -195,7 +195,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                       shape: const StadiumBorder(),
                     )
                     .merge(
-                      compactPresentation
+                      (compactPresentation || isTv)
                           ? FilledButton.styleFrom(
                               backgroundColor: const Color(0xfff4f5f6),
                               foregroundColor: const Color(0xff202126),
@@ -296,7 +296,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
           child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: t.common.loading),
         );
       }
-      if (compactPresentation) {
+      if (compactPresentation || isTv) {
         if (onPressed == null) {
           return IconButton(
             onPressed: null,
@@ -497,7 +497,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxWidth = constraints.maxWidth;
-        if (compactPresentation) {
+        if (compactPresentation || isTv) {
           final client = widget.isOffline ? null : _getMediaClientForMetadata(context);
           final favoriteAction = client?.capabilities.userFavorites == true
               ? FocusableAction(
@@ -522,6 +522,28 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                     tooltip: onWatchlist == true ? t.explore.removeFromWatchlist : t.rateSheet.favorite,
                   ),
                 );
+          if (isTv) {
+            return FocusableActionBar(
+              actions: [
+                FocusableAction(
+                  debugLabel: 'detail_play',
+                  focusNode: _playButtonFocusNode,
+                  onPressed: _playLaunchPending ? null : onPlayPressed,
+                  builder: (context, state) => SizedBox(
+                    key: const ValueKey('detail_primary_play'),
+                    width: 215 * MediaQuery.sizeOf(context).width / 1060,
+                    child: playButton(state),
+                  ),
+                ),
+                favoriteAction,
+                watchedAction,
+              ],
+              spacing: 5,
+              onFocusChange: _setTvDetailActionRowFocus,
+              onNavigateUp: _focusAboveActionRow,
+              onNavigateDown: _focusBelowActionRow,
+            );
+          }
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -586,7 +608,8 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
 
     // Several providers can hold this item: choose per press. Each entry
     // shows that source's current membership.
-    final renderBox = _watchlistButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final anchorContext = _watchlistButtonKey.currentContext ?? _moreActionsFocusNode.context;
+    final renderBox = anchorContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
     final choice = await showWatchlistSourceChooser(
       context,
@@ -722,35 +745,51 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
 
   Future<void> _showDetailMoreActions(BuildContext actionContext, MediaItem metadata) async {
     if (!_canUseDetail) return;
+    final trailer = _getPrimaryTrailer();
+    final onWatchlist = _watchlistCandidates.any(
+      (candidate) => candidate.source.isOnWatchlist(metadata.kind, candidate.ids) == true,
+    );
     final action = await showScopedDialog<String>(
       context: actionContext,
       builder: (dialogContext) => AppDialog(
         constraints: const BoxConstraints(maxWidth: 400),
         child: Padding(
           padding: const EdgeInsets.all(18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppDialogTitle(title: Text(t.explore.detail.moreActions)),
-              const SizedBox(height: 14),
-              for (final (id, icon, label) in [
-                if (!widget.isOffline) ('together', Symbols.group_rounded, t.watchTogether.title),
-                if (!widget.isOffline && !PlatformDetector.isAppleTV())
-                  ('download', Symbols.download_rounded, t.explore.detail.downloadMovie),
-                ('info', Symbols.info_rounded, t.explore.detail.viewMediaInfo),
-                if (_canEditDetailRating(metadata)) ('rate', Symbols.star_rounded, t.explore.detail.yourRating),
-              ])
-                FocusableWrapper(
-                  onSelect: () => Navigator.of(dialogContext).pop(id),
-                  child: ListTile(
-                    minTileHeight: 48,
-                    leading: AppIcon(icon, size: 20),
-                    title: Text(label),
-                    trailing: const AppIcon(Symbols.chevron_right_rounded, size: 18),
-                    onTap: () => Navigator.of(dialogContext).pop(id),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppDialogTitle(title: Text(t.explore.detail.moreActions)),
+                const SizedBox(height: 14),
+                for (final (id, icon, label) in [
+                  if (!widget.isOffline) ('together', Symbols.group_rounded, t.watchTogether.title),
+                  if (!widget.isOffline && !PlatformDetector.isAppleTV())
+                    ('download', Symbols.download_rounded, t.explore.detail.downloadMovie),
+                  ('info', Symbols.info_rounded, t.explore.detail.viewMediaInfo),
+                  if (trailer != null) ('trailer', Symbols.movie_rounded, t.tooltips.playTrailer),
+                  if (!widget.isOffline && (metadata.isShow || metadata.isSeason))
+                    ('shuffle', Symbols.shuffle_rounded, t.tooltips.shufflePlay),
+                  if (_extras?.isNotEmpty == true) ('extras', Symbols.video_library_rounded, t.discover.extras),
+                  if (_watchlistCandidates.isNotEmpty)
+                    (
+                      'watchlist',
+                      Symbols.bookmark_add_rounded,
+                      onWatchlist ? t.explore.removeFromWatchlist : t.explore.addToWatchlist,
+                    ),
+                  if (_canEditDetailRating(metadata)) ('rate', Symbols.star_rounded, t.explore.detail.yourRating),
+                ])
+                  FocusableWrapper(
+                    onSelect: () => Navigator.of(dialogContext).pop(id),
+                    child: ListTile(
+                      minTileHeight: 48,
+                      leading: AppIcon(icon, size: 20),
+                      title: Text(label),
+                      trailing: const AppIcon(Symbols.chevron_right_rounded, size: 18),
+                      onTap: () => Navigator.of(dialogContext).pop(id),
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -762,30 +801,61 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       case 'download':
         await _handleDownloadButtonPressed(actionContext, metadata);
       case 'info':
-        if (!PlatformDetector.isTV()) {
-          _scrollSectionIntoView(_infoRowsSectionKey);
-          return;
+        // The single scroll page owns this section on TV as well. Rebuilding
+        // it in a dialog would attach the technical-info GlobalKey twice.
+        _focusInfoRows();
+      case 'trailer':
+        if (trailer != null) {
+          await navigateToVideoPlayer(context, metadata: trailer, isLaunchCurrent: () => _canUseDetail);
         }
-        await showScopedDialog<void>(
-          context: context,
-          builder: (dialogContext) => AppDialog(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppDialogTitle(title: Text(t.explore.detail.viewMediaInfo)),
-                  const SizedBox(height: 14),
-                  Flexible(child: SingleChildScrollView(child: _buildDetailTechnicalInfo(context, metadata))),
-                ],
-              ),
-            ),
-          ),
-        );
+      case 'shuffle':
+        await _handleShufflePlayWithQueue(context, metadata);
+      case 'extras':
+        await _showDetailExtras(actionContext);
+      case 'watchlist':
+        await _handleWatchlistTogglePressed(metadata);
       case 'rate':
         _showRatingDialog(context, metadata);
     }
+  }
+
+  Future<void> _showDetailExtras(BuildContext actionContext) async {
+    final extras = _extras;
+    if (extras == null || extras.isEmpty) return;
+    final selected = await showScopedDialog<MediaItem>(
+      context: actionContext,
+      builder: (dialogContext) => AppDialog(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppDialogTitle(title: Text(t.discover.extras)),
+              const SizedBox(height: 14),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final extra in extras)
+                      FocusableWrapper(
+                        onSelect: () => Navigator.of(dialogContext).pop(extra),
+                        child: ListTile(
+                          title: Text(extra.displayTitle),
+                          leading: const AppIcon(Symbols.play_arrow_rounded),
+                          onTap: () => Navigator.of(dialogContext).pop(extra),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (selected == null || !mounted || !_canUseDetail || !actionContext.mounted) return;
+    await navigateToVideoPlayer(context, metadata: selected, isLaunchCurrent: () => _canUseDetail);
   }
 
   /// Shared retry pipeline for failed/cancelled downloads: confirm download

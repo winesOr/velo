@@ -4,6 +4,8 @@ import '../utils/episode_titles.dart';
 import '../media/ids.dart';
 
 import 'package:flutter/material.dart';
+import '../widgets/tv_spotlight_background.dart';
+import 'libraries/libraries_screen.dart';
 
 import '../navigation/profile_navigation_scope.dart';
 import '../services/device_performance.dart';
@@ -52,12 +54,10 @@ import '../utils/plex_season_display.dart';
 import '../media/media_item.dart';
 import '../media/episode_collection.dart';
 import '../media/media_item_types.dart';
-import '../media/media_kind.dart';
 import '../media/media_source_info.dart';
 import '../media/media_rating.dart';
 import '../media/media_role.dart';
 import '../media/paged_media_list_state.dart';
-import '../widgets/media_card.dart';
 import '../widgets/media_rating_badge.dart';
 import '../widgets/media_ratings_strip.dart';
 import '../utils/rating_display_policy.dart';
@@ -95,7 +95,6 @@ import '../utils/scroll_utils.dart';
 import '../utils/dialogs.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/video_player_navigation.dart';
-import '../widgets/app_bar_back_button.dart';
 import '../utils/desktop_window_padding.dart';
 import '../widgets/media_context_menu.dart';
 import '../widgets/watchlist_source_chooser.dart';
@@ -116,8 +115,6 @@ import '../utils/media_navigation_helper.dart';
 import '../widgets/hub_section.dart';
 import '../widgets/loading_indicator_box.dart';
 import '../widgets/rasterized_gradient.dart';
-import '../widgets/tv_browse_rail.dart';
-import '../widgets/tv_spotlight_background.dart';
 import '../providers/account_preferences_controller.dart';
 import '../services/playback_track_preview.dart';
 import '../services/playback_initialization_types.dart';
@@ -145,15 +142,7 @@ const double _heroChromeHeight = 58;
 /// hero's height floor and its content budget so the two cannot disagree.
 const double _heroSideInset = 16;
 
-const double _tvDetailTallPosterScale = 0.72;
-const double _tvDetailEpisodeThumbnailScale = 0.72;
 const double _tvDetailActionSize = 46;
-const double _tvDetailActionRailGap = 4;
-const String _tvDetailSeasonsErrorHubId = 'detail_seasons_error';
-const String _tvDetailSeasonHubIdPrefix = 'detail_season_';
-const String _tvDetailExtrasHubId = 'detail_extras';
-const String _tvDetailActorsHubId = 'detail_actors';
-const String _tvDetailActorPersonIdRawKey = 'tvDetailActorPersonId';
 
 enum _SyncRuleAction { edit, remove, delete }
 
@@ -359,7 +348,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   List<GlobalKey<HubSectionState>> _relatedHubKeys = [];
   bool _hasLoadedExtras = false;
   bool _hasLoadedRelatedHubs = false;
-  final _tvDetailRailKey = GlobalKey<TvBrowseRailState>();
   final _hubFocusMemory = HubFocusMemory();
   PageRoute<dynamic>? _route;
   RouteObserver<PageRoute<dynamic>>? _routeObserver;
@@ -371,6 +359,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   int _detailEpisodeRailRevision = 0;
   int _detailEpisodeSelectionRevision = 0;
   final GlobalKey _detailEpisodesKey = GlobalKey();
+  final FocusNode _episodeGroupsFocus = FocusNode(debugLabel: 'detail_episode_groups');
+  final FocusNode _genreFocus = FocusNode(debugLabel: 'detail_genres');
+  final Map<String, FocusNode> _tvEpisodeFocusNodes = {};
   final GlobalKey _tvDetailRatingsGroupKey = GlobalKey();
   final GlobalKey _tvDetailActionGroupKey = GlobalKey();
   final ValueNotifier<double> _scrollOffset = ValueNotifier<double>(0);
@@ -379,8 +370,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   bool _tvDetailRevealScheduled = false;
   bool _hasLoadedSeasons = false;
   bool _hasLoadedEpisodes = false;
-  double? _tvDetailPendingRailHeight;
-  double? _tvDetailStableRailHeight;
   // ValueNotifier (not setState) so d-pad scrubbing across episodes rebuilds
   // only the foreground info panel, never the whole screen with its rail
   // (same isolation pattern as DiscoverScreen._spotlightItem).
@@ -999,27 +988,21 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     return _hasLoadedExtras && _hasLoadedRelatedHubs;
   }
 
-  void _scheduleTvDetailReveal(double railHeight, {required bool focusPrimaryAction}) {
-    final pendingRailHeight = _tvDetailPendingRailHeight;
-    if (pendingRailHeight == null || railHeight > pendingRailHeight) {
-      _tvDetailPendingRailHeight = railHeight;
-    }
+  void _scheduleTvDetailReveal() {
     if (_tvDetailRevealed || _tvDetailRevealScheduled) return;
-
     _tvDetailRevealScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_canUseDetail) return;
       setState(() {
-        _tvDetailStableRailHeight = _tvDetailPendingRailHeight ?? railHeight;
         _tvDetailRevealScheduled = false;
         _tvDetailRevealed = true;
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!_canUseDetail) return;
-        if (focusPrimaryAction) {
-          _playButtonFocusNode.requestFocus();
+        if (_hasInitialDetailFocusTarget) {
+          _scheduleInitialMobileDetailFocus(_metadata);
         } else {
-          _tvDetailRailKey.currentState?.requestFocus();
+          _playButtonFocusNode.requestFocus();
         }
       });
     });
@@ -1062,6 +1045,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     _scrollOffset.dispose();
     _detailTheme.dispose();
     _tvDetailFocusedEpisode.dispose();
+    _episodeGroupsFocus.dispose();
+    _genreFocus.dispose();
+    for (final node in _tvEpisodeFocusNodes.values) {
+      node.dispose();
+    }
     _focusedEpisodeRatingsRevision.dispose();
     _playbackProbeTimer?.cancel();
     _playbackStatusRevision.dispose();
@@ -1798,7 +1786,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
         _seasonEpisodePager.completeFirstPage(seasonId, page.items, page.totalCount);
         _syncSelectedSeasonEpisodes(seasonIndex, seasonId);
       });
-      if (_isSelectedSeason(seasonIndex, seasonId)) unawaited(_prefetchAdjacentSeasonEpisodePages(seasonIndex));
+      if (_isSelectedSeason(seasonIndex, seasonId)) {
+        unawaited(_prefetchAdjacentSeasonEpisodePages(seasonIndex));
+        _pruneDistantSeasonPages(seasonIndex);
+      }
     } catch (e, st) {
       appLogger.d('TV adjacent season episode prefetch failed', error: e, stackTrace: st);
       if (_canUseDetail && epoch == _seasonEpisodePager.epochOf(seasonId) && _isSelectedSeason(seasonIndex, seasonId)) {
@@ -1934,7 +1925,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       _seasonEpisodePager.completeFirstPage(seasonId, episodes, total);
       _syncSelectedSeasonEpisodes(seasonIndex, seasonId);
     });
-    if (_isSelectedSeason(seasonIndex, seasonId)) unawaited(_prefetchAdjacentSeasonEpisodePages(seasonIndex));
+    if (_isSelectedSeason(seasonIndex, seasonId)) {
+      unawaited(_prefetchAdjacentSeasonEpisodePages(seasonIndex));
+      _pruneDistantSeasonPages(seasonIndex);
+    }
   }
 
   /// Shared skeleton of the supplemental detail sections (extras, related
@@ -2065,6 +2059,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   /// Return from recommendations or technical information to cast or the hero.
   void _focusCastOrAbove() {
     final metadata = _metadata;
+    if (PlatformDetector.isTV() && metadata.genres?.isNotEmpty == true) {
+      _genreFocus.requestFocus();
+      return;
+    }
     if (metadata.roles != null && metadata.roles!.isNotEmpty) {
       _castStripKey.currentState?.requestFocus();
       _scrollSectionIntoView(_castSectionKey);
@@ -2104,7 +2102,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   }
 
   void _scheduleInitialMobileDetailFocus(MediaItem metadata) {
-    if (_initialDetailFocusApplied || PlatformDetector.isTV() || !_hasInitialDetailFocusTarget) return;
+    if (_initialDetailFocusApplied || !_hasInitialDetailFocusTarget) return;
 
     if (widget.initialEpisodeId != null) {
       if (_episodesContainInitialTarget) {
@@ -2187,6 +2185,44 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     });
   }
 
+  void _focusTvRatingsOrAction() {
+    if (_tvRatingSourceFocusNode.context != null) {
+      _tvRatingSourceFocusNode.requestFocus();
+    } else {
+      _focusTvDetailActionRow();
+    }
+  }
+
+  void _focusVisibleDetailEpisode() {
+    if (_episodes.isEmpty) return;
+    final index = _detailEpisodeRailIndex.clamp(0, _episodes.length - 1);
+    final node = _episodeListFocusNode(
+      episode: _episodes[index],
+      index: index,
+      hasPinnedLastEpisode: _hasPinnedLastEpisodeInList,
+    );
+    if (node?.context != null) node!.requestFocus();
+  }
+
+  void _focusBelowGenres() {
+    if (_relatedHubs.isNotEmpty) {
+      _relatedHubKeys.first.currentState?.requestFocusFromMemory();
+    } else if (_hasInfoRows) {
+      _focusInfoRows();
+    }
+  }
+
+  void _focusEpisodeGroups() {
+    final node = _episodeGroupsFocus.descendants
+        .where((node) => node.canRequestFocus && node.context != null)
+        .firstOrNull;
+    if (node != null) {
+      node.requestFocus();
+    } else {
+      _focusSectionAboveCast();
+    }
+  }
+
   void _focusTvRatingsOrInfo() {
     final episode = _tvDetailFocusedEpisode.value;
     final item = episode == null ? _metadata : _withProbedRatings(episode);
@@ -2221,12 +2257,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   void _focusBelowPlaybackSelectors() {
     final metadata = _metadata;
 
-    if (PlatformDetector.isTV()) {
-      _tvDetailRailKey.currentState?.requestFocus();
-      return;
-    }
-
-    if (metadata.summary != null && metadata.summary!.isNotEmpty) {
+    if (!PlatformDetector.isTV() && metadata.summary != null && metadata.summary!.isNotEmpty) {
       _overviewFocusNode.requestFocus();
       _scrollSectionIntoView(_overviewSectionKey);
       return;
@@ -2258,6 +2289,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       return;
     }
 
+    if (PlatformDetector.isTV() && metadata.genres?.isNotEmpty == true) {
+      _genreFocus.requestFocus();
+      return;
+    }
+
     if (_relatedHubs.isNotEmpty) {
       _relatedHubKeys.first.currentState?.requestFocusFromMemory();
       return;
@@ -2281,6 +2317,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
   /// Handle key events for the extras row (locked focus pattern)
   void _focusSectionDirectlyAboveCast() {
+    if (PlatformDetector.isTV() && _episodes.isNotEmpty) {
+      _focusEpisodeGroups();
+      return;
+    }
     if (_episodes.isNotEmpty) {
       final useLastEpisode = _episodes.length > 1;
       if (useLastEpisode) _suppressNextLastEpisodeFocusLoad = true;
@@ -2293,6 +2333,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
   /// Focus the first visible section below cast.
   void _focusSectionBelowCast() {
+    if (PlatformDetector.isTV() && _metadata.genres?.isNotEmpty == true) {
+      _genreFocus.requestFocus();
+      return;
+    }
     if (_relatedHubs.isNotEmpty) {
       _relatedHubKeys.first.currentState?.requestFocusFromMemory();
     } else if (_hasInfoRows) {
@@ -2403,6 +2447,12 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       return _lastEpisodeFocusNode;
     }
     if (widget.initialEpisodeId == episode.id) return _initialEpisodeFocusNode;
+    if (PlatformDetector.isTV()) {
+      return _tvEpisodeFocusNodes.putIfAbsent(
+        episode.globalKey,
+        () => FocusNode(debugLabel: 'detail_episode_${episode.id}'),
+      );
+    }
     return null;
   }
 
@@ -2914,12 +2964,14 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     // 1440px window's minimum header taller than 2200px and push bottom-aligned
     // content below the first screen. Wide desktop content is naturally sized;
     // its separately painted backdrop keeps the artwork's own bounds.
-    final headerHeight = !isMobile && !compact
+    final headerHeight = isTv
+        ? 320 * size.width / 1060
+        : !isMobile && !compact
         ? 0.0
         : MonoPresentation.touchHeroHeight(context, detail: true, hasArtwork: hasHeroArtwork);
 
-    if (isTv) {
-      return _buildTvDetailScreen(context, metadata, _handleMediaDetailBackKey);
+    if (isTv && !_tvDetailRevealed && _isTvDetailReadyToReveal(metadata)) {
+      _scheduleTvDetailReveal();
     }
 
     _scheduleInitialMobileDetailFocus(metadata);
@@ -2941,9 +2993,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
               children: [
                 // Background art sits behind the scroll view so it can be
                 // taller than the hero sliver without displacing content.
-                _buildHeroBackdropLayer(context, metadata, size, headerHeight),
+                if (!isTv) _buildHeroBackdropLayer(context, metadata, size, headerHeight),
 
                 CustomScrollView(
+                  key: isTv ? const ValueKey('tv_detail_content_scroll') : null,
                   primary: true,
                   slivers: [
                     // Hero header content over the background art
@@ -2951,7 +3004,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                       child: ConstrainedBox(
                         key: const ValueKey('detail_hero'),
                         constraints: BoxConstraints(minHeight: headerHeight),
-                        child: _buildHeroHeader(context, metadata),
+                        child: isTv ? _buildTvScrollableHero(context, metadata) : _buildHeroHeader(context, metadata),
                       ),
                     ),
 
@@ -3072,12 +3125,32 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                                   runSpacing: 8,
                                   children: [
                                     for (final genre in metadata.genres!)
-                                      Chip(
-                                        label: Text(genre),
-                                        labelStyle: const TextStyle(fontSize: 11, height: 1.5),
-                                        labelPadding: EdgeInsets.zero,
-                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+                                      FocusableWrapper(
+                                        focusNode: isTv && genre == metadata.genres!.first ? _genreFocus : null,
+                                        canRequestFocus: isTv,
+                                        disableScale: true,
+                                        onSelect: isTv
+                                            ? () => Navigator.of(
+                                                context,
+                                              ).push(MaterialPageRoute<void>(builder: (_) => const LibrariesScreen()))
+                                            : null,
+                                        onNavigateUp: isTv
+                                            ? () {
+                                                if (metadata.roles?.isNotEmpty == true) {
+                                                  _castStripKey.currentState?.requestFocus();
+                                                } else {
+                                                  _focusEpisodeGroups();
+                                                }
+                                              }
+                                            : null,
+                                        onNavigateDown: isTv ? _focusBelowGenres : null,
+                                        child: Chip(
+                                          label: Text(genre),
+                                          labelStyle: const TextStyle(fontSize: 11, height: 1.5),
+                                          labelPadding: EdgeInsets.zero,
+                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+                                        ),
                                       ),
                                   ],
                                 ),
@@ -3091,7 +3164,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                                   focusMemory: _hubFocusMemory,
                                   icon: _getRelatedHubIcon(_relatedHubs[i]),
                                   detailRelated: true,
-                                  cardWidthOverride: 107,
+                                  cardWidthOverride: isTv ? 130 : 107,
                                   loadMoreItems: _loadAllDetailRelatedItems,
                                   inset: true,
                                   onVerticalNavigation: (isUp) => _handleRelatedHubNavigation(i, isUp),
@@ -3204,118 +3277,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       ),
     );
 
-    return content;
-  }
-
-  Widget _buildTvDetailScreen(
-    BuildContext context,
-    MediaItem metadata,
-    KeyEventResult Function(FocusNode, KeyEvent) handleBack,
-  ) {
-    final size = MediaQuery.sizeOf(context);
-    final detailHubs = _tvDetailHubs(metadata);
-    if (widget.initialEpisodeId != null && !_initialEpisodePagingDone) {
-      _maybeLoadMoreForInitialEpisode();
-    }
-    final hideSpoilers = SettingsService.instance.read(SettingsService.hideSpoilers);
-    final detailScale = TvLayoutConstants.scaleForSize(size);
-    final spotlightTop = (size.height * 0.08).clamp(56.0 * detailScale, 110.0 * detailScale).toDouble();
-    final rawRailHeight = _estimateTvDetailRailHeight(size, detailHubs);
-    if (!_tvDetailRevealed && _isTvDetailReadyToReveal(metadata)) {
-      _scheduleTvDetailReveal(rawRailHeight, focusPrimaryAction: metadata.isMovie);
-    }
-    final stableRailHeight = _tvDetailStableRailHeight;
-    final railHeight = stableRailHeight == null || rawRailHeight > stableRailHeight ? rawRailHeight : stableRailHeight;
-    final railTopPadding = 12 * detailScale;
-    final foregroundBottom = detailHubs.isEmpty
-        ? MediaQuery.paddingOf(context).bottom + railTopPadding
-        : (railHeight - railTopPadding) + (_tvDetailActionRailGap * detailScale);
-    final spotlightLeft = (24 * detailScale).clamp(18.0, 40.0).toDouble();
-
-    final revealContent = Stack(
-      fit: StackFit.expand,
-      children: [
-        Positioned(
-          left: spotlightLeft,
-          right: size.width * 0.28,
-          top: spotlightTop,
-          bottom: foregroundBottom,
-          child: ListenableBuilder(
-            listenable: _tvDetailForegroundListenable,
-            builder: (context, _) =>
-                _buildTvDetailForeground(context, metadata, hideSpoilers: hideSpoilers, scale: detailScale),
-          ),
-        ),
-        Positioned(
-          top: 0,
-          left: 0,
-          child: DesktopAppBarHelper.buildAdjustedLeading(
-            AppBarBackButton(
-              style: BackButtonStyle.circular,
-              onPressed: () => Navigator.pop(context, _watchStateChanged),
-              focusNode: _backButtonFocusNode,
-            ),
-            context: context,
-          )!,
-        ),
-        if (detailHubs.isNotEmpty)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: TvBrowseRail(
-              key: _tvDetailRailKey,
-              hubs: detailHubs,
-              focusMemory: _hubFocusMemory,
-              iconForHub: _getTvDetailHubIcon,
-              onFocusedHubItemChanged: _handleTvDetailFocusedRailItemChanged,
-              onRefresh: (source) => unawaited(_refreshItemInPlace(source)),
-              onActiveHubChanged: _handleTvDetailHubChanged,
-              onActivateItem: _handleTvDetailRailItemActivated,
-              trailingForHub: _tvDetailTrailingState,
-              leadingItemForHub: _tvDetailLeadingItemForHub,
-              onRetryHub: _retryTvDetailHub,
-              onNavigateUp: _focusTvDetailActionRow,
-              onBack: _popMediaDetailIfBackNotSuppressed,
-              tallPosterScale: _tvDetailTallPosterScale,
-              widePosterScaleForHub: _tvDetailWidePosterScaleForHub,
-              initialHubId: _tvDetailInitialHubId(metadata),
-              initialItemId: _tvDetailInitialItemId(metadata),
-              episodePosterModeForHub: _tvDetailEpisodePosterModeForHub,
-              showTitleImpliedForHub: _isTvDetailEpisodeHub,
-            ),
-          ),
-      ],
-    );
-
-    final blockSystemBack = InputModeTracker.shouldBlockSystemBack(context);
-    final content = OverlaySheetHost(
-      // blockSystemBack keeps the route from double-popping on Android keyboard/
-      // TV (the key handler owns dpad back); the host also closes an open sheet.
-      canPop: !blockSystemBack,
-      onSystemBack: _handleMediaDetailSystemBack,
-      child: Focus(
-        onKeyEvent: handleBack,
-        child: Scaffold(
-          body: Stack(
-            children: [
-              TvSpotlightBackground(
-                item: metadata,
-                client: _getArtworkMediaClient(context),
-                showInfo: false,
-                localArtworkPathResolver: widget.isOffline
-                    ? (path) => _offlineArtworkCandidatePath(context, path)
-                    : null,
-                allowNetwork: !widget.isOffline,
-              ),
-              _buildTvDetailRevealGate(revealContent, handleBack),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    return content;
+    return isTv ? _buildTvDetailRevealGate(content, _handleMediaDetailBackKey) : content;
   }
 
   /// Opens the full-information sheet for the TV hero: the complete metadata
@@ -3419,8 +3381,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     return parts.join(', ');
   }
 
-  Color _tvDetailForegroundColor(BuildContext context) => Theme.of(context).colorScheme.onSurface;
-
   /// The logo is contained within [width] × [height]; the title fallback gets
   /// [ClearLogoImage.fallbackWidthFor] of the [availableWidth] hero column at
   /// the same [height] (#1796).
@@ -3481,25 +3441,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     );
   }
 
-  Widget _buildTvDetailMetadataLine(BuildContext context, MediaItem metadata, double scale) {
-    final textStyle = TextStyle(
-      color: _tvDetailForegroundColor(context),
-      fontSize: 18 * scale,
-      fontWeight: .w700,
-      letterSpacing: 0.1,
-    );
-    final parts = _tvDetailMetadataParts(metadata);
-    if (parts.isEmpty) return const SizedBox.shrink();
-
-    return FittedMetadataLine(
-      textStyle: textStyle,
-      parts: parts,
-      ratingIconSize: textStyle.fontSize,
-      ratingSpacing: 4 * scale,
-      ratingEntrySpacing: 12 * scale,
-    );
-  }
-
   String? _tvDetailDescription(MediaItem metadata, {required bool hideSpoilers}) {
     final focusedEpisode = _tvDetailFocusedEpisode.value;
     if (focusedEpisode == null) return _tvDetailItemDescription(metadata, hideSpoilers: hideSpoilers);
@@ -3534,208 +3475,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     return null;
   }
 
-  double _estimateTvBrowseRailHeight(Size size, List<MediaHub> hubs) {
-    final svc = SettingsService.instance;
-    return TvBrowseRailLayout.estimateHeight(
-      size: size,
-      hubs: hubs,
-      density: svc.read(SettingsService.libraryDensity),
-      episodePosterMode: svc.read(SettingsService.episodePosterMode),
-      episodePosterModeForHub: _tvDetailEpisodePosterModeForHub,
-      widePosterScaleForHub: _tvDetailWidePosterScaleForHub,
-      fullCardLayout: svc.read(SettingsService.tvFullCardLayout),
-      gridSpacing: svc.read(SettingsService.gridSpacing),
-      tallPosterScale: _tvDetailTallPosterScale,
-      minLabelHeight: MediaCard.gridLabelHeight(context),
-    );
-  }
-
-  double _estimateTvDetailRailHeight(Size size, List<MediaHub> hubs) {
-    final hubRailHeight = _estimateTvBrowseRailHeight(size, hubs);
-    if (hubRailHeight > 0) return hubRailHeight;
-    return _estimateTvDetailEmptyRailReserveHeight(size);
-  }
-
-  double _estimateTvDetailEmptyRailReserveHeight(Size size) {
-    final svc = SettingsService.instance;
-    final scale = TvBrowseRailLayout.scaleForSize(size);
-    final availableWidth = size.width - TvBrowseRailLayout.horizontalInsetForScale(scale);
-    if (availableWidth <= 0) return 0;
-
-    final metrics = TvBrowseRailLayout.metricsForHub(
-      hub: MediaHub(
-        id: 'detail_empty_rail_reserve',
-        title: '',
-        type: 'movie',
-        items: [MediaItem(id: 'detail_empty_rail_reserve_item', backend: _metadata.backend, kind: MediaKind.movie)],
-      ),
-      availableWidth: availableWidth,
-      density: svc.read(SettingsService.libraryDensity),
-      episodePosterMode: svc.read(SettingsService.episodePosterMode),
-      fullCardLayout: svc.read(SettingsService.tvFullCardLayout),
-      gridSpacing: svc.read(SettingsService.gridSpacing),
-      scale: scale,
-      tallPosterScale: _tvDetailTallPosterScale,
-      widePosterScale: 1.0,
-      minLabelHeight: MediaCard.gridLabelHeight(context),
-    );
-    final sectionHeight = TvBrowseRailLayout.hubSectionHeightFor(scale: scale, activeRailHeight: metrics.height);
-    return TvBrowseRailLayout.railTopPaddingForScale(scale) +
-        TvBrowseRailLayout.viewportHeightFor(hubCount: 1, scale: scale, sectionHeight: sectionHeight) +
-        TvBrowseRailLayout.railBottomPaddingForScale(scale);
-  }
-
-  bool _isTvDetailEpisodeHub(MediaHub hub) {
-    return hub.id.startsWith(_tvDetailSeasonHubIdPrefix) || hub.id == 'detail_episodes';
-  }
-
-  EpisodePosterMode _tvDetailEpisodePosterModeForHub(MediaHub hub) {
-    if (_isTvDetailEpisodeHub(hub)) return EpisodePosterMode.episodeThumbnail;
-    return SettingsService.instance.read(SettingsService.episodePosterMode);
-  }
-
-  double _tvDetailWidePosterScaleForHub(MediaHub hub) {
-    return _isTvDetailEpisodeHub(hub) || hub.id == _tvDetailExtrasHubId ? _tvDetailEpisodeThumbnailScale : 1.0;
-  }
-
-  List<MediaHub> _tvDetailHubs(MediaItem metadata) {
-    final hubs = <MediaHub>[];
-    if (metadata.isShow && !_showEpisodesDirectly && _seasonsLoadFailed) {
-      hubs.add(
-        MediaHub(
-          id: _tvDetailSeasonsErrorHubId,
-          title: t.libraries.groupings.seasons,
-          type: 'episode',
-          items: const [],
-          size: 0,
-        ),
-      );
-    } else if (metadata.isShow && !_showEpisodesDirectly && _seasons.isNotEmpty) {
-      // Emit a hub for every season so TV users can choose a season before its
-      // episodes are fetched. Extra pages load in-place when focus reaches the
-      // last loaded episode; the trailing slot is reserved for loading/retry.
-      for (var i = 0; i < _seasons.length; i++) {
-        final season = _seasons[i];
-        final state = _seasonEpisodePager.stateFor(season.id);
-        final episodes = i == _selectedSeasonIndex ? _episodes : state.items;
-        final total = state.totalCount > episodes.length ? state.totalCount : (season.leafCount ?? episodes.length);
-        hubs.add(
-          MediaHub(
-            id: '$_tvDetailSeasonHubIdPrefix$i',
-            title: _seasonLabel(season),
-            type: 'episode',
-            items: episodes,
-            size: total,
-          ),
-        );
-      }
-    } else if (_episodes.isNotEmpty) {
-      final total = _allEpisodesTotal > _episodes.length ? _allEpisodesTotal : _episodes.length;
-      hubs.add(
-        MediaHub(
-          id: 'detail_episodes',
-          title: t.libraries.groupings.episodes,
-          type: 'episode',
-          items: _episodes,
-          size: total,
-        ),
-      );
-    } else if ((metadata.isShow && _showEpisodesDirectly) || metadata.isSeason) {
-      if (_allEpisodesPageError || _isLoadingEpisodes) {
-        hubs.add(
-          MediaHub(
-            id: 'detail_episodes',
-            title: t.libraries.groupings.episodes,
-            type: 'episode',
-            items: const [],
-            size: 0,
-          ),
-        );
-      }
-    }
-    final actors = _tvDetailActorItems(metadata);
-    if (actors.isNotEmpty) {
-      hubs.add(
-        MediaHub(id: _tvDetailActorsHubId, title: t.discover.cast, type: 'person', items: actors, size: actors.length),
-      );
-    }
-    if (_extras != null && _extras!.isNotEmpty) {
-      hubs.add(
-        MediaHub(
-          id: _tvDetailExtrasHubId,
-          title: t.discover.extras,
-          type: 'clip',
-          items: _extras!,
-          size: _extras!.length,
-        ),
-      );
-    }
-    hubs.addAll(_relatedHubs.where((hub) => hub.items.isNotEmpty));
-    return hubs;
-  }
-
-  String? _tvDetailInitialHubId(MediaItem metadata) {
-    if (metadata.isShow && !_showEpisodesDirectly && _seasons.isNotEmpty) {
-      return '$_tvDetailSeasonHubIdPrefix$_selectedSeasonIndex';
-    }
-    if ((metadata.isShow && _showEpisodesDirectly) || metadata.isSeason) {
-      return 'detail_episodes';
-    }
-    return null;
-  }
-
-  String? _tvDetailInitialItemId(MediaItem metadata) {
-    if (widget.initialEpisodeId != null) return widget.initialEpisodeId;
-    if (!metadata.isShow) return null;
-    return _onDeckEpisode?.id;
-  }
-
-  List<MediaItem> _tvDetailActorItems(MediaItem metadata) {
-    final roles = metadata.roles;
-    if (roles == null || roles.isEmpty) return const [];
-
-    return [
-      for (var i = 0; i < roles.length; i++)
-        if (roles[i].tag.trim().isNotEmpty) _tvDetailActorItem(metadata, roles[i], i),
-    ];
-  }
-
-  MediaItem _tvDetailActorItem(MediaItem metadata, MediaRole actor, int index) {
-    final personId = actor.id?.trim();
-    return MediaItem(
-      id: personId != null && personId.isNotEmpty ? '${metadata.id}_actor_$personId' : '${metadata.id}_actor_$index',
-      backend: metadata.backend,
-      kind: MediaKind.unknown,
-      title: actor.tag,
-      parentTitle: actor.role,
-      thumbPath: actor.thumbPath,
-      serverId: metadata.serverId,
-      serverName: metadata.serverName,
-      raw: {if (personId != null && personId.isNotEmpty) _tvDetailActorPersonIdRawKey: personId},
-    );
-  }
-
-  Future<bool> _handleTvDetailRailItemActivated(MediaHub hub, MediaItem item) async {
-    if (_isTvDetailEpisodeHub(hub) && item.isEpisode) {
-      await navigateToVideoPlayerWithRefresh(
-        context,
-        metadata: item,
-        isOffline: widget.isOffline,
-        onRefresh: () => unawaited(_refreshItemInPlace(item)),
-        isLaunchCurrent: () => _canUseDetail,
-      );
-      return true;
-    }
-    if (hub.id != _tvDetailActorsHubId) return false;
-    final personId = item.raw?[_tvDetailActorPersonIdRawKey];
-    if (personId is String && personId.isNotEmpty) {
-      _navigateToActorMedia(
-        MediaRole(id: personId, tag: item.displayTitle, role: item.parentTitle, thumbPath: item.thumbPath),
-      );
-    }
-    return true;
-  }
-
   void _clearTvDetailFocusedEpisode() {
     _tvDetailFocusedEpisode.value = null;
   }
@@ -3754,70 +3493,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     _playButtonFocusNode.requestFocus();
   }
 
-  void _handleTvDetailFocusedRailItemChanged(MediaHub hub, MediaItem item) {
-    if (_tvDetailActionRowHasFocus) {
-      _clearTvDetailFocusedEpisode();
-      return;
-    }
-    if (!_isTvDetailEpisodeHub(hub) || !item.isEpisode) {
-      _clearTvDetailFocusedEpisode();
-      return;
-    }
-    if (_tvDetailFocusedEpisode.value?.id == item.id) return;
-    _tvDetailFocusedEpisode.value = item;
-    if (hub.id == 'detail_episodes') {
-      if (!_allEpisodesPageError && _episodes.isNotEmpty && item.id == _episodes.last.id) {
-        unawaited(_loadMoreAllEpisodes());
-      }
-      return;
-    }
-    if (hub.id == '$_tvDetailSeasonHubIdPrefix$_selectedSeasonIndex' &&
-        !_seasonEpisodesPageError &&
-        _episodes.isNotEmpty &&
-        item.id == _episodes.last.id) {
-      unawaited(_loadMoreSeasonEpisodes());
-    }
-  }
-
-  void _handleTvDetailHubChanged(MediaHub hub, int index) {
-    if (!_isTvDetailEpisodeHub(hub)) {
-      _clearTvDetailFocusedEpisode();
-      return;
-    }
-    if (hub.items.isEmpty) _clearTvDetailFocusedEpisode();
-    if (!hub.id.startsWith(_tvDetailSeasonHubIdPrefix)) return;
-    final seasonIndex = int.tryParse(hub.id.substring(_tvDetailSeasonHubIdPrefix.length));
-    if (seasonIndex == null || seasonIndex < 0 || seasonIndex >= _seasons.length) return;
-    final season = _seasons[seasonIndex];
-    final state = _seasonEpisodePager.stateFor(season.id);
-    final hasLoadedState =
-        _seasonEpisodePager.hasState(season.id) && !state.isInitialLoading && !state.initialLoadFailed;
-    if (_selectedSeasonIndex == seasonIndex &&
-        (hasLoadedState || _episodes.isNotEmpty || _isLoadingSeasonEpisodes || _seasonEpisodesFirstPageError)) {
-      return;
-    }
-
-    if (hasLoadedState) {
-      _seasonEpisodePager.completeFirstPage(season.id, state.items, state.totalCount);
-      setStateIfMounted(() {
-        _selectedSeasonIndex = seasonIndex;
-        _episodes = List.of(_seasonEpisodePager.stateFor(season.id).items);
-      });
-      unawaited(_prefetchAdjacentSeasonEpisodePages(seasonIndex));
-      _pruneDistantSeasonPages(seasonIndex);
-      return;
-    }
-
-    setStateIfMounted(() {
-      _selectedSeasonIndex = seasonIndex;
-      _episodes = const <MediaItem>[];
-      _seasonEpisodePager.markFirstPageLoading(season.id);
-    });
-    unawaited(_fetchSeasonEpisodes(seasonIndex));
-    unawaited(_prefetchAdjacentSeasonEpisodePages(seasonIndex));
-    _pruneDistantSeasonPages(seasonIndex);
-  }
-
   /// Low-end TV only: keep episode pages for the selected season ±1 (the
   /// prefetch window) and drop the rest. Visited 200-item pages otherwise
   /// accumulate for the screen's lifetime — irrelevant for a 3-season show,
@@ -3834,63 +3509,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   /// What the rail should show in a hub's trailing slot: a spinner while the
   /// selected season page loads or a retry tile if it failed. Episode hubs do
   /// not use the legacy "View All" slot; they page in-place on focus.
-  TvRailTrailing _tvDetailTrailingState(MediaHub hub) {
-    if (hub.id == _tvDetailSeasonsErrorHubId) return TvRailTrailing.error;
-    final isFlatten = hub.id == 'detail_episodes';
-    final isSeason = hub.id.startsWith(_tvDetailSeasonHubIdPrefix);
-    if (!isFlatten && !isSeason) return hub.more ? TvRailTrailing.viewAll : TvRailTrailing.none;
-    if (isFlatten) {
-      if (_allEpisodesPageError) return TvRailTrailing.error;
-      if (_isLoadingEpisodes || _isLoadingAllEpisodes) return TvRailTrailing.loading;
-      return TvRailTrailing.none;
-    }
-    final isSelectedSeason = hub.id == '$_tvDetailSeasonHubIdPrefix$_selectedSeasonIndex';
-    if (isSelectedSeason) {
-      if (_seasonEpisodesFirstPageError || _seasonEpisodesPageError) return TvRailTrailing.error;
-      if (_isLoadingSeasonEpisodes || _isLoadingMoreSeasonEpisodes) return TvRailTrailing.loading;
-    }
-    return TvRailTrailing.none;
-  }
-
-  void _retryTvDetailHub(MediaHub hub) {
-    if (hub.id == _tvDetailSeasonsErrorHubId) {
-      unawaited(_loadSeasons());
-      return;
-    }
-    if (hub.id == 'detail_episodes') {
-      unawaited(_episodes.isEmpty ? _fetchAllEpisodes() : _loadMoreAllEpisodes());
-      return;
-    }
-    if (hub.id.startsWith(_tvDetailSeasonHubIdPrefix)) {
-      final seasonIndex = int.tryParse(hub.id.substring(_tvDetailSeasonHubIdPrefix.length));
-      if (seasonIndex != null && seasonIndex >= 0 && seasonIndex < _seasons.length) {
-        final state = _seasonEpisodePager.stateFor(_seasons[seasonIndex].id);
-        unawaited(state.items.isNotEmpty ? _loadMoreSeasonEpisodes() : _fetchSeasonEpisodes(seasonIndex));
-      }
-    }
-  }
-
   /// The season behind a TV detail episode hub, surfaced as the rail's leading
   /// options slot so D-pad users can reach season actions (mark season
   /// watched/unwatched, download, delete) that mobile exposes on the season
   /// tabs (#2156). Non-season hubs (flatten episodes, actors, extras, related)
   /// have no leading slot.
-  MediaItem? _tvDetailLeadingItemForHub(MediaHub hub) {
-    if (!hub.id.startsWith(_tvDetailSeasonHubIdPrefix)) return null;
-    final seasonIndex = int.tryParse(hub.id.substring(_tvDetailSeasonHubIdPrefix.length));
-    if (seasonIndex == null || seasonIndex < 0 || seasonIndex >= _seasons.length) return null;
-    return _seasons[seasonIndex];
-  }
-
-  IconData _getTvDetailHubIcon(MediaHub hub, int index) {
-    if (hub.id == _tvDetailSeasonsErrorHubId) return Symbols.error_outline_rounded;
-    if (hub.id.startsWith(_tvDetailSeasonHubIdPrefix)) return Symbols.tv_rounded;
-    if (hub.id == 'detail_episodes') return Symbols.tv_rounded;
-    if (hub.id == _tvDetailExtrasHubId) return Symbols.theaters_rounded;
-    if (hub.id == _tvDetailActorsHubId) return Symbols.group_rounded;
-    return _getRelatedHubIcon(hub);
-  }
-
   /// Height of the backdrop paint box, which is deliberately taller than the
   /// hero sliver on wide windows.
   ///
@@ -4074,7 +3697,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
   Widget _buildCastSectionContent(MediaItem metadata) {
     final roles = metadata.roles!;
-    final compact = !PlatformDetector.isTV() && _usesCompactHero(MediaQuery.sizeOf(context).width - _heroSideInset * 2);
+    final compact = PlatformDetector.isTV() || _usesCompactHero(MediaQuery.sizeOf(context).width - _heroSideInset * 2);
     return CastMemberStrip(
       key: _castStripKey,
       cardWidth: compact ? 65 : null,
