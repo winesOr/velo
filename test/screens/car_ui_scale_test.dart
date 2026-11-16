@@ -5,6 +5,7 @@ import 'package:plezy/main.dart' as app;
 import 'package:plezy/services/settings_service.dart';
 import 'package:plezy/utils/platform_detector.dart';
 import 'package:plezy/utils/snackbar_helper.dart';
+import 'package:plezy/widgets/app_toast.dart';
 import 'package:plezy/widgets/focusable_list_tile.dart';
 
 import '../test_helpers/prefs.dart';
@@ -31,7 +32,7 @@ void main() {
     SettingsService.resetForTesting();
   });
 
-  testWidgets('a root snackbar is laid out inside the car scale, not outside it', (tester) async {
+  testWidgets('a root notification is laid out inside the car scale', (tester) async {
     TvDetectionService.debugSetAutomotiveOverride(true);
     tester.view.physicalSize = const Size(1080, 600);
     tester.view.devicePixelRatio = 0.75;
@@ -48,14 +49,15 @@ void main() {
       ),
     );
 
-    rootScaffoldMessengerKey.currentState!.showSnackBar(const SnackBar(content: Text('scaled')));
-    await tester.pumpAndSettle();
+    showMainSnackBar('scaled');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
 
-    // The unscaled surface is 1440 logical pixels wide; the default car scale renders into
-    // 1440 / 1.35, so a snackbar outside the transform would measure the full width.
-    final width = tester.getSize(find.byType(SnackBar)).width;
-    expect(width, lessThan(1440 * 0.9), reason: 'a root snackbar must inherit the scaled viewport');
-    expect(width, closeTo(1440 / 1.35, 1.0));
+    // The notification and route share the automotive logical viewport.
+    final noticeContext = tester.element(find.text('scaled'));
+    expect(MediaQuery.sizeOf(noticeContext).width, closeTo(1440 / 1.35, 1.0));
+    expect(tester.getSize(find.text('scaled')).width, lessThan(1440 / 1.35));
+    AppToast.dismiss(immediately: true);
   });
 
   test('automotive UI scale defaults by form factor and honors a stored value', () async {

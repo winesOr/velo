@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 
 import '../widgets/app_dialog.dart';
+import '../widgets/app_glass_surface.dart';
 import 'package:flutter/services.dart';
 import '../focus/focusable_text_field.dart';
 import '../focus/input_mode_tracker.dart';
@@ -15,9 +17,25 @@ import '../widgets/scroll_ink_boundary.dart';
 import 'focus_utils.dart';
 
 const _buttonPadding = EdgeInsets.symmetric(horizontal: 18, vertical: 14);
-const _buttonShape = StadiumBorder();
+const _buttonShape = RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(14)));
 
 final _dialogOwners = <Route<dynamic>, Set<Route<dynamic>>>{};
+
+class _AppDialogRoute<T> extends DialogRoute<T> {
+  _AppDialogRoute({
+    required super.context,
+    required super.builder,
+    super.themes,
+    super.barrierColor,
+    super.barrierDismissible,
+    super.traversalEdgeBehavior,
+  }) : _blurBarrier = !AppGlassSurface.reduceEffects(context);
+
+  final bool _blurBarrier;
+
+  @override
+  ImageFilter? get filter => _blurBarrier ? ImageFilter.blur(sigmaX: 5, sigmaY: 5) : null;
+}
 
 /// Shows a dialog on the nearest navigator instead of Flutter's default root
 /// navigator. Use this for profile/session-owned modal routes so they are
@@ -31,7 +49,7 @@ Future<T?> showScopedDialog<T>({
   assert(debugCheckHasMaterialLocalizations(context));
   final navigator = Navigator.of(context);
   final owner = ModalRoute.of(context);
-  final route = DialogRoute<T>(
+  final route = _AppDialogRoute<T>(
     context: context,
     builder: builder,
     themes: InheritedTheme.capture(from: context, to: navigator.context),

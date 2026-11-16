@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'mono_presentation.dart';
+import 'velo_brand.dart';
 
 /// Home-only type hierarchy. Retains platform fonts and system text scaling.
 class HomeTypography extends ThemeExtension<HomeTypography> {
@@ -23,9 +24,7 @@ class HomeTypography extends ThemeExtension<HomeTypography> {
     final body = theme.textTheme.bodyMedium!;
     final artworkColors = artworkSurface == null ? null : MonoPresentation.artworkTextColors(artworkSurface);
     final foreground = artworkColors?.foreground ?? theme.colorScheme.onSurface;
-    final caption =
-        artworkColors?.caption ??
-        (theme.brightness == Brightness.dark ? const Color(0xffb8bdc7) : const Color(0xff646b77));
+    final caption = artworkColors?.caption ?? VeloPalette.caption(theme.brightness);
     return theme.copyWith(
       colorScheme: artworkSurface != null
           ? theme.colorScheme.copyWith(onSurface: foreground, onSurfaceVariant: caption)

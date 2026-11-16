@@ -144,7 +144,7 @@ void main() {
         isDestructive: true,
       );
       await tester.pumpAndSettle();
-      expect(find.byType(BackdropFilter), findsOneWidget);
+      expect(find.byType(BackdropFilter), findsNWidgets(2));
       expect(tester.takeException(), isNull);
       await _capture(tester, boundary, 'dialog-${dark ? 'dark' : 'light'}');
       await tester.tap(find.text('Keep download'));

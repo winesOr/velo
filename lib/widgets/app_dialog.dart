@@ -24,21 +24,51 @@ class AppDialog extends Dialog {
   });
 
   @override
-  Widget build(BuildContext context) => Dialog(
-    backgroundColor: Colors.transparent,
-    elevation: 0,
-    shadowColor: Colors.transparent,
-    surfaceTintColor: Colors.transparent,
-    insetAnimationDuration: AppGlassSurface.reduceEffects(context) ? Duration.zero : insetAnimationDuration,
-    insetAnimationCurve: insetAnimationCurve,
-    insetPadding: insetPadding ?? const EdgeInsets.all(OverlayTokens.viewportInset),
-    clipBehavior: Clip.none,
-    shape: shape,
-    alignment: alignment,
-    constraints: constraints ?? const BoxConstraints(minWidth: 280, maxWidth: OverlayTokens.dialogMaxWidth),
-    semanticsRole: semanticsRole,
-    child: AppGlassSurface(backgroundColor: backgroundColor, shape: shape, child: child ?? const SizedBox.shrink()),
-  );
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const buttonShape = RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(14)));
+    final secondaryStyle = TextButton.styleFrom(
+      shape: buttonShape,
+      backgroundColor: theme.colorScheme.onSurface.withValues(alpha: .07),
+      foregroundColor: theme.colorScheme.onSurface,
+      side: BorderSide(color: theme.colorScheme.outline),
+    );
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      insetAnimationDuration: AppGlassSurface.reduceEffects(context) ? Duration.zero : insetAnimationDuration,
+      insetAnimationCurve: insetAnimationCurve,
+      insetPadding: insetPadding ?? const EdgeInsets.all(OverlayTokens.viewportInset),
+      clipBehavior: Clip.none,
+      shape: shape,
+      alignment: alignment,
+      constraints: constraints ?? const BoxConstraints(minWidth: 280, maxWidth: OverlayTokens.dialogMaxWidth),
+      semanticsRole: semanticsRole,
+      child: AppGlassSurface(
+        backgroundColor: backgroundColor,
+        shape: shape,
+        child: Theme(
+          data: theme.copyWith(
+            filledButtonTheme: FilledButtonThemeData(
+              style: theme.filledButtonTheme.style?.copyWith(shape: const WidgetStatePropertyAll(buttonShape)),
+            ),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: theme.elevatedButtonTheme.style?.copyWith(shape: const WidgetStatePropertyAll(buttonShape)),
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: theme.textButtonTheme.style?.merge(secondaryStyle) ?? secondaryStyle,
+            ),
+            outlinedButtonTheme: OutlinedButtonThemeData(
+              style: theme.outlinedButtonTheme.style?.merge(secondaryStyle) ?? secondaryStyle,
+            ),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        ),
+      ),
+    );
+  }
 }
 
 /// Keeps Flutter's accessible alert layout and OverflowBar rather than

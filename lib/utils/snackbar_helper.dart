@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../widgets/app_toast.dart';
 import 'layout_constants.dart';
 
-/// Compatibility key for consumers that still use ScaffoldMessenger directly.
-final rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+/// Supplies a scaled root context for global AppToast notifications.
+final rootToastContextKey = GlobalKey();
 
 enum SnackBarType { info, success, error }
 
@@ -38,12 +38,12 @@ void showErrorSnackBar(BuildContext context, String message) {
 }
 
 void showGlobalErrorSnackBar(String message) {
-  final context = rootScaffoldMessengerKey.currentContext;
+  final context = rootToastContextKey.currentContext;
   if (context != null) showErrorSnackBar(context, message);
 }
 
 void showMainSnackBar(String message, {Duration duration = AppDurations.snackBarDefault}) {
-  final context = rootScaffoldMessengerKey.currentContext;
+  final context = rootToastContextKey.currentContext;
   if (context != null) showAppSnackBar(context, message, duration: duration);
 }
 

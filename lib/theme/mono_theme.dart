@@ -115,6 +115,7 @@ ThemeData _buildMonoTheme({required bool dark, required bool oled, required Targ
       onSecondary: isDark ? const Color(0xff211b3b) : Colors.white,
       surface: c.surface,
       onSurface: c.text,
+      onSurfaceVariant: c.textMuted,
       error: isDark ? const Color(0xFFFFB4AB) : const Color(0xFFB3261E),
       onError: isDark ? const Color(0xFF690005) : Colors.white,
       tertiary: VeloBrand.foreground(isDark ? Brightness.dark : Brightness.light),
@@ -158,7 +159,7 @@ ThemeData _buildMonoTheme({required bool dark, required bool oled, required Targ
       margin: .zero,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
     ),
-    inputDecorationTheme: _inputDecorationTheme(c.text, c.textMuted),
+    inputDecorationTheme: _inputDecorationTheme(c.bg, c.outline, c.textMuted),
     elevatedButtonTheme: ElevatedButtonThemeData(style: buttonStyle),
     filledButtonTheme: FilledButtonThemeData(style: buttonStyle),
     textButtonTheme: TextButtonThemeData(
@@ -218,9 +219,6 @@ ThemeData _buildMonoTheme({required bool dark, required bool oled, required Targ
         );
       }),
     ),
-    // Floating snackbars auto-offset above the Scaffold's bottom NavigationBar,
-    // so they don't cover it on mobile. Background color tracks the theme to
-    // avoid jarring brightness on HDR playback / dark mode.
     dialogTheme: DialogThemeData(
       backgroundColor: c.surface,
       surfaceTintColor: Colors.transparent,
@@ -229,7 +227,7 @@ ThemeData _buildMonoTheme({required bool dark, required bool oled, required Targ
       titleTextStyle: _textTheme(c.text, c.textMuted, compact: !tv).titleLarge,
       contentTextStyle: _textTheme(c.text, c.textMuted, compact: !tv).bodyMedium,
       actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      barrierColor: Colors.black.withValues(alpha: isDark ? 0.5 : 0.32),
+      barrierColor: isDark ? const Color(0x88000000) : const Color(0x4517151d),
     ),
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: c.surface,
@@ -251,15 +249,6 @@ ThemeData _buildMonoTheme({required bool dark, required bool oled, required Targ
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: c.outline),
       ),
-    ),
-    snackBarTheme: SnackBarThemeData(
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: c.surface,
-      contentTextStyle: TextStyle(color: c.text),
-      actionTextColor: c.text,
-      elevation: 0,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(OverlayTokens.compactRadius))),
-      insetPadding: const EdgeInsets.all(16),
     ),
   );
 
@@ -286,21 +275,20 @@ ThemeData _buildMonoTheme({required bool dark, required bool oled, required Targ
   );
 }
 
-/// Brighter fill on focus so input focus is visible inside TV overscan.
-InputDecorationTheme _inputDecorationTheme(Color text, Color textMuted) {
-  final unfocusedFill = text.withValues(alpha: 0.08);
-  final focusedFill = text.withValues(alpha: 0.18);
-  const border = OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12)), borderSide: BorderSide.none);
+InputDecorationTheme _inputDecorationTheme(Color background, Color edge, Color textMuted) {
+  final border = OutlineInputBorder(
+    borderRadius: const BorderRadius.all(Radius.circular(14)),
+    borderSide: BorderSide(color: edge),
+  );
   return InputDecorationTheme(
     filled: true,
-    fillColor: WidgetStateColor.resolveWith(
-      (states) => states.contains(WidgetState.focused) ? focusedFill : unfocusedFill,
-    ),
+    fillColor: background,
+    constraints: const BoxConstraints(minHeight: 48),
     isDense: true,
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     border: border,
     enabledBorder: border,
-    focusedBorder: border.copyWith(borderSide: BorderSide(color: text.withValues(alpha: 0.45), width: 1.5)),
+    focusedBorder: border.copyWith(borderSide: const BorderSide(color: VeloBrand.accent, width: 2)),
     hintStyle: TextStyle(color: textMuted),
   );
 }

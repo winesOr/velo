@@ -1967,18 +1967,12 @@ class _AppShell extends StatelessWidget {
 
 /// The root shell every route renders inside.
 ///
-/// The form-factor scale sits above the messenger and its root [Scaffold], not inside them:
-/// Flutter presents a messenger's snackbars on the rootmost registered scaffold, so anything
-/// below would leave global snackbars at the car's native density while the rest of the
-/// interface grew.
+/// Keep global notifications inside the same scaled viewport as every route.
 Widget rootShell(Widget? child) {
   return FormFactorScale(
-    child: ScaffoldMessenger(
-      key: rootScaffoldMessengerKey,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: AppToastHost(child: child ?? const SizedBox.shrink()),
-      ),
+    child: Scaffold(
+      backgroundColor: Colors.transparent,
+      body: AppToastHost(key: rootToastContextKey, child: child ?? const SizedBox.shrink()),
     ),
   );
 }
