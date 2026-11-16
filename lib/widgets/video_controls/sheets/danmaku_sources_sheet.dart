@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../utils/dialogs.dart';
 
 import '../../app_dialog.dart';
 import '../../overlay_sheet.dart';
@@ -130,7 +131,7 @@ class _DanmakuSourcesSheetState extends State<DanmakuSourcesSheet> {
         ),
       );
     }
-    return showDialog<bool>(
+    return showScopedDialog<bool>(
       context: context,
       builder: (context) => AppAlertDialog(
         title: Text(t.danmaku.deleteSourceTitle),

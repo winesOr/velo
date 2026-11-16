@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/dialogs.dart';
 
 import '../../widgets/app_dialog.dart';
 import 'package:flutter/services.dart';
@@ -138,7 +139,7 @@ class _PinEntryDialogState extends State<PinEntryDialog> with SingleTickerProvid
           mainAxisSize: .min,
           crossAxisAlignment: .stretch,
           children: [
-            _buildTitle(theme),
+            AppDialogTitle(title: _buildTitle(theme)),
             const SizedBox(height: 12),
             _TvPinInput(
               key: _pinInputKey,
@@ -680,9 +681,8 @@ class _PinKey {
 Future<String?> showPinEntryDialog(BuildContext context, String userName, {String? errorMessage}) {
   // PIN entry guards root-owned profile activation and must survive disposal of
   // the active profile session while the binder switches users.
-  return showDialog<String>(
+  return showRootAppDialog<String>(
     context: context,
-    useRootNavigator: true,
     barrierDismissible: false,
     builder: (context) => PinEntryDialog(userName: userName, errorMessage: errorMessage),
   );

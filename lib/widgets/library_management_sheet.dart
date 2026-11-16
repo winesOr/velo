@@ -429,7 +429,9 @@ class _LibraryManagementSheetState extends State<_LibraryManagementSheet>
           // ignore: no-empty-block - required callback, blocks system back on Android TV
           onPopInvokedWithResult: (didPop, result) {},
           child: Scaffold(
+            backgroundColor: Colors.transparent,
             appBar: AppBar(
+              backgroundColor: Colors.transparent,
               title: Row(
                 children: [
                   const AppIcon(Symbols.edit_rounded, fill: 1),
@@ -438,12 +440,7 @@ class _LibraryManagementSheetState extends State<_LibraryManagementSheet>
                 ],
               ),
               automaticallyImplyLeading: false,
-              actions: [
-                IconButton(
-                  icon: const AppIcon(Symbols.close_rounded, fill: 1),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
+              actions: [AppDialogCloseButton(onPressed: () => Navigator.pop(context))],
             ),
             body: Focus(
               focusNode: _listFocusNode,

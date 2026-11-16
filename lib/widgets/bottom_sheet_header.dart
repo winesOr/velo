@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_dialog.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../i18n/strings.g.dart';
@@ -102,12 +103,17 @@ class BottomSheetHeader extends StatelessWidget {
                 Expanded(child: Text(title, style: effectiveTitleStyle)),
                 ?action,
                 ExcludeFocusTraversal(
-                  child: IconButton(
-                    focusNode: closeFocusNode,
-                    tooltip: t.common.close,
-                    icon: AppIcon(Symbols.close_rounded, fill: 1, color: iconColor),
-                    onPressed: onClose ?? () => OverlaySheetController.closeAdaptive(context),
-                  ),
+                  child: context.findAncestorWidgetOfExactType<AppDialog>() != null
+                      ? AppDialogCloseButton(
+                          focusNode: closeFocusNode,
+                          onPressed: onClose ?? () => OverlaySheetController.closeAdaptive(context),
+                        )
+                      : IconButton(
+                          focusNode: closeFocusNode,
+                          tooltip: t.common.close,
+                          icon: AppIcon(Symbols.close_rounded, fill: 1, color: iconColor),
+                          onPressed: onClose ?? () => OverlaySheetController.closeAdaptive(context),
+                        ),
                 ),
               ],
             ),

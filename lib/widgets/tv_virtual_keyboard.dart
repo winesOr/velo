@@ -10,6 +10,7 @@ import '../focus/dpad_navigator.dart';
 import '../focus/key_event_utils.dart';
 import '../i18n/strings.g.dart';
 import '../utils/platform_detector.dart';
+import '../utils/dialogs.dart';
 import 'app_icon.dart';
 import 'clickable_cursor.dart';
 import 'listenable_selector.dart';
@@ -92,10 +93,10 @@ TvVirtualKeyboardHandle? showTvVirtualKeyboard({
   // navigator so profile-owned keyboards are disposed with their profile
   // session.
   final navigator = Navigator.of(context);
-  final route = DialogRoute<void>(
+  final route = AppDialogRoute<void>(
     context: context,
     barrierDismissible: true,
-    barrierColor: Colors.black.withValues(alpha: 0.1),
+    barrierColor: DialogTheme.of(context).barrierColor,
     useSafeArea: false,
     themes: InheritedTheme.capture(from: context, to: navigator.context),
     traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,

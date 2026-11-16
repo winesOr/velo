@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:plezy/utils/dialogs.dart';
+import 'package:plezy/widgets/app_dialog.dart';
 
 void main() {
   testWidgets('toggle label stays on one line in narrow option picker dialog', (tester) async {
@@ -61,13 +62,13 @@ void main() {
 
     expect(includeSpecials, isFalse);
     expect(selected, isNull);
-    expect(find.byType(SimpleDialog), findsOneWidget);
+    expect(find.byType(AppAlertDialog), findsOneWidget);
     expect(includeSpecialsLabel, findsOneWidget);
 
     await tester.tap(find.text('All Episodes'));
     await tester.pumpAndSettle();
 
     expect(selected, 'all');
-    expect(find.byType(SimpleDialog), findsNothing);
+    expect(find.byType(AppAlertDialog), findsNothing);
   });
 }

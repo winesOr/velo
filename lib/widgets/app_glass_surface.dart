@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../services/device_performance.dart';
 import '../theme/overlay_tokens.dart';
+import '../theme/velo_brand.dart';
 
 /// One clipped backdrop for each transient surface. Text and controls share a
 /// stable, sufficiently opaque tint; low-effect and accessible modes need no
@@ -40,16 +41,20 @@ class AppGlassSurface extends StatelessWidget {
     // A fully transparent legacy container carries no meaningful tint. Its
     // hidden RGB is often black; making that opaque would create black halos
     // in light mode and an unreadable fallback.
-    final tint = backgroundColor == null || backgroundColor!.a == 0 ? colors.surface : backgroundColor!;
+    final tint = backgroundColor == null || backgroundColor!.a == 0
+        ? VeloPalette.surface(colors.brightness)
+        : backgroundColor!;
     final surface = glass
         ? tint.withValues(alpha: surfaceOpacity ?? (dark ? OverlayTokens.darkOpacity : OverlayTokens.lightOpacity))
         : tint.withValues(alpha: 1);
-    final outline =
-        shape ??
-        RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(radius),
-          side: BorderSide(color: colors.onSurface.withValues(alpha: reduced ? 0.35 : (dark ? 0.12 : 0.10))),
-        );
+    final edge = BorderSide(
+      color: reduced ? colors.onSurface.withValues(alpha: .35) : VeloPalette.edge(colors.brightness),
+    );
+    final outline = switch (shape) {
+      final OutlinedBorder border when border.side == BorderSide.none => border.copyWith(side: edge),
+      final ShapeBorder border => border,
+      null => RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius), side: edge),
+    };
     Widget body = Material(
       color: surface,
       shape: outline,

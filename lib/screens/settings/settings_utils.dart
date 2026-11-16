@@ -185,17 +185,24 @@ Future<DialogOption<T>?> showSelectionDialog<T>({
             mainAxisSize: .min,
             children: options.map((option) {
               final selected = option.value == currentValue;
-              return FocusableListTile(
-                key: ValueKey(option.value),
-                leading: AppIcon(
-                  selected ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded,
-                  color: selected ? Theme.of(dialogContext).colorScheme.primary : null,
+              final colors = Theme.of(dialogContext).colorScheme;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                child: Material(
+                  color: selected ? colors.primaryContainer : colors.onSurface.withValues(alpha: .05),
+                  borderRadius: BorderRadius.circular(12),
+                  child: FocusableListTile(
+                    key: ValueKey(option.value),
+                    trailing: selected ? AppIcon(Symbols.check_rounded, color: colors.primary) : null,
+                    title: Text(option.title, style: TextStyle(color: selected ? colors.primary : colors.onSurface)),
+                    subtitle: option.subtitle != null ? Text(option.subtitle!) : null,
+                    selected: selected,
+                    dense: true,
+                    visualDensity: VisualDensity.standard,
+                    autofocus: focusFirstItem && selected,
+                    onTap: () => Navigator.pop(dialogContext, option),
+                  ),
                 ),
-                title: Text(option.title),
-                subtitle: option.subtitle != null ? Text(option.subtitle!) : null,
-                selected: selected,
-                autofocus: focusFirstItem && selected,
-                onTap: () => Navigator.pop(dialogContext, option),
               );
             }).toList(),
           ),

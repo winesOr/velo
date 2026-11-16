@@ -125,21 +125,25 @@ class _LocalMediaMatchDialogState extends State<LocalMediaMatchDialog> {
       if (versions.length > 1) {
         version = await showScopedDialog<MediaVersion>(
           context: context,
-          builder: (context) => SimpleDialog(
+          builder: (context) => AppAlertDialog(
             title: Text(t.watchTogether.localMatch),
-            children: [
-              for (final option in versions)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: FocusableButton(
-                    onPressed: () => Navigator.pop(context, option),
-                    child: TextButton(
+            scrollable: true,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final option in versions)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: FocusableButton(
                       onPressed: () => Navigator.pop(context, option),
-                      child: Text(option.displayLabel),
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context, option),
+                        child: Text(option.displayLabel),
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         );
         if (version == null) return;

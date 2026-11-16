@@ -4,8 +4,8 @@ abstract final class OverlayTokens {
   static const double radius = 24;
   static const double compactRadius = 18;
   static const double blurSigma = 22;
-  static const double darkOpacity = 0.90;
-  static const double lightOpacity = 0.94;
+  static const double darkOpacity = 242 / 255;
+  static const double lightOpacity = 245 / 255;
   static const double dialogMaxWidth = 560;
   static const double wideDialogMaxWidth = 720;
   static const double notificationMaxWidth = 460;

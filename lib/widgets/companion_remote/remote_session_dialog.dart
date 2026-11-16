@@ -101,17 +101,11 @@ class _RemoteSessionDialogState extends State<RemoteSessionDialog> with MountedS
       child: Consumer<CompanionRemoteProvider>(
         builder: (context, provider, child) {
           if (_isStarting) {
-            return AppDialog(
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  mainAxisSize: .min,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    Text(t.companionRemote.session.startingServer, style: Theme.of(context).textTheme.titleMedium),
-                  ],
-                ),
+            return AppAlertDialog(
+              title: Text(t.companionRemote.session.startingServer),
+              content: const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(heightFactor: 1, child: CircularProgressIndicator()),
               ),
             );
           }
@@ -165,13 +159,11 @@ class _RemoteSessionDialogState extends State<RemoteSessionDialog> with MountedS
                             ],
                           ),
                         ),
-                        FocusableButton(
+                        AppDialogCloseButton(
                           focusNode: _closeFocusNode,
                           onPressed: _close,
                           onBack: _close,
                           onNavigateDown: () => _toggleFocusNode.requestFocus(),
-                          useBackgroundFocus: true,
-                          child: IconButton(icon: const AppIcon(Symbols.close_rounded), onPressed: _close),
                         ),
                       ],
                     ),

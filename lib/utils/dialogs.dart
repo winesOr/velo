@@ -21,20 +21,61 @@ const _buttonShape = RoundedRectangleBorder(borderRadius: BorderRadius.all(Radiu
 
 final _dialogOwners = <Route<dynamic>, Set<Route<dynamic>>>{};
 
-class _AppDialogRoute<T> extends DialogRoute<T> {
-  _AppDialogRoute({
+/// Shared presentation for both scoped modals and explicitly root-owned ones.
+class AppDialogRoute<T> extends DialogRoute<T> {
+  AppDialogRoute({
     required super.context,
     required super.builder,
     super.themes,
     super.barrierColor,
     super.barrierDismissible,
     super.traversalEdgeBehavior,
-  }) : _blurBarrier = !AppGlassSurface.reduceEffects(context);
+    super.useSafeArea,
+  }) : _blurBarrier = !AppGlassSurface.reduceEffects(context),
+       super(
+         animationStyle: AnimationStyle(
+           duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 180),
+         ),
+       );
 
   final bool _blurBarrier;
 
   @override
   ImageFilter? get filter => _blurBarrier ? ImageFilter.blur(sigmaX: 5, sigmaY: 5) : null;
+
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) => super.buildTransitions(
+    context,
+    animation,
+    secondaryAnimation,
+    ScaleTransition(
+      scale: animation.drive(Tween(begin: .97, end: 1.0).chain(CurveTween(curve: Curves.easeOut))),
+      child: child,
+    ),
+  );
+}
+
+Future<T?> showRootAppDialog<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool barrierDismissible = true,
+}) {
+  final navigator = Navigator.of(context, rootNavigator: true);
+  return navigator.push(
+    AppDialogRoute<T>(
+      context: context,
+      builder: builder,
+      themes: InheritedTheme.capture(from: context, to: navigator.context),
+      barrierColor: DialogTheme.of(context).barrierColor,
+      barrierDismissible: barrierDismissible,
+      traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
+    ),
+  );
 }
 
 /// Shows a dialog on the nearest navigator instead of Flutter's default root
@@ -49,7 +90,7 @@ Future<T?> showScopedDialog<T>({
   assert(debugCheckHasMaterialLocalizations(context));
   final navigator = Navigator.of(context);
   final owner = ModalRoute.of(context);
-  final route = _AppDialogRoute<T>(
+  final route = AppDialogRoute<T>(
     context: context,
     builder: builder,
     themes: InheritedTheme.capture(from: context, to: navigator.context),
@@ -638,14 +679,13 @@ class _OptionPickerDialogState<T> extends State<_OptionPickerDialog<T>> {
       toggle?.onChanged(value);
     }
 
-    return SimpleDialog(
+    return AppAlertDialog(
       title: Text(widget.title),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
-      constraints: const BoxConstraints(minWidth: 304),
-      contentPadding: const EdgeInsets.symmetric(vertical: 8),
-      children: [
-        // SimpleDialog owns the scroll view, so the ink boundary goes inside it.
-        ScrollInkBoundary(
+      insetPadding: const EdgeInsets.all(16),
+      constraints: const BoxConstraints(minWidth: 280, maxWidth: 560),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      content: SingleChildScrollView(
+        child: ScrollInkBoundary(
           child: Column(
             mainAxisSize: .min,
             crossAxisAlignment: .stretch,
@@ -700,7 +740,7 @@ class _OptionPickerDialogState<T> extends State<_OptionPickerDialog<T>> {
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 }

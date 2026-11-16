@@ -273,8 +273,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
     context: context,
     builder: (dialogContext) => AppDialog(
       key: const ValueKey('grouped-library-filters'),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      insetPadding: const EdgeInsets.all(20),
+      insetPadding: const EdgeInsets.all(16),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
         child: ListenableBuilder(
@@ -287,7 +286,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(t.libraries.filters, style: Theme.of(context).textTheme.titleMedium),
+                  AppDialogTitle(title: Text(t.libraries.filters, style: Theme.of(context).textTheme.titleMedium)),
                   const SizedBox(height: 20),
                   controls[2],
                   const SizedBox(height: 12),

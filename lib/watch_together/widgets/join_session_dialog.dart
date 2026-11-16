@@ -6,7 +6,6 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../focus/focusable_button.dart';
 import '../../focus/focusable_text_field.dart';
-import '../../focus/focusable_wrapper.dart';
 import '../../i18n/strings.g.dart';
 import '../../mixins/controller_disposer_mixin.dart';
 import '../../utils/dialogs.dart';
@@ -60,18 +59,10 @@ class _JoinSessionDialogState extends State<JoinSessionDialog> with ControllerDi
                     AppIcon(Symbols.group_add_rounded, color: theme.colorScheme.primary),
                     const SizedBox(width: 12),
                     Expanded(child: Text(t.watchTogether.joinWatchSession, style: theme.textTheme.titleLarge)),
-                    FocusableWrapper(
+                    AppDialogCloseButton(
                       focusNode: _closeFocusNode,
-                      useBackgroundFocus: true,
-                      disableScale: true,
-                      borderRadius: 20,
-                      descendantsAreFocusable: false,
-                      onSelect: () => Navigator.of(context).pop(),
+                      onPressed: () => Navigator.of(context).pop(),
                       onNavigateDown: _sessionIdFocusNode.requestFocus,
-                      child: IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const AppIcon(Symbols.close_rounded),
-                      ),
                     ),
                   ],
                 ),

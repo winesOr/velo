@@ -1,7 +1,72 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
+import '../focus/focusable_wrapper.dart';
+import '../i18n/strings.g.dart';
 import '../theme/overlay_tokens.dart';
 import 'app_glass_surface.dart';
+import 'app_icon.dart';
+
+/// Shared title-row close control, including keyboard/TV focus and a name.
+class AppDialogCloseButton extends StatelessWidget {
+  const AppDialogCloseButton({super.key, this.onPressed, this.focusNode, this.onNavigateDown, this.onBack});
+
+  final VoidCallback? onPressed;
+  final FocusNode? focusNode;
+  final VoidCallback? onNavigateDown;
+  final VoidCallback? onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    void close() {
+      if (onPressed != null) {
+        onPressed!();
+      } else {
+        Navigator.of(context).maybePop();
+      }
+    }
+
+    return FocusableWrapper(
+      focusNode: focusNode,
+      onSelect: close,
+      onNavigateDown: onNavigateDown,
+      onBack: onBack,
+      disableScale: true,
+      borderRadius: 15,
+      descendantsAreFocusable: false,
+      child: IconButton(
+        onPressed: close,
+        tooltip: t.common.close,
+        constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+        padding: EdgeInsets.zero,
+        iconSize: 18,
+        style: IconButton.styleFrom(
+          minimumSize: const Size(30, 30),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          backgroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: .07),
+          foregroundColor: Theme.of(context).colorScheme.onSurface,
+          shape: const CircleBorder(),
+        ),
+        icon: const AppIcon(Symbols.close_rounded, size: 18),
+      ),
+    );
+  }
+}
+
+class AppDialogTitle extends StatelessWidget {
+  const AppDialogTitle({super.key, required this.title});
+
+  final Widget title;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(child: title),
+      const SizedBox(width: 12),
+      const AppDialogCloseButton(),
+    ],
+  );
+}
 
 /// Material's sizing, keyboard avoidance and semantics with the shared glass
 /// surface. Route ownership and focus remain the caller's responsibility.
@@ -109,7 +174,37 @@ class AppAlertDialog extends AlertDialog {
   Widget build(BuildContext context) {
     // AlertDialog builds a Dialog around its content. Reuse that layout and
     // replace only its surface, preserving its route announcement semantics.
-    final dialog = super.build(context) as Dialog;
+    final dialog =
+        AlertDialog(
+              icon: icon,
+              iconPadding: iconPadding,
+              iconColor: iconColor,
+              title: AppDialogTitle(title: title ?? const SizedBox.shrink()),
+              titlePadding: titlePadding ?? const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              titleTextStyle: titleTextStyle,
+              content: content,
+              contentPadding: contentPadding ?? const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              contentTextStyle: contentTextStyle,
+              actions: actions,
+              actionsPadding: actionsPadding,
+              actionsAlignment: actionsAlignment,
+              actionsOverflowAlignment: actionsOverflowAlignment,
+              actionsOverflowDirection: actionsOverflowDirection,
+              actionsOverflowButtonSpacing: actionsOverflowButtonSpacing,
+              buttonPadding: buttonPadding,
+              backgroundColor: backgroundColor,
+              elevation: elevation,
+              shadowColor: shadowColor,
+              surfaceTintColor: surfaceTintColor,
+              semanticLabel: semanticLabel,
+              insetPadding: insetPadding,
+              clipBehavior: clipBehavior,
+              shape: shape,
+              alignment: alignment,
+              constraints: constraints,
+              scrollable: scrollable,
+            ).build(context)
+            as Dialog;
     return AppDialog(
       backgroundColor: backgroundColor,
       insetPadding: insetPadding,

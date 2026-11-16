@@ -86,7 +86,7 @@ class _RatingSourceDialogState extends State<RatingSourceDialog> {
             child: Semantics(
               namesRoute: true,
               header: true,
-              child: Text(t.ratingDetails.title, style: Theme.of(context).textTheme.titleLarge),
+              child: AppDialogTitle(title: Text(t.ratingDetails.title, style: Theme.of(context).textTheme.titleLarge)),
             ),
           ),
           Flexible(
