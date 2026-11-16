@@ -49,6 +49,8 @@ import '../widgets/sync_offset_control.dart';
 import '../widgets/sleep_timer_content.dart';
 import '../../../i18n/strings.g.dart';
 import 'base_video_control_sheet.dart';
+import 'player_initial_focus.dart';
+import '../../../utils/scroll_utils.dart';
 import 'version_quality_sheet.dart';
 import 'player_settings_controls.dart';
 
@@ -437,6 +439,8 @@ class VideoSettingsSheet extends StatefulWidget {
 }
 
 class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
+  final _speedInitialFocus = PlayerInitialFocus();
+  final _speedInitialScroll = InitialItemScrollController();
   bool _drawerAdvanced = false;
   _SettingsView _currentView = _SettingsView.menu;
   late int _audioSyncOffset;
@@ -499,6 +503,8 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
   void dispose() {
     _hdrSupportLifecycle?.dispose();
     _hdrOutputChanged?.cancel();
+    _speedInitialFocus.dispose();
+    _speedInitialScroll.dispose();
     super.dispose();
   }
 
@@ -1305,17 +1311,24 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
           7.0,
           maximumPlaybackRate,
         ];
+        if (PlatformDetector.isTV()) {
+          _speedInitialScroll.maybeScrollTo(speeds.indexWhere((speed) => (currentRate - speed).abs() < .01));
+        }
 
         return ListView.builder(
           shrinkWrap: true,
+          controller: PlatformDetector.isTV() ? _speedInitialScroll.controller : null,
           itemCount: speeds.length,
           itemBuilder: (context, index) {
             final speed = speeds[index];
             final isSelected = (currentRate - speed).abs() < 0.01;
+            if (isSelected) _speedInitialFocus.focusWhenVisible();
             final label = formatPlaybackRate(speed, normalAtOne: true);
 
             final primary = Theme.of(context).colorScheme.primary;
             return FocusableListTile(
+              key: index == 0 ? _speedInitialScroll.firstItemKey : null,
+              focusNode: isSelected ? _speedInitialFocus.currentItem : null,
               title: Text(label, style: TextStyle(color: isSelected ? primary : null)),
               trailing: isSelected ? AppIcon(Symbols.check_rounded, fill: 1, color: primary) : null,
               onTap: () async {
@@ -1678,7 +1691,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
         _currentView == _SettingsView.menu &&
         (sleepTimer.isActive || _audioSyncOffset != 0 || _subtitleSyncOffset != 0 || isShaderActive || isZoomActive);
 
-    return BaseVideoControlSheet(
+    final sheet = BaseVideoControlSheet(
       title: _getTitle(),
       icon: _getIcon(),
       iconColor: () {
@@ -1714,6 +1727,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
         }
       }(),
     );
+    return _currentView == _SettingsView.speed ? _speedInitialFocus.wrap(sheet) : sheet;
   }
 }
 

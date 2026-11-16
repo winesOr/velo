@@ -82,7 +82,7 @@ extension _PlexVideoControlsMobileChipMethods on _PlexVideoControlsState {
             player: widget.player,
             state: state,
             metadata: widget.metadata,
-            volumeController: widget.volumeController,
+            volumeController: PlatformDetector.isTV() ? null : widget.volumeController,
             initialTab: tab,
             coreLabel: _mobileCoreLabel,
             onSwitchCore: widget.onSwitchPlayerCore,

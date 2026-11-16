@@ -2604,6 +2604,9 @@ class Translations$videoControls$en {
 	/// en: 'Show danmaku'
 	String get danmakuToggle => 'Show danmaku';
 
+	/// en: 'On'
+	String get danmakuEnabledValue => 'On';
+
 	/// en: 'More'
 	String get moreButton => 'More';
 
@@ -9110,6 +9113,7 @@ extension on Translations {
 			'videoControls.castUnavailable' => 'Casting is not available on this device.',
 			'videoControls.orientationButton' => 'Portrait / landscape',
 			'videoControls.danmakuToggle' => 'Show danmaku',
+			'videoControls.danmakuEnabledValue' => 'On',
 			'videoControls.moreButton' => 'More',
 			'videoControls.tabVideo' => 'Video',
 			'videoControls.tabAudio' => 'Audio',
@@ -9295,9 +9299,9 @@ extension on Translations {
 			'profiles.borrowFailed' => 'Failed to borrow connection.',
 			'profiles.incorrectPin' => 'Incorrect PIN.',
 			'profiles.incorrectPinTryAgain' => 'Incorrect PIN. Please try again.',
-			'profiles.sourceProfileMissingParentAccount' => 'Source profile is missing its parent account.',
 			_ => null,
 		} ?? switch (path) {
+			'profiles.sourceProfileMissingParentAccount' => 'Source profile is missing its parent account.',
 			'profiles.failedToLoadHomeUsers' => 'Could not load your Plex Home users. Check your connection and try again.',
 			'profiles.failedToVerifyPin' => 'Failed to verify PIN.',
 			'profiles.newProfile' => 'New profile',
@@ -9809,9 +9813,9 @@ extension on Translations {
 			'liveTv.recordingScheduled' => 'Recording scheduled',
 			'liveTv.alreadyScheduled' => 'This program is already scheduled',
 			'liveTv.dvrAdminRequired' => 'DVR settings require an admin account',
-			'liveTv.recordingFailed' => 'Couldn\'t schedule recording',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.recordingFailed' => 'Couldn\'t schedule recording',
 			'liveTv.recordingTargetMissing' => 'Couldn\'t determine recording library',
 			'liveTv.recordNotAvailable' => 'Recording not available for this program',
 			'liveTv.recordingCancelled' => 'Recording canceled',
@@ -10323,9 +10327,9 @@ extension on Translations {
 			'externalPlayer.playerCommand' => 'Command',
 			'externalPlayer.playerPackage' => 'Package Name',
 			'externalPlayer.playerUrlScheme' => 'URL Scheme',
-			'externalPlayer.off' => 'Off',
 			_ => null,
 		} ?? switch (path) {
+			'externalPlayer.off' => 'Off',
 			'externalPlayer.launchFailed' => 'Failed to open external player',
 			'externalPlayer.appNotInstalled' => ({required Object name}) => '${name} is not installed',
 			'externalPlayer.playInExternalPlayer' => 'Play in External Player',

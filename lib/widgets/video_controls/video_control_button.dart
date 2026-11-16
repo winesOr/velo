@@ -4,6 +4,7 @@ import 'package:plezy/widgets/app_icon.dart';
 import '../../focus/focus_theme.dart';
 import '../../focus/focusable_wrapper.dart';
 import '../../theme/velo_brand.dart';
+import '../../utils/platform_detector.dart';
 import 'widgets/player_focus_disc.dart';
 
 /// A standardized icon button for the video player's control rows.
@@ -74,14 +75,22 @@ class VideoControlButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final idleColor = color ?? (isActive ? VeloBrand.foreground(Brightness.dark) : Colors.white);
+    final tvScale = FocusTheme.tvPlayerScale(context);
     final effectiveSemanticLabel = semanticLabel ?? tooltip;
 
     Widget button(Color iconColor) => IconButton(
-      icon: iconBuilder?.call(iconColor) ?? AppIcon(icon, color: iconColor, size: iconSize),
-      iconSize: iconSize,
+      icon: iconBuilder == null
+          ? AppIcon(icon, color: iconColor, size: iconSize * tvScale)
+          : PlatformDetector.isTV()
+          ? FittedBox(child: iconBuilder!(iconColor))
+          : iconBuilder!(iconColor),
+      iconSize: iconSize * tvScale,
       onPressed: onPressed,
       tooltip: tooltip,
-      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+      constraints: BoxConstraints(
+        minWidth: PlatformDetector.isTV() ? 44 * tvScale : 40,
+        minHeight: PlatformDetector.isTV() ? 44 * tvScale : 40,
+      ),
     );
 
     if (focusNode != null) {
@@ -96,7 +105,7 @@ class VideoControlButton extends StatelessWidget {
         checked: checked,
         autoScroll: false,
         delegateFocusBorder: true,
-        focusScale: FocusTheme.playerControlFocusScale,
+        focusScale: PlatformDetector.isTV() ? 1.14 : FocusTheme.playerControlFocusScale,
         child: PlayerFocusDisc(
           iconColor: idleColor,
           isActive: isActive,

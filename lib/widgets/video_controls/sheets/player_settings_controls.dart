@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../../../focus/focusable_button.dart';
 import '../../../focus/focusable_slider.dart';
 import '../../../focus/focusable_wrapper.dart';
+import '../../../focus/card_focus_scope.dart';
+import '../../../focus/focus_theme.dart';
 import '../../../i18n/strings.g.dart';
 import '../../../theme/glass_slider_thumb_shape.dart';
 import '../../../theme/velo_brand.dart';
 import '../../../theme/mono_presentation.dart';
 import '../../../utils/selection_feedback.dart';
+import '../../../utils/platform_detector.dart';
 import '../../app_icon.dart';
 import '../../overlay_sheet.dart';
 
@@ -23,15 +25,16 @@ class PlayerDrawerStyle extends StatelessWidget {
     final theme = Theme.of(context);
     final glass = GlassSheetColors.of(context);
     final accent = VeloBrand.foreground(theme.brightness);
-    return Theme(
+    final scale = FocusTheme.tvPlayerScale(context);
+    final styled = Theme(
       data: theme.copyWith(
         splashFactory: InkRipple.splashFactory,
         splashColor: accent.withValues(alpha: .18),
         highlightColor: accent.withValues(alpha: .09),
         textTheme: theme.textTheme.apply(bodyColor: glass.foreground, displayColor: glass.foreground),
-        iconTheme: IconThemeData(color: glass.foreground, size: 18),
+        iconTheme: IconThemeData(color: glass.foreground, size: 18 * scale),
         listTileTheme: ListTileThemeData(
-          minTileHeight: tablet ? 48 : 40,
+          minTileHeight: (tablet ? 48 : 40) * scale,
           minLeadingWidth: 18,
           horizontalTitleGap: 8,
           minVerticalPadding: 6,
@@ -46,16 +49,23 @@ class PlayerDrawerStyle extends StatelessWidget {
         sliderTheme: theme.sliderTheme.copyWith(
           activeTrackColor: accent,
           inactiveTrackColor: glass.foreground.withValues(alpha: .16),
-          trackHeight: 4,
+          trackHeight: 4 * scale,
           trackGap: 0,
           trackShape: const RoundedRectSliderTrackShape(),
-          thumbShape: GlassSliderThumbShape(radius: 8, color: accent),
+          thumbShape: GlassSliderThumbShape(radius: 8 * scale, color: accent),
           thumbColor: accent,
           overlayShape: SliderComponentShape.noOverlay,
           tickMarkShape: SliderTickMarkShape.noTickMark,
         ),
       ),
       child: child,
+    );
+    if (!PlatformDetector.isTV()) return styled;
+    return MediaQuery(
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(14) / 14 * scale)),
+      child: styled,
     );
   }
 }
@@ -90,6 +100,10 @@ class PlayerDrawerChoice extends StatelessWidget {
     this.focusNode,
     this.tab = false,
     this.feedbackOnChange = true,
+    this.onFocusChange,
+    this.onNavigateLeft,
+    this.onNavigateRight,
+    this.onNavigateDown,
   });
   final String label;
   final String? secondaryLabel;
@@ -100,6 +114,10 @@ class PlayerDrawerChoice extends StatelessWidget {
   final FocusNode? focusNode;
   final bool tab;
   final bool feedbackOnChange;
+  final ValueChanged<bool>? onFocusChange;
+  final VoidCallback? onNavigateLeft;
+  final VoidCallback? onNavigateRight;
+  final VoidCallback? onNavigateDown;
 
   @override
   Widget build(BuildContext context) {
@@ -107,6 +125,8 @@ class PlayerDrawerChoice extends StatelessWidget {
     final glass = GlassSheetColors.of(context);
     final accent = VeloBrand.foreground(theme.brightness);
     final dark = theme.brightness == Brightness.dark;
+    final tv = PlatformDetector.isTV();
+    final scale = FocusTheme.tvPlayerScale(context);
     final radius = BorderRadius.circular(tab ? 9 : 10);
     void activate() {
       if (feedbackOnChange && !tab && !selected) selectionFeedback();
@@ -116,94 +136,109 @@ class PlayerDrawerChoice extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      child: FocusableButton(
+      child: FocusableWrapper(
         focusNode: focusNode,
-        onPressed: onTap == null ? null : activate,
-        dimWhenUnfocused: false,
-        child: AnimatedContainer(
-          duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 180),
-          constraints: BoxConstraints(minHeight: tab ? 28 : 30),
-          decoration: BoxDecoration(
-            gradient: selected
-                ? LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color.lerp(VeloBrand.selection(theme.brightness), accent, .12)!,
-                      VeloBrand.selection(theme.brightness),
-                    ],
-                  )
-                : null,
-            color: selected
-                ? VeloBrand.selection(theme.brightness)
-                : tab
-                ? Colors.transparent
-                : glass.foreground.withValues(alpha: dark ? .07 : .05),
-            borderRadius: radius,
-            border: Border.all(color: selected ? accent.withValues(alpha: .32) : Colors.transparent),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: dark ? .14 : .06),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ]
-                : const [],
-          ),
-          child: Material(
-            type: MaterialType.transparency,
-            borderRadius: radius,
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              canRequestFocus: false,
-              onTap: onTap == null ? null : activate,
-              onLongPress: onLongPress,
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: tab ? 0 : 12, vertical: 5),
-                child: trackRow
-                    ? Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  label,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.bodyMedium?.copyWith(color: glass.foreground),
-                                ),
-                                if (secondaryLabel != null && secondaryLabel!.isNotEmpty)
+        onSelect: onTap == null ? null : activate,
+        canRequestFocus: onTap != null,
+        disableScale: true,
+        descendantsAreFocusable: false,
+        delegateFocusBorder: tv,
+        borderRadius: 100,
+        onFocusChange: onFocusChange,
+        onNavigateLeft: onNavigateLeft,
+        onNavigateRight: onNavigateRight,
+        onNavigateDown: onNavigateDown,
+        child: Builder(
+          builder: (focusContext) => AnimatedContainer(
+            duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 180),
+            constraints: BoxConstraints(minHeight: (tab ? 28 : 30) * scale),
+            decoration: BoxDecoration(
+              gradient: selected
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color.lerp(VeloBrand.selection(theme.brightness), accent, .12)!,
+                        VeloBrand.selection(theme.brightness),
+                      ],
+                    )
+                  : null,
+              color: selected
+                  ? VeloBrand.selection(theme.brightness)
+                  : tab
+                  ? Colors.transparent
+                  : glass.foreground.withValues(alpha: dark ? .07 : .05),
+              borderRadius: radius,
+              border: tv
+                  ? FocusTheme.playerDrawerFocusDecoration(
+                      focusContext,
+                      isFocused: CardFocusScope.maybeOf(focusContext) ?? false,
+                    ).border
+                  : Border.all(color: selected ? accent.withValues(alpha: .32) : Colors.transparent),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: dark ? .14 : .06),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ]
+                  : const [],
+            ),
+            child: Material(
+              type: MaterialType.transparency,
+              borderRadius: radius,
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                canRequestFocus: false,
+                onTap: onTap == null ? null : activate,
+                onLongPress: onLongPress,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: tab ? 0 : 12, vertical: 5 * scale),
+                  child: trackRow
+                      ? Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
                                   Text(
-                                    secondaryLabel!,
+                                    label,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.bodySmall?.copyWith(color: glass.muted),
+                                    style: theme.textTheme.bodyMedium?.copyWith(color: glass.foreground),
                                   ),
-                              ],
+                                  if (secondaryLabel != null && secondaryLabel!.isNotEmpty)
+                                    Text(
+                                      secondaryLabel!,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall?.copyWith(color: glass.muted),
+                                    ),
+                                ],
+                              ),
                             ),
+                            if (selected) AppIcon(Symbols.check_rounded, size: 20 * scale, color: accent),
+                          ],
+                        )
+                      : Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 12,
+                            height: 1.5,
+                            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                            color: selected
+                                ? accent
+                                : tab
+                                ? glass.muted
+                                : glass.foreground,
                           ),
-                          if (selected) AppIcon(Symbols.check_rounded, size: 20, color: accent),
-                        ],
-                      )
-                    : Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontSize: 12,
-                          height: 1.5,
-                          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                          color: selected
-                              ? accent
-                              : tab
-                              ? glass.muted
-                              : glass.foreground,
                         ),
-                      ),
+                ),
               ),
             ),
           ),

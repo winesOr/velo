@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../focus/dpad_navigator.dart';
+import '../focus/focus_theme.dart';
 import '../focus/input_mode_tracker.dart';
 import '../focus/key_event_utils.dart';
 import '../utils/platform_detector.dart';
@@ -60,8 +61,9 @@ class _OverlaySheetEntry {
   final WidgetBuilder builder;
   final Completer<dynamic> completer;
   final FocusNode? initialFocusNode;
+  final FocusNode? returnFocusNode;
 
-  _OverlaySheetEntry({required this.builder, required this.completer, this.initialFocusNode});
+  _OverlaySheetEntry({required this.builder, required this.completer, this.initialFocusNode, this.returnFocusNode});
 }
 
 /// Provides [OverlaySheetController] to descendants via [of] / [maybeOf].
@@ -502,7 +504,12 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
     }
 
     final completer = Completer<T?>();
-    final entry = _OverlaySheetEntry(builder: builder, completer: completer, initialFocusNode: initialFocusNode);
+    final entry = _OverlaySheetEntry(
+      builder: builder,
+      completer: completer,
+      initialFocusNode: initialFocusNode,
+      returnFocusNode: FocusManager.instance.primaryFocus,
+    );
 
     setState(() {
       _pageStack.add(entry);
@@ -526,7 +533,7 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
     }
 
     setState(() {});
-    _autoFocus();
+    _autoFocus(preferredNode: removed.returnFocusNode);
   }
 
   void _close([dynamic result]) {
@@ -558,7 +565,9 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
     });
   }
 
-  void _autoFocus({bool clearSelectSuppression = true}) {
+  void _autoFocus({bool clearSelectSuppression = true, FocusNode? preferredNode}) {
+    if (_pageStack.isEmpty || _isClosing) return;
+    final expectedPage = _pageStack.last;
     final focusDescendant = InputModeTracker.isKeyboardMode(context, listen: false);
 
     // First post-frame: the FocusScope is now built and the node is attached.
@@ -566,19 +575,34 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
     // when a pointer opened the sheet. In keyboard mode, a second post-frame
     // callback focuses the first descendant for dpad navigation.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_isOpen) return;
-      _sheetFocusScopeNode.requestFocus();
-      if (!focusDescendant && _pageStack.last.initialFocusNode == null) return;
+      if (!mounted || !_isOpen || _isClosing || _pageStack.isEmpty || !identical(_pageStack.last, expectedPage)) {
+        return;
+      }
+      if (ModalRoute.of(context)?.isCurrent == false) return;
+      final focusAtStart = FocusManager.instance.primaryFocus;
+      final alreadyInside = _sheetFocusScopeNode.hasFocus;
+      if (!alreadyInside) _sheetFocusScopeNode.requestFocus();
+      if (!focusDescendant && _pageStack.last.initialFocusNode == null && preferredNode == null) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !_isOpen) return;
+        if (!mounted || !_isOpen || _isClosing || _pageStack.isEmpty || !identical(_pageStack.last, expectedPage)) {
+          return;
+        }
         // If the current top entry has an initialFocusNode that is attached,
         // focus that instead of the first descendant.
         final topEntry = _pageStack.isNotEmpty ? _pageStack.last : null;
-        final initialNode = topEntry?.initialFocusNode;
-        if (initialNode != null && initialNode.context != null) {
-          initialNode.requestFocus();
-        } else {
-          _focusFirstDescendant();
+        final initialNode = preferredNode?.context != null && preferredNode!.canRequestFocus
+            ? preferredNode
+            : topEntry?.initialFocusNode;
+        final currentFocus = FocusManager.instance.primaryFocus;
+        final userMovedFocus = currentFocus != focusAtStart && currentFocus != _sheetFocusScopeNode;
+        final needsInitialFocus =
+            !alreadyInside || preferredNode != null || initialNode != null || currentFocus == _sheetFocusScopeNode;
+        if (!userMovedFocus && needsInitialFocus) {
+          if (initialNode != null && initialNode.context != null) {
+            initialNode.requestFocus();
+          } else {
+            _focusFirstDescendant();
+          }
         }
 
         // Clear stale select suppression from the press that opened this sheet,
@@ -802,7 +826,11 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
                   child: AppGlassSurface(
                     radius: OverlayTokens.radius,
                     shape: RoundedRectangleBorder(
-                      borderRadius: const BorderRadius.horizontal(left: Radius.circular(OverlayTokens.radius)),
+                      borderRadius: BorderRadius.horizontal(
+                        left: Radius.circular(
+                          PlatformDetector.isTV() ? 12 * FocusTheme.tvPlayerScale(context) : OverlayTokens.radius,
+                        ),
+                      ),
                       side: BorderSide(
                         color: Theme.of(context).colorScheme.onSurface.withValues(
                           alpha: AppGlassSurface.reduceEffects(context)

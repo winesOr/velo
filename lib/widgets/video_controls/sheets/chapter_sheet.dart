@@ -19,6 +19,7 @@ import '../../../widgets/focusable_list_tile.dart';
 import '../../../widgets/overlay_sheet.dart';
 import '../widgets/media_selector_thumbnail.dart';
 import 'base_video_control_sheet.dart';
+import 'player_initial_focus.dart';
 import '../../optimized_media_image.dart';
 
 /// Bottom sheet for selecting chapters
@@ -48,6 +49,7 @@ class ChapterSheet extends StatefulWidget {
 
 class _ChapterSheetState extends State<ChapterSheet> {
   final _initialScroll = InitialItemScrollController();
+  final _initialFocus = PlayerInitialFocus();
   late Stream<int?> _chapterIndexStream;
 
   @override
@@ -73,6 +75,7 @@ class _ChapterSheetState extends State<ChapterSheet> {
   @override
   void dispose() {
     _initialScroll.dispose();
+    _initialFocus.dispose();
     super.dispose();
   }
 
@@ -122,6 +125,7 @@ class _ChapterSheetState extends State<ChapterSheet> {
             itemBuilder: (context, index) {
               final chapter = widget.chapters[index];
               final isCurrentChapter = currentChapterIndex == index;
+              if (isCurrentChapter) _initialFocus.focusWhenVisible();
 
               final localThumbPath = widget.serverId != null && chapter.thumb != null
                   ? DownloadStorageService.instance.getArtworkPathSync(ServerId(widget.serverId!), chapter.thumb!)
@@ -129,6 +133,7 @@ class _ChapterSheetState extends State<ChapterSheet> {
 
               return FocusableListTile(
                 key: index == 0 ? _initialScroll.firstItemKey : null,
+                focusNode: isCurrentChapter ? _initialFocus.currentItem : null,
                 leading: chapter.thumb != null
                     ? MediaSelectorThumbnail(
                         width: 60,
@@ -172,7 +177,9 @@ class _ChapterSheetState extends State<ChapterSheet> {
           );
         }
 
-        return BaseVideoControlSheet(title: t.videoControls.chapters, icon: Symbols.bookmarks_rounded, child: content);
+        return _initialFocus.wrap(
+          BaseVideoControlSheet(title: t.videoControls.chapters, icon: Symbols.bookmarks_rounded, child: content),
+        );
       },
     );
   }

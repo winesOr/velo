@@ -4,11 +4,13 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter/services.dart';
 
 import '../../../focus/dpad_navigator.dart';
+import '../../../danmaku/danmaku_session.dart';
 import '../../../mpv/mpv.dart';
 import '../../../media/media_source_info.dart';
 import '../../../services/sleep_timer_service.dart';
 import '../../../utils/platform_detector.dart';
 import '../../../utils/quality_preset_labels.dart';
+import '../../../utils/formatters.dart';
 import '../../../i18n/strings.g.dart';
 import '../../../widgets/overlay_sheet.dart';
 import '../models/track_controls_state.dart';
@@ -17,8 +19,10 @@ import '../sheets/queue_sheet.dart';
 import '../sheets/track_sheet.dart';
 import '../sheets/video_settings_sheet.dart';
 import '../sheets/danmaku_settings_sheet.dart';
+import '../sheets/player_settings_drawer.dart';
 import '../../../utils/track_label_builder.dart';
 import '../video_control_button.dart';
+import 'tv_action_button.dart';
 
 /// Row of track and chapter control buttons for the video player
 class TrackChapterControls extends StatelessWidget {
@@ -45,6 +49,9 @@ class TrackChapterControls extends StatelessWidget {
 
   /// Whether to hide the chapters and queue buttons (mobile uses content strip instead)
   final bool hideChaptersAndQueue;
+  final VoidCallback? onShowEpisodes;
+  final String? episodesLabel;
+  final ValueChanged<PlayerDrawerTab>? onShowSettings;
 
   const TrackChapterControls({
     super.key,
@@ -60,6 +67,9 @@ class TrackChapterControls extends StatelessWidget {
     this.onNavigateUp,
     this.onNavigateDown,
     this.hideChaptersAndQueue = false,
+    this.onShowEpisodes,
+    this.episodesLabel,
+    this.onShowSettings,
   });
 
   KeyEventResult _handleButtonKeyEvent(FocusNode _, KeyEvent event, int index, int totalButtons) {
@@ -139,6 +149,7 @@ class TrackChapterControls extends StatelessWidget {
       builder: (context, snapshot) {
         final tracks = snapshot.data;
         final state = trackControlsState;
+        if (PlatformDetector.isTV()) return _buildTvControls(context, tracks);
         final isMobile = PlatformDetector.isMobile(context);
         final isDesktop = PlatformDetector.isDesktopOS();
 
@@ -395,6 +406,161 @@ class TrackChapterControls extends StatelessWidget {
         );
       },
     );
+  }
+
+  Widget _buildTvControls(BuildContext context, Tracks? tracks) => StreamBuilder<TrackSelection>(
+    stream: player.streams.track,
+    initialData: player.state.track,
+    builder: (context, selectionSnapshot) => StreamBuilder<double>(
+      stream: player.streams.rate,
+      initialData: player.state.rate,
+      builder: (context, rateSnapshot) => ListenableBuilder(
+        listenable: DanmakuSession.instance,
+        builder: (context, _) {
+          final state = trackControlsState;
+          final selection = selectionSnapshot.data ?? player.state.track;
+          final buttons = <Widget>[];
+          void open(WidgetBuilder builder) {
+            state.onCancelAutoHide?.call();
+            OverlaySheetController.of(context)
+                .show<void>(
+                  presentation: OverlaySheetPresentation.edgeDrawer,
+                  constraints: BoxConstraints(maxWidth: PlayerSettingsDrawer.widthFor(context)),
+                  builder: builder,
+                )
+                .whenComplete(() => state.onStartAutoHide?.call());
+          }
+
+          void settings(PlayerDrawerTab tab) {
+            if (onShowSettings != null) {
+              onShowSettings!(tab);
+              return;
+            }
+            open((_) => PlayerSettingsDrawer(player: player, state: state, metadata: state.metadata, initialTab: tab));
+          }
+
+          void add(IconData icon, String label, VoidCallback? action, {String? value}) {
+            final index = buttons.length;
+            buttons.add(
+              TvActionButton(
+                icon: icon,
+                label: label,
+                value: value,
+                onPressed: action,
+                focusNode: focusNodes != null && index < focusNodes!.length ? focusNodes![index] : null,
+                onKeyEvent: (node, event) => _handleButtonKeyEvent(node, event, index, 7),
+                onFocusChange: onFocusChange,
+              ),
+            );
+          }
+
+          add(
+            Symbols.speed_rounded,
+            t.videoSettings.playbackSpeed,
+            state.canControl && !state.isLive
+                ? () => open((_) => VideoSettingsSheet(player: player, trackControlsState: state, openOnSpeed: true))
+                : null,
+            value: formatPlaybackRate(rateSnapshot.data ?? player.state.rate),
+          );
+          add(
+            Symbols.subtitles_rounded,
+            t.videoControls.subtitlesLabel,
+            () => settings(PlayerDrawerTab.subtitles),
+            value: _tvSubtitleValue(tracks, selection),
+          );
+          add(
+            Symbols.audiotrack_rounded,
+            t.videoControls.audioLabel,
+            () => settings(PlayerDrawerTab.audio),
+            value: _tvAudioValue(tracks, selection),
+          );
+          add(Symbols.video_library_rounded, episodesLabel ?? t.videoControls.playlistDrawer, onShowEpisodes);
+          add(
+            Symbols.bookmarks_rounded,
+            t.videoControls.chaptersButton,
+            chapters.isEmpty
+                ? null
+                : () => open(
+                    (_) => ChapterSheet(
+                      player: player,
+                      chapters: chapters,
+                      chaptersLoaded: chaptersLoaded,
+                      canControl: state.canControl,
+                      serverId: state.serverId,
+                      onSeekRequested: onSeekRequested,
+                      onSeekCompleted: onSeekCompleted,
+                    ),
+                  ),
+            value: chapters.isEmpty && chaptersLoaded ? t.videoControls.noChaptersAvailable : null,
+          );
+          add(
+            Symbols.forum_rounded,
+            t.danmaku.title,
+            () => settings(PlayerDrawerTab.danmaku),
+            value: DanmakuSession.instance.enabled ? t.videoControls.danmakuEnabledValue : t.common.off,
+          );
+          add(Symbols.tune_rounded, t.videoControls.settingsButton, () => settings(PlayerDrawerTab.video));
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            textDirection: TextDirection.ltr,
+            children: buttons,
+          );
+        },
+      ),
+    ),
+  );
+
+  String? _tvAudioValue(Tracks? tracks, TrackSelection selection) {
+    final audio = selection.audio;
+    if (audio?.id == AudioTrack.off.id) return t.common.off;
+    final sourceIndex = trackControlsState.sourceAudioTracks.indexWhere(
+      (track) => track.id == trackControlsState.selectedAudioStreamId,
+    );
+    if (sourceIndex >= 0) {
+      final source = trackControlsState.sourceAudioTracks[sourceIndex];
+      return TrackLabelBuilder.audioLabel(
+        title: source.title,
+        language: source.language,
+        codec: source.codec,
+        index: sourceIndex,
+      ).primary;
+    }
+    if (audio == null || audio.id == AudioTrack.auto.id) return null;
+    final index = tracks?.audio.indexWhere((track) => track.id == audio.id) ?? 0;
+    return TrackLabelBuilder.audioLabel(
+      title: audio.title,
+      language: audio.language,
+      codec: audio.codec,
+      index: index < 0 ? 0 : index,
+    ).primary;
+  }
+
+  String? _tvSubtitleValue(Tracks? tracks, TrackSelection selection) {
+    if (trackControlsState.burnsSelectedSubtitle) {
+      final index = trackControlsState.sourceSubtitleTracks.indexWhere(
+        (track) => track.id == trackControlsState.selectedSubtitleChoice?.sourceStreamId,
+      );
+      if (index >= 0) {
+        final source = trackControlsState.sourceSubtitleTracks[index];
+        return TrackLabelBuilder.subtitleLabel(
+          title: source.title,
+          language: source.language,
+          codec: source.codec,
+          index: index,
+        ).primary;
+      }
+    }
+    final subtitle = selection.subtitle;
+    if (subtitle == null || subtitle.id == SubtitleTrack.off.id) return t.common.off;
+    if (subtitle.id == SubtitleTrack.auto.id) return null;
+    final index = tracks?.subtitle.indexWhere((track) => track.id == subtitle.id) ?? 0;
+    return TrackLabelBuilder.subtitleLabel(
+      title: subtitle.title,
+      language: subtitle.language,
+      codec: subtitle.codec,
+      index: index < 0 ? 0 : index,
+    ).primary;
   }
 
   String? _versionQualitySemanticValue() {

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../focus/card_focus_scope.dart';
 import '../../../focus/focus_theme.dart';
 import '../../../theme/velo_brand.dart';
+import '../../../utils/platform_detector.dart';
 
 /// Focus chrome for a round player control sitting on video.
 ///
@@ -36,14 +37,24 @@ class PlayerFocusDisc extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final showFocus = CardFocusScope.maybeOf(context) ?? false;
+    final tv = PlatformDetector.isTV();
     return AnimatedContainer(
       duration: FocusTheme.getAnimationDuration(context),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: showFocus ? (isActive ? _activeFill : _fill) : Colors.transparent,
+        color: showFocus ? (isActive && !tv ? _activeFill : _fill) : Colors.transparent,
         boxShadow: showFocus ? const [playerFocusShadow] : const [],
       ),
+      foregroundDecoration: tv
+          ? BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: showFocus ? VeloBrand.accent : Colors.transparent,
+                width: 3 * FocusTheme.tvPlayerScale(context),
+              ),
+            )
+          : null,
       child: builder(context, showFocus ? Colors.black.withValues(alpha: iconColor.a) : iconColor),
     );
   }

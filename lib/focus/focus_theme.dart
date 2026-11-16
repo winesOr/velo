@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/device_performance.dart';
 import '../theme/mono_tokens.dart';
+import '../theme/velo_brand.dart';
 import '../utils/platform_detector.dart';
 
 class FocusTheme {
@@ -12,6 +13,14 @@ class FocusTheme {
   /// Round 40px player controls: the card scale is imperceptible on a
   /// control that small, so the focused disc grows enough to be seen move.
   static const double playerControlFocusScale = 1.12;
+
+  /// The TV reference is 1920px at DPR 2, or a 960 logical-pixel viewport.
+  static double tvPlayerScale(BuildContext context) =>
+      PlatformDetector.isTV() ? (MediaQuery.sizeOf(context).width / 960).clamp(.75, 2.0).toDouble() : 1;
+
+  static BoxDecoration playerDrawerFocusDecoration(BuildContext context, {required bool isFocused}) => BoxDecoration(
+    border: Border.all(color: isFocused ? VeloBrand.accent : Colors.transparent, width: 1.5 * tvPlayerScale(context)),
+  );
   static const double focusBorderWidth = 2.5;
   static const double defaultBorderRadius = 8.0;
   static const double focusGlowInnerBlurRadius = 18;

@@ -9,6 +9,8 @@ import '../../../mpv/mpv.dart';
 import '../../../services/settings_service.dart';
 import '../../../theme/overlay_tokens.dart';
 import '../../../services/video_volume_controller.dart';
+import '../../../utils/platform_detector.dart';
+import '../../../focus/focus_theme.dart';
 import 'player_subtitle_appearance.dart';
 import '../../focusable_list_tile.dart';
 import '../../overlay_sheet.dart';
@@ -26,7 +28,13 @@ enum PlayerDrawerTab { video, audio, subtitles, danmaku }
 /// The mobile player's "more" drawer: four segmented tabs over the existing
 /// sheets, which render headerless inside it ([EmbeddedVideoControlSheet]).
 class PlayerSettingsDrawer extends StatefulWidget {
-  static double widthFor(BuildContext context) => OverlayTokens.drawerWidth;
+  static double widthFor(BuildContext context) {
+    if (!PlatformDetector.isTV()) return OverlayTokens.drawerWidth;
+    final width = MediaQuery.sizeOf(context).width;
+    final maximum = width * .85;
+    final minimum = maximum < 240 ? maximum : 240.0;
+    return (width * 580 / 1920).clamp(minimum, maximum).toDouble();
+  }
 
   const PlayerSettingsDrawer({
     super.key,
@@ -44,7 +52,7 @@ class PlayerSettingsDrawer extends StatefulWidget {
   final DanmakuSession? danmakuSession;
   final VideoVolumeController? volumeController;
   final TrackControlsState state;
-  final MediaItem metadata;
+  final MediaItem? metadata;
   final PlayerDrawerTab initialTab;
 
   /// Running core ("mpv" / "ExoPlayer"); null hides the core row.
@@ -57,6 +65,67 @@ class PlayerSettingsDrawer extends StatefulWidget {
 
 class _PlayerSettingsDrawerState extends State<PlayerSettingsDrawer> {
   late PlayerDrawerTab _tab = widget.initialTab;
+  final _contentFocus = FocusScopeNode(debugLabel: 'PlayerDrawerContent');
+  final _tabFocus = List.generate(
+    PlayerDrawerTab.values.length,
+    (index) => FocusNode(debugLabel: 'PlayerDrawerTab$index'),
+  );
+  bool _initialContentFocus = true;
+  bool _initialFocusScheduled = false;
+
+  @override
+  void dispose() {
+    for (final node in _tabFocus) {
+      node.dispose();
+    }
+    _contentFocus.dispose();
+    super.dispose();
+  }
+
+  void _selectTab(PlayerDrawerTab tab) {
+    _initialContentFocus = false;
+    if (tab != _tab) setState(() => _tab = tab);
+  }
+
+  void _focusSelectedContent() {
+    if (!mounted) return;
+    final nodes = _contentFocus.traversalDescendants.toList();
+    for (final node in nodes) {
+      final choice = node.context?.findAncestorWidgetOfExactType<PlayerDrawerChoice>();
+      if (choice?.selected == true && choice?.tab == false) {
+        node.requestFocus();
+        return;
+      }
+    }
+    if (nodes.isNotEmpty) nodes.first.requestFocus();
+  }
+
+  void _enterContent(PlayerDrawerTab tab) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _tab != tab || !_tabFocus[tab.index].hasFocus) return;
+      _focusSelectedContent();
+    });
+  }
+
+  void _scheduleInitialFocus() {
+    if (!PlatformDetector.isTV() || !_initialContentFocus || _initialFocusScheduled) return;
+    _initialFocusScheduled = true;
+    // The sheet host first installs its focus scope. Select content afterwards,
+    // unless the user has already navigated into the tabs.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_initialContentFocus) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_initialContentFocus) return;
+        _initialContentFocus = false;
+        if (_contentFocus.hasFocus) return;
+        _focusSelectedContent();
+      });
+    });
+  }
+
+  Widget _drawerBody() => EmbeddedVideoControlSheet(
+    child: KeyedSubtree(key: ValueKey(_tab), child: _body()),
+  );
 
   String _label(PlayerDrawerTab tab) => switch (tab) {
     PlayerDrawerTab.video => t.videoControls.tabVideo,
@@ -67,6 +136,7 @@ class _PlayerSettingsDrawerState extends State<PlayerSettingsDrawer> {
 
   @override
   Widget build(BuildContext context) {
+    _scheduleInitialFocus();
     final glass = GlassSheetColors.of(context);
     // One fixed panel for every tab, so switching tabs never resizes it.
     return PlayerDrawerStyle(
@@ -83,7 +153,7 @@ class _PlayerSettingsDrawerState extends State<PlayerSettingsDrawer> {
                   IconButton(
                     tooltip: t.common.close,
                     onPressed: () => OverlaySheetController.of(context).close(),
-                    icon: const AppIcon(Symbols.close_rounded, size: 20),
+                    icon: AppIcon(Symbols.close_rounded, size: 20 * FocusTheme.tvPlayerScale(context)),
                   ),
                 ],
               ),
@@ -104,7 +174,24 @@ class _PlayerSettingsDrawerState extends State<PlayerSettingsDrawer> {
                         tab: true,
                         label: _label(tab),
                         selected: tab == _tab,
-                        onTap: () => setState(() => _tab = tab),
+                        focusNode: _tabFocus[tab.index],
+                        onFocusChange: PlatformDetector.isTV()
+                            ? (focused) {
+                                if (focused) _selectTab(tab);
+                              }
+                            : null,
+                        onNavigateLeft: PlatformDetector.isTV()
+                            ? () => _tabFocus[tab.index == 0 ? 0 : tab.index - 1].requestFocus()
+                            : null,
+                        onNavigateRight: PlatformDetector.isTV()
+                            ? () => _tabFocus[tab.index == _tabFocus.length - 1 ? tab.index : tab.index + 1]
+                                  .requestFocus()
+                            : null,
+                        onNavigateDown: PlatformDetector.isTV() ? () => _enterContent(tab) : null,
+                        onTap: () {
+                          _selectTab(tab);
+                          if (PlatformDetector.isTV()) _enterContent(tab);
+                        },
                       ),
                     ),
                   ],
@@ -112,9 +199,15 @@ class _PlayerSettingsDrawerState extends State<PlayerSettingsDrawer> {
               ),
             ),
             Expanded(
-              child: EmbeddedVideoControlSheet(
-                child: KeyedSubtree(key: ValueKey(_tab), child: _body()),
-              ),
+              child: PlatformDetector.isTV()
+                  ? FocusScope(
+                      node: _contentFocus,
+                      child: FocusTraversalGroup(
+                        policy: _PlayerDrawerTraversalPolicy(onLeaveUp: () => _tabFocus[_tab.index].requestFocus()),
+                        child: _drawerBody(),
+                      ),
+                    )
+                  : _drawerBody(),
             ),
           ],
         ),
@@ -226,6 +319,22 @@ class _PlayerSettingsDrawerState extends State<PlayerSettingsDrawer> {
     ),
     PlayerDrawerTab.danmaku => DanmakuSettingsSheet(metadata: widget.metadata, session: widget.danmakuSession),
   };
+}
+
+class _PlayerDrawerTraversalPolicy extends ReadingOrderTraversalPolicy {
+  _PlayerDrawerTraversalPolicy({required this.onLeaveUp});
+
+  final VoidCallback onLeaveUp;
+
+  @override
+  bool inDirection(FocusNode currentNode, TraversalDirection direction) {
+    final moved = super.inDirection(currentNode, direction);
+    if (!moved && direction == TraversalDirection.up) {
+      onLeaveUp();
+      return true;
+    }
+    return moved;
+  }
 }
 
 /// Fit / fill / stretch as one row of choices. The player only cycles modes,

@@ -35,6 +35,7 @@ import 'package:plezy/mpv/player/player_streams.dart';
 import 'package:plezy/utils/formatters.dart';
 import 'package:plezy/utils/platform_detector.dart';
 import 'package:plezy/widgets/focusable_list_tile.dart';
+import 'package:plezy/widgets/app_toast.dart';
 import 'package:plezy/providers/multi_server_provider.dart';
 import 'package:plezy/screens/settings/subtitle_styling_screen.dart';
 import 'package:plezy/services/base_shared_preferences_service.dart';
@@ -208,6 +209,15 @@ void main() {
             expect(SettingsService.instance.read(SettingsService.skipIntroMode), SkipMarkerMode.auto);
           }
           if (tab == PlayerDrawerTab.subtitles) {
+            await tester.scrollUntilVisible(
+              find.byWidgetPredicate(
+                (widget) => widget is PlayerDrawerRange && widget.label == t.subtitlingStyling.fontSize,
+              ),
+              100,
+              scrollable: find
+                  .descendant(of: find.byType(PlayerSettingsDrawer), matching: find.byType(Scrollable))
+                  .first,
+            );
             final appearance = find.byType(PlayerSubtitleAppearance);
             final range = find.descendant(of: appearance, matching: find.byType(PlayerDrawerRange)).first;
             tester.widget<PlayerDrawerRange>(range).onChanged!(46);
@@ -528,7 +538,8 @@ void main() {
     final tile = find.ancestor(of: find.text('HDR'), matching: find.byType(ListTile)).first;
     final toggle = find.descendant(of: tile, matching: find.byType(Switch));
     await tester.tap(toggle);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
 
     expect(tester.takeException(), isNull);
     expect(find.text(t.videoSettings.hdrUnsupported), findsOneWidget);
@@ -537,6 +548,8 @@ void main() {
     expect(writes, [('hdr-enabled', 'no')]);
     expect(tester.widget<Switch>(toggle).value, isTrue);
     expect(SettingsService.instance.read(SettingsService.enableHDR), isTrue);
+    AppToast.dismiss(immediately: true);
+    await tester.pump();
   });
 
   testWidgets('an accepted HDR write pushes one hdr-enabled write per toggle', (tester) async {

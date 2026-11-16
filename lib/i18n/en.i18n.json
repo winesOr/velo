@@ -885,6 +885,7 @@
     "castUnavailable": "Casting is not available on this device.",
     "orientationButton": "Portrait / landscape",
     "danmakuToggle": "Show danmaku",
+    "danmakuEnabledValue": "On",
     "moreButton": "More",
     "tabVideo": "Video",
     "tabAudio": "Audio",

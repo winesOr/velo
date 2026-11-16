@@ -882,6 +882,7 @@
     "castUnavailable": "此设备暂不支持投屏。",
     "orientationButton": "竖屏 / 横屏",
     "danmakuToggle": "显示弹幕",
+    "danmakuEnabledValue": "已开启",
     "moreButton": "更多",
     "tabVideo": "视频",
     "tabAudio": "音频",

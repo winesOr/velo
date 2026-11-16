@@ -21,6 +21,7 @@ import '../../utils/formatters.dart';
 import '../../i18n/strings.g.dart';
 import '../../models/livetv_capture_buffer.dart';
 import 'models/track_controls_state.dart';
+import 'sheets/player_settings_drawer.dart';
 import 'player_chrome_controller.dart';
 import 'widgets/content_strip.dart';
 import 'widgets/content_strip_panel.dart';
@@ -100,6 +101,9 @@ class DesktopVideoControls extends StatefulWidget {
 
   /// Called when a queue item is selected in the content strip
   final Function(MediaItem)? onQueueItemSelected;
+  final VoidCallback? onShowEpisodes;
+  final String? episodesLabel;
+  final ValueChanged<PlayerDrawerTab>? onShowSettings;
 
   /// Called to cancel auto-hide timer (e.g., when content strip is shown)
   final VoidCallback? onCancelAutoHide;
@@ -157,6 +161,9 @@ class DesktopVideoControls extends StatefulWidget {
     this.serverId,
     this.showQueueTab = false,
     this.onQueueItemSelected,
+    this.onShowEpisodes,
+    this.episodesLabel,
+    this.onShowSettings,
     this.onCancelAutoHide,
     this.onStartAutoHide,
     this.onContentStripVisibilityChanged,
@@ -206,7 +213,8 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
   FocusNode? _lastFocusedButtonNode;
 
   bool get _hasStripContent {
-    return widget.chapters.isNotEmpty || (widget.showQueueTab && widget.onQueueItemSelected != null);
+    return !PlatformDetector.isTV() &&
+        (widget.chapters.isNotEmpty || (widget.showQueueTab && widget.onQueueItemSelected != null));
   }
 
   @override
@@ -224,7 +232,10 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
     _volumeFocusNode = FocusNode(debugLabel: 'Volume');
 
     // Create focus nodes for track controls (up to 8 buttons)
-    _trackControlFocusNodes = List.generate(9, (i) => FocusNode(debugLabel: 'TrackControl$i'));
+    _trackControlFocusNodes = List.generate(
+      PlatformDetector.isTV() ? 7 : 9,
+      (i) => FocusNode(debugLabel: 'TrackControl$i'),
+    );
 
     _buttonFocusNodes = [
       _prevItemFocusNode,
@@ -773,6 +784,8 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
             onFocusChange: _onButtonRowFocusChange,
             skipTraversal: true,
             child: Row(
+              crossAxisAlignment: PlatformDetector.isTV() ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+              textDirection: PlatformDetector.isTV() ? TextDirection.ltr : null,
               children: [
                 if (!_isLive) ...[
                   Opacity(
@@ -933,6 +946,9 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
                   chapters: widget.chapters,
                   chaptersLoaded: widget.chaptersLoaded,
                   trackControlsState: _trackControlsState,
+                  onShowEpisodes: widget.onShowEpisodes,
+                  episodesLabel: widget.episodesLabel,
+                  onShowSettings: widget.onShowSettings,
                   onSeekRequested: widget.onSeekRequested,
                   onSeekCompleted: widget.onSeekCompleted,
                   focusNodes: _trackControlFocusNodes,

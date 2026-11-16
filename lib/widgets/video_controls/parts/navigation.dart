@@ -8,6 +8,13 @@ extension _PlexVideoControlsNavigationMethods on _PlexVideoControlsState {
       onToggleAlwaysOnTop: Platform.isMacOS ? null : _toggleAlwaysOnTop,
     );
     final useDpad = playerDirectionalNavigationEnabled();
+    final queueContext = playbackState.shuffleContextKey;
+    final episodeMode =
+        widget.metadata.isEpisode &&
+        (!playbackState.isQueueActive ||
+            queueContext == null ||
+            queueContext == widget.metadata.grandparentId ||
+            queueContext == widget.metadata.seriesGlobalKey);
 
     return _holdChromeWhilePressed(
       child: DesktopVideoControls(
@@ -23,10 +30,18 @@ extension _PlexVideoControlsNavigationMethods on _PlexVideoControlsState {
         chaptersLoaded: _chaptersLoaded,
         showChapterMarkersOnTimeline: _showChapterMarkersOnTimeline,
         seekTimeSmall: _seekTimeSmall,
-        onSeekToPreviousChapter: _seekToPreviousChapter,
-        onSeekToNextChapter: _seekToNextChapter,
-        onSeekBackward: () => unawaited(_seekByTime(forward: false)),
-        onSeekForward: () => unawaited(_seekByTime(forward: true)),
+        onSeekToPreviousChapter: PlatformDetector.isTV()
+            ? () => _seekToChapterWithFeedback(forward: false)
+            : _seekToPreviousChapter,
+        onSeekToNextChapter: PlatformDetector.isTV()
+            ? () => _seekToChapterWithFeedback(forward: true)
+            : _seekToNextChapter,
+        onSeekBackward: PlatformDetector.isTV()
+            ? () => _seekByWithFeedback(Duration(seconds: -_seekTimeSmall))
+            : () => unawaited(_seekByTime(forward: false)),
+        onSeekForward: PlatformDetector.isTV()
+            ? () => _seekByWithFeedback(Duration(seconds: _seekTimeSmall))
+            : () => unawaited(_seekByTime(forward: true)),
         onSeek: _throttledSeek,
         onSeekEnd: _finalizeSeek,
         onScrubStart: _holdTimelineScrub,
@@ -51,6 +66,9 @@ extension _PlexVideoControlsNavigationMethods on _PlexVideoControlsState {
         serverId: widget.metadata.serverId,
         showQueueTab: playbackState.isQueueActive && widget.canNavigateMediaItems,
         onQueueItemSelected: playbackState.isQueueActive && widget.canNavigateMediaItems ? _onQueueItemSelected : null,
+        onShowEpisodes: !widget.isLive && widget.canNavigateMediaItems ? () => _openEpisodesDrawer(context) : null,
+        episodesLabel: episodeMode ? t.videoControls.episodesButton : t.videoControls.playlistDrawer,
+        onShowSettings: (tab) => _openPlayerDrawer(context, trackControlsState, tab),
         onCancelAutoHide: widget.chromeController.cancelAutoHide,
         onStartAutoHide: _startHideTimer,
         onSeekCompleted: widget.onSeekCompleted,

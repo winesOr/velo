@@ -1030,6 +1030,7 @@ class Translations$videoControls$zh extends Translations$videoControls$en {
 	@override String get castUnavailable => '此设备暂不支持投屏。';
 	@override String get orientationButton => '竖屏 / 横屏';
 	@override String get danmakuToggle => '显示弹幕';
+	@override String get danmakuEnabledValue => '已开启';
 	@override String get moreButton => '更多';
 	@override String get tabVideo => '视频';
 	@override String get tabAudio => '音频';
@@ -4266,6 +4267,7 @@ extension on TranslationsZh {
 			'videoControls.castUnavailable' => '此设备暂不支持投屏。',
 			'videoControls.orientationButton' => '竖屏 / 横屏',
 			'videoControls.danmakuToggle' => '显示弹幕',
+			'videoControls.danmakuEnabledValue' => '已开启',
 			'videoControls.moreButton' => '更多',
 			'videoControls.tabVideo' => '视频',
 			'videoControls.tabAudio' => '音频',
@@ -4451,9 +4453,9 @@ extension on TranslationsZh {
 			'profiles.borrowFailed' => '无法添加连接。',
 			'profiles.incorrectPin' => 'PIN 不正确。',
 			'profiles.incorrectPinTryAgain' => 'PIN 不正确。请重试。',
-			'profiles.sourceProfileMissingParentAccount' => '源用户资料缺少关联的主账户。',
 			_ => null,
 		} ?? switch (path) {
+			'profiles.sourceProfileMissingParentAccount' => '源用户资料缺少关联的主账户。',
 			'profiles.failedToLoadHomeUsers' => '无法加载您的 Plex Home 用户。请检查网络连接后重试。',
 			'profiles.failedToVerifyPin' => '无法验证 PIN。',
 			'profiles.newProfile' => '新建用户资料',
@@ -4965,9 +4967,9 @@ extension on TranslationsZh {
 			'liveTv.recordingScheduled' => '录制已安排',
 			'liveTv.alreadyScheduled' => '此节目已安排录制',
 			'liveTv.dvrAdminRequired' => 'DVR 设置需要管理员账户',
-			'liveTv.recordingFailed' => '无法安排录制',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.recordingFailed' => '无法安排录制',
 			'liveTv.recordingTargetMissing' => '无法确定录制库',
 			'liveTv.recordNotAvailable' => '此节目无法录制',
 			'liveTv.recordingCancelled' => '录制已取消',
@@ -5479,9 +5481,9 @@ extension on TranslationsZh {
 			'externalPlayer.playerCommand' => '命令',
 			'externalPlayer.playerPackage' => '包名',
 			'externalPlayer.playerUrlScheme' => 'URL 方案',
-			'externalPlayer.off' => '关闭',
 			_ => null,
 		} ?? switch (path) {
+			'externalPlayer.off' => '关闭',
 			'externalPlayer.launchFailed' => '无法打开外部播放器',
 			'externalPlayer.appNotInstalled' => ({required Object name}) => '${name} 未安装',
 			'externalPlayer.playInExternalPlayer' => '在外部播放器中播放',

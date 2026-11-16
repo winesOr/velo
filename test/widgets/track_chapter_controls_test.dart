@@ -16,6 +16,7 @@ import 'package:plezy/widgets/video_controls/models/track_controls_state.dart';
 import 'package:plezy/widgets/video_controls/sheets/danmaku_settings_sheet.dart';
 import 'package:plezy/widgets/video_controls/video_control_button.dart';
 import 'package:plezy/widgets/video_controls/widgets/track_chapter_controls.dart';
+import 'package:plezy/widgets/video_controls/widgets/tv_action_button.dart';
 import 'package:provider/provider.dart';
 
 import '../test_helpers/media_items.dart';
@@ -77,18 +78,20 @@ void main() {
     final nodes = _focusNodes();
     final controller = await _pump(tester, platform: TargetPlatform.android, focusNodes: nodes);
     expect(PlatformDetector.isTV(), isTrue);
-    expect(find.byType(VideoControlButton), findsNWidgets(3));
+    expect(find.byType(TvActionButton), findsNWidgets(7));
 
-    nodes.first.requestFocus();
+    nodes[3].requestFocus();
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
     await tester.pump();
-    expect(nodes[1].hasFocus, isTrue);
+    expect(nodes[4].hasFocus, isTrue);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
     await tester.pump();
-    final entry = tester.widget<VideoControlButton>(_danmakuButton());
-    expect(entry.focusNode, same(nodes[2]));
-    expect(nodes[2].hasFocus, isTrue);
+    final entry = tester.widget<TvActionButton>(
+      find.byWidgetPredicate((widget) => widget is TvActionButton && widget.label == t.danmaku.title),
+    );
+    expect(entry.focusNode, same(nodes[5]));
+    expect(nodes[5].hasFocus, isTrue);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
