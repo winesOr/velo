@@ -22,6 +22,7 @@ class DetailEpisodeRail extends StatefulWidget {
     this.hasTail = false,
     this.canLoadMore = false,
     this.onLoadMore,
+    this.onRequestIndex,
   });
 
   static const double cardWidth = 202;
@@ -38,6 +39,7 @@ class DetailEpisodeRail extends StatefulWidget {
   final bool hasTail;
   final bool canLoadMore;
   final VoidCallback? onLoadMore;
+  final Future<bool> Function(int index)? onRequestIndex;
 
   @override
   State<DetailEpisodeRail> createState() => _DetailEpisodeRailState();
@@ -59,8 +61,8 @@ class _DetailEpisodeRailState extends State<DetailEpisodeRail> {
   void didUpdateWidget(covariant DetailEpisodeRail oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.resetToken != oldWidget.resetToken) {
-      _group.value = 0;
-      _schedulePosition(0);
+      _group.value = groupForEpisodeIndex(widget.initialIndex);
+      _schedulePosition(widget.initialIndex);
     } else if (widget.episodeCount != oldWidget.episodeCount || widget.canLoadMore != oldWidget.canLoadMore) {
       _schedulePaging();
     }
@@ -84,9 +86,27 @@ class _DetailEpisodeRailState extends State<DetailEpisodeRail> {
   double _offsetFor(int index) =>
       (math.max(0, index) * DetailEpisodeRail.itemExtent).clamp(0.0, _controller.position.maxScrollExtent).toDouble();
 
-  void _scrollToGroup(int group) {
+  Future<void> _scrollToGroup(int group) async {
+    final token = widget.resetToken;
+    final index = group * 10;
+    final needsPage = index >= widget.episodeCount;
+    if (widget.onRequestIndex != null && !await widget.onRequestIndex!(index)) return;
+    if (!mounted || token != widget.resetToken) return;
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted || token != widget.resetToken || !_controller.hasClients) return;
+    if (needsPage) {
+      // Fixed-extent lists may retain the previous page's scroll metrics until
+      // they move. A jump lays out the newly loaded group without letting the
+      // old extent clamp an animation to the previous page's last episode.
+      _controller.jumpTo(index * DetailEpisodeRail.itemExtent);
+    } else {
+      _scrollToIndex(index);
+    }
+  }
+
+  void _scrollToIndex(int index) {
     if (!_controller.hasClients) return;
-    final offset = _offsetFor(group * 10);
+    final offset = math.max(0, index) * DetailEpisodeRail.itemExtent;
     if (MediaQuery.disableAnimationsOf(context)) {
       _controller.jumpTo(offset);
     } else {

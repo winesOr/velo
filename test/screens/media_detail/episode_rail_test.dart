@@ -68,7 +68,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(position, 20);
     expect(find.text('Group 2'), findsOneWidget);
-    update(() => resetToken++);
+    update(() {
+      position = 0;
+      resetToken++;
+    });
     await tester.pumpAndSettle();
     expect(position, 0);
     expect(find.text('Group 0'), findsOneWidget);
@@ -99,5 +102,49 @@ void main() {
     controller.jumpTo(3600);
     expect(loadRequests, 1);
     expect(tester.takeException(), isNull);
+  });
+  testWidgets('known unloaded group loads before scrolling to its first episode', (tester) async {
+    var loaded = 10;
+    var requested = -1;
+    var position = 0;
+    late StateSetter update;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            update = setState;
+            return Scaffold(
+              body: SizedBox(
+                width: 390,
+                child: DetailEpisodeRail(
+                  episodeCount: loaded,
+                  height: 158,
+                  resetToken: 0,
+                  onPositionChanged: (index) => position = index,
+                  onRequestIndex: (index) async {
+                    requested = index;
+                    update(() => loaded = 27);
+                    return true;
+                  },
+                  itemBuilder: (context, index) => Text('Episode ${index + 1}'),
+                  groupsBuilder: (context, group, scrollToGroup) =>
+                      TextButton(onPressed: () => scrollToGroup(2), child: const Text('21–27')),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    await tester.tap(find.text('21–27'));
+    await tester.pumpAndSettle();
+    expect(requested, 20);
+    final controller = tester.widget<ListView>(find.byKey(const ValueKey('detail_episode_rail_scroll'))).controller!;
+    expect(
+      position,
+      20,
+      reason: 'loaded=$loaded offset=${controller.offset} max=${controller.position.maxScrollExtent}',
+    );
+    expect(find.text('Episode 21'), findsOneWidget);
   });
 }

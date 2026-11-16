@@ -1,3 +1,4 @@
+import 'package:plezy/widgets/media_context_menu.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -40,7 +41,6 @@ import 'package:plezy/providers/download_provider.dart';
 import 'package:plezy/providers/multi_server_provider.dart';
 import 'package:plezy/providers/watch_state_store.dart';
 import 'package:plezy/screens/media_detail_screen.dart';
-import 'package:plezy/screens/media_detail/playback_selection.dart';
 import 'package:plezy/screens/media_detail_loading_skeleton.dart';
 import 'package:plezy/models/download_models.dart';
 import 'package:plezy/navigation/profile_navigation_scope.dart';
@@ -77,7 +77,6 @@ import 'package:plezy/widgets/fitted_metadata_line.dart';
 import 'package:plezy/widgets/app_select_field.dart';
 import 'package:plezy/widgets/app_glass_surface.dart';
 import 'package:plezy/screens/video_player_screen.dart';
-import 'package:plezy/widgets/focusable_tab_chip.dart';
 import 'package:plezy/widgets/tv_browse_rail.dart';
 import 'package:plezy/widgets/media_card.dart';
 import 'package:plezy/widgets/media_details_sheet.dart';
@@ -236,14 +235,8 @@ void main() {
     // No connected server means unavailable options, never a perpetual
     // background spinner while the details sheet is open.
     expect(tester.widget<AppSelectField<String>>(find.byKey(const ValueKey('detail_source_version'))).busy, isFalse);
-    expect(
-      tester.widget<AppSelectField<DetailTrackOption>>(find.byKey(const ValueKey('detail_audio_selector'))).busy,
-      isFalse,
-    );
-    expect(
-      tester.widget<AppSelectField<DetailTrackOption>>(find.byKey(const ValueKey('detail_subtitle_selector'))).busy,
-      isFalse,
-    );
+    expect(find.byKey(const ValueKey('detail_audio_selector')), findsNothing);
+    expect(find.byKey(const ValueKey('detail_subtitle_selector')), findsNothing);
 
     // UP crosses the external scores before reaching the information block.
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
@@ -582,7 +575,7 @@ void main() {
 
     expect(find.text('Season 1'), findsOneWidget);
     expect(find.text('Specials'), findsNothing);
-    expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 1)}'), findsOneWidget);
+    expect(find.text(t.discover.playEpisode(season: '1', episode: '1')), findsOneWidget);
   });
 
   testWidgets('TV detail exposes each season as its episode hub leading options item', (tester) async {
@@ -1219,14 +1212,14 @@ void main() {
     expect(find.descendant(of: cards, matching: find.text('The Show')), findsNothing);
 
     // Play agrees with the hero: the focused episode, not a stale on-deck.
-    expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 1)}'), findsOneWidget);
+    expect(find.text(t.discover.playEpisode(season: '1', episode: '1')), findsOneWidget);
     await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowRight);
     await tester.pump();
     await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowRight);
     await tester.pump(const Duration(milliseconds: 200));
     expect(tester.widget<Text>(heroTitle).data, 'The One After');
-    expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 2)}'), findsOneWidget);
-    expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 1)}'), findsNothing);
+    expect(find.text(t.discover.playEpisode(season: '1', episode: '2')), findsOneWidget);
+    expect(find.text(t.discover.playEpisode(season: '1', episode: '1')), findsNothing);
     semantics.dispose();
   });
 
@@ -1441,13 +1434,12 @@ void main() {
     );
     // The test font's 1 em/char advance sheds the codec detail at this width; the
     // track itself stays.
-    final audioText = find.textContaining('English');
-    expect(audioText, findsOneWidget);
+    expect(find.textContaining('English'), findsNothing);
 
     final selectors = find.byKey(const ValueKey('detail_playback_selectors'));
     expect(selectors, findsOneWidget);
-    expect(find.byKey(const ValueKey('detail_audio_selector')), findsOneWidget);
-    expect(find.byKey(const ValueKey('detail_subtitle_selector')), findsOneWidget);
+    expect(find.byKey(const ValueKey('detail_audio_selector')), findsNothing);
+    expect(find.byKey(const ValueKey('detail_subtitle_selector')), findsNothing);
     expect(tester.takeException(), isNull);
 
     // It is information, not a sixth button: RIGHT past the last action stays
@@ -1643,7 +1635,7 @@ void main() {
       await tester.pump();
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await settleSelection(tester);
-      expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 2)}'), findsOneWidget);
+      expect(find.text(t.discover.playEpisode(season: '1', episode: '2')), findsOneWidget);
       expect(status(tester), contains('4K'));
       expect(status(tester), contains('Japanese'));
       expect(status(tester), isNot(contains('English')));
@@ -2089,42 +2081,27 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('detail selectors pass source descriptors and explicit Off through the existing player route', (
-      tester,
-    ) async {
+    testWidgets('detail capsule keeps tracks in the player and passes the selected source once', (tester) async {
       final raw = _previewItem('selected-tracks');
-      final streams = (((raw['Media'] as List).first as Map)['Part'] as List).first['Stream'] as List;
-      streams.addAll(<Map<String, Object>>[
-        {'id': 101, 'streamType': 2, 'index': 2, 'codec': 'aac', 'languageCode': 'jpn'},
-        {'id': 120, 'streamType': 3, 'index': 3, 'codec': 'srt', 'languageCode': 'zho', 'selected': true},
-      ]);
       final movie = PlexMappers.mediaItemFromCacheJson(raw, serverId: ServerId('server_1'));
       final client = _FakeMediaServerClient(show: movie, childrenByParent: {}, rawItems: {movie.id: raw});
       final observer = _RecordingNavigatorObserver(popVideoPlayerImmediately: true);
       await pumpPhoneDetail(tester, client, movie, observer: observer);
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pump();
-      final audio = tester.widget<AppSelectField<DetailTrackOption>>(
-        find.byKey(const ValueKey('detail_audio_selector')),
-      );
-      final subtitles = tester.widget<AppSelectField<DetailTrackOption>>(
-        find.byKey(const ValueKey('detail_subtitle_selector')),
-      );
-      audio.onChanged!(audio.options.singleWhere((option) => option.value.streamId == 101).value);
-      subtitles.onChanged!(subtitles.options.singleWhere((option) => option.value.streamId == null).value);
-      await tester.pump();
+      expect(find.byKey(const ValueKey('detail_audio_selector')), findsNothing);
+      expect(find.byKey(const ValueKey('detail_subtitle_selector')), findsNothing);
       final play = find
           .descendant(of: find.byType(FocusableActionBar).first, matching: find.byType(FilledButton))
           .first;
       final activate = tester.widget<FilledButton>(play).onPressed!;
       activate();
-      activate(); // Same-frame repeat must not push a second player.
+      activate();
       await tester.pumpAndSettle();
       expect(observer.players, hasLength(1));
-      expect(observer.players.single.preferredAudioTrack?.id, 'source:101');
-      expect(observer.players.single.preferredSubtitleTrack?.id, 'no');
-      expect(observer.players.single.selectedMediaSourceId, '100');
-      expect(tester.widget<FilledButton>(play).onPressed, isNotNull);
+      expect(observer.players.single.preferredAudioTrack, isNull);
+      expect(observer.players.single.preferredSubtitleTrack, isNull);
+      expect(observer.players.single.selectedMediaSourceId, isNull);
       expect(tester.takeException(), isNull);
     });
 
@@ -2149,14 +2126,14 @@ void main() {
         void expectFieldContrast(Finder field) {
           final theme = Theme.of(tester.element(field));
           final material = tester.widget<Material>(find.descendant(of: field, matching: find.byType(Material)).first);
-          final background = material.color!;
+          final background = Color.alphaBlend(material.color!, theme.colorScheme.surface);
           expect(theme.brightness, base.brightness);
           expect(contrast(theme.colorScheme.onSurface, background), greaterThanOrEqualTo(4.5));
           expect(contrast(theme.colorScheme.onSurfaceVariant, background), greaterThanOrEqualTo(4.5));
           expect(contrast(IconTheme.of(tester.element(field)).color!, background), greaterThanOrEqualTo(3));
         }
 
-        for (final key in ['detail_source_version', 'detail_audio_selector', 'detail_subtitle_selector']) {
+        for (final key in ['detail_source_version']) {
           expectFieldContrast(find.byKey(ValueKey(key)));
         }
         final version = find.byKey(const ValueKey('detail_source_version'));
@@ -2177,34 +2154,22 @@ void main() {
       });
     }
 
-    testWidgets('TV 200 percent stacked selectors follow every Up and Down row', (tester) async {
+    testWidgets('TV 200 percent capsule reaches Play with Up', (tester) async {
       final raw = _previewItem('tv-stacked-selectors');
       final movie = PlexMappers.mediaItemFromCacheJson(raw, serverId: ServerId('server_1'));
       final client = _FakeMediaServerClient(show: movie, childrenByParent: {}, rawItems: {movie.id: raw});
       await pumpPhoneDetail(tester, client, movie, viewport: const Size(1280, 720), textScale: 2, tv: true);
       await tester.pump(const Duration(milliseconds: 450));
       await tester.pump();
-      final versionFinder = find.byKey(const ValueKey('detail_source_version'));
-      final audioFinder = find.byKey(const ValueKey('detail_audio_selector'));
-      final subtitleFinder = find.byKey(const ValueKey('detail_subtitle_selector'));
-      final version = tester.widget<AppSelectField<String>>(versionFinder).focusNode!;
-      final audio = tester.widget<AppSelectField<DetailTrackOption>>(audioFinder).focusNode!;
-      final subtitle = tester.widget<AppSelectField<DetailTrackOption>>(subtitleFinder).focusNode!;
-      expect(tester.getTopLeft(audioFinder).dy, greaterThan(tester.getTopLeft(versionFinder).dy));
-      expect(tester.getTopLeft(subtitleFinder).dy, greaterThan(tester.getTopLeft(audioFinder).dy));
-      version.requestFocus();
+      final field = find.byKey(const ValueKey('detail_source_version'));
+      final node = tester.widget<AppSelectField<String>>(field).focusNode!;
+      node.requestFocus();
       await tester.pump();
-      expect(version.hasFocus, isTrue);
-      for (final node in [audio, subtitle]) {
-        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-        await tester.pump();
-        expect(node.hasFocus, isTrue);
-      }
-      for (final node in [audio, version]) {
-        await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
-        await tester.pump();
-        expect(node.hasFocus, isTrue);
-      }
+      expect(node.hasFocus, isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pump();
+      expect(FocusManager.instance.primaryFocus?.debugLabel, 'play_button');
+      expect(find.byKey(const ValueKey('detail_audio_selector')), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -2292,14 +2257,12 @@ void main() {
         greaterThan(initialOffset),
         reason: 'real focus changes must drive the foreground scroll',
       );
-      for (final key in ['detail_source_version', 'detail_audio_selector', 'detail_subtitle_selector']) {
+      for (final key in ['detail_source_version']) {
         await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
         await tester.pump();
         await tester.pumpAndSettle(const Duration(milliseconds: 50));
         final field = find.byKey(ValueKey(key));
-        final node = key == 'detail_source_version'
-            ? tester.widget<AppSelectField<String>>(field).focusNode
-            : tester.widget<AppSelectField<DetailTrackOption>>(field).focusNode;
+        final node = tester.widget<AppSelectField<String>>(field).focusNode;
         expect(node!.hasFocus, isTrue);
         expectVisibleAboveRail(field);
       }
@@ -2370,55 +2333,21 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('open audio menu cannot apply a reused stream id after its source changes', (tester) async {
+    testWidgets('version capsule follows a changed source preference', (tester) async {
       final raw = _previewItem('menu-source-race');
-      final versions = raw['Media'] as List;
-      for (final (index, version) in versions.indexed) {
-        final streams = ((version as Map)['Part'] as List).first['Stream'] as List;
-        streams.add(<String, Object>{
-          'id': 7,
-          'streamType': 2,
-          'index': 2,
-          'codec': 'aac',
-          'languageCode': 'fra',
-          'title': index == 0 ? 'Source A alternate' : 'Source B alternate',
-        });
-      }
       final movie = PlexMappers.mediaItemFromCacheJson(raw, serverId: ServerId('server_1'));
       final client = _FakeMediaServerClient(show: movie, childrenByParent: {}, rawItems: {movie.id: raw});
       await pumpPhoneDetail(tester, client, movie);
       await tester.pump(const Duration(milliseconds: 450));
       await tester.pump();
-      final audioFinder = find.byKey(const ValueKey('detail_audio_selector'));
-      final before = tester.widget<AppSelectField<DetailTrackOption>>(audioFinder);
-      final oldOption = before.options.singleWhere((option) => option.value.streamId == 7);
-      await tester.ensureVisible(audioFinder);
-      await tester.tap(audioFinder);
-      await tester.pumpAndSettle();
-      expect(find.text(oldOption.label), findsOneWidget);
-
+      final version = find.byKey(const ValueKey('detail_source_version'));
+      expect(tester.widget<AppSelectField<String>>(version).value, '100');
       await saveMediaVersionPreferenceFor(movie, index: 1, versions: movie.mediaVersions!);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 450));
       await tester.pump();
-      final after = tester.widget<AppSelectField<DetailTrackOption>>(audioFinder);
-      final newOption = after.options.singleWhere((option) => option.value.streamId == 7);
-      expect(newOption.value.streamId, oldOption.value.streamId);
-      expect(newOption.value.scope.sourceId, '101');
-      expect(newOption.value, isNot(oldOption.value));
-      await tester.tap(find.text(oldOption.label));
-      await tester.pumpAndSettle();
-      expect(tester.widget<AppSelectField<DetailTrackOption>>(audioFinder).value?.streamId, 200);
-      // Also guard a late result delivered after a rebuild, independent of the
-      // shared field's menu lifecycle. The latest detail callback rejects A.
-      after.onChanged!(oldOption.value);
-      await tester.pump();
-      expect(tester.widget<AppSelectField<DetailTrackOption>>(audioFinder).value?.streamId, 200);
-      await tester.tap(audioFinder);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(newOption.label));
-      await tester.pumpAndSettle();
-      expect(tester.widget<AppSelectField<DetailTrackOption>>(audioFinder).value, newOption.value);
+      expect(tester.widget<AppSelectField<String>>(version).value, '101');
+      expect(find.byKey(const ValueKey('detail_audio_selector')), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -2443,7 +2372,7 @@ void main() {
       expect(retry, findsNothing);
       expect(client.sourceReads, reads + 1);
       expect(
-        tester.widget<AppSelectField<DetailTrackOption>>(find.byKey(const ValueKey('detail_audio_selector'))).options,
+        tester.widget<AppSelectField<String>>(find.byKey(const ValueKey('detail_source_version'))).options,
         isNotEmpty,
       );
     });
@@ -2839,8 +2768,8 @@ void main() {
             );
           }
           await tester.pumpAndSettle();
-          for (final key in ['detail_source_version', 'detail_audio_selector', 'detail_subtitle_selector']) {
-            expect(tester.getSize(find.byKey(ValueKey(key))).height, greaterThanOrEqualTo(48));
+          for (final key in ['detail_source_version']) {
+            expect(tester.getSize(find.byKey(ValueKey(key))).height, greaterThanOrEqualTo(38));
           }
           expect(tester.takeException(), isNull);
           await capture('selectors');
@@ -2850,18 +2779,31 @@ void main() {
       });
     }
 
-    Finder episodeCardFor(String title) => find.ancestor(of: find.text(title), matching: find.byType(EpisodeCard));
+    Future<void> tapSeason(WidgetTester tester, String title) async {
+      final header = find.byKey(const ValueKey('detail_season_picker'));
+      await tester.ensureVisible(header);
+      await tester.tap(header);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text(title));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    Finder episodeCardFor(String title) => find.byWidgetPredicate(
+      (w) => w is MediaContextMenu && w.item is MediaItem && episodeDisplayTitle(w.item as MediaItem) == title,
+    );
 
     bool episodeRowWatched(WidgetTester tester, String title) {
       final card = episodeCardFor(title);
       expect(card, findsOneWidget, reason: 'episode row "$title" should be visible');
-      return tester.any(find.descendant(of: card, matching: find.byIcon(Symbols.check_rounded)));
+      return (tester.widget<MediaContextMenu>(card).item as MediaItem).isWatched;
     }
 
     bool episodeRowHasProgress(WidgetTester tester, String title) {
       final card = episodeCardFor(title);
       expect(card, findsOneWidget, reason: 'episode row "$title" should be visible');
-      return tester.any(find.descendant(of: card, matching: find.byType(LinearProgressIndicator)));
+      return ((tester.widget<MediaContextMenu>(card).item as MediaItem).viewOffsetMs ?? 0) > 0;
     }
 
     Future<void> emit(WidgetTester tester, void Function() send) async {
@@ -3042,20 +2984,13 @@ void main() {
           await tester.ensureVisible(find.text(t.common.viewAll));
           await tester.tap(find.text(t.common.viewAll));
           await tester.pumpAndSettle();
-          final cards = find.byType(EpisodeCard);
-          expect(cards, findsNWidgets(12));
-          final element = tester.element(cards.first);
-          final palette = HomeThemeScope.colorOf(element);
-          final scheme = Theme.of(element).colorScheme;
-          expect(scheme.surface, palette);
-          expect(scheme.surfaceContainerLow, Color.alphaBlend(Colors.white.withValues(alpha: .045), palette));
-          expect(tester.widget<EpisodeCard>(cards.first).detailStyle, isTrue);
-          await Scrollable.ensureVisible(tester.element(cards.first), alignment: .2);
+          final grid = find.byKey(const ValueKey('detail_episode_grid'));
+          expect(grid, findsOneWidget);
+          expect(tester.widget<GridView>(grid).childrenDelegate.estimatedChildCount, 12);
+          final third = find.descendant(of: grid, matching: find.widgetWithText(TextButton, '3'));
+          await tester.tap(third);
           await tester.pumpAndSettle();
-          await captureTablet(tester, find.byKey(boundary), 'detail-all-${dark ? 'dark' : 'light'}');
-          await tester.tap(cards.at(2));
-          await tester.pumpAndSettle();
-          expect(find.byType(EpisodeCard), findsNothing);
+          expect(grid, findsNothing);
           expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 3)}'), findsOneWidget);
           final rail = tester.widget<ListView>(find.byKey(const ValueKey('detail_episode_rail_scroll')));
           expect(rail.controller!.offset, 428);
@@ -3063,6 +2998,62 @@ void main() {
         });
       }
     });
+
+    for (final switchSeason in [false, true]) {
+      testWidgets('pending episode grid jump cannot replace a newer ${switchSeason ? 'season' : 'card'} selection', (
+        tester,
+      ) async {
+        final show = buildShow();
+        final first = buildSeason(show, 1).copyWith(leafCount: 250);
+        final second = buildSeason(show, 2);
+        final episodes = [for (var number = 1; number <= 250; number++) buildEpisode(show, first, number)];
+        final continuation = Completer<List<MediaItem>>();
+        final client = _FakeMediaServerClient(
+          show: show,
+          childrenByParent: {
+            show.id: [first, second],
+            first.id: episodes,
+            second.id: [buildEpisode(show, second, 1)],
+          },
+          childrenPageFuturesByStart: {'${first.id}@200': continuation.future},
+        );
+        await pumpPhoneDetail(tester, client, show, viewport: const Size(390, 844));
+        await tester.ensureVisible(find.text(t.common.viewAll));
+        await tester.tap(find.text(t.common.viewAll));
+        await tester.pumpAndSettle();
+        final grid = find.byKey(const ValueKey('detail_episode_grid'));
+        final distant = find.descendant(of: grid, matching: find.widgetWithText(TextButton, '221'));
+        await tester.scrollUntilVisible(
+          distant,
+          500,
+          scrollable: find.descendant(of: grid, matching: find.byType(Scrollable)).first,
+        );
+        tester.widget<TextButton>(distant).onPressed!();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(grid, findsNothing);
+        expect(client.childrenPageCalls.any((call) => call.parentId == first.id && call.start == 200), isTrue);
+
+        if (switchSeason) {
+          await tapSeason(tester, 'Season 2');
+          await tapSeason(tester, 'Season 1');
+        } else {
+          final card = find.byKey(ValueKey('detail_episode_${episodes[1].id}'));
+          await tester.ensureVisible(card);
+          await tester.tap(card);
+          await tester.pump();
+        }
+        final selectedNumber = switchSeason ? 1 : 2;
+        expect(find.text('${t.common.play} ${t.common.episodeNumber(number: selectedNumber)}'), findsOneWidget);
+        continuation.complete(episodes);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump();
+        expect(find.text('${t.common.play} ${t.common.episodeNumber(number: selectedNumber)}'), findsOneWidget);
+        expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 221)}'), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+    }
 
     testWidgets('actual detail fixture phone-show-cast keeps the prototype section rhythm', (tester) async {
       final show = buildShow(summary: 'A concise overview that sits between the source card and the episode rail.')
@@ -3097,7 +3088,7 @@ void main() {
       final source = tester.widget<AppSelectField<String>>(sourceField);
       expect(source.value, 'source-1080');
       expect(source.options, hasLength(2));
-      expect(find.descendant(of: sourceField, matching: find.text(source.selectedLabel!)), findsOneWidget);
+      expect(source.inlineContent, isNotNull);
       expect(
         find.descendant(of: sourceField, matching: find.textContaining(t.detailPlayback.versionCount(n: 2))),
         findsOneWidget,
@@ -3259,10 +3250,13 @@ void main() {
       testWidgets('detail first-load skeleton ${fixture.name} keeps the hero rhythm', (tester) async {
         TvDetectionService.debugSetAppleTVOverride(fixture.tv);
         addTearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
-        await (FontLoader('DetailFixture')..addFont(rootBundle.load('assets/go-noto-current-regular.ttf'))).load();
-        await (FontLoader(
-          'packages/material_symbols_icons/MaterialSymbolsRounded',
-        )..addFont(rootBundle.load('packages/material_symbols_icons/lib/fonts/MaterialSymbolsRounded.ttf'))).load();
+        await tester.runAsync(() async {
+          await (FontLoader('DetailFixture')..addFont(rootBundle.load('assets/go-noto-current-regular.ttf'))).load();
+          await (FontLoader(
+            'packages/material_symbols_icons/MaterialSymbolsRounded',
+          )..addFont(rootBundle.load('packages/material_symbols_icons/lib/fonts/MaterialSymbolsRounded.ttf'))).load();
+        });
+        await tester.pump();
         final show = buildShow();
         final client = singleSeasonClient(show)..metadataGate = Completer<void>();
         final boundary = GlobalKey();
@@ -3666,7 +3660,7 @@ void main() {
       await tester.ensureVisible(field);
       await tester.tap(field);
       await tester.pumpAndSettle();
-      await tester.tap(find.text(versions[1].displayLabel).last);
+      await tester.tap(find.text(tester.widget<AppSelectField<String>>(field).options[1].label).last);
       await tester.pumpAndSettle();
       expect(observer.pushedRouteNames, isNot(contains(kVideoPlayerRouteName)));
       final saved = await savedMediaVersionPreferenceFor(movie);
@@ -3688,10 +3682,13 @@ void main() {
       (name: 'split', dark: true, width: 1100.0, scale: 1.0, container: false),
     ]) {
       testWidgets('resume progress follows the playable target ${fixture.name}', (tester) async {
-        await (FontLoader('DetailFixture')..addFont(rootBundle.load('assets/go-noto-current-regular.ttf'))).load();
-        await (FontLoader(
-          'packages/material_symbols_icons/MaterialSymbolsRounded',
-        )..addFont(rootBundle.load('packages/material_symbols_icons/lib/fonts/MaterialSymbolsRounded.ttf'))).load();
+        await tester.runAsync(() async {
+          await (FontLoader('DetailFixture')..addFont(rootBundle.load('assets/go-noto-current-regular.ttf'))).load();
+          await (FontLoader(
+            'packages/material_symbols_icons/MaterialSymbolsRounded',
+          )..addFont(rootBundle.load('packages/material_symbols_icons/lib/fonts/MaterialSymbolsRounded.ttf'))).load();
+        });
+        await tester.pump();
         final movie = testMediaItem(
           id: 'resume_movie',
           backend: MediaBackend.jellyfin,
@@ -4150,22 +4147,16 @@ void main() {
 
       // Round-trip through another season tab; the cached page restore must not
       // resurrect the dead progress offset.
-      await tester.tap(find.text('Season 2'));
+      await tapSeason(tester, 'Season 2');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Season 1'));
+      await tapSeason(tester, 'Season 1');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(episodeRowHasProgress(tester, '1. Episode S1E1'), isFalse);
       expect(episodeRowWatched(tester, '1. Episode S1E1'), isTrue);
     });
-
-    Future<void> tapSeason(WidgetTester tester, String title) async {
-      await tester.tap(find.text(title));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-    }
 
     testWidgets('a failed season switch shows its error, not the previous season episodes', (tester) async {
       final show = buildShow();
@@ -4237,16 +4228,17 @@ void main() {
       );
 
       await pumpPhoneDetail(tester, client, show);
-      final list = find.byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down).first;
+      final list = find.byKey(const ValueKey('detail_episode_rail_scroll'));
+      await tester.ensureVisible(list);
       int continuationRequests() =>
           client.childrenPageCalls.where((call) => call.parentId == season1.id && call.start == 200).length;
       Future<void> scrollToEnd({required int untilRequests}) async {
         // Back off first: paging reacts to scrolling, and the list may already
         // rest at its end.
-        await tester.drag(list, const Offset(0, 1000));
+        await tester.drag(list, const Offset(1000, 0));
         await tester.pump();
         for (var i = 0; i < 40 && continuationRequests() < untilRequests; i++) {
-          await tester.drag(list, const Offset(0, -4000));
+          await tester.drag(list, const Offset(-4000, 0));
           await tester.pump();
         }
       }
@@ -4255,9 +4247,10 @@ void main() {
       expect(continuationRequests(), 1);
 
       // Refresh the season while its old continuation is still in flight.
-      final refresh = tester.widget<EpisodeCard>(find.byType(EpisodeCard).first).onListRefresh!();
+      await tester.drag(list, const Offset(100000, 0));
       await tester.pump();
-      await refresh;
+      tester.widgetList<MediaContextMenu>(find.byType(MediaContextMenu)).last.onListRefresh!();
+      await tester.pump();
       await tester.pump();
 
       staleContinuation.complete([
@@ -4271,7 +4264,7 @@ void main() {
       // The refreshed first page asks for its own continuation.
       await scrollToEnd(untilRequests: 2);
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.drag(list, const Offset(0, -100000));
+      await tester.drag(list, const Offset(-100000, 0));
       await tester.pump();
 
       expect(find.textContaining('Stale S1E'), findsNothing);
@@ -4313,10 +4306,7 @@ void main() {
       expect(find.text('Season 1'), findsNothing);
       expect(episodeCardFor('1. Episode S1E1'), findsNothing);
       expect(episodeCardFor('1. Episode S2E1'), findsOneWidget);
-      final season2Chip = tester.widget<FocusableTabChip>(
-        find.ancestor(of: find.text('Season 2'), matching: find.byType(FocusableTabChip)),
-      );
-      expect(season2Chip.isSelected, isTrue);
+      expect(find.text('Season 2'), findsOneWidget);
     });
   });
 

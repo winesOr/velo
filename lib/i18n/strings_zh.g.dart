@@ -2664,6 +2664,14 @@ class Translations$detailPlayback$zh extends Translations$detailPlayback$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String get selectVersion => '选择播放版本';
+	@override String get originalQuality => '原始画质';
+	@override String get defaultRoute => '默认线路';
+	@override String get alternateVersion => '备用版本';
+	@override String get selectSeason => '选择季';
+	@override String episodesAvailable({required Object n}) => '更新至 ${n} 集';
+	@override String get pendingPlayback => '待播放';
+	@override String get allEpisodes => '全部选集';
 	@override String versionCount({required Object n}) => '${n} 个版本';
 	@override String get version => '版本';
 	@override String get unavailable => '暂无可用选项';
@@ -5915,6 +5923,14 @@ extension on TranslationsZh {
 			'casting.roomUnavailable' => '请先退出一起看房间，再投送给电视独立播放。',
 			'casting.success' => ({required Object device}) => '已在 ${device} 播放。可以退出 Velo，使用电视遥控器操作。',
 			'casting.successWithoutResume' => ({required Object device}) => '已在 ${device} 播放，电视未接受续播位置。可以退出 Velo，使用电视遥控器操作。',
+			'detailPlayback.selectVersion' => '选择播放版本',
+			'detailPlayback.originalQuality' => '原始画质',
+			'detailPlayback.defaultRoute' => '默认线路',
+			'detailPlayback.alternateVersion' => '备用版本',
+			'detailPlayback.selectSeason' => '选择季',
+			'detailPlayback.episodesAvailable' => ({required Object n}) => '更新至 ${n} 集',
+			'detailPlayback.pendingPlayback' => '待播放',
+			'detailPlayback.allEpisodes' => '全部选集',
 			'detailPlayback.versionCount' => ({required Object n}) => '${n} 个版本',
 			'detailPlayback.version' => '版本',
 			'detailPlayback.unavailable' => '暂无可用选项',

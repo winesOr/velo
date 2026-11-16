@@ -2589,6 +2589,14 @@ class _Translations$detailPlayback$zh_Hant extends Translations$detailPlayback$z
 	final TranslationsZhHant _root; // ignore: unused_field
 
 	// Translations
+	@override String get selectVersion => '選擇播放版本';
+	@override String get originalQuality => '原始畫質';
+	@override String get defaultRoute => '預設線路';
+	@override String get alternateVersion => '備用版本';
+	@override String get selectSeason => '選擇季';
+	@override String episodesAvailable({required Object n}) => '更新至 ${n} 集';
+	@override String get pendingPlayback => '待播放';
+	@override String get allEpisodes => '全部選集';
 	@override String get version => '版本';
 	@override String get unavailable => '暫無可用選項';
 	@override String get loadFailed => '播放選項載入失敗';
@@ -5773,6 +5781,14 @@ extension on TranslationsZhHant {
 			'danmaku.displayAreaDescription' => '滾動彈幕只出現在畫面頂部的指定行數內。行數設為 0 可關閉該類型，底部會保留字幕空間。',
 			'danmaku.topRows' => ({required Object n}) => '頂部 ${n} 行',
 			'danmaku.styleAndFilters' => '速度、密度與屏蔽',
+			'detailPlayback.selectVersion' => '選擇播放版本',
+			'detailPlayback.originalQuality' => '原始畫質',
+			'detailPlayback.defaultRoute' => '預設線路',
+			'detailPlayback.alternateVersion' => '備用版本',
+			'detailPlayback.selectSeason' => '選擇季',
+			'detailPlayback.episodesAvailable' => ({required Object n}) => '更新至 ${n} 集',
+			'detailPlayback.pendingPlayback' => '待播放',
+			'detailPlayback.allEpisodes' => '全部選集',
 			'detailPlayback.version' => '版本',
 			'detailPlayback.unavailable' => '暫無可用選項',
 			'detailPlayback.loadFailed' => '播放選項載入失敗',

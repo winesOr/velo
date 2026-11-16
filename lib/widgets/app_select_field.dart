@@ -11,12 +11,13 @@ import 'app_menu.dart';
 import 'press_feedback.dart';
 
 class AppSelectOption<T> {
-  const AppSelectOption({required this.value, required this.label, this.subtitle, this.enabled = true});
+  const AppSelectOption({required this.value, required this.label, this.subtitle, this.leading, this.enabled = true});
 
   final T value;
   final String label;
   final String? subtitle;
   final bool enabled;
+  final Widget? leading;
 
   String get semanticLabel => subtitle == null ? label : '$label, $subtitle';
 }
@@ -38,6 +39,7 @@ class AppSelectField<T> extends StatefulWidget {
     this.selectedLabel,
     this.selectedSubtitle,
     this.showChevron = true,
+    this.inlineContent,
   });
 
   final String label;
@@ -56,6 +58,9 @@ class AppSelectField<T> extends StatefulWidget {
   final String? selectedLabel;
   final String? selectedSubtitle;
   final bool showChevron;
+
+  /// Optional single-row capsule content; the default field layout is unchanged.
+  final Widget? inlineContent;
 
   @override
   State<AppSelectField<T>> createState() => _AppSelectFieldState<T>();
@@ -101,6 +106,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
               value: option.value,
               label: option.label,
               subtitle: option.subtitle,
+              leading: option.leading,
               enabled: option.enabled,
               selected: option.value == widget.value,
               autofocus: option.value == widget.value,
@@ -142,12 +148,13 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
               ? title
               : '$title, $subtitle'
         : selected?.semanticLabel ?? title;
-    const radius = BorderRadius.all(Radius.circular(14));
+    final cornerRadius = widget.inlineContent == null ? 14.0 : 12.0;
+    final radius = BorderRadius.all(Radius.circular(cornerRadius));
     return FocusableWrapper(
       focusNode: _focusNode,
       canRequestFocus: _enabled,
       disableScale: true,
-      borderRadius: 14,
+      borderRadius: cornerRadius,
       focusColor: VeloBrand.foreground(theme.brightness),
       descendantsAreFocusable: false,
       semanticLabel: widget.label,
@@ -188,44 +195,62 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             onTap: _canOpen ? _open : null,
             onHighlightChanged: _setPressed,
             child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: widget.compact ? 52 : 58),
+              constraints: BoxConstraints(
+                minHeight: widget.inlineContent != null
+                    ? 38
+                    : widget.compact
+                    ? 52
+                    : 58,
+              ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: widget.inlineContent != null ? 6 : 8),
                 child: Row(
                   children: [
                     if (widget.leading != null)
                       Padding(
-                        padding: const EdgeInsets.only(right: 12),
+                        padding: EdgeInsets.only(right: widget.inlineContent != null ? 7 : 12),
                         child: ExcludeSemantics(child: widget.leading!),
                       ),
                     Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            softWrap: true,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              color: colors.onSurface.withValues(alpha: _enabled ? 1 : .38),
-                            ),
+                      child:
+                          widget.inlineContent ??
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                softWrap: true,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  color: colors.onSurface.withValues(alpha: _enabled ? 1 : .38),
+                                ),
+                              ),
+                              if (subtitle != null)
+                                Text(
+                                  subtitle,
+                                  softWrap: true,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontSize: 12,
+                                    color: colors.onSurfaceVariant,
+                                  ),
+                                ),
+                            ],
                           ),
-                          if (subtitle != null)
-                            Text(
-                              subtitle,
-                              softWrap: true,
-                              style: theme.textTheme.bodySmall?.copyWith(fontSize: 12, color: colors.onSurfaceVariant),
-                            ),
-                        ],
-                      ),
                     ),
                     if (widget.busy || widget.showChevron) const SizedBox(width: 8),
                     if (widget.busy)
                       const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                     else if (widget.showChevron)
-                      AppIcon(_menuOpen ? Symbols.expand_less_rounded : Symbols.expand_more_rounded, size: 20),
+                      AppIcon(
+                        widget.inlineContent != null
+                            ? Symbols.chevron_right_rounded
+                            : _menuOpen
+                            ? Symbols.expand_less_rounded
+                            : Symbols.expand_more_rounded,
+                        size: widget.inlineContent != null ? 17 : 20,
+                      ),
                   ],
                 ),
               ),

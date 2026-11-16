@@ -18,6 +18,7 @@ import '../widgets/collapsible_text.dart';
 import '../widgets/detail_action_icon.dart';
 import '../widgets/rating_bottom_sheet.dart';
 import '../widgets/app_select_field.dart';
+import '../widgets/focusable_tab_chip.dart';
 import '../widgets/backend_badge.dart';
 import '../utils/codec_utils.dart';
 import '../utils/resolution_label.dart';
@@ -76,7 +77,6 @@ import '../media/media_server_client.dart';
 import '../services/media_list_playback_launcher.dart';
 import '../utils/content_utils.dart';
 import '../models/download_models.dart';
-import '../services/download_storage_service.dart';
 import '../utils/download_version_utils.dart';
 import '../utils/download_utils.dart';
 import '../services/settings_service.dart';
@@ -97,14 +97,12 @@ import '../utils/snackbar_helper.dart';
 import '../utils/video_player_navigation.dart';
 import '../widgets/app_bar_back_button.dart';
 import '../utils/desktop_window_padding.dart';
-import '../widgets/horizontal_scroll_with_arrows.dart';
 import '../widgets/media_context_menu.dart';
 import '../widgets/watchlist_source_chooser.dart';
 import 'libraries/state_messages.dart';
 import 'media_detail_loading_skeleton.dart';
 import '../widgets/overlay_sheet.dart';
 import '../widgets/media_details_sheet.dart';
-import '../widgets/placeholder_container.dart';
 import '../mixins/watch_state_aware.dart';
 import '../mixins/deletion_aware.dart';
 import '../mixins/mounted_set_state_mixin.dart';
@@ -114,9 +112,7 @@ import '../utils/watch_state_notifier.dart';
 import '../utils/deletion_notifier.dart';
 import '../utils/library_content_notifier.dart';
 import '../utils/tone_mapped_logo_image.dart';
-import '../widgets/episode_card.dart';
 import '../utils/media_navigation_helper.dart';
-import '../widgets/focusable_tab_chip.dart';
 import '../widgets/hub_section.dart';
 import '../widgets/loading_indicator_box.dart';
 import '../widgets/rasterized_gradient.dart';
@@ -373,7 +369,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   MediaItem? _detailSelectedEpisode;
   int _detailEpisodeRailIndex = 0;
   int _detailEpisodeRailRevision = 0;
-  bool _detailAllEpisodes = false;
+  int _detailEpisodeSelectionRevision = 0;
   final GlobalKey _detailEpisodesKey = GlobalKey();
   final GlobalKey _tvDetailRatingsGroupKey = GlobalKey();
   final GlobalKey _tvDetailActionGroupKey = GlobalKey();
@@ -402,8 +398,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   final Map<String, DetailPlaybackSelection> _detailPlaybackSelections = {};
   final Set<String> _playbackProbeErrors = {};
   final FocusNode _versionSelectFocusNode = FocusNode(debugLabel: 'detail_version');
-  final FocusNode _audioSelectFocusNode = FocusNode(debugLabel: 'detail_audio');
-  final FocusNode _subtitleSelectFocusNode = FocusNode(debugLabel: 'detail_subtitle');
   final WidgetStatesController _playButtonStates = WidgetStatesController();
   final ValueNotifier<int> _playbackStatusRevision = ValueNotifier(0);
   Timer? _playbackProbeTimer;
@@ -467,7 +461,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   }
 
   final Map<int, GlobalKey<MediaContextMenuState>> _seasonContextMenuKeys = {};
-  final ScrollController _seasonTabsScrollController = ScrollController();
   final FocusNode _firstEpisodeFocusNode = FocusNode(debugLabel: 'first_episode');
   final FocusNode _lastEpisodeFocusNode = FocusNode(debugLabel: 'last_episode');
   final FocusNode _initialEpisodeFocusNode = FocusNode(debugLabel: 'initial_episode');
@@ -1074,8 +1067,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     _playbackStatusRevision.dispose();
     _playButtonFocusNode.dispose();
     _versionSelectFocusNode.dispose();
-    _audioSelectFocusNode.dispose();
-    _subtitleSelectFocusNode.dispose();
     _playButtonStates.dispose();
     _moreActionsFocusNode.dispose();
     _tvRatingSourceFocusNode.dispose();
@@ -1086,7 +1077,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     for (final node in _seasonTabFocusNodes) {
       node.dispose();
     }
-    _seasonTabsScrollController.dispose();
     _firstEpisodeFocusNode.dispose();
     _lastEpisodeFocusNode.removeListener(_onLastEpisodeFocusChanged);
     _lastEpisodeFocusNode.dispose();
@@ -2118,6 +2108,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
     if (widget.initialEpisodeId != null) {
       if (_episodesContainInitialTarget) {
+        final index = _episodes.indexWhere((episode) => episode.id == widget.initialEpisodeId);
+        if (_detailEpisodeRailIndex != index) {
+          _detailEpisodeRailIndex = index;
+          _detailEpisodeRailRevision++;
+        }
         _applyInitialMobileFocus(_initialTargetEpisodeFocusNode(), _seasonsSectionKey);
         return;
       }
@@ -2214,7 +2209,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
   /// Focus the overview, or the first available content section when there is no overview.
   void _focusBelowActionRow() {
-    for (final node in [_versionSelectFocusNode, _audioSelectFocusNode, _subtitleSelectFocusNode]) {
+    for (final node in [_versionSelectFocusNode]) {
       if (node.canRequestFocus && node.context != null) {
         node.requestFocus();
         return;
@@ -2282,154 +2277,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     if (_seasonTabFocusNodes.length > _selectedSeasonIndex) {
       _seasonTabFocusNodes[_selectedSeasonIndex].requestFocus();
     }
-  }
-
-  void _scrollSeasonTabIntoView(int index) {
-    if (index < 0 || index >= _seasonTabFocusNodes.length) return;
-    scrollContextToCenter(_seasonTabFocusNodes[index].context);
-  }
-
-  /// Build inline season tab chips with LEFT/RIGHT/DOWN focus navigation
-  Widget _buildSeasonTabs() {
-    return SettingValueBuilder<bool>(
-      pref: SettingsService.showSeasonPostersOnTabs,
-      builder: (context, showPosters, _) => _buildSeasonTabsContent(context, showPosters),
-    );
-  }
-
-  Widget _buildSeasonTabsContent(BuildContext context, bool showPosters) {
-    final showSeasonPosters = showPosters && !PlatformDetector.isTV();
-
-    return HorizontalScrollWithArrows(
-      controller: _seasonTabsScrollController,
-      builder: (scrollController) => SingleChildScrollView(
-        controller: scrollController,
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: List.generate(_seasons.length, (index) {
-            final season = _seasons[index];
-            final contextMenuKey = _seasonContextMenuKeys.putIfAbsent(index, () => GlobalKey<MediaContextMenuState>());
-            Offset? tapPosition;
-            final posterPath = season.thumbPath;
-            Widget? topImage;
-            if (showSeasonPosters && posterPath != null && posterPath.isNotEmpty) {
-              const posterWidth = 72.0;
-              const posterHeight = 108.0;
-              final localArtwork = _buildOfflineArtworkIfAvailable(
-                context,
-                artworkPaths: [posterPath],
-                fit: BoxFit.cover,
-                imageType: ImageType.poster,
-                placeholder: (context, url) => const PlaceholderContainer(),
-                errorWidget: (context, url, error) => const PlaceholderContainer(),
-              );
-              topImage = SizedBox(
-                width: posterWidth,
-                height: posterHeight,
-                child:
-                    localArtwork ??
-                    (widget.isOffline
-                        ? const PlaceholderContainer()
-                        : Builder(
-                            builder: (context) {
-                              final pixelRatio = MediaImageHelper.artworkPixelRatio(context);
-                              final client = _getMediaClientForMetadata(context);
-                              final imageUrl = MediaImageHelper.getOptimizedImageUrl(
-                                client: client,
-                                thumbPath: posterPath,
-                                maxWidth: posterWidth,
-                                maxHeight: posterHeight,
-                                pixelRatio: pixelRatio,
-                                imageType: ImageType.poster,
-                              );
-                              final (memWidth, memHeight) = MediaImageHelper.getMemCacheDimensions(
-                                displayWidth: (posterWidth * pixelRatio).round(),
-                                displayHeight: (posterHeight * pixelRatio).round(),
-                                imageType: ImageType.poster,
-                              );
-                              return Image(
-                                image: MediaImageHelper.serverArtworkProvider(
-                                  imageUrl: imageUrl,
-                                  memWidth: memWidth,
-                                  memHeight: memHeight,
-                                ),
-                                fit: BoxFit.cover,
-                                filterQuality: MediaImageHelper.artworkFilterQuality(context, ImageType.poster),
-                                errorBuilder: (context, error, stackTrace) => const PlaceholderContainer(),
-                                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                                  if (wasSynchronouslyLoaded || frame != null) return child;
-                                  return const PlaceholderContainer();
-                                },
-                              );
-                            },
-                          )),
-              );
-            }
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: MediaContextMenu(
-                key: contextMenuKey,
-                item: season,
-                onRefresh: (source) {
-                  _watchStateChanged = true;
-                  unawaited(_refreshItemInPlace(source));
-                },
-                onListRefresh: () {
-                  if (widget.isOffline) {
-                    _loadSeasonsFromDownloads();
-                  } else {
-                    _loadSeasons();
-                  }
-                },
-                child: GestureDetector(
-                  onTapDown: (details) => tapPosition = details.globalPosition,
-                  onLongPress: () => _showSeasonTabContextMenu(index, position: tapPosition),
-                  onSecondaryTapDown: (details) => tapPosition = details.globalPosition,
-                  onSecondaryTap: () => _showSeasonTabContextMenu(index, position: tapPosition),
-                  child: FocusableTabChip(
-                    label: _seasonLabel(season),
-                    isSelected: index == _selectedSeasonIndex,
-                    topImage: topImage,
-                    focusNode: _seasonTabFocusNodes.length > index ? _seasonTabFocusNodes[index] : null,
-                    onSelect: () {
-                      if (index == _selectedSeasonIndex) return;
-                      _selectSeason(index);
-                    },
-                    onNavigateLeft: index > 0
-                        ? () {
-                            final newIndex = index - 1;
-                            _selectSeason(newIndex);
-                            _seasonTabFocusNodes[newIndex].requestFocus();
-                            _scrollSeasonTabIntoView(newIndex);
-                          }
-                        : null,
-                    onNavigateRight: index < _seasons.length - 1
-                        ? () {
-                            final newIndex = index + 1;
-                            _selectSeason(newIndex);
-                            _seasonTabFocusNodes[newIndex].requestFocus();
-                            _scrollSeasonTabIntoView(newIndex);
-                          }
-                        : null,
-                    onNavigateDown: () {
-                      if (PlatformDetector.isTV()) {
-                        _tvDetailRailKey.currentState?.requestFocus();
-                        return;
-                      }
-                      _firstEpisodeFocusNode.requestFocus();
-                    },
-                    onLongPress: () => _showSeasonTabContextMenu(index),
-                    onBack: () {
-                      Navigator.of(context).maybePop();
-                    },
-                  ),
-                ),
-              ),
-            );
-          }),
-        ),
-      ),
-    );
   }
 
   /// Handle key events for the extras row (locked focus pattern)
@@ -2526,92 +2373,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   }
 
   /// Build episode list directly when the library hides seasons for single-season shows
-  Widget _buildEpisodesList() {
-    if (!_detailAllEpisodes &&
-        widget.initialEpisodeId == null &&
-        _usesCompactHero(MediaQuery.sizeOf(context).width - _heroSideInset * 2)) {
-      return _buildDetailEpisodeRail();
-    }
-    final client = _getMediaClientForMetadata(context);
-    final hasPinnedLastEpisode = _hasPinnedLastEpisodeInList;
-    final list = ListView.builder(
-      addAutomaticKeepAlives: false,
-      addSemanticIndexes: false,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: .zero,
-      itemCount: _episodes.length + (_episodeListHasMore || _episodeListLoadingMore || _episodeListPageError ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == _episodes.length) {
-          return _buildEpisodeListTail();
-        }
-        final episode = _episodes[index];
-        String? localPosterPath;
-        if (widget.isOffline && episode.serverId != null) {
-          final artworkRef = context.read<DownloadProvider>().getArtworkPaths(episode.globalKey);
-          localPosterPath = artworkRef?.getLocalPath(DownloadStorageService.instance, ServerId(episode.serverId!));
-        }
-        return EpisodeCard(
-          episode: episode,
-          detailStyle: _detailAllEpisodes,
-          selected: _playbackTargetItem(_metadata)?.globalKey == episode.globalKey,
-          client: client,
-          isOffline: widget.isOffline,
-          autofocus: false,
-          focusNode: _episodeListFocusNode(episode: episode, index: index, hasPinnedLastEpisode: hasPinnedLastEpisode),
-          onNavigateUp: index == 0
-              ? () {
-                  if (!_showEpisodesDirectly) {
-                    _focusSelectedSeasonTab();
-                  } else if (!PlatformDetector.isTV() && _metadata.summary?.isNotEmpty == true) {
-                    _overviewFocusNode.requestFocus();
-                    _scrollSectionIntoView(_overviewSectionKey);
-                  } else {
-                    _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
-                    _playButtonFocusNode.requestFocus();
-                  }
-                }
-              : null,
-          localPosterPath: localPosterPath,
-          onTap: () async {
-            if (_detailAllEpisodes) {
-              setState(() {
-                _detailSelectedEpisode = episode;
-                _detailEpisodeRailIndex = index;
-                _detailAllEpisodes = false;
-              });
-              _playbackStatusRevision.value++;
-              return;
-            }
-            await navigateToVideoPlayerWithRefresh(
-              context,
-              metadata: episode,
-              isOffline: widget.isOffline,
-              onRefresh: () => unawaited(_refreshItemInPlace(episode)),
-              isLaunchCurrent: () => _canUseDetail,
-            );
-          },
-          onRefresh: widget.isOffline ? null : _refreshItemInPlace,
-          onListRefresh: widget.isOffline ? null : _refreshCurrentEpisodes,
-        );
-      },
-    );
-    if (!_detailAllEpisodes) return list;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextButton.icon(
-          onPressed: () => setState(() {
-            _detailAllEpisodes = false;
-            _detailEpisodeRailIndex = 0;
-          }),
-          icon: const AppIcon(Symbols.arrow_back_rounded, size: 18),
-          label: Text(t.common.back),
-        ),
-        list,
-      ],
-    );
-  }
+  Widget _buildEpisodesList() => _buildDetailEpisodeRail();
 
   bool _shouldUseLastEpisodeFocusNode({
     required MediaItem episode,
@@ -3260,31 +3022,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                                 else if (_seasons.isEmpty)
                                   _sectionEmpty(context, t.messages.noSeasonsFound)
                                 else ...[
-                                  if (compact)
-                                    _buildCompactDetailEpisodeHeader(context, metadata, chooseSeason: true)
-                                  else ...[
-                                    _buildDetailSectionHeader(
-                                      context,
-                                      t.libraries.groupings.episodes,
-                                      titleKey: _seasonsSectionKey,
-                                      trailing: compact && _episodes.isNotEmpty && !_detailAllEpisodes
-                                          ? TextButton(
-                                              onPressed: () => setStateIfMounted(() => _detailAllEpisodes = true),
-                                              style: TextButton.styleFrom(
-                                                padding: EdgeInsets.zero,
-                                                minimumSize: const Size(0, 32),
-                                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                                visualDensity: VisualDensity.compact,
-                                              ),
-                                              child: Text(t.common.viewAll),
-                                            )
-                                          : null,
-                                    ),
-                                    const SizedBox(height: 10),
-                                    _buildSeasonTabs(),
-                                    const SizedBox(height: 16),
-                                  ],
-                                  if (compact) const SizedBox(height: 12),
+                                  _buildCompactDetailEpisodeHeader(context, metadata, chooseSeason: true),
+                                  const SizedBox(height: 12),
                                   if (_isLoadingSeasonEpisodes)
                                     _sectionLoading
                                   else if (_seasonEpisodesFirstPageError && _episodes.isEmpty)
@@ -3300,26 +3039,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                                 SizedBox(height: isTv ? 24 : 12),
                               ] else if ((isShow && _showEpisodesDirectly) || metadata.isSeason) ...[
                                 // Server says flatten — existing behavior unchanged
-                                if (compact)
-                                  _buildCompactDetailEpisodeHeader(context, metadata)
-                                else
-                                  _buildDetailSectionHeader(
-                                    context,
-                                    t.libraries.groupings.episodes,
-                                    titleKey: _seasonsSectionKey,
-                                    trailing: compact && _episodes.isNotEmpty && !_detailAllEpisodes
-                                        ? TextButton(
-                                            onPressed: () => setStateIfMounted(() => _detailAllEpisodes = true),
-                                            style: TextButton.styleFrom(
-                                              padding: EdgeInsets.zero,
-                                              minimumSize: const Size(0, 32),
-                                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                              visualDensity: VisualDensity.compact,
-                                            ),
-                                            child: Text(t.common.viewAll),
-                                          )
-                                        : null,
-                                  ),
+                                _buildCompactDetailEpisodeHeader(context, metadata),
                                 const SizedBox(height: 12),
                                 if (_isLoadingSeasons || _isLoadingEpisodes)
                                   _sectionLoading

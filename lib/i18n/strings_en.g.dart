@@ -6731,6 +6731,30 @@ class Translations$detailPlayback$en {
 
 	// Translations
 
+	/// en: 'Select playback version'
+	String get selectVersion => 'Select playback version';
+
+	/// en: 'Original quality'
+	String get originalQuality => 'Original quality';
+
+	/// en: 'Default route'
+	String get defaultRoute => 'Default route';
+
+	/// en: 'Alternate version'
+	String get alternateVersion => 'Alternate version';
+
+	/// en: 'Select season'
+	String get selectSeason => 'Select season';
+
+	/// en: 'Updated to ${n} episodes'
+	String episodesAvailable({required Object n}) => 'Updated to ${n} episodes';
+
+	/// en: 'Ready to play'
+	String get pendingPlayback => 'Ready to play';
+
+	/// en: 'All episodes'
+	String get allEpisodes => 'All episodes';
+
 	/// en: '${n} versions'
 	String versionCount({required Object n}) => '${n} versions';
 
@@ -10839,6 +10863,14 @@ extension on Translations {
 			'casting.roomUnavailable' => 'Leave Watch Together before casting independently to a TV.',
 			'casting.success' => ({required Object device}) => 'Playing on ${device}. You can close Velo and use your TV remote.',
 			'casting.successWithoutResume' => ({required Object device}) => 'Playing on ${device}. The TV did not accept the resume position. You can close Velo and use your TV remote.',
+			'detailPlayback.selectVersion' => 'Select playback version',
+			'detailPlayback.originalQuality' => 'Original quality',
+			'detailPlayback.defaultRoute' => 'Default route',
+			'detailPlayback.alternateVersion' => 'Alternate version',
+			'detailPlayback.selectSeason' => 'Select season',
+			'detailPlayback.episodesAvailable' => ({required Object n}) => 'Updated to ${n} episodes',
+			'detailPlayback.pendingPlayback' => 'Ready to play',
+			'detailPlayback.allEpisodes' => 'All episodes',
 			'detailPlayback.versionCount' => ({required Object n}) => '${n} versions',
 			'detailPlayback.version' => 'Version',
 			'detailPlayback.unavailable' => 'Not available',

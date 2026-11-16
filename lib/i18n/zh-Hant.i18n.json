@@ -2602,6 +2602,14 @@
     "successWithoutResume": ""
   },
   "detailPlayback": {
+    "selectVersion": "選擇播放版本",
+    "originalQuality": "原始畫質",
+    "defaultRoute": "預設線路",
+    "alternateVersion": "備用版本",
+    "selectSeason": "選擇季",
+    "episodesAvailable": "更新至 ${n} 集",
+    "pendingPlayback": "待播放",
+    "allEpisodes": "全部選集",
     "version": "版本",
     "unavailable": "暫無可用選項",
     "loadFailed": "播放選項載入失敗"

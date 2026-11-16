@@ -11,7 +11,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
         title != season.grandparentTitle) {
       return title;
     }
-    if (number != null) return t.common.seasonNumber(number: number);
+    if (number != null) return t.videoControls.seasonNumber(n: number);
     if (title != null && title.isNotEmpty) return title;
     return season.displaySubtitle ?? season.displayTitle;
   }
@@ -22,6 +22,10 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
       builder: (sheetContext) => ListView(
         shrinkWrap: true,
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+            child: Text(t.detailPlayback.selectSeason, style: Theme.of(sheetContext).textTheme.titleMedium),
+          ),
           for (var index = 0; index < _seasons.length; index++)
             FocusableWrapper(
               autofocus: index == _selectedSeasonIndex,
@@ -35,7 +39,22 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   child: Row(
                     children: [
-                      Expanded(child: Text(_seasonLabel(_seasons[index]))),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(_seasonLabel(_seasons[index])),
+                            if ((_seasons[index].leafCount ?? _seasons[index].childCount) case final count?
+                                when count > 0)
+                              Text(
+                                t.detailPlayback.episodesAvailable(n: count),
+                                style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                       if (index == _selectedSeasonIndex) const AppIcon(Symbols.check_rounded, size: 20),
                     ],
                   ),
@@ -66,6 +85,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
           child: Align(
             alignment: Alignment.centerLeft,
             child: FocusableWrapper(
+              key: const ValueKey('detail_season_picker'),
               focusNode: chooseSeason ? _seasonTabFocusNodes[_selectedSeasonIndex] : null,
               canRequestFocus: chooseSeason,
               disableScale: true,
@@ -83,7 +103,11 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
                     Flexible(
                       child: Text(
                         label,
-                        style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -98,9 +122,9 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
             ),
           ),
         ),
-        if (_episodes.isNotEmpty && !_detailAllEpisodes)
+        if (_episodes.isNotEmpty)
           TextButton(
-            onPressed: () => setStateIfMounted(() => _detailAllEpisodes = true),
+            onPressed: () => unawaited(_showDetailEpisodeGrid(context)),
             style: TextButton.styleFrom(
               padding: EdgeInsets.zero,
               minimumSize: const Size(0, 32),
@@ -300,8 +324,112 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
   }
 
   void _selectDetailEpisode(MediaItem episode) {
-    setStateIfMounted(() => _detailSelectedEpisode = episode);
+    setStateIfMounted(() {
+      _detailSelectedEpisode = episode;
+      _detailEpisodeSelectionRevision++;
+    });
     _playbackStatusRevision.value++;
+  }
+
+  int get _detailEpisodeCount {
+    final season = _metadata.isSeason
+        ? _metadata
+        : _seasons.isNotEmpty
+        ? _seasons[_selectedSeasonIndex]
+        : null;
+    final reported = _isFlattenEpisodeList ? _allEpisodesTotal : _selectedSeasonEpisodeState.totalCount;
+    return math.max(_episodes.length, math.max(reported, season?.leafCount ?? season?.childCount ?? 0));
+  }
+
+  Future<bool> _ensureDetailEpisodeIndex(int index, {bool Function()? isRequestCurrent}) async {
+    final generation = _episodesLoadGeneration;
+    final seasonId = _seasons.isEmpty ? null : _seasons[_selectedSeasonIndex].id;
+    bool current() =>
+        _canUseDetail &&
+        (isRequestCurrent?.call() ?? true) &&
+        generation == _episodesLoadGeneration &&
+        seasonId == (_seasons.isEmpty ? null : _seasons[_selectedSeasonIndex].id);
+    while (current() && index >= _episodes.length && _episodeListHasMore) {
+      while (current() && _episodeListLoadingMore) {
+        await Future<void>.delayed(const Duration(milliseconds: 16));
+      }
+      if (!current() || index < _episodes.length) break;
+      final before = _episodes.length;
+      await _loadMoreEpisodeList();
+      if (_episodes.length <= before) break;
+    }
+    return current() && index >= 0 && index < _episodes.length;
+  }
+
+  Future<void> _showDetailEpisodeGrid(BuildContext context) async {
+    final revision = _detailEpisodeRailRevision;
+    final generation = _episodesLoadGeneration;
+    final selectionRevision = ++_detailEpisodeSelectionRevision;
+    bool requestCurrent() =>
+        _canUseDetail &&
+        revision == _detailEpisodeRailRevision &&
+        generation == _episodesLoadGeneration &&
+        selectionRevision == _detailEpisodeSelectionRevision;
+    final selected = _playbackTargetItem(_metadata)?.globalKey;
+    final season = _metadata.isSeason
+        ? _metadata
+        : _seasons.isNotEmpty
+        ? _seasons[_selectedSeasonIndex]
+        : null;
+    final title = [if (season != null) _seasonLabel(season), t.detailPlayback.allEpisodes].join(' · ');
+    final index = await OverlaySheetController.showAdaptive<int>(
+      context,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: Theme.of(sheetContext).textTheme.titleMedium),
+            const SizedBox(height: 16),
+            Flexible(
+              child: GridView.builder(
+                key: const ValueKey('detail_episode_grid'),
+                shrinkWrap: true,
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 64,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                ),
+                itemCount: _detailEpisodeCount,
+                itemBuilder: (context, index) {
+                  final episode = index < _episodes.length ? _fresh(_episodes[index]) : null;
+                  return FocusableWrapper(
+                    autofocus: episode?.globalKey == selected,
+                    disableScale: true,
+                    onSelect: () => OverlaySheetController.closeAdaptive(sheetContext, index),
+                    child: TextButton(
+                      onPressed: () => OverlaySheetController.closeAdaptive(sheetContext, index),
+                      style: TextButton.styleFrom(
+                        backgroundColor: episode?.globalKey == selected
+                            ? Theme.of(context).colorScheme.onSurface.withValues(alpha: .12)
+                            : null,
+                      ),
+                      child: Text('${episode == null ? index + 1 : effectiveEpisodeIndex(episode) ?? index + 1}'),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (index == null || !requestCurrent()) return;
+    final loaded = await _ensureDetailEpisodeIndex(index, isRequestCurrent: requestCurrent);
+    // Paging completes after the sheet has closed. A newer card selection,
+    // grid request or season change owns the target even if the old page lands.
+    if (!loaded || !requestCurrent()) return;
+    _selectDetailEpisode(_fresh(_episodes[index]));
+    setStateIfMounted(() {
+      _detailEpisodeRailIndex = index;
+      _detailEpisodeRailRevision++;
+    });
   }
 
   Widget _buildDetailEpisodeRail() {
@@ -318,44 +446,31 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
       hasTail: _episodeListHasMore || _episodeListLoadingMore || _episodeListPageError,
       canLoadMore: _episodeListHasMore && !_episodeListLoadingMore && !_episodeListPageError,
       onLoadMore: () => unawaited(_loadMoreEpisodeList()),
+      onRequestIndex: _ensureDetailEpisodeIndex,
       groupsBuilder: (context, group, scrollToGroup) => _buildDetailEpisodeGroups(group, scrollToGroup),
       itemBuilder: (context, index) {
         if (index == _episodes.length) return _buildEpisodeListTail();
         final episode = _fresh(_episodes[index]);
         final active = selected == episode.globalKey;
         final episodeNumber = effectiveEpisodeIndex(episode);
-        final status = episode.isWatched
-            ? t.libraries.watched
-            : episode.viewOffsetMs != null && episode.viewOffsetMs! > 0
-            ? t.common.resume
-            : t.libraries.filterCategories.unwatched;
+        final status = active ? t.detailPlayback.pendingPlayback : t.libraries.filterCategories.unwatched;
         final local = widget.isOffline && episode.thumbPath != null
             ? _offlineArtworkCandidatePath(context, episode.thumbPath!)
             : null;
         return SizedBox(
           width: 202,
-          child: FocusableWrapper(
-            key: ValueKey('detail_episode_${episode.id}'),
-            focusNode: _episodeListFocusNode(
-              episode: episode,
-              index: index,
-              hasPinnedLastEpisode: _hasPinnedLastEpisodeInList,
-            ),
-            onSelect: () => _selectDetailEpisode(episode),
-            onLongPress: () => unawaited(
-              navigateToVideoPlayerWithRefresh(
-                context,
-                metadata: episode,
-                isOffline: widget.isOffline,
-                onRefresh: _refreshWatchState,
-                isLaunchCurrent: () => _canUseDetail,
+          child: MediaContextMenu(
+            item: episode,
+            onRefresh: widget.isOffline ? null : _refreshItemInPlace,
+            onListRefresh: widget.isOffline ? null : _refreshCurrentEpisodes,
+            child: FocusableWrapper(
+              key: ValueKey('detail_episode_${episode.id}'),
+              focusNode: _episodeListFocusNode(
+                episode: episode,
+                index: index,
+                hasPinnedLastEpisode: _hasPinnedLastEpisodeInList,
               ),
-            ),
-            onNavigateUp: _focusSelectedSeasonTab,
-            disableScale: true,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => _selectDetailEpisode(episode),
+              onSelect: () => _selectDetailEpisode(episode),
               onLongPress: () => unawaited(
                 navigateToVideoPlayerWithRefresh(
                   context,
@@ -365,71 +480,99 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
                   isLaunchCurrent: () => _canUseDetail,
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    height: 112,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: active ? Border.all(color: theme.colorScheme.onSurface, width: 2) : null,
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        OptimizedMediaImage.thumb(
-                          client: widget.isOffline ? null : _getArtworkMediaClient(context),
-                          imagePath: episode.thumbPath,
-                          localFilePath: local,
-                          width: 202,
-                          height: 112,
-                        ),
-                        if (episodeNumber != null)
-                          Positioned(
-                            right: 8,
-                            bottom: 6,
-                            child: DecoratedBox(
-                              key: ValueKey('detail_episode_number_${episode.id}'),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: .52),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                child: Text(
-                                  padNumber(episodeNumber, 2),
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    height: 1.2,
+              onNavigateUp: () {
+                if (!_showEpisodesDirectly) {
+                  _focusSelectedSeasonTab();
+                } else if (!PlatformDetector.isTV() && _metadata.summary?.isNotEmpty == true) {
+                  _overviewFocusNode.requestFocus();
+                  _scrollSectionIntoView(_overviewSectionKey);
+                } else {
+                  _playButtonFocusNode.requestFocus();
+                }
+              },
+              disableScale: true,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _selectDetailEpisode(episode),
+                onLongPress: () => unawaited(
+                  navigateToVideoPlayerWithRefresh(
+                    context,
+                    metadata: episode,
+                    isOffline: widget.isOffline,
+                    onRefresh: _refreshWatchState,
+                    isLaunchCurrent: () => _canUseDetail,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 112,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: active ? Border.all(color: theme.colorScheme.onSurface, width: 2) : null,
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          OptimizedMediaImage.thumb(
+                            client: widget.isOffline ? null : _getArtworkMediaClient(context),
+                            imagePath: episode.thumbPath,
+                            localFilePath: local,
+                            width: 202,
+                            height: 112,
+                          ),
+                          if (episodeNumber != null)
+                            Positioned(
+                              right: 8,
+                              bottom: 6,
+                              child: DecoratedBox(
+                                key: ValueKey('detail_episode_number_${episode.id}'),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: .52),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                  child: Text(
+                                    padNumber(episodeNumber, 2),
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      height: 1.2,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 7),
-                  Text(
-                    episodeDisplayTitle(episode),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontSize: 12,
-                      color: Colors.white,
-                      height: 1.5,
-                      fontWeight: FontWeight.w500,
+                    const SizedBox(height: 7),
+                    Text(
+                      episodeDisplayTitle(episode),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 12,
+                        color: theme.colorScheme.onSurface,
+                        height: 1.5,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  Text(
-                    [if (episode.durationMs != null) formatDurationTextual(episode.durationMs!), status].join(' · '),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(color: Colors.white, fontSize: 10, height: 1.5),
-                  ),
-                ],
+                    Text(
+                      [if (episode.durationMs != null) formatDurationTextual(episode.durationMs!), status].join(' · '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: 10,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -442,7 +585,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
     alignment: Alignment.centerLeft,
     child: TabChipStrip(
       children: [
-        for (var index = 0; index < (_episodes.length + 9) ~/ 10; index++)
+        for (var index = 0; index < (_detailEpisodeCount + 9) ~/ 10; index++)
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: Semantics(
@@ -456,23 +599,20 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: index == group ? .125 : .035),
-                      border: Border.all(color: Colors.white.withValues(alpha: index == group ? .375 : .125)),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: index == group ? .125 : .035),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: index == group ? .375 : .125),
+                      ),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      episodeGroupLabel(index, _episodes.length),
-                      style: const TextStyle(color: Colors.white, fontSize: 11, height: 1.5),
+                      episodeGroupLabel(index, _detailEpisodeCount),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 11, height: 1.5),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        if (_episodeListHasMore || _episodeListPageError)
-          TextButton(
-            onPressed: _episodeListLoadingMore ? null : () => unawaited(_loadMoreEpisodeList()),
-            child: Text(_episodeListPageError ? t.common.retry : t.libraries.loadMore),
           ),
       ],
     ),

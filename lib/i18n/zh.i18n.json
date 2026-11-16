@@ -2652,6 +2652,14 @@
     "successWithoutResume": "已在 ${device} 播放，电视未接受续播位置。可以退出 Velo，使用电视遥控器操作。"
   },
   "detailPlayback": {
+    "selectVersion": "选择播放版本",
+    "originalQuality": "原始画质",
+    "defaultRoute": "默认线路",
+    "alternateVersion": "备用版本",
+    "selectSeason": "选择季",
+    "episodesAvailable": "更新至 ${n} 集",
+    "pendingPlayback": "待播放",
+    "allEpisodes": "全部选集",
     "versionCount": "${n} 个版本",
     "version": "版本",
     "unavailable": "暂无可用选项",

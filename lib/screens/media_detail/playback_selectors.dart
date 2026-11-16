@@ -28,178 +28,113 @@ extension _MediaDetailPlaybackSelectors on _MediaDetailScreenState {
         final busy = target != null && probed == null && !failed && canProbe;
         final item = probed?.item ?? target ?? metadata;
         final versions = item.mediaVersions ?? const <MediaVersion>[];
-        final source = probed?.source;
-        final choice = key == null ? null : _detailPlaybackSelections[key];
-        final preview = source == null
-            ? null
-            : previewPlaybackTracks(
-                item,
-                source,
-                profile: context.watch<AccountPreferencesController?>()?.activePreferences,
-              );
         final placeholder = busy ? t.common.loading : t.detailPlayback.unavailable;
         final selectedIndex = probed?.mediaIndex;
         final selected = selectedIndex != null && selectedIndex >= 0 && selectedIndex < versions.length
             ? versions[selectedIndex]
             : null;
-        final selectedVersion = selected?.id;
-        final scope = key == null || source == null ? null : detailTrackScope(key, source);
-        final audioId = choice?.audioId ?? preview?.audio?.id;
-        DetailTrackOption? trackOption(int? id) => scope == null ? null : (scope: scope, streamId: id);
-        void updateChoice(DetailTrackOption option, void Function(DetailPlaybackSelection value) update) {
-          if (!_canUseDetail || target == null || _playbackTargetItem(_metadata)?.globalKey != key) return;
-          final currentSource = _playbackSources[key]?.source;
-          if (currentSource == null || option.scope != detailTrackScope(key!, currentSource)) return;
-          final current = _detailPlaybackSelections.putIfAbsent(key, DetailPlaybackSelection.new);
-          update(current);
-          _playbackStatusRevision.value++;
-        }
-
+        final backendName = switch (item.backend) {
+          MediaBackend.plex => 'Plex',
+          MediaBackend.jellyfin => 'Jellyfin',
+          MediaBackend.emby => 'Emby',
+        };
         final controlsTheme = _DetailControlsTheme.of(context);
-        final fields = <Widget>[
-          AppSelectField<String>(
-            key: const ValueKey('detail_source_version'),
-            focusNode: _versionSelectFocusNode,
-            label: t.detailPlayback.version,
-            value: selectedVersion,
-            selectedLabel: selected == null ? null : _detailVersionSummary(selected, versions.length),
-            leading: BackendBadge(backend: item.backend, size: 20),
-            showChevron: versions.length > 1,
-            placeholder: placeholder,
-            busy: busy,
-            enabled: !widget.isOffline && canProbe && !_playLaunchPending,
-            options: [
-              for (final (index, version) in versions.indexed)
-                AppSelectOption(
-                  value: version.id,
-                  label: version.displayLabel,
-                  subtitle: _detailVersionOptionSubtitle(version, index, versions.length),
-                  enabled: version.isPlayable,
-                ),
-            ],
-            onChanged: target == null ? null : (id) => unawaited(_selectDetailVersion(target, versions, id)),
-          ),
-          AppSelectField<DetailTrackOption>(
-            key: const ValueKey('detail_audio_selector'),
-            focusNode: _audioSelectFocusNode,
-            label: t.fileInfo.audio,
-            value: audioId == null ? null : trackOption(audioId),
-            placeholder: placeholder,
-            busy: busy,
-            enabled: !_playLaunchPending,
-            options: [
-              if (scope != null)
-                for (final track in source?.audioTracks ?? const <MediaAudioTrack>[])
-                  AppSelectOption(
-                    value: (scope: scope, streamId: track.id),
-                    label: track.label.primary,
-                    subtitle: track.label.secondary,
-                  ),
-            ],
-            onChanged: (option) => updateChoice(option, (value) => value.audioId = option.streamId),
-          ),
-          AppSelectField<DetailTrackOption>(
-            key: const ValueKey('detail_subtitle_selector'),
-            focusNode: _subtitleSelectFocusNode,
-            label: t.fileInfo.subtitles,
-            value: choice?.subtitlesOff == true
-                ? trackOption(null)
-                : choice?.subtitleId != null
-                ? trackOption(choice?.subtitleId)
-                : preview == null
-                ? null
-                : trackOption(preview.subtitle?.id),
-            placeholder: placeholder,
-            busy: busy,
-            enabled: source != null && mediaSourceHasTrackRows(source) && !_playLaunchPending,
-            options: [
-              if (scope != null && source != null && mediaSourceHasTrackRows(source))
-                AppSelectOption(value: (scope: scope, streamId: null), label: t.common.off),
-              if (scope != null)
-                for (final track in source?.subtitleTracks ?? const <MediaSubtitleTrack>[])
-                  AppSelectOption(
-                    value: (scope: scope, streamId: track.id),
-                    label: track.label.primary,
-                    subtitle: track.label.secondary,
-                  ),
-            ],
-            onChanged: (option) => updateChoice(option, (value) {
-              value.subtitlesOff = option.streamId == null;
-              value.subtitleId = option.streamId;
-            }),
-          ),
-        ].map((field) => Theme(data: controlsTheme, child: field)).toList(growable: false);
-        final fieldsContent = LayoutBuilder(
-          builder: (context, constraints) {
-            final columns = constraints.maxWidth >= 680 && MediaQuery.textScalerOf(context).scale(1) <= 1.4;
-            return Focus(
-              canRequestFocus: false,
-              onKeyEvent: (_, event) {
-                if (!event.isActionable) return KeyEventResult.ignored;
-                final nodes = [
-                  _versionSelectFocusNode,
-                  _audioSelectFocusNode,
-                  _subtitleSelectFocusNode,
-                ].where((node) => node.canRequestFocus && node.context != null).toList();
-                final index = nodes.indexWhere((node) => node.hasFocus);
-                if (index < 0) return KeyEventResult.ignored;
-                if (event.logicalKey.isUpKey) {
-                  if (index == 0 || columns) {
-                    _playButtonFocusNode.requestFocus();
-                  } else {
-                    nodes[index - 1].requestFocus();
-                  }
-                  return KeyEventResult.handled;
-                }
-                if (event.logicalKey.isDownKey) {
-                  if (index == nodes.length - 1 || columns) {
-                    _focusBelowPlaybackSelectors();
-                  } else {
-                    nodes[index + 1].requestFocus();
-                  }
-                  return KeyEventResult.handled;
-                }
-                return KeyEventResult.ignored;
-              },
-              child: Column(
-                key: const ValueKey('detail_playback_selectors'),
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (!columns)
-                    Column(
-                      children: [
-                        for (final field in fields) Padding(padding: const EdgeInsets.only(bottom: 8), child: field),
-                      ],
-                    )
-                  else
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (final (index, field) in fields.indexed) ...[
-                          if (index > 0) const SizedBox(width: 12),
-                          Expanded(child: field),
-                        ],
-                      ],
-                    ),
-                  if (failed)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        key: const ValueKey('detail_playback_retry'),
-                        onPressed: () {
-                          if (target == null) return;
-                          _playbackProbeErrors.remove(key);
-                          _playbackStatusRevision.value++;
-                          _scheduleTargetProbe(context, target);
-                        },
-                        icon: const AppIcon(Symbols.refresh_rounded),
-                        label: Text('${t.detailPlayback.loadFailed} · ${t.common.retry}'),
+        final fieldsContent = Theme(
+          data: controlsTheme,
+          child: Focus(
+            canRequestFocus: false,
+            onKeyEvent: (_, event) {
+              if (!event.isActionable || !_versionSelectFocusNode.hasFocus) return KeyEventResult.ignored;
+              if (event.logicalKey.isUpKey) {
+                _playButtonFocusNode.requestFocus();
+                return KeyEventResult.handled;
+              }
+              if (event.logicalKey.isDownKey) {
+                _focusBelowPlaybackSelectors();
+                return KeyEventResult.handled;
+              }
+              return KeyEventResult.ignored;
+            },
+            child: Column(
+              key: const ValueKey('detail_playback_selectors'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 340),
+                  child: IntrinsicWidth(
+                    child: AppSelectField<String>(
+                      key: const ValueKey('detail_source_version'),
+                      focusNode: _versionSelectFocusNode,
+                      label: t.detailPlayback.selectVersion,
+                      value: selected?.id,
+                      selectedLabel: selected == null
+                          ? placeholder
+                          : _detailVersionSummary(selected, versions.length, movie: item.isMovie),
+                      leading: BackendBadge(backend: item.backend, size: 17),
+                      inlineContent: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              backendName,
+                              style: TextStyle(fontSize: 11, color: controlsTheme.colorScheme.onSurfaceVariant),
+                            ),
+                            const SizedBox(width: 7),
+                            Text(
+                              selected == null ? placeholder : _detailVersionQuality(selected, movie: item.isMovie),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: controlsTheme.colorScheme.onSurface,
+                              ),
+                            ),
+                            if (versions.isNotEmpty) ...[
+                              const SizedBox(width: 7),
+                              Text(
+                                t.detailPlayback.versionCount(n: versions.length),
+                                style: TextStyle(fontSize: 11, color: controlsTheme.colorScheme.onSurfaceVariant),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
+                      showChevron: true,
+                      placeholder: placeholder,
+                      busy: busy,
+                      enabled: !widget.isOffline && canProbe && !_playLaunchPending,
+                      options: [
+                        for (final (index, version) in versions.indexed)
+                          AppSelectOption(
+                            value: version.id,
+                            label: '$backendName · ${_detailVersionQuality(version, separator: ' ')}',
+                            subtitle: _detailVersionOptionSubtitle(version, index, versions.length),
+                            leading: BackendBadge(backend: item.backend, size: 20),
+                            enabled: version.isPlayable,
+                          ),
+                      ],
+                      onChanged: target == null ? null : (id) => unawaited(_selectDetailVersion(target, versions, id)),
                     ),
-                ],
-              ),
-            );
-          },
+                  ),
+                ),
+                if (failed)
+                  TextButton.icon(
+                    key: const ValueKey('detail_playback_retry'),
+                    onPressed: () {
+                      if (target == null) return;
+                      _playbackProbeErrors.remove(key);
+                      _playbackStatusRevision.value++;
+                      _scheduleTargetProbe(context, target);
+                    },
+                    icon: const AppIcon(Symbols.refresh_rounded),
+                    label: Text('${t.detailPlayback.loadFailed} · ${t.common.retry}'),
+                  ),
+              ],
+            ),
+          ),
         );
         final label = _playbackSummaryLabel(metadata);
         return label == null
@@ -214,28 +149,33 @@ extension _MediaDetailPlaybackSelectors on _MediaDetailScreenState {
     );
   }
 
-  String _detailVersionSummary(MediaVersion version, int count) {
+  String _detailVersionQuality(MediaVersion version, {bool movie = false, String separator = ' · '}) {
     final resolution = version.videoResolution?.trim();
     final codec = version.videoCodec?.trim();
-    final quality = <String>[
+    final parts = <String>[
       if (resolution != null && resolution.isNotEmpty)
         resolutionDisplayLabel(resolution)
       else if (version.height != null && version.height! > 0)
         '${version.height}p',
-      if (codec != null && codec.isNotEmpty) CodecUtils.formatVideoCodec(codec),
+      if (movie)
+        t.detailPlayback.originalQuality
+      else if (codec != null && codec.isNotEmpty)
+        CodecUtils.formatVideoCodec(codec).replaceAll('H.', 'H'),
     ];
-    return [
-      if (quality.isNotEmpty) quality.join(' · ') else version.displayLabel,
-      if (count > 1) t.detailPlayback.versionCount(n: count),
-    ].join(' · ');
+    return parts.isEmpty ? version.displayLabel : parts.join(separator);
   }
+
+  String _detailVersionSummary(MediaVersion version, int count, {bool movie = false}) => [
+    _detailVersionQuality(version, movie: movie),
+    if (count > 0) t.detailPlayback.versionCount(n: count),
+  ].join(' · ');
 
   String _detailVersionOptionSubtitle(MediaVersion version, int index, int count) {
     // Only report a version's size when every physical part has a known size.
     final completeSize =
         version.parts.isNotEmpty && version.parts.every((part) => part.sizeBytes != null && part.sizeBytes! > 0);
     return [
-      t.fileInfo.versionCounter(index: index + 1, count: count),
+      index == 0 ? t.detailPlayback.defaultRoute : t.detailPlayback.alternateVersion,
       if (completeSize)
         ByteFormatter.formatBytes(version.parts.fold<int>(0, (total, part) => total + part.sizeBytes!), decimals: 2),
     ].join(' · ');
