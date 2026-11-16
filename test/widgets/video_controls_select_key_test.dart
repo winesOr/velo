@@ -684,6 +684,30 @@ void main() {
       await setNavigationEnabled(true);
     });
 
+    for (final key in [LogicalKeyboardKey.enter, LogicalKeyboardKey.select]) {
+      playerTest(
+        '${key.keyLabel} skips the visible intro from the hidden player surface',
+        markers: [MediaMarker(id: 1, type: 'intro', startTimeOffset: 10000, endTimeOffset: 45000)],
+        (tester) async {
+          InputModeTracker.reportNonPointerInput();
+          player.emitPosition(const Duration(seconds: 15));
+          await tester.pumpAndSettle();
+          final surface = tester
+              .widgetList<Focus>(find.byType(Focus))
+              .singleWhere((widget) => widget.focusNode?.debugLabel == 'PlayerSurface');
+          surface.focusNode!.requestFocus();
+          await tester.pump();
+          expect(chrome.controlsVisible, isFalse);
+          expect(focusLabel(), 'PlayerSurface');
+          expect(find.byType(SkipMarkerButton), findsOneWidget);
+          await press(tester, key);
+          expect(player.state.position, const Duration(seconds: 45));
+          expect(toggles, 0);
+          expect(chrome.controlsVisible, isFalse);
+        },
+      );
+    }
+
     // Selecting Skip Intro removes the focused button from the tree. The
     // remote must land back on the player surface — otherwise focus falls out
     // of the controls subtree, the screen node reclaims it, and its self-heal

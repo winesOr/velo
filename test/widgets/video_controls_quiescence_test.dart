@@ -14,6 +14,7 @@ import 'package:plezy/utils/platform_detector.dart';
 import 'package:plezy/watch_together/providers/watch_together_provider.dart';
 import 'package:plezy/widgets/overlay_sheet.dart';
 import 'package:plezy/widgets/video_controls/sheets/video_settings_sheet.dart';
+import 'package:plezy/widgets/video_controls/sheets/player_settings_drawer.dart';
 import 'package:plezy/widgets/video_controls/player_chrome_controller.dart';
 import 'package:plezy/widgets/video_controls/video_controls.dart';
 import 'package:plezy/widgets/video_controls/widgets/linux_keep_alive.dart';
@@ -117,9 +118,12 @@ void main() {
       chrome.show();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.byTooltip(t.videoControls.settingsButton));
+      final settings = find.byTooltip(t.common.settings);
+      expect(settings, findsOneWidget);
+      await tester.tap(settings);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(PlayerSettingsDrawer), findsOneWidget);
       expect(find.byType(VideoSettingsSheet), findsOneWidget);
 
       // The player route disposes its controller synchronously; the host then

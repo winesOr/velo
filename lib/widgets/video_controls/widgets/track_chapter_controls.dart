@@ -495,7 +495,7 @@ class TrackChapterControls extends StatelessWidget {
                   ),
           );
           add(Symbols.forum_rounded, t.danmaku.title, () => settings(PlayerDrawerTab.danmaku));
-          add(Symbols.tune_rounded, t.videoControls.settingsButton, () => settings(PlayerDrawerTab.video));
+          add(Symbols.tune_rounded, t.common.settings, () => settings(PlayerDrawerTab.video));
           return Row(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,

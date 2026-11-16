@@ -116,11 +116,20 @@ class _SessionIndicator extends StatelessWidget {
           borderRadius: const BorderRadius.all(Radius.circular(20)),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            child: Text(
-              '${t.watchTogether.title} · $participantCount',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Color(0xFF6FD6CF), fontWeight: FontWeight.w600, fontSize: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const AppIcon(Symbols.group_rounded, color: Color(0xFF6FD6CF), size: 14),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    '${t.watchTogether.title} · $participantCount',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Color(0xFF6FD6CF), fontWeight: FontWeight.w600, fontSize: 12),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

@@ -165,6 +165,8 @@ void main() {
 
     final buttons = tester.widgetList<TvActionButton>(find.byType(TvActionButton)).toList();
     expect(buttons[0].label, t.videoControls.speedLabel);
+    expect(buttons.last.label, '设置');
+    expect(buttons.last.label, t.common.settings);
     expect(buttons.take(3).map((button) => button.value), ['1.0x', '简中', '普通话']);
     expect(buttons.skip(3).every((button) => button.value == null), isTrue);
   });

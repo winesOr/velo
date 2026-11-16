@@ -49,10 +49,6 @@ extension _PlexVideoControlsKeyEventMethods on _PlexVideoControlsState {
       _showControlsWithFocus(requestFocus: requestFocus);
       return;
     }
-    if (PlatformDetector.isTV() && !_showControls) {
-      _showControlsWithFocus();
-      return;
-    }
     // Skip-Intro is the primary action only while the chrome is down and the
     // button is the sole affordance on screen; with the OSD up it is a real
     // focusable control and Select must stay "toggle playback". The skip
@@ -62,6 +58,10 @@ extension _PlexVideoControlsKeyEventMethods on _PlexVideoControlsState {
     if (_isSkipMarkerButtonVisible &&
         (!_showControls || (_keyboardService?.isBoundTo(event, ShortcutAction.skipMarker) ?? false))) {
       _activateSkipMarker();
+      return;
+    }
+    if (PlatformDetector.isTV() && !_showControls) {
+      _showControlsWithFocus();
       return;
     }
     // Raise the chrome *before* toggling: Select is the deliberate "show me the

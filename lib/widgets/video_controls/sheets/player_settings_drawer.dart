@@ -54,7 +54,7 @@ class PlayerSettingsDrawer extends StatefulWidget {
   final MediaItem? metadata;
   final PlayerDrawerTab initialTab;
 
-  /// Running core ("mpv" / "ExoPlayer"); null hides the core row.
+  /// Running core label; defaults to the player's reported backend.
   final String? coreLabel;
   final VoidCallback? onSwitchCore;
 
@@ -224,25 +224,24 @@ class _PlayerSettingsDrawerState extends State<PlayerSettingsDrawer> {
         _AspectRatioRow(state: widget.state),
         if (!widget.state.isLive) const _AutoSkipRow(),
         PlayerDrawerHeading(t.videoControls.moreButton),
-        if (widget.coreLabel != null)
-          FocusableListTile(
-            leading: const AppIcon(Symbols.play_arrow_rounded, size: 18),
-            title: Text(t.settings.playerBackend),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(widget.coreLabel!, style: Theme.of(context).textTheme.bodySmall),
-                const SizedBox(width: 4),
-                const AppIcon(Symbols.chevron_right_rounded, size: 16),
-              ],
-            ),
-            onTap: widget.onSwitchCore == null
-                ? null
-                : () {
-                    OverlaySheetController.of(context).close();
-                    widget.onSwitchCore!();
-                  },
+        FocusableListTile(
+          leading: const AppIcon(Symbols.play_arrow_rounded, size: 18),
+          title: Text(t.settings.playerBackend),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(widget.coreLabel ?? widget.player.playerType, style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(width: 4),
+              const AppIcon(Symbols.chevron_right_rounded, size: 16),
+            ],
           ),
+          onTap: widget.onSwitchCore == null
+              ? null
+              : () {
+                  OverlaySheetController.of(context).close();
+                  widget.onSwitchCore!();
+                },
+        ),
         VideoSettingsSheet(
           player: widget.player,
           trackControlsState: widget.state,

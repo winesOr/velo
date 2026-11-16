@@ -74,7 +74,7 @@ class _SettingsMenuItem extends StatelessWidget {
   final IconData icon;
   final String title;
   final String valueText;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool isHighlighted;
   final bool allowValueOverflow;
 
@@ -929,22 +929,24 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
             },
           ),
 
-        if (_in(video) && _hasVersionQuality)
+        if (_in(video) && (_hasVersionQuality || embedded))
           _SettingsMenuItem(
             icon: Symbols.art_track_rounded,
-            title: _versionQualityTitle(),
+            title: embedded ? t.videoControls.versionQualityButton : _versionQualityTitle(),
             valueText: _versionQualityValueText(),
             allowValueOverflow: true,
-            onTap: () => _navigateTo(_SettingsView.versionQuality),
+            onTap: _hasVersionQuality ? () => _navigateTo(_SettingsView.versionQuality) : null,
           ),
 
-        if (_in(video) && (_state.onVideoZoomChanged != null || _state.onResetVideoZoom != null))
+        if (_in(video) && (embedded || _state.onVideoZoomChanged != null || _state.onResetVideoZoom != null))
           _SettingsMenuItem(
             icon: Symbols.zoom_in_rounded,
             title: t.videoSettings.zoom,
             valueText: _formatZoomScale(_zoomScale),
             isHighlighted: (_zoomScale - 1.0).abs() > 0.0001,
-            onTap: () => _navigateTo(_SettingsView.zoom),
+            onTap: _state.onVideoZoomChanged != null || _state.onResetVideoZoom != null
+                ? () => _navigateTo(_SettingsView.zoom)
+                : null,
           ),
 
         // Sleep Timer

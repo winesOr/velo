@@ -3,6 +3,8 @@ import 'dart:ui' show SemanticsAction, Tristate;
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show SemanticsNode;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_symbols_icons/symbols.dart';
+import 'package:plezy/widgets/app_icon.dart';
 import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/watch_together/models/watch_session.dart';
 import 'package:plezy/watch_together/providers/watch_together_provider.dart';
@@ -12,6 +14,23 @@ import 'package:provider/provider.dart';
 
 void main() {
   setUpAll(() => LocaleSettings.setLocaleSync(AppLocale.en));
+
+  testWidgets('session capsule puts the people icon before the real participant count', (tester) async {
+    final harness = _OverlayHarness(isHost: true);
+    harness.provider.extraParticipants = [const Participant(peerId: 'g1', displayName: 'Guest One', isHost: false)];
+    addTearDown(harness.dispose);
+    await tester.pumpWidget(harness.build());
+    final capsule = find.byKey(_OverlayHarness.indicatorKey);
+    final icon = find.descendant(
+      of: capsule,
+      matching: find.byWidgetPredicate((widget) => widget is AppIcon && widget.icon == Symbols.group_rounded),
+    );
+    final count = find.text('${t.watchTogether.title} · 2');
+    expect(icon, findsOneWidget);
+    expect(count, findsOneWidget);
+    expect(tester.getRect(icon).right, lessThan(tester.getRect(count).left));
+    expect(tester.takeException(), isNull);
+  });
 
   for (final isHost in [false, true]) {
     final role = isHost ? 'host' : 'guest';

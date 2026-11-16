@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/i18n/strings.g.dart';
+import 'package:plezy/media/media_version.dart';
+import 'package:plezy/services/sleep_timer_service.dart';
+import 'package:plezy/widgets/focusable_list_tile.dart';
+import 'package:plezy/widgets/video_controls/sheets/version_quality_sheet.dart';
+import 'package:plezy/widgets/video_controls/widgets/sleep_timer_content.dart';
 import 'package:plezy/services/settings_service.dart';
 import 'package:plezy/theme/mono_theme.dart';
 import 'package:plezy/widgets/overlay_sheet.dart';
@@ -54,6 +59,107 @@ void main() {
       expect(find.text(entry.title), findsNothing);
       expect(SettingsService.instance.read(entry.pref), entry.seconds);
     }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('video More keeps all four prototype entries and routes to existing controls', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final player = _TabletPlayer();
+    addTearDown(player.dispose);
+    final zooms = <double>[];
+    var cycles = 0;
+    const versions = [MediaVersion(id: '1080', height: 1080), MediaVersion(id: '4k', height: 2160)];
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: tabletFixtureTheme(monoTheme(dark: true)),
+        home: Scaffold(
+          body: OverlaySheetHost(
+            child: PlayerSettingsDrawer(
+              player: player,
+              coreLabel: 'mpv',
+              state: TrackControlsState(
+                availableVersions: versions,
+                onSwitchVersion: (_) {},
+                onVideoZoomChanged: zooms.add,
+                onCycleBoxFitMode: () => cycles++,
+              ),
+              metadata: testMediaItem(id: 'more-entries'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final entries = [
+      t.settings.playerBackend,
+      t.videoControls.versionQualityButton,
+      t.videoSettings.zoom,
+      t.videoSettings.sleepTimer,
+    ];
+    var previousBottom = tester.getBottomLeft(find.widgetWithText(PlayerDrawerHeading, t.videoControls.moreButton)).dy;
+    for (final label in entries) {
+      final row = find.widgetWithText(FocusableListTile, label);
+      expect(row, findsOneWidget);
+      expect(tester.getTopLeft(row).dy, greaterThanOrEqualTo(previousBottom));
+      previousBottom = tester.getBottomLeft(row).dy;
+    }
+    expect(find.widgetWithText(PlayerDrawerChoice, t.fileInfo.flagDefault), findsOneWidget);
+    expect(find.widgetWithText(PlayerDrawerChoice, t.videoControls.aspectStretch), findsOneWidget);
+    expect(find.widgetWithText(PlayerDrawerChoice, t.videoControls.aspectCover), findsOneWidget);
+    await tester.tap(find.widgetWithText(PlayerDrawerChoice, t.videoControls.aspectStretch));
+    await tester.pumpAndSettle();
+    expect(cycles, 2);
+    await tester.tap(find.text(t.videoControls.versionQualityButton));
+    await tester.pumpAndSettle();
+    expect(find.byType(VersionQualityPicker), findsOneWidget);
+    expect(find.text(versions[1].displayLabel), findsOneWidget);
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.videoSettings.zoom));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('110%'));
+    await tester.pumpAndSettle();
+    expect(zooms, [1.1]);
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.videoSettings.sleepTimer));
+    await tester.pumpAndSettle();
+    expect(find.byType(SleepTimerContent), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    SleepTimerService().cancelTimer();
+  });
+
+  testWidgets('unavailable More capabilities stay visible and disabled', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final player = _TabletPlayer();
+    addTearDown(player.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: tabletFixtureTheme(monoTheme(dark: true)),
+        home: Scaffold(
+          body: OverlaySheetHost(
+            child: PlayerSettingsDrawer(
+              player: player,
+              state: const TrackControlsState(),
+              metadata: testMediaItem(id: 'more-disabled'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    for (final label in [t.settings.playerBackend, t.videoControls.versionQualityButton, t.videoSettings.zoom]) {
+      final row = tester.widget<FocusableListTile>(find.widgetWithText(FocusableListTile, label));
+      expect(row.onTap, isNull);
+    }
+    expect(
+      tester.widget<FocusableListTile>(find.widgetWithText(FocusableListTile, t.videoSettings.sleepTimer)).onTap,
+      isNotNull,
+    );
     expect(tester.takeException(), isNull);
   });
 
