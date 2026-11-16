@@ -5,7 +5,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/semantics.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import '../widgets/server_activities_button.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -101,8 +100,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     artworkSurface: HomeThemeScope.colorOf(context),
   ).copyWith(scaffoldBackgroundColor: HomeThemeScope.colorOf(context));
 
-  static const Duration _heroAutoScrollDuration = Duration(seconds: 8);
-
   /// Data + refresh policy live in [DiscoverProvider]; this state keeps only
   /// UI concerns (hero carousel, focus, spotlight). The proxy getters keep
   /// the build code reading naturally.
@@ -183,10 +180,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   /// Last decoded hero artwork per item, kept for items not yet selected.
   final Map<String, ImageProvider> _heroReadyImages = {};
-  Timer? _autoScrollTimer;
-  bool _isAutoScrollPaused = false;
   bool _reduceMotion = false;
-  bool _heroFocusPausedAutoScroll = false;
   final TvSpotlightController _spotlight = TvSpotlightController();
   final _tvHeroPlayFocus = FocusNode(debugLabel: 'home_tv_play');
   final _tvHeroDetailsFocus = FocusNode(debugLabel: 'home_tv_details');
@@ -235,6 +229,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   final _actionBarKey = GlobalKey<FocusableActionBarState>();
   final _serverActivitiesButtonKey = GlobalKey<ServerActivitiesButtonState>();
   final _userMenuKey = GlobalKey<AppMenuButtonState<String>>();
+  final _homeOptionsKey = GlobalKey();
 
   /// Backend-neutral hero client lookup. Returns the actual
   /// [MediaServerClient] for the item's server (Plex or Jellyfin) so
@@ -355,7 +350,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       _updateHubKeys();
     }
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final changed = reduceMotion != _reduceMotion;
     _reduceMotion = reduceMotion;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -363,11 +357,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         _syncSpotlightTheme();
       } else {
         _syncHomeTheme(_heroItems.isEmpty ? null : _heroItems[_heroIndex.value.clamp(0, _heroItems.length - 1)]);
-      }
-      if (_reduceMotion) {
-        _autoScrollTimer?.cancel();
-      } else if (changed && _isTabVisible) {
-        _startAutoScroll();
       }
     });
   }
@@ -535,14 +524,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _heroFocusNode = FocusNode(debugLabel: 'hero_section');
-    _heroFocusNode.addListener(_onHeroFocusChanged);
     _discover = context.read<DiscoverProvider>();
     _seenLoadGeneration = _discover.loadGeneration;
     _discover.addListener(_onDiscoverChanged);
     _spotlight.addListener(_syncSpotlightTheme);
     _updateHubKeys();
     unawaited(_discover.ensureLoaded());
-    _startAutoScroll();
     // Prepared data need not emit a new load event after this screen mounts.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _onDiscoverChanged();
@@ -634,21 +621,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     }
   }
 
-  void _onHeroFocusChanged() {
-    if (!PlatformDetector.isTV()) return;
-
-    if (_heroFocusNode.hasFocus) {
-      _heroFocusPausedAutoScroll = true;
-      _autoScrollTimer?.cancel();
-      return;
-    }
-
-    if (_heroFocusPausedAutoScroll) {
-      _heroFocusPausedAutoScroll = false;
-      if (_isTabVisible && !_isAutoScrollPaused) _startAutoScroll();
-    }
-  }
-
   /// Handle key events for the hero section.
   KeyEventResult _handleHeroKeyEvent(FocusNode node, KeyEvent event) {
     final backResult = handleBackKeyAction(event, _navigateToSidebar);
@@ -685,12 +657,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   void dispose() {
     _discover.removeListener(_onDiscoverChanged);
     WidgetsBinding.instance.removeObserver(this);
-    _autoScrollTimer?.cancel();
     _spotlight.dispose();
     _heroIndex.dispose();
     _heroController.dispose();
     _scrollController.dispose();
-    _heroFocusNode.removeListener(_onHeroFocusChanged);
     _heroFocusNode.dispose();
     _tvHeroPlayFocus.dispose();
     _tvHeroDetailsFocus.dispose();
@@ -706,8 +676,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Restart auto-scroll only if discover tab is visible
-      if (_isTabVisible && !_isAutoScrollPaused) _startAutoScroll();
       // Stale hubs refetch on every resume — cheap timestamp check, and a
       // desktop window-focus gain after hours away should refresh too (#1646).
       final startedFullPass = _discover.refreshIfStale();
@@ -716,56 +684,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       if (!startedFullPass && (Platform.isIOS || Platform.isAndroid)) {
         unawaited(_discover.refreshContinueWatching());
       }
-    } else if (state == AppLifecycleState.inactive || state == AppLifecycleState.hidden) {
-      // Stop animations to prevent scroll state corruption while backgrounded
-      _autoScrollTimer?.cancel();
     }
-  }
-
-  void _startAutoScroll() {
-    _autoScrollTimer?.cancel();
-    if (PlatformDetector.isTV()) return;
-    if (_reduceMotion) return;
-    if (_isAutoScrollPaused) return;
-
-    _autoScrollTimer = Timer.periodic(_heroAutoScrollDuration, (timer) {
-      if (_heroItems.isEmpty || !_heroController.hasClients || _isAutoScrollPaused) {
-        return;
-      }
-
-      // Validate current index is within bounds before calculating next page
-      if (_heroIndex.value >= _heroItems.length) _heroIndex.value = 0;
-
-      final nextPage = (_heroIndex.value + 1) % _heroItems.length;
-      // onPageChanged restarts the carousel timer.
-      _heroController.animateToPage(nextPage, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
-    });
-  }
-
-  void _resetAutoScrollTimer() {
-    _autoScrollTimer?.cancel();
-    _startAutoScroll();
-  }
-
-  void _pauseAutoScroll() {
-    setState(() {
-      _isAutoScrollPaused = true;
-    });
-    _autoScrollTimer?.cancel();
-  }
-
-  void _resumeAutoScroll() {
-    setState(() {
-      _isAutoScrollPaused = false;
-    });
-    _startAutoScroll();
   }
 
   @override
   void onTabHidden() {
     _isTabVisible = false;
     _pendingTvBrowseRailFocus = false;
-    _autoScrollTimer?.cancel();
   }
 
   @override
@@ -776,9 +701,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       _syncHomeTheme(_heroItems.isEmpty ? null : _heroItems[_heroIndex.value.clamp(0, _heroItems.length - 1)]);
     }
     _discover.refreshIfStale();
-    if (!_isAutoScrollPaused) {
-      _startAutoScroll();
-    }
   }
 
   @override
@@ -987,7 +909,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       });
       if (_heroController.hasClients && _heroItems.isNotEmpty) _heroController.jumpToPage(0);
       _syncHomeTheme(_heroItems.firstOrNull);
-      _resetAutoScrollTimer();
       return;
     }
     if (value == 'refresh') {
@@ -1053,6 +974,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   Widget _buildOverlaidAppBar() {
     final mainScope = MainScreenFocusScope.of(context, listen: false);
+    void openHomeOptions() {
+      final box = _homeOptionsKey.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null) return;
+      mainScope?.openNavigation?.call(box.localToGlobal(Offset.zero) & box.size);
+    }
+
     if (PlatformDetector.isTV() ||
         mainScope?.hasTopNavigation == true ||
         !PlatformDetector.shouldUseSideNavigation(context)) {
@@ -1077,12 +1004,15 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   ),
                 ),
                 FocusableAction(
-                  tooltip: t.common.options,
-                  onPressed: mainScope?.openNavigation,
-                  child: _glassIconButton(
-                    tooltip: t.common.options,
-                    icon: Symbols.more_horiz_rounded,
-                    onPressed: mainScope?.openNavigation,
+                  tooltip: t.discover.homeOptions,
+                  onPressed: mainScope?.openNavigation == null ? null : openHomeOptions,
+                  child: KeyedSubtree(
+                    key: _homeOptionsKey,
+                    child: _glassIconButton(
+                      tooltip: t.discover.homeOptions,
+                      icon: Symbols.more_horiz_rounded,
+                      onPressed: mainScope?.openNavigation == null ? null : openHomeOptions,
+                    ),
                   ),
                 ),
               ],
@@ -1436,7 +1366,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                                 t.discover.togetherBannerDescription,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 11),
+                                style: _cinemaTheme.extension<HomeTypography>()!.caption,
                               ),
                             ],
                           ),
@@ -1759,7 +1689,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       if (index != _heroIndex.value) _heroHasNavigated = true;
                       _heroIndex.value = index;
                       _syncHomeTheme(_heroItems[index]);
-                      _resetAutoScrollTimer();
                     }
                   },
                   itemBuilder: (context, index) {
@@ -1767,7 +1696,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   },
                 ),
               ),
-              // Fixed page indicators; the carousel timer stays independent.
+              // Fixed page indicators switch the carousel only on user input.
               // Hidden on TV only (issue #600: pointer-only control unreachable
               // via d-pad) — never gated on transient input mode, which back-key
               // events, BT keyboards, and gamepads can flip on phones/desktop.
@@ -1776,77 +1705,62 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   bottom: 5,
                   left: 0,
                   right: 0,
-                  // The visible pause toggle was dropped to match the prototype;
-                  // assistive technologies keep it as a custom action.
-                  child: Semantics(
-                    customSemanticsActions: {
-                      CustomSemanticsAction(
-                        label: _isAutoScrollPaused ? t.accessibility.autoScrollPlay : t.accessibility.autoScrollPause,
-                      ): () {
-                        if (_isAutoScrollPaused) {
-                          _resumeAutoScroll();
-                        } else {
-                          _pauseAutoScroll();
-                        }
-                      },
-                    },
-                    child: Row(
-                      mainAxisAlignment: .center,
-                      children: [
-                        ValueListenableBuilder<int>(
-                          valueListenable: _heroIndex,
-                          builder: (context, heroIndex, _) {
-                            return Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: List.generate(_heroItems.length, (index) {
-                                final isActive = heroIndex == index;
-                                // One widget type for every state so the selected pill
-                                // animates its width instead of swapping in a new box.
-                                const dotColor = Colors.white;
-                                final dot = AnimatedContainer(
-                                  key: ValueKey(index),
-                                  duration: _reduceMotion ? Duration.zero : tokens(context).slow,
-                                  curve: Curves.easeOutCubic,
-                                  margin: const EdgeInsets.symmetric(horizontal: 3.5),
-                                  width: isActive ? 15 : 6,
-                                  height: 6,
-                                  clipBehavior: Clip.antiAlias,
-                                  decoration: BoxDecoration(
-                                    color: dotColor.withValues(alpha: isActive ? 1 : .29),
-                                    borderRadius: BorderRadius.circular(3),
+                  child: Row(
+                    mainAxisAlignment: .center,
+                    children: [
+                      ValueListenableBuilder<int>(
+                        valueListenable: _heroIndex,
+                        builder: (context, heroIndex, _) {
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: List.generate(_heroItems.length, (index) {
+                              final isActive = heroIndex == index;
+                              // One widget type for every state so the selected pill
+                              // animates its width instead of swapping in a new box.
+                              const dotColor = Colors.white;
+                              final dot = AnimatedContainer(
+                                key: ValueKey(index),
+                                duration: _reduceMotion ? Duration.zero : tokens(context).slow,
+                                curve: Curves.easeOutCubic,
+                                margin: const EdgeInsets.symmetric(horizontal: 3.5),
+                                width: isActive ? 15 : 6,
+                                height: 6,
+                                clipBehavior: Clip.antiAlias,
+                                decoration: BoxDecoration(
+                                  color: dotColor.withValues(alpha: isActive ? 1 : .29),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              );
+                              return Semantics(
+                                key: ValueKey('home-hero-dot-$index'),
+                                button: true,
+                                selected: isActive,
+                                label: _heroItems[index].displayTitle,
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () {
+                                    _heroHasNavigated = true;
+                                    if (_reduceMotion) {
+                                      _heroController.jumpToPage(index);
+                                    } else {
+                                      _heroController.animateToPage(
+                                        index,
+                                        duration: tokens(context).slow,
+                                        curve: Curves.easeInOut,
+                                      );
+                                    }
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 2),
+                                    child: dot,
                                   ),
-                                );
-                                return Semantics(
-                                  key: ValueKey('home-hero-dot-$index'),
-                                  button: true,
-                                  selected: isActive,
-                                  label: _heroItems[index].displayTitle,
-                                  child: GestureDetector(
-                                    behavior: HitTestBehavior.opaque,
-                                    onTap: () {
-                                      _heroHasNavigated = true;
-                                      if (_reduceMotion) {
-                                        _heroController.jumpToPage(index);
-                                      } else {
-                                        _heroController.animateToPage(
-                                          index,
-                                          duration: tokens(context).slow,
-                                          curve: Curves.easeInOut,
-                                        );
-                                      }
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 2),
-                                      child: dot,
-                                    ),
-                                  ),
-                                );
-                              }),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
+                                ),
+                              );
+                            }),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
               if (!useSideNav)

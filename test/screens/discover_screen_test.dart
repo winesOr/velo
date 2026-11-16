@@ -53,6 +53,7 @@ import 'package:plezy/services/settings_service.dart';
 import 'package:plezy/services/storage_service.dart';
 import 'package:plezy/theme/mono_theme.dart';
 import 'package:plezy/theme/home_typography.dart';
+import 'package:plezy/theme/velo_brand.dart';
 import 'package:plezy/utils/layout_constants.dart';
 import 'package:plezy/utils/platform_detector.dart';
 import 'package:plezy/utils/ambient_palette_extractor.dart';
@@ -241,7 +242,7 @@ void main() {
         closeTo(heroBottom.roundToDouble(), .000001),
         reason: 'no fractional-pixel seam below the hero',
       );
-      expect(homeTheme.extension<HomeTypography>()!.caption.color, Colors.white);
+      expect(homeTheme.extension<HomeTypography>()!.caption.color, VeloPalette.caption(homeTheme.brightness));
       expect(tester.takeException(), isNull);
       if (const bool.fromEnvironment('UPDATE_HOME_SCREENSHOTS')) {
         Future<void> capture(String suffix) async {
@@ -260,7 +261,7 @@ void main() {
         await tester.drag(find.byType(CustomScrollView).first, const Offset(0, -450));
         await tester.pump(const Duration(milliseconds: 700));
         expect(
-          find.byTooltip(t.common.options).hitTestable(),
+          find.byTooltip(t.discover.homeOptions).hitTestable(),
           findsNothing,
           reason: 'the phone artwork toolbar scrolls away with its hero',
         );
@@ -315,7 +316,7 @@ void main() {
     });
   }
 
-  testWidgets('a short hero carousel tracks swipes, dot taps and auto advance without trimming Continue Watching', (
+  testWidgets('a short hero carousel changes only on swipes and dot taps without trimming Continue Watching', (
     tester,
   ) async {
     final items = List.generate(12, (i) => testMediaItem(id: 'banner-$i', title: 'Banner $i', serverId: 'server_1'));
@@ -343,10 +344,46 @@ void main() {
     expect(selected(3), isTrue);
     await tester.pump(const Duration(seconds: 8));
     await tester.pump(const Duration(milliseconds: 600));
-    expect(selected(0), isTrue, reason: 'automatic wrap updates the same fixed dots');
+    expect(selected(3), isTrue, reason: 'elapsed time must not change the selected banner');
+    final state = tester.state(find.byType(DiscoverScreen)) as TabVisibilityAware;
+    state.onTabHidden();
+    state.onTabShown();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump(const Duration(seconds: 16));
+    expect(selected(3), isTrue, reason: 're-entry and app resume must not restart automatic rotation');
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('home options forwards the actual button bounds to its menu', (tester) async {
+    Rect? anchor;
+    await _pumpDiscoverShell(
+      tester,
+      isTv: false,
+      size: const Size(390, 844),
+      openNavigation: ([rect]) => anchor = rect,
+    );
+    final button = find.widgetWithIcon(IconButton, Symbols.more_horiz_rounded);
+    final bounds = tester.getRect(button);
+    await tester.tap(button);
+    expect(anchor, bounds);
+    expect(find.byTooltip(t.discover.homeOptions), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  for (final dark in [false, true]) {
+    testWidgets('home secondary text uses the ${dark ? 'dark' : 'light'} caption token', (tester) async {
+      await _pumpDiscoverShell(tester, isTv: false, dark: dark, size: const Size(390, 844));
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -1600));
+      await tester.pump(const Duration(milliseconds: 700));
+      final subtitle = tester.widget<Text>(find.text(t.discover.togetherBannerDescription));
+      expect(subtitle.style!.color, VeloPalette.caption(dark ? Brightness.dark : Brightness.light));
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
 
   testWidgets('recommendation banners and page survive re-entry; only manual refresh rerolls', (tester) async {
     final items = List.generate(
@@ -1244,17 +1281,17 @@ void main() {
       ),
     );
 
-    // Bounded pumps only: the hero runs periodic auto-scroll/indicator timers,
-    // so pumpAndSettle would never settle.
+    // Wait for initial data and the first hero frame.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.byType(PageView), findsOneWidget);
-    final indicators = find.byWidgetPredicate(
-      (w) =>
-          w is Semantics &&
-          w.properties.customSemanticsActions?.keys.any((a) => a.label == t.accessibility.autoScrollPause) == true,
+    final indicators = find.byKey(const ValueKey('home-hero-dot-0'));
+    expect(
+      find.byWidgetPredicate((w) => w is Semantics && w.properties.customSemanticsActions?.isNotEmpty == true),
+      findsNothing,
+      reason: 'manual banners expose no automatic-rotation pause action',
     );
     expect(indicators, findsOneWidget, reason: 'hero indicators render in pointer mode');
     expect(find.byIcon(Symbols.pause_rounded), findsNothing, reason: 'the prototype has no visible pause toggle');
@@ -1349,7 +1386,7 @@ void main() {
       expect(find.byType(FusionHomeHero), findsWidgets);
       expect(tester.getSize(find.byType(FusionHomeHero).first).height, lessThan(size.height * .75));
       expect(
-        find.descendant(of: find.byType(DiscoverScreen), matching: find.byTooltip(t.common.options)),
+        find.descendant(of: find.byType(DiscoverScreen), matching: find.byTooltip(t.discover.homeOptions)),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);
@@ -1426,7 +1463,7 @@ void main() {
 
   testWidgets('home toolbar follows the prototype without an extra clock', (tester) async {
     await _pumpDiscoverShell(tester, isTv: false);
-    expect(find.byTooltip(t.common.options), findsOneWidget);
+    expect(find.byTooltip(t.discover.homeOptions), findsOneWidget);
     expect(
       find.byType(SystemClock),
       findsNothing,
@@ -1437,7 +1474,7 @@ void main() {
     await _pumpDiscoverShell(tester, isTv: true);
     expect(find.byType(SystemClock), findsNothing);
     expect(find.byTooltip(t.common.search), findsOneWidget);
-    expect(find.byTooltip(t.common.options), findsOneWidget);
+    expect(find.byTooltip(t.discover.homeOptions), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -1521,7 +1558,7 @@ void main() {
         _FakeMediaServerClient(hubs: const [], continueWatching: [item]),
       ],
     );
-    final toolbarContext = tester.element(find.byTooltip(t.common.options));
+    final toolbarContext = tester.element(find.byTooltip(t.discover.homeOptions));
     expect(Theme.of(toolbarContext).brightness, Brightness.light);
     expect(Theme.of(toolbarContext).colorScheme.onSurface, Colors.white);
     final heroContext = tester.element(find.byType(FusionHomeHero).first);
@@ -1778,6 +1815,7 @@ Future<void> _pumpDiscoverShell(
   bool settle = true,
   math.Random? heroRandom,
   bool prepareHomeBeforeMount = false,
+  void Function([Rect? anchorRect])? openNavigation,
 }) async {
   TvDetectionService.debugSetAppleTVOverride(isTv);
   await SettingsService.getInstance();
@@ -1863,6 +1901,7 @@ Future<void> _pumpDiscoverShell(
               foregroundLeft: 0,
               foregroundWidth: 1280,
               viewportWidth: 1280,
+              openNavigation: openNavigation,
               child: wrap?.call(screen) ?? screen,
             ),
           ),
@@ -1871,8 +1910,7 @@ Future<void> _pumpDiscoverShell(
     ),
   );
 
-  // Bounded pumps only: the hero runs periodic auto-scroll timers, so
-  // pumpAndSettle would never settle.
+  // Bound pumps while server data and artwork settle.
   if (settle) {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));

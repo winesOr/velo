@@ -2459,14 +2459,15 @@ class _MainScreenState extends State<MainScreen>
     );
   }
 
-  Future<void> _showSecondaryNavigation() async {
+  Future<void> _showSecondaryNavigation([Rect? anchorRect]) async {
     final visible = secondaryNavigationTabs(_getVisibleTabs(_isOffline));
     final size = MediaQuery.sizeOf(context);
     final selected = await showAppMenu<String>(
       context,
-      position: Offset(size.width - 24, MediaQuery.paddingOf(context).top + 56),
+      title: t.discover.homeOptions,
+      anchorRect: anchorRect ?? Rect.fromLTWH(size.width - 64, MediaQuery.paddingOf(context).top + 16, 40, 40),
+      anchorAlignment: AppMenuAnchorAlignment.end,
       entries: [
-        AppMenuHeader(label: t.discover.homeOptions),
         if (!_isOffline) AppMenuItem(value: 'libraries', icon: Symbols.grid_view, label: t.discover.browseAllMedia),
         for (final id in [NavigationTabId.explore, NavigationTabId.liveTv, NavigationTabId.downloads])
           for (final tab in visible.where((tab) => tab.id == id))

@@ -22,7 +22,9 @@ class HomeTypography extends ThemeExtension<HomeTypography> {
 
   static ThemeData apply(ThemeData theme, {required bool tv, bool tablet = false, Color? artworkSurface}) {
     final body = theme.textTheme.bodyMedium!;
-    final artworkColors = artworkSurface == null ? null : MonoPresentation.artworkTextColors(artworkSurface);
+    final artworkColors = artworkSurface == null
+        ? null
+        : MonoPresentation.artworkTextColors(artworkSurface, brightness: theme.brightness);
     final foreground = artworkColors?.foreground ?? theme.colorScheme.onSurface;
     final caption = artworkColors?.caption ?? VeloPalette.caption(theme.brightness);
     return theme.copyWith(

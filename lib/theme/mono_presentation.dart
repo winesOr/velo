@@ -59,9 +59,12 @@ abstract final class MonoPresentation {
   // must not dilute a red poster into a pink or gray page.
   static Color artworkSurface(Color raw, Brightness brightness) => raw;
 
-  static ({Color foreground, Color caption}) artworkTextColors(Color surface) {
-    // Artwork changes the background only; text keeps the approved white ink.
-    return (foreground: Colors.white, caption: Colors.white);
+  static ({Color foreground, Color caption}) artworkTextColors(
+    Color surface, {
+    Brightness brightness = Brightness.dark,
+  }) {
+    // Artwork retains white primary ink; secondary text follows appearance.
+    return (foreground: Colors.white, caption: VeloPalette.caption(brightness));
   }
 
   /// Blend artwork into its page color with a long, gently eased ramp.

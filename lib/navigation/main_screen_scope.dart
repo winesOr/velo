@@ -29,7 +29,7 @@ class MainScreenFocusScope extends InheritedModel<MainScreenScopeAspect> {
   final double? viewportWidth;
   final void Function(String libraryGlobalKey)? selectLibrary;
   final VoidCallback? openSettings;
-  final VoidCallback? openNavigation;
+  final void Function([Rect? anchorRect])? openNavigation;
   final ValueChanged<NavigationTabId>? selectTab;
   final bool hasTopNavigation;
 

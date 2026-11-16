@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:plezy/theme/home_typography.dart';
 import 'package:plezy/theme/mono_presentation.dart';
 import 'package:plezy/theme/mono_theme.dart';
+import 'package:plezy/theme/velo_brand.dart';
 import 'package:plezy/widgets/app_icon.dart';
 
 /// `monoTheme` builds a full `ColorScheme`, an applied+copyWith'd Typography
@@ -80,7 +81,7 @@ void main() {
     expect(light.colorScheme.onSurface, isNot(dark.colorScheme.onSurface));
   });
 
-  test('home text stays white in both appearances and across artwork palettes', () {
+  test('home primary text stays white and captions follow appearance across artwork palettes', () {
     for (final dark in [false, true]) {
       for (final surface in const [Color(0xff550b08), Color(0xffe4ca98)]) {
         final home = HomeTypography.apply(monoTheme(dark: dark), tv: false, artworkSurface: surface);
@@ -88,7 +89,7 @@ void main() {
         expect(home.brightness, dark ? Brightness.dark : Brightness.light);
         expect(typography.heroTitle.color, Colors.white);
         expect(typography.sectionTitle.color, Colors.white);
-        expect(typography.caption.color, Colors.white);
+        expect(typography.caption.color, VeloPalette.caption(home.brightness));
         expect(typography.cardTitle.color, Colors.white);
         expect(home.textTheme.bodyMedium!.color, Colors.white);
       }
@@ -101,9 +102,14 @@ void main() {
     expect(MonoPresentation.artworkSurface(sampled, Brightness.dark), sampled);
   });
 
-  test('artwork foreground and captions use the same fixed white ink', () {
-    for (final surface in const [Color(0xff550b08), Color(0xff142540), Color(0xffe4ca98)]) {
-      expect(MonoPresentation.artworkTextColors(surface), (foreground: Colors.white, caption: Colors.white));
+  test('artwork foreground stays white and caption uses the appearance token', () {
+    for (final brightness in Brightness.values) {
+      for (final surface in const [Color(0xff550b08), Color(0xff142540), Color(0xffe4ca98)]) {
+        expect(MonoPresentation.artworkTextColors(surface, brightness: brightness), (
+          foreground: Colors.white,
+          caption: VeloPalette.caption(brightness),
+        ));
+      }
     }
   });
 
