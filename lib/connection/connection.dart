@@ -1,3 +1,4 @@
+import 'server_routes.dart';
 import '../media/media_backend.dart';
 import '../media/media_browser_dialect.dart';
 import '../models/plex/plex_home_user.dart';
@@ -33,6 +34,8 @@ sealed class Connection {
   /// Backend-specific config payload, persisted as JSON. Each subclass
   /// defines the schema.
   Map<String, Object?> toConfigJson();
+
+  Map<String, ServerRouteSettings> get serverRoutes;
 }
 
 /// A Plex account connection.
@@ -68,6 +71,9 @@ class PlexAccountConnection extends Connection {
   /// flow and refreshed periodically.
   final List<PlexServer> servers;
 
+  @override
+  final Map<String, ServerRouteSettings> serverRoutes;
+
   PlexAccountConnection({
     required this.id,
     required this.accountToken,
@@ -75,6 +81,7 @@ class PlexAccountConnection extends Connection {
     required this.accountLabel,
     this.activeProfile,
     this.servers = const [],
+    this.serverRoutes = const {},
     required this.createdAt,
     this.lastAuthenticatedAt,
   });
@@ -101,6 +108,7 @@ class PlexAccountConnection extends Connection {
     PlexHomeUser? activeProfile,
     bool clearActiveProfile = false,
     List<PlexServer>? servers,
+    Map<String, ServerRouteSettings>? serverRoutes,
     DateTime? createdAt,
     DateTime? lastAuthenticatedAt,
   }) {
@@ -111,6 +119,7 @@ class PlexAccountConnection extends Connection {
       accountLabel: accountLabel ?? this.accountLabel,
       activeProfile: clearActiveProfile ? null : (activeProfile ?? this.activeProfile),
       servers: servers ?? this.servers,
+      serverRoutes: serverRoutes ?? this.serverRoutes,
       createdAt: createdAt ?? this.createdAt,
       lastAuthenticatedAt: lastAuthenticatedAt ?? this.lastAuthenticatedAt,
     );
@@ -124,6 +133,7 @@ class PlexAccountConnection extends Connection {
       'accountLabel': accountLabel,
       'activeProfile': activeProfile?.toJson(),
       'servers': servers.map((s) => s.toJson()).toList(),
+      'serverRoutes': serverRoutes.map((id, routes) => MapEntry(id, routes.toJson())),
     };
   }
 
@@ -146,6 +156,7 @@ class PlexAccountConnection extends Connection {
       accountLabel: json['accountLabel'] as String? ?? 'Plex',
       activeProfile: activeProfile,
       servers: servers,
+      serverRoutes: ServerRouteSettings.readMap(json['serverRoutes']),
       createdAt: createdAt,
       lastAuthenticatedAt: lastAuthenticatedAt,
     );
@@ -175,6 +186,9 @@ class JellyfinConnection extends Connection {
   /// Candidate server URLs for this server, with [baseUrl] first.
   /// Existing installs only have [baseUrl]; deserialization backfills this.
   final List<String> baseUrls;
+
+  @override
+  final Map<String, ServerRouteSettings> serverRoutes;
 
   /// Server's reported name (System/Info).
   final String serverName;
@@ -210,6 +224,7 @@ class JellyfinConnection extends Connection {
     required this.id,
     required String baseUrl,
     List<String>? baseUrls,
+    this.serverRoutes = const {},
     required this.serverName,
     required this.serverMachineId,
     required this.userId,
@@ -266,6 +281,7 @@ class JellyfinConnection extends Connection {
     String? id,
     String? baseUrl,
     List<String>? baseUrls,
+    Map<String, ServerRouteSettings>? serverRoutes,
     String? serverName,
     String? serverMachineId,
     String? userId,
@@ -288,6 +304,7 @@ class JellyfinConnection extends Connection {
       id: id ?? this.id,
       baseUrl: nextBaseUrl,
       baseUrls: baseUrls ?? this.baseUrls,
+      serverRoutes: serverRoutes ?? this.serverRoutes,
       serverName: serverName ?? this.serverName,
       serverMachineId: serverMachineId ?? this.serverMachineId,
       userId: userId ?? this.userId,
@@ -310,6 +327,7 @@ class JellyfinConnection extends Connection {
     return {
       'baseUrl': baseUrl,
       'baseUrls': baseUrls,
+      'serverRoutes': serverRoutes.map((id, routes) => MapEntry(id, routes.toJson())),
       'serverName': serverName,
       'serverMachineId': serverMachineId,
       'userId': userId,
@@ -338,6 +356,7 @@ class JellyfinConnection extends Connection {
       id: id,
       baseUrl: baseUrl,
       baseUrls: baseUrls,
+      serverRoutes: ServerRouteSettings.readMap(json['serverRoutes']),
       dialect: dialect,
       serverName: json['serverName'] as String? ?? dialect.productName,
       serverMachineId: json['serverMachineId'] as String? ?? '',

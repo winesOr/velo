@@ -11,6 +11,7 @@ import '../../widgets/setting_tile.dart';
 import '../../widgets/settings_page.dart';
 import '../../widgets/settings_section.dart';
 import 'playback_settings_screen.dart';
+import 'server_routes_screen.dart';
 
 class NetworkCacheSettingsScreen extends StatefulWidget {
   const NetworkCacheSettingsScreen({super.key, this.imageCacheClearer});
@@ -53,6 +54,17 @@ class _NetworkCacheSettingsScreenState extends State<NetworkCacheSettingsScreen>
   Widget build(BuildContext context) => SettingsPage(
     title: Text(t.settings.networkCache),
     children: [
+      SettingsGroup(
+        title: t.routes.title,
+        children: [
+          SettingNavigationTile(
+            icon: Symbols.route_rounded,
+            title: t.routes.serverRoutes,
+            subtitle: t.routes.entryDescription,
+            destinationBuilder: (_) => const ServerRoutesScreen(),
+          ),
+        ],
+      ),
       SettingsGroup(
         title: t.settings.homeCache,
         children: [

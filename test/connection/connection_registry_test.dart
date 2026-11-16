@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/connection/connection.dart';
 import 'package:plezy/connection/connection_registry.dart';
+import 'package:plezy/connection/server_routes.dart';
 import 'package:plezy/database/app_database.dart';
 import 'package:plezy/media/media_backend.dart';
 import 'package:plezy/media/media_browser_dialect.dart';
@@ -85,6 +86,46 @@ void main() {
   });
 
   group('ConnectionRegistry', () {
+    test('route names and manual selection survive stale token refreshes', () async {
+      final original = _jellyfin();
+      await registry.upsert(original);
+      final settings = ServerRouteSettings(
+        routes: const [
+          ServerRoute(name: 'Primary', url: 'https://jellyfin.local'),
+          ServerRoute(name: 'Backup', url: 'https://backup.local'),
+        ],
+        selectedUrl: 'https://backup.local',
+      );
+      final configured = original.copyWith(serverRoutes: {original.serverMachineId: settings});
+      await registry.upsert(configured, expected: original, updateServerRoutes: true);
+      // A callback from the old client still carries the old metadata.
+      final refreshedToken = '${original.accessToken}-refreshed';
+      await registry.upsert(original.copyWith(accessToken: refreshedToken));
+      final restored = await registry.get(original.id) as JellyfinConnection;
+      expect(restored.accessToken, refreshedToken);
+      expect(restored.serverRoutes[original.serverMachineId]!.selectedUrl, 'https://backup.local');
+      expect(restored.serverRoutes[original.serverMachineId]!.routes.last.name, 'Backup');
+      final primaryOnly = restored.copyWith(
+        serverRoutes: {
+          original.serverMachineId: ServerRouteSettings(routes: [settings.routes.first]),
+        },
+      );
+      await registry.upsert(primaryOnly, expected: restored, updateServerRoutes: true);
+      final deleted = await registry.get(original.id) as JellyfinConnection;
+      expect(deleted.serverRoutes[original.serverMachineId]!.routes.length, 1);
+      expect(deleted.serverRoutes[original.serverMachineId]!.selectedUrl, isNull);
+      await registry.upsert(
+        deleted.copyWith(serverRoutes: {original.serverMachineId: const ServerRouteSettings()}),
+        expected: deleted,
+        updateServerRoutes: true,
+      );
+      final cleared = await registry.get(original.id) as JellyfinConnection;
+      expect(cleared.serverRoutes[original.serverMachineId]!.routes, isEmpty);
+      expect(cleared.serverRoutes[original.serverMachineId]!.effectiveUrl, isNull);
+      expect(cleared.baseUrls, original.baseUrls);
+      expect(cleared.accessToken, refreshedToken);
+    });
+
     test('list() returns empty when no connections stored', () async {
       expect(await registry.list(), isEmpty);
     });

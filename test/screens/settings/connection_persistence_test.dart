@@ -42,8 +42,18 @@ class _FailingConnectionRegistry extends ConnectionRegistry {
   _FailingConnectionRegistry(super.db);
 
   @override
-  Future<void> upsert(Connection connection, {void Function()? checkCurrent, Connection? expected}) async {
-    await super.upsert(connection, checkCurrent: checkCurrent, expected: expected);
+  Future<void> upsert(
+    Connection connection, {
+    void Function()? checkCurrent,
+    Connection? expected,
+    bool updateServerRoutes = false,
+  }) async {
+    await super.upsert(
+      connection,
+      checkCurrent: checkCurrent,
+      expected: expected,
+      updateServerRoutes: updateServerRoutes,
+    );
     throw const _AfterStatementFailure('connection');
   }
 }

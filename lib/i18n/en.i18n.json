@@ -2704,5 +2704,32 @@
     "version": "Version",
     "unavailable": "Not available",
     "loadFailed": "Could not load playback options"
+  },
+  "routes": {
+    "title": "Routes",
+    "serverRoutes": "Server routes",
+    "entryDescription": "Manage named routes for authorized servers",
+    "noServers": "No authorized servers for this profile",
+    "strategy": "Selection strategy",
+    "primary": "Primary route",
+    "primaryDescription": "Use the first route in the list",
+    "manual": "Manual selection",
+    "manualDescription": "Select a route below to use its address",
+    "automatic": "Automatic fastest",
+    "automaticDescription": "Preview only · no speed test or automatic selection",
+    "add": "Add route",
+    "name": "Name",
+    "address": "Server address",
+    "port": "Port",
+    "nameError": "Enter a name of 1–40 characters",
+    "addressError": "Use HTTP(S) without credentials, path, query, fragment or port",
+    "portError": "Enter an integer from 1 to 65535",
+    "identityNotice": "Saving verifies the server identity without sending your token. No speed test is performed.",
+    "saveFailed": "Could not save the route. Verify the server address and access, then try again.",
+    "duplicate": "This server address already exists",
+    "deleteTitle": "Delete route?",
+    "unset": "Not set · use existing server candidates",
+    "empty": "No named routes",
+    "emptyDescription": "The original server connection is retained. Add a route to choose its address."
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:plezy/media/ids.dart';
 import 'package:plezy/media/media_server_client.dart';
@@ -13,6 +14,7 @@ import 'package:http/testing.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:plezy/connection/connection.dart';
 import 'package:plezy/connection/connection_registry.dart';
+import 'package:plezy/connection/server_routes.dart';
 import 'package:plezy/database/app_database.dart';
 import 'package:plezy/models/plex/plex_config.dart';
 import 'package:plezy/services/plex_api_cache.dart';
@@ -330,6 +332,98 @@ void main() {
   });
 
   group('refreshTokensForProfile', () {
+    test('unreachable manual Plex route stays offline without using the prior client', () async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      PlexApiCache.initialize(db);
+      addTearDown(db.close);
+      final previousHttpOverrides = HttpOverrides.current;
+      HttpOverrides.global = null;
+      addTearDown(() => HttpOverrides.global = previousHttpOverrides);
+      final socket = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final deadUrl = 'http://127.0.0.1:${socket.port}';
+      await socket.close(force: true);
+      var oldRequests = 0;
+      final client = PlexClient.forTesting(
+        config: PlexConfig(
+          baseUrl: 'https://old.test',
+          token: 'old-token',
+          clientIdentifier: 'client',
+          product: 'Velo',
+          version: '1',
+        ),
+        serverId: ServerId('server-1'),
+        profileScopeId: buildPlexProfileScopeId(serverId: ServerId('server-1'), profileId: 'profile-1'),
+        serverName: 'Plex',
+        httpClient: MockClient((_) async {
+          oldRequests++;
+          return jsonResponse({
+            'MediaContainer': {'machineIdentifier': 'server-1'},
+          });
+        }),
+      );
+      final manager = MultiServerManager();
+      addTearDown(manager.dispose);
+      manager.debugRegisterClientForTesting(client, online: true);
+      final account = PlexAccountConnection(
+        id: 'account',
+        accountToken: 'account-token',
+        clientIdentifier: 'client',
+        accountLabel: 'Account',
+        createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+        servers: [
+          PlexServer(
+            name: 'Plex',
+            clientIdentifier: 'server-1',
+            accessToken: 'profile-token',
+            connections: [_plexEndpoint('original')],
+            owned: true,
+          ),
+        ],
+        serverRoutes: {
+          'server-1': ServerRouteSettings(
+            routes: [ServerRoute(name: 'Dead', url: deadUrl)],
+            selectedUrl: deadUrl,
+          ),
+        },
+      );
+      expect(await manager.refreshTokensForProfile(account, profileId: 'profile-1'), isEmpty);
+      expect(manager.onlineServerIds, isNot(contains('server-1')));
+      expect(manager.getClient(ServerId('server-1')), isNull);
+      expect(oldRequests, 0);
+      expect(
+        manager.hasPlexServerAuthorization(ServerId('server-1'), accountId: account.id, profileId: 'profile-1'),
+        isTrue,
+      );
+      expect(
+        manager.hasPlexServerAuthorization(ServerId('server-1'), accountId: account.id, profileId: 'another-home-user'),
+        isFalse,
+      );
+      expect(
+        manager.hasPlexServerAuthorization(ServerId('server-1'), accountId: 'another-account', profileId: 'profile-1'),
+        isFalse,
+      );
+      expect(
+        manager.hasPlexServerAuthorization(ServerId('unknown-server'), accountId: account.id, profileId: 'profile-1'),
+        isFalse,
+      );
+      // A repaired route can still be written after the client disappeared.
+      final dbRegistry = ConnectionRegistry(db);
+      await dbRegistry.upsert(account);
+      final repaired = account.copyWith(serverRoutes: {'server-1': const ServerRouteSettings()});
+      await dbRegistry.upsert(repaired, expected: account, updateServerRoutes: true);
+      final restored = await dbRegistry.get(account.id) as PlexAccountConnection;
+      expect(restored.serverRoutes['server-1']!.effectiveUrl, isNull);
+      // Account-level refusal metadata without a profile scope is not an
+      // authorization snapshot for a restricted Home user.
+      final unscoped = MultiServerManager();
+      addTearDown(unscoped.dispose);
+      unscoped.markPlexConnectionAuthError(account, profileId: 'profile-1');
+      expect(
+        unscoped.hasPlexServerAuthorization(ServerId('server-1'), accountId: account.id, profileId: 'profile-1'),
+        isFalse,
+      );
+    });
+
     test('successful in-place Plex token refresh clears auth-error state', () async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       PlexApiCache.initialize(db);
@@ -1727,6 +1821,48 @@ void main() {
   });
 
   group('addJellyfinConnection endpoint trust admission', () {
+    test('manual route bypasses racing and retains stored alternate addresses', () async {
+      final previousHttpOverrides = HttpOverrides.current;
+      HttpOverrides.global = null;
+      addTearDown(() => HttpOverrides.global = previousHttpOverrides);
+      final primary = await _LoopbackJellyfinServer.start(machineId: 'jf-machine');
+      final selected = await _LoopbackJellyfinServer.start(machineId: 'jf-machine', isAdministrator: true);
+      addTearDown(primary.close);
+      addTearDown(selected.close);
+      final connection = _jellyfinConnection('user-a').copyWith(
+        baseUrl: primary.baseUrl,
+        baseUrls: [primary.baseUrl, selected.baseUrl],
+        serverRoutes: {
+          'jf-machine': ServerRouteSettings(
+            routes: [
+              ServerRoute(name: 'Primary', url: primary.baseUrl),
+              ServerRoute(name: 'Manual', url: selected.baseUrl),
+            ],
+            selectedUrl: selected.baseUrl,
+          ),
+        },
+      );
+      final updates = <JellyfinConnection>[];
+      final manager = MultiServerManager()..onJellyfinConnectionUpdated = updates.add;
+      addTearDown(manager.dispose);
+      expect(await manager.addJellyfinConnection(connection), isTrue);
+      final live = manager.getJellyfinClientByCompoundId(connection.id)!;
+      expect(live.connection.baseUrl, selected.baseUrl);
+      expect(live.connection.baseUrls, [selected.baseUrl]);
+      expect(primary.requests, isEmpty);
+      expect(selected.requests.where((r) => r.path == '/System/Info/Public'), isEmpty);
+      expect(updates, isNotEmpty);
+      expect(updates.last.baseUrls.toSet(), {primary.baseUrl, selected.baseUrl});
+      expect(updates.last.baseUrl, primary.baseUrl);
+      final cleared = connection.copyWith(serverRoutes: {'jf-machine': const ServerRouteSettings()});
+      expect(await manager.addJellyfinConnection(cleared), isTrue);
+      expect(primary.requests, isNotEmpty);
+      expect(manager.getJellyfinClientByCompoundId(connection.id)!.connection.baseUrls.toSet(), {
+        primary.baseUrl,
+        selected.baseUrl,
+      });
+    });
+
     test('historic wrong-machine alternate is removed before authenticated health', () async {
       final previousHttpOverrides = HttpOverrides.current;
       HttpOverrides.global = null;

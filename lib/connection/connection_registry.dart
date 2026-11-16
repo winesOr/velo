@@ -62,15 +62,35 @@ class ConnectionRegistry {
   /// model with `DateTime.now()` and reuses the same stable id, so without
   /// this the originally-first connection would jump to last on every
   /// re-sign-in.
-  Future<void> upsert(Connection connection, {Connection? expected, void Function()? checkCurrent}) async {
+  Future<void> upsert(
+    Connection connection, {
+    Connection? expected,
+    void Function()? checkCurrent,
+    bool updateServerRoutes = false,
+  }) async {
     await _db.runIdentityMutation(() async {
       final existing = await (_db.select(_db.connections)..where((t) => t.id.equals(connection.id))).getSingleOrNull();
       checkCurrent?.call();
       if (expected != null) {
-        final current = existing == null ? null : await _rowToConnection(existing);
+        final current = existing == null ? null : await _rowToConnection(existing, migrate: false);
         checkCurrent?.call();
         if (current == null || !hasSameConfig(current, expected)) {
           throw StateError('The connection changed after validation.');
+        }
+      }
+      // Reauthentication rebuilds connection models. Retain route metadata,
+      // while explicit per-server settings (including an empty route list)
+      // replace their previous value.
+      if (existing != null) {
+        final previous = await _rowToConnection(existing, migrate: false);
+        if (previous != null) {
+          final routes = updateServerRoutes
+              ? {...previous.serverRoutes, ...connection.serverRoutes}
+              : {...connection.serverRoutes, ...previous.serverRoutes};
+          connection = switch (connection) {
+            PlexAccountConnection c => c.copyWith(serverRoutes: routes),
+            JellyfinConnection c => c.copyWith(serverRoutes: routes),
+          };
         }
       }
       final createdAt = existing?.createdAt ?? connection.createdAt.millisecondsSinceEpoch;
@@ -138,7 +158,7 @@ class ConnectionRegistry {
     return c is PlexAccountConnection ? c : null;
   }
 
-  Future<Connection?> _rowToConnection(ConnectionRow row) async {
+  Future<Connection?> _rowToConnection(ConnectionRow row, {bool migrate = true}) async {
     try {
       final json = jsonDecode(row.configJson) as Map<String, dynamic>;
       final kind = MediaBackend.fromId(row.kind);
@@ -163,7 +183,7 @@ class ConnectionRegistry {
         ),
       };
       _decryptedConfigs[connection] = revealed.config;
-      if (revealed.migrated) {
+      if (revealed.migrated && migrate) {
         await upsert(connection);
       }
       return connection;

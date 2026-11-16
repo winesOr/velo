@@ -94,6 +94,7 @@ class TranslationsZh extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final Translations$danmaku$zh danmaku = Translations$danmaku$zh.internal(_root);
 	@override late final Translations$casting$zh casting = Translations$casting$zh.internal(_root);
 	@override late final Translations$detailPlayback$zh detailPlayback = Translations$detailPlayback$zh.internal(_root);
+	@override late final Translations$routes$zh routes = Translations$routes$zh.internal(_root);
 }
 
 // Path: app
@@ -2692,6 +2693,40 @@ class Translations$detailPlayback$zh extends Translations$detailPlayback$en {
 	@override String get version => '版本';
 	@override String get unavailable => '暂无可用选项';
 	@override String get loadFailed => '播放选项加载失败';
+}
+
+// Path: routes
+class Translations$routes$zh extends Translations$routes$en {
+	Translations$routes$zh.internal(TranslationsZh root) : this._root = root, super.internal(root);
+
+	final TranslationsZh _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => '线路';
+	@override String get serverRoutes => '服务器线路';
+	@override String get entryDescription => '管理已授权服务器的命名线路';
+	@override String get noServers => '此身份暂无已授权服务器';
+	@override String get strategy => '选择策略';
+	@override String get primary => '主线路';
+	@override String get primaryDescription => '使用列表中的第一条线路';
+	@override String get manual => '手动选择';
+	@override String get manualDescription => '选择下方线路即可使用其地址';
+	@override String get automatic => '自动最快';
+	@override String get automaticDescription => '仅展示 · 不测速，不自动选择';
+	@override String get add => '添加线路';
+	@override String get name => '名称';
+	@override String get address => '服务器地址';
+	@override String get port => '端口';
+	@override String get nameError => '请输入 1–40 字的线路名称';
+	@override String get addressError => '请填写无凭据、路径、查询、片段或端口的 HTTP(S) 地址';
+	@override String get portError => '端口必须是 1–65535 的整数';
+	@override String get identityNotice => '保存时会匿名验证服务器身份，不发送令牌，不进行测速。';
+	@override String get saveFailed => '无法保存线路，请检查服务器地址和访问权限后重试。';
+	@override String get duplicate => '此服务器地址已存在';
+	@override String get deleteTitle => '删除线路？';
+	@override String get unset => '未设置 · 沿用服务器现有候选';
+	@override String get empty => '尚无命名线路';
+	@override String get emptyDescription => '原服务器连接仍然保留。添加线路后可选择使用其地址。';
 }
 
 // Path: common.ratingSource
@@ -6005,6 +6040,31 @@ extension on TranslationsZh {
 			'detailPlayback.version' => '版本',
 			'detailPlayback.unavailable' => '暂无可用选项',
 			'detailPlayback.loadFailed' => '播放选项加载失败',
+			'routes.title' => '线路',
+			'routes.serverRoutes' => '服务器线路',
+			'routes.entryDescription' => '管理已授权服务器的命名线路',
+			'routes.noServers' => '此身份暂无已授权服务器',
+			'routes.strategy' => '选择策略',
+			'routes.primary' => '主线路',
+			'routes.primaryDescription' => '使用列表中的第一条线路',
+			'routes.manual' => '手动选择',
+			'routes.manualDescription' => '选择下方线路即可使用其地址',
+			'routes.automatic' => '自动最快',
+			'routes.automaticDescription' => '仅展示 · 不测速，不自动选择',
+			'routes.add' => '添加线路',
+			'routes.name' => '名称',
+			'routes.address' => '服务器地址',
+			'routes.port' => '端口',
+			'routes.nameError' => '请输入 1–40 字的线路名称',
+			'routes.addressError' => '请填写无凭据、路径、查询、片段或端口的 HTTP(S) 地址',
+			'routes.portError' => '端口必须是 1–65535 的整数',
+			'routes.identityNotice' => '保存时会匿名验证服务器身份，不发送令牌，不进行测速。',
+			'routes.saveFailed' => '无法保存线路，请检查服务器地址和访问权限后重试。',
+			'routes.duplicate' => '此服务器地址已存在',
+			'routes.deleteTitle' => '删除线路？',
+			'routes.unset' => '未设置 · 沿用服务器现有候选',
+			'routes.empty' => '尚无命名线路',
+			'routes.emptyDescription' => '原服务器连接仍然保留。添加线路后可选择使用其地址。',
 			_ => null,
 		};
 	}

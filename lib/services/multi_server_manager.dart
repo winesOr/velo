@@ -1,3 +1,5 @@
+import '../connection/manual_plex_route.dart';
+
 import 'dart:async';
 
 import '../media/ids.dart';
@@ -226,6 +228,15 @@ class MultiServerManager {
   /// bring any of these back online, so profile clean-up must walk this set
   /// rather than [serverIds].
   List<String> get registeredServerIds => {..._clients.keys, ..._plexServers.keys, ..._serverStatus.keys}.toList();
+
+  /// A Plex authorization snapshot survives a failed connection so route
+  /// settings can repair an offline endpoint. Only an explicit account and
+  /// profile registration is trusted; unscoped account metadata is not proof
+  /// that a restricted Plex Home user may access a server.
+  bool hasPlexServerAuthorization(ServerId serverId, {required String accountId, required String profileId}) =>
+      _plexServers.containsKey(serverId) &&
+      _plexAccountByServer[serverId] == accountId &&
+      _plexScopeByServer[serverId]?.profileId == profileId;
 
   /// Whether anything registered under [serverId] was made for a profile
   /// other than [profileId]: a live Plex client, or the Plex identity a
@@ -686,17 +697,30 @@ class MultiServerManager {
       return const {};
     }
     final bound = <String>{};
-    final futures = connection.servers.map((server) async {
+    final futures = connection.servers.map((discoveredServer) async {
+      final selectedUrl = connection.serverRoutes[discoveredServer.clientIdentifier]?.effectiveUrl;
+      final server = selectedUrl == null ? discoveredServer : ManualPlexRoute(discoveredServer, selectedUrl);
       final serverId = server.clientIdentifier;
       final profileScopeId = buildPlexProfileScopeId(serverId: ServerId(serverId), profileId: profileId);
       final existing = _clients[serverId];
-      if (existing is PlexClient && ((_serverStatus[serverId] ?? false) || _refusedServers.containsKey(serverId))) {
+      final routeChanged = server is ManualPlexRoute
+          ? existing is! PlexClient ||
+                existing.config.baseUrl != server.selectedUrl ||
+                _plexServers[serverId] is! ManualPlexRoute
+          : _plexServers[serverId] is ManualPlexRoute;
+      if (existing is PlexClient &&
+          !routeChanged &&
+          ((_serverStatus[serverId] ?? false) || _refusedServers.containsKey(serverId))) {
         try {
           final applied = await existing.applyProfileUpdate(
             newToken: server.accessToken,
             newProfileScopeId: profileScopeId,
           );
           if (!applied || isStale() || !identical(_clients[serverId], existing)) return;
+          if (server is ManualPlexRoute || _plexServers[serverId] is ManualPlexRoute) {
+            await existing.updateEndpointPreferences(server.prioritizedEndpointUrls(), switchToFirst: true);
+            if (isStale() || !identical(_clients[serverId], existing)) return;
+          }
 
           _registerPlexServer(
             serverId,
@@ -724,7 +748,7 @@ class MultiServerManager {
       // while this profile connects: if the connect fails, the server stays
       // registered for this profile, and a health probe must not find the
       // old client reachable and publish it as this profile's.
-      if (existing is PlexClient && existing.profileScopeId != profileScopeId) {
+      if (existing is PlexClient && (existing.profileScopeId != profileScopeId || routeChanged)) {
         final stale = _forgetServer(serverId);
         if (stale != null) unawaited(_closeClientGracefully(stale));
       }
@@ -800,6 +824,12 @@ class MultiServerManager {
   /// Adding the second user's connection doesn't close the first user's
   /// client (preserves any in-flight operations on the prior profile).
   Future<bool> addJellyfinConnection(JellyfinConnection connection) async {
+    final storedBaseUrls = connection.baseUrls;
+    final storedBaseUrl = connection.baseUrl;
+    final selectedUrl = connection.serverRoutes[connection.serverMachineId]?.effectiveUrl;
+    if (selectedUrl != null) {
+      connection = connection.copyWith(baseUrl: selectedUrl, baseUrls: [selectedUrl]);
+    }
     try {
       // Every close path detaches the client from [_jellyfinByCompoundId]
       // before closing it, so a client found here is never mid-close.
@@ -847,7 +877,10 @@ class MultiServerManager {
       // admin-gated UI survives app restarts without requiring re-auth.
       _wireJellyfinConnectionUpdates(
         client,
-        baseUrlsForPersistence: endpointSelectionValidated ? null : connection.baseUrls,
+        baseUrlForPersistence: selectedUrl != null ? storedBaseUrl : null,
+        baseUrlsForPersistence: selectedUrl != null
+            ? storedBaseUrls
+            : (endpointSelectionValidated ? null : connection.baseUrls),
       );
       if (endpointSelectionValidated &&
           (resolvedConnection.baseUrl != connection.baseUrl ||
@@ -955,7 +988,11 @@ class MultiServerManager {
     return healthy;
   }
 
-  void _wireJellyfinConnectionUpdates(JellyfinClient client, {List<String>? baseUrlsForPersistence}) {
+  void _wireJellyfinConnectionUpdates(
+    JellyfinClient client, {
+    List<String>? baseUrlsForPersistence,
+    String? baseUrlForPersistence,
+  }) {
     client.onConnectionUpdated = (updated) async {
       if (_jellyfinByCompoundId[updated.id] != client) {
         appLogger.d('Ignoring stale Jellyfin connection update for ${updated.serverName}');
@@ -966,7 +1003,7 @@ class MultiServerManager {
         try {
           final connectionToPersist = baseUrlsForPersistence == null
               ? updated
-              : updated.copyWith(baseUrls: baseUrlsForPersistence);
+              : updated.copyWith(baseUrl: baseUrlForPersistence, baseUrls: baseUrlsForPersistence);
           await Future.sync(() => persist(connectionToPersist));
         } catch (e, st) {
           appLogger.w('Failed to persist Jellyfin connection update', error: e, stackTrace: st);

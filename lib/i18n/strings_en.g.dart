@@ -96,6 +96,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$danmaku$en danmaku = Translations$danmaku$en.internal(_root);
 	late final Translations$casting$en casting = Translations$casting$en.internal(_root);
 	late final Translations$detailPlayback$en detailPlayback = Translations$detailPlayback$en.internal(_root);
+	late final Translations$routes$en routes = Translations$routes$en.internal(_root);
 }
 
 // Path: app
@@ -6813,6 +6814,90 @@ class Translations$detailPlayback$en {
 	String get loadFailed => 'Could not load playback options';
 }
 
+// Path: routes
+class Translations$routes$en {
+	Translations$routes$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Routes'
+	String get title => 'Routes';
+
+	/// en: 'Server routes'
+	String get serverRoutes => 'Server routes';
+
+	/// en: 'Manage named routes for authorized servers'
+	String get entryDescription => 'Manage named routes for authorized servers';
+
+	/// en: 'No authorized servers for this profile'
+	String get noServers => 'No authorized servers for this profile';
+
+	/// en: 'Selection strategy'
+	String get strategy => 'Selection strategy';
+
+	/// en: 'Primary route'
+	String get primary => 'Primary route';
+
+	/// en: 'Use the first route in the list'
+	String get primaryDescription => 'Use the first route in the list';
+
+	/// en: 'Manual selection'
+	String get manual => 'Manual selection';
+
+	/// en: 'Select a route below to use its address'
+	String get manualDescription => 'Select a route below to use its address';
+
+	/// en: 'Automatic fastest'
+	String get automatic => 'Automatic fastest';
+
+	/// en: 'Preview only · no speed test or automatic selection'
+	String get automaticDescription => 'Preview only · no speed test or automatic selection';
+
+	/// en: 'Add route'
+	String get add => 'Add route';
+
+	/// en: 'Name'
+	String get name => 'Name';
+
+	/// en: 'Server address'
+	String get address => 'Server address';
+
+	/// en: 'Port'
+	String get port => 'Port';
+
+	/// en: 'Enter a name of 1–40 characters'
+	String get nameError => 'Enter a name of 1–40 characters';
+
+	/// en: 'Use HTTP(S) without credentials, path, query, fragment or port'
+	String get addressError => 'Use HTTP(S) without credentials, path, query, fragment or port';
+
+	/// en: 'Enter an integer from 1 to 65535'
+	String get portError => 'Enter an integer from 1 to 65535';
+
+	/// en: 'Saving verifies the server identity without sending your token. No speed test is performed.'
+	String get identityNotice => 'Saving verifies the server identity without sending your token. No speed test is performed.';
+
+	/// en: 'Could not save the route. Verify the server address and access, then try again.'
+	String get saveFailed => 'Could not save the route. Verify the server address and access, then try again.';
+
+	/// en: 'This server address already exists'
+	String get duplicate => 'This server address already exists';
+
+	/// en: 'Delete route?'
+	String get deleteTitle => 'Delete route?';
+
+	/// en: 'Not set · use existing server candidates'
+	String get unset => 'Not set · use existing server candidates';
+
+	/// en: 'No named routes'
+	String get empty => 'No named routes';
+
+	/// en: 'The original server connection is retained. Add a route to choose its address.'
+	String get emptyDescription => 'The original server connection is retained. Add a route to choose its address.';
+}
+
 // Path: common.ratingSource
 class Translations$common$ratingSource$en {
 	Translations$common$ratingSource$en.internal(this._root);
@@ -10996,6 +11081,31 @@ extension on Translations {
 			'detailPlayback.version' => 'Version',
 			'detailPlayback.unavailable' => 'Not available',
 			'detailPlayback.loadFailed' => 'Could not load playback options',
+			'routes.title' => 'Routes',
+			'routes.serverRoutes' => 'Server routes',
+			'routes.entryDescription' => 'Manage named routes for authorized servers',
+			'routes.noServers' => 'No authorized servers for this profile',
+			'routes.strategy' => 'Selection strategy',
+			'routes.primary' => 'Primary route',
+			'routes.primaryDescription' => 'Use the first route in the list',
+			'routes.manual' => 'Manual selection',
+			'routes.manualDescription' => 'Select a route below to use its address',
+			'routes.automatic' => 'Automatic fastest',
+			'routes.automaticDescription' => 'Preview only · no speed test or automatic selection',
+			'routes.add' => 'Add route',
+			'routes.name' => 'Name',
+			'routes.address' => 'Server address',
+			'routes.port' => 'Port',
+			'routes.nameError' => 'Enter a name of 1–40 characters',
+			'routes.addressError' => 'Use HTTP(S) without credentials, path, query, fragment or port',
+			'routes.portError' => 'Enter an integer from 1 to 65535',
+			'routes.identityNotice' => 'Saving verifies the server identity without sending your token. No speed test is performed.',
+			'routes.saveFailed' => 'Could not save the route. Verify the server address and access, then try again.',
+			'routes.duplicate' => 'This server address already exists',
+			'routes.deleteTitle' => 'Delete route?',
+			'routes.unset' => 'Not set · use existing server candidates',
+			'routes.empty' => 'No named routes',
+			'routes.emptyDescription' => 'The original server connection is retained. Add a route to choose its address.',
 			_ => null,
 		};
 	}

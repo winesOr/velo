@@ -2693,5 +2693,32 @@
     "version": "版本",
     "unavailable": "暂无可用选项",
     "loadFailed": "播放选项加载失败"
+  },
+  "routes": {
+    "title": "线路",
+    "serverRoutes": "服务器线路",
+    "entryDescription": "管理已授权服务器的命名线路",
+    "noServers": "此身份暂无已授权服务器",
+    "strategy": "选择策略",
+    "primary": "主线路",
+    "primaryDescription": "使用列表中的第一条线路",
+    "manual": "手动选择",
+    "manualDescription": "选择下方线路即可使用其地址",
+    "automatic": "自动最快",
+    "automaticDescription": "仅展示 · 不测速，不自动选择",
+    "add": "添加线路",
+    "name": "名称",
+    "address": "服务器地址",
+    "port": "端口",
+    "nameError": "请输入 1–40 字的线路名称",
+    "addressError": "请填写无凭据、路径、查询、片段或端口的 HTTP(S) 地址",
+    "portError": "端口必须是 1–65535 的整数",
+    "identityNotice": "保存时会匿名验证服务器身份，不发送令牌，不进行测速。",
+    "saveFailed": "无法保存线路，请检查服务器地址和访问权限后重试。",
+    "duplicate": "此服务器地址已存在",
+    "deleteTitle": "删除线路？",
+    "unset": "未设置 · 沿用服务器现有候选",
+    "empty": "尚无命名线路",
+    "emptyDescription": "原服务器连接仍然保留。添加线路后可选择使用其地址。"
   }
 }
