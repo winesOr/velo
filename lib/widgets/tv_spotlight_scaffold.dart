@@ -71,6 +71,7 @@ class TvSpotlightScaffold extends StatelessWidget {
     required this.resolveClient,
     required this.foreground,
     this.hideSpoilers,
+    this.homeActionsBuilder,
   });
 
   final List<MediaHub> hubs;
@@ -79,6 +80,7 @@ class TvSpotlightScaffold extends StatelessWidget {
   final TvSpotlightClientResolver resolveClient;
   final Widget foreground;
   final bool? hideSpoilers;
+  final Widget Function(BuildContext, MediaItem)? homeActionsBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -127,6 +129,7 @@ class TvSpotlightScaffold extends StatelessWidget {
                       final spotlight = resolveSpotlight();
                       return _CatalogSpotlightBackground(
                         item: spotlight,
+                        homeActions: spotlight == null ? null : homeActionsBuilder?.call(context, spotlight),
                         client: resolveClient(spotlight),
                         hideSpoilers: hideSpoilers ?? settings.read(SettingsService.hideSpoilers),
                         contentTop: spotlightTop,
@@ -158,6 +161,7 @@ class _CatalogSpotlightBackground extends StatefulWidget {
     required this.contentBottom,
     required this.contentLeft,
     required this.targetWidthPx,
+    this.homeActions,
   });
 
   final MediaItem? item;
@@ -167,6 +171,7 @@ class _CatalogSpotlightBackground extends StatefulWidget {
   final double contentBottom;
   final double contentLeft;
   final int targetWidthPx;
+  final Widget? homeActions;
 
   @override
   State<_CatalogSpotlightBackground> createState() => _CatalogSpotlightBackgroundState();
@@ -261,6 +266,7 @@ class _CatalogSpotlightBackgroundState extends State<_CatalogSpotlightBackground
       contentLeft: widget.contentLeft,
       compact: true,
       metadataTrailing: _buildNextEpisodeMetadata(context),
+      homeActions: widget.homeActions,
     );
     if (accentColor == null) return background;
     return Theme(

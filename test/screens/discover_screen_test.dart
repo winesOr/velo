@@ -602,7 +602,16 @@ void main() {
       serverId: 'server_1',
       serverName: 'Server',
     );
-    final hub = MediaHub(id: 'hub_1', title: 'Recommended', type: 'movie', items: [item], size: 1);
+    final hub = MediaHub(
+      id: 'hub_1',
+      title: 'Recommended',
+      type: 'movie',
+      items: [
+        item,
+        item.copyWith(id: 'movie_2', title: 'Movie 2'),
+      ],
+      size: 2,
+    );
     final client = _FakeMediaServerClient(hubs: [hub]);
     final manager = MultiServerManager()..debugRegisterClientForTesting(client);
     final multiServerProvider = testMultiServerProvider(manager);
@@ -668,6 +677,7 @@ void main() {
           child: MaterialApp(
             theme: monoTheme(dark: true),
             home: MainScreenFocusScope(
+              hasTopNavigation: true,
               focusSidebar: () {},
               sideNavigationWidth: targetSidebarOffset,
               reservedSideNavigationWidth: SideNavigationRailState.tvCollapsedWidth,
@@ -739,9 +749,31 @@ void main() {
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'ActionBar[0]');
 
     await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowDown);
-    expect(FocusManager.instance.primaryFocus?.debugLabel, 'tv_browse_rail');
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'home_tv_play');
     await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowDown);
     await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pump();
+    final firstDot = FocusManager.instance.primaryFocus?.debugLabel;
+    expect(firstDot, startsWith('home_tv_dot_'));
+    final otherDot = firstDot == 'home_tv_dot_0' ? 'home_tv_dot_1' : 'home_tv_dot_0';
+    await tester.sendKeyEvent(
+      firstDot == 'home_tv_dot_0' ? LogicalKeyboardKey.arrowRight : LogicalKeyboardKey.arrowLeft,
+    );
+    await tester.pump();
+    expect(FocusManager.instance.primaryFocus?.debugLabel, otherDot);
+    await tester.sendKeyEvent(LogicalKeyboardKey.select);
+    await tester.pump();
+    expect(FocusManager.instance.primaryFocus?.debugLabel, otherDot);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pump();
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'tv_browse_rail');
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pump();
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'home_tv_play');
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pump();
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'ActionBar[0]');
 
     tester.state<FocusableActionBarState>(find.byType(FocusableActionBar)).requestFocusOnFirst();
     await tester.pump();
@@ -1392,7 +1424,7 @@ void main() {
     });
   }
 
-  testWidgets('the home clock is TV-only chrome', (tester) async {
+  testWidgets('home toolbar follows the prototype without an extra clock', (tester) async {
     await _pumpDiscoverShell(tester, isTv: false);
     expect(find.byTooltip(t.common.options), findsOneWidget);
     expect(
@@ -1403,7 +1435,9 @@ void main() {
     await tester.pumpWidget(const SizedBox());
 
     await _pumpDiscoverShell(tester, isTv: true);
-    expect(find.byType(SystemClock), findsOneWidget, reason: 'a fullscreen leanback app hides the system clock');
+    expect(find.byType(SystemClock), findsNothing);
+    expect(find.byTooltip(t.common.search), findsOneWidget);
+    expect(find.byTooltip(t.common.options), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 

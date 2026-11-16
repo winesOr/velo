@@ -21,6 +21,7 @@ import '../services/settings_service.dart';
 import '../utils/tone_mapped_logo_image.dart';
 import 'cycling_media_backdrop.dart';
 import 'fitting_title_text.dart';
+import 'hero_metadata_badges.dart';
 import 'fitted_metadata_line.dart';
 import 'settings_builder.dart';
 import 'media_rating_badge.dart';
@@ -36,6 +37,7 @@ class TvSpotlightBackground extends StatelessWidget {
   final double? contentLeft;
   final bool compact;
   final bool showInfo;
+  final Widget? homeActions;
   final String? Function(String? artworkPath)? localArtworkPathResolver;
   final bool allowNetwork;
 
@@ -52,6 +54,7 @@ class TvSpotlightBackground extends StatelessWidget {
     this.contentLeft,
     this.compact = false,
     this.showInfo = true,
+    this.homeActions,
     this.localArtworkPathResolver,
     this.allowNetwork = true,
     this.metadataTrailing,
@@ -120,6 +123,9 @@ class TvSpotlightBackground extends StatelessWidget {
                 // The info block still cross-fades via AnimatedSwitcher, but its
                 // saveLayers are bounded to the text region, not the screen.
                 child: AnimatedSwitcher(
+                  // Home actions keep caller-owned focus nodes; never mount an
+                  // outgoing copy of those nodes while the artwork changes.
+                  key: homeActions == null ? null : ValueKey(media.globalKey),
                   duration: DevicePerformance.reducedDuration(const Duration(milliseconds: 280)),
                   switchInCurve: Curves.easeOutCubic,
                   switchOutCurve: Curves.easeOutCubic,
@@ -197,6 +203,7 @@ class TvSpotlightBackground extends StatelessWidget {
   }
 
   Widget _buildInfo(BuildContext context, MediaItem media, double width) {
+    if (homeActions != null) return _buildHomeInfo(context, media);
     final scale = _scale(context);
     final colorScheme = Theme.of(context).colorScheme;
     final shouldHideSpoiler = hideSpoilers && media.shouldHideSpoiler;
@@ -235,6 +242,49 @@ class TvSpotlightBackground extends StatelessWidget {
             ),
           ),
         ],
+      ],
+    );
+  }
+
+  Widget _buildHomeInfo(BuildContext context, MediaItem media) {
+    final foreground = Theme.of(context).colorScheme.onSurface;
+    final title = media.isEpisode ? media.grandparentTitle ?? media.displayTitle : media.displayTitle;
+    final original = media.originalTitle?.trim();
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (original != null && original.isNotEmpty && original != title) ...[
+          Text(
+            original.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'Georgia',
+              fontSize: 9,
+              letterSpacing: 2.5,
+              color: foreground.withValues(alpha: .8),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+        Text(
+          title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontFamily: 'Kaiti SC',
+            fontFamilyFallback: const ['STKaiti', 'Go Noto Current', 'serif'],
+            fontSize: 62,
+            height: 1.1,
+            fontWeight: FontWeight.w600,
+            color: foreground,
+          ),
+        ),
+        const SizedBox(height: 14),
+        HeroMetadataBadges(item: media, foreground: foreground, alignment: WrapAlignment.start),
+        const SizedBox(height: 20),
+        homeActions!,
       ],
     );
   }

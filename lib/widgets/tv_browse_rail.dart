@@ -337,6 +337,7 @@ class TvBrowseRail extends StatefulWidget {
   /// the loaded hubs span more than one connected server so their origin stays
   /// clear, mirroring the mobile [HubSection] behavior.
   final bool showServerName;
+  final bool homeHeader;
 
   /// Per-hub visibility of watch-position bars and timestamps.
   final bool Function(MediaHub hub)? showWatchProgressForHub;
@@ -397,6 +398,7 @@ class TvBrowseRail extends StatefulWidget {
     required this.focusMemory,
     required this.iconForHub,
     this.showServerName = false,
+    this.homeHeader = false,
     this.showWatchProgressForHub,
     this.showRatingBadges = true,
     this.onFocusedItemChanged,
@@ -1524,7 +1526,7 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
     final colorScheme = Theme.of(context).colorScheme;
     final titleColor = isActive ? colorScheme.onSurface : colorScheme.onSurface.withValues(alpha: 0.54);
     final iconColor = isActive ? colorScheme.onSurface : colorScheme.onSurface.withValues(alpha: 0.42);
-    final showServerName = widget.showServerName && hub.serverName != null;
+    final showServerName = !widget.homeHeader && widget.showServerName && hub.serverName != null;
     final serverColor = colorScheme.primary.withValues(alpha: isActive ? 0.7 : 0.4);
     final serverStyle = Theme.of(
       context,
@@ -1537,8 +1539,10 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
           alignment: .centerLeft,
           child: Row(
             children: [
-              AppIcon(widget.iconForHub(hub, hubIndex), fill: 1, size: 20 * scale, color: iconColor),
-              SizedBox(width: 8 * scale),
+              if (!widget.homeHeader) ...[
+                AppIcon(widget.iconForHub(hub, hubIndex), fill: 1, size: 20 * scale, color: iconColor),
+                SizedBox(width: 8 * scale),
+              ],
               Expanded(
                 child: Row(
                   children: [
@@ -1549,9 +1553,13 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
                         overflow: .ellipsis,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: titleColor,
-                          fontSize: 18 * scale,
+                          fontSize: widget.homeHeader ? 20 : 18 * scale,
                           height: 1,
-                          fontWeight: isActive ? FontWeight.w800 : FontWeight.w700,
+                          fontWeight: widget.homeHeader
+                              ? FontWeight.w600
+                              : isActive
+                              ? FontWeight.w800
+                              : FontWeight.w700,
                         ),
                       ),
                     ),
@@ -1568,6 +1576,7 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
               ),
               if (_trailingFor(hub) == TvRailTrailing.viewAll) ...[
                 SizedBox(width: 8 * scale),
+                if (widget.homeHeader) Text(t.libraries.all, style: TextStyle(fontSize: 12, color: titleColor)),
                 AppIcon(Symbols.chevron_right_rounded, fill: 1, size: 20 * scale, color: iconColor),
                 SizedBox(width: 30 * scale),
               ],

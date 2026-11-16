@@ -187,6 +187,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   bool _reduceMotion = false;
   bool _heroFocusPausedAutoScroll = false;
   final TvSpotlightController _spotlight = TvSpotlightController();
+  final _tvHeroPlayFocus = FocusNode(debugLabel: 'home_tv_play');
+  final _tvHeroDetailsFocus = FocusNode(debugLabel: 'home_tv_details');
+  final _tvHeroDotFocus = List.generate(4, (i) => FocusNode(debugLabel: 'home_tv_dot_$i'));
   bool _isTabVisible = true;
 
   bool _initialLoadComplete = false;
@@ -375,7 +378,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   void _focusTopActions() {
     if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
-    if (MainScreenFocusScope.of(context, listen: false)?.hasTopNavigation == true) {
+    if (!PlatformDetector.isTV() && MainScreenFocusScope.of(context, listen: false)?.hasTopNavigation == true) {
       MainScreenFocusScope.focusSidebarOf(context);
       return;
     }
@@ -688,6 +691,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     _scrollController.dispose();
     _heroFocusNode.removeListener(_onHeroFocusChanged);
     _heroFocusNode.dispose();
+    _tvHeroPlayFocus.dispose();
+    _tvHeroDetailsFocus.dispose();
+    for (final node in _tvHeroDotFocus) {
+      node.dispose();
+    }
     for (final node in _errorFocusNodes.values) {
       node.dispose();
     }
@@ -1044,23 +1052,39 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   Widget _buildOverlaidAppBar() {
     final mainScope = MainScreenFocusScope.of(context, listen: false);
-    if (mainScope?.hasTopNavigation == true || !PlatformDetector.shouldUseSideNavigation(context)) {
+    if (PlatformDetector.isTV() ||
+        mainScope?.hasTopNavigation == true ||
+        !PlatformDetector.shouldUseSideNavigation(context)) {
       return ToolbarScrim(
         overArtwork: true,
         child: Row(
           children: [
             _buildUserMenuAction(context).child!,
             const Spacer(),
-            _glassIconButton(
-              tooltip: t.common.search,
-              icon: Symbols.search_rounded,
-              onPressed: () => mainScope?.selectTab?.call(NavigationTabId.search),
-            ),
-            const SizedBox(width: 8),
-            _glassIconButton(
-              tooltip: t.common.options,
-              icon: Symbols.more_horiz_rounded,
-              onPressed: mainScope?.openNavigation,
+            FocusableActionBar(
+              key: _actionBarKey,
+              onNavigateLeft: _navigateToSidebar,
+              onNavigateDown: PlatformDetector.isTV() ? _focusTvHero : _focusContentFromAppBar,
+              actions: [
+                FocusableAction(
+                  tooltip: t.common.search,
+                  onPressed: () => mainScope?.selectTab?.call(NavigationTabId.search),
+                  child: _glassIconButton(
+                    tooltip: t.common.search,
+                    icon: Symbols.search_rounded,
+                    onPressed: () => mainScope?.selectTab?.call(NavigationTabId.search),
+                  ),
+                ),
+                FocusableAction(
+                  tooltip: t.common.options,
+                  onPressed: mainScope?.openNavigation,
+                  child: _glassIconButton(
+                    tooltip: t.common.options,
+                    icon: Symbols.more_horiz_rounded,
+                    onPressed: mainScope?.openNavigation,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -1488,9 +1512,152 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       // Every other hub pages from its server in View All, as on phones; handing
       // it the preview items only showed that preview again.
       loadMoreItems: (hub) => hub.id == 'continue_watching' ? _discover.loadAllContinueWatching : null,
-      onNavigateUp: _focusTopActions,
+      onNavigateUp: _focusTvHero,
       onNavigateToSidebar: _navigateToSidebar,
       tallPosterScale: TvBrowseRailLayout.compactTallPosterScale,
+      homeHeader: true,
+    );
+  }
+
+  void _focusTvHero() {
+    if (_tvHeroPlayFocus.context != null) {
+      _tvHeroPlayFocus.requestFocus();
+    } else {
+      _focusTopActions();
+    }
+  }
+
+  Widget _buildTvHeroActions(BuildContext context, MediaItem item) {
+    final candidates = _heroItems.take(4).toList();
+    if (candidates.isNotEmpty && !candidates.any((candidate) => candidate.globalKey == item.globalKey)) {
+      candidates[0] = item;
+    }
+    final selected = candidates.indexWhere((candidate) => candidate.globalKey == item.globalKey);
+    void focusDot() {
+      if (candidates.isEmpty) {
+        _tvBrowseRailKey.currentState?.requestFocus();
+      } else {
+        _tvHeroDotFocus[selected < 0 ? 0 : selected].requestFocus();
+      }
+    }
+
+    void selectDot(int index) {
+      final restore = _tvHeroDotFocus[index].hasFocus;
+      _spotlight.value = candidates[index];
+      if (restore) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _tvHeroDotFocus[index].requestFocus();
+        });
+      }
+    }
+
+    Widget action({
+      required FocusNode focus,
+      required String label,
+      required bool primary,
+      required VoidCallback onPressed,
+      required VoidCallback horizontal,
+    }) => FocusableButton(
+      focusNode: focus,
+      onPressed: onPressed,
+      dimWhenUnfocused: false,
+      onNavigateUp: _focusTopActions,
+      onNavigateDown: focusDot,
+      onNavigateLeft: primary ? _navigateToSidebar : horizontal,
+      onNavigateRight: primary ? horizontal : null,
+      child: Material(
+        color: primary ? Colors.white : Colors.white.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(24),
+        child: InkWell(
+          onTap: onPressed,
+          canRequestFocus: false,
+          borderRadius: BorderRadius.circular(24),
+          child: SizedBox(
+            height: 44,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (primary) ...[
+                    const AppIcon(Symbols.play_arrow_rounded, fill: 1, size: 20, color: Color(0xff121212)),
+                    const SizedBox(width: 7),
+                  ],
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: primary ? const Color(0xff121212) : Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            action(
+              focus: _tvHeroPlayFocus,
+              label: t.discover.continueWatching,
+              primary: true,
+              onPressed: () => _openHero(item, play: canPlayHomeHeroDirectly(item)),
+              horizontal: _tvHeroDetailsFocus.requestFocus,
+            ),
+            const SizedBox(width: 9),
+            action(
+              focus: _tvHeroDetailsFocus,
+              label: t.mediaMenu.viewDetails,
+              primary: false,
+              onPressed: () => _openHero(item),
+              horizontal: _tvHeroPlayFocus.requestFocus,
+            ),
+          ],
+        ),
+        const SizedBox(height: 19),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < candidates.length; i++)
+              Semantics(
+                button: true,
+                selected: i == (selected < 0 ? 0 : selected),
+                label: candidates[i].displayTitle,
+                child: FocusableButton(
+                  dimWhenUnfocused: false,
+                  focusNode: _tvHeroDotFocus[i],
+                  onPressed: () => selectDot(i),
+                  onNavigateLeft: i == 0 ? _navigateToSidebar : () => _tvHeroDotFocus[i - 1].requestFocus(),
+                  onNavigateRight: i + 1 < candidates.length ? () => _tvHeroDotFocus[i + 1].requestFocus() : null,
+                  onNavigateUp: _tvHeroPlayFocus.requestFocus,
+                  onNavigateDown: () => _tvBrowseRailKey.currentState?.requestFocus(),
+                  child: GestureDetector(
+                    onTap: () => selectDot(i),
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3.5, vertical: 10),
+                      child: Container(
+                        width: i == (selected < 0 ? 0 : selected) ? 15 : 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: i == (selected < 0 ? 0 : selected) ? 1 : .29),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -1509,6 +1676,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       resolveSpotlight: () => _spotlight.resolve(browseHubs),
       resolveClient: _getMediaClientForItem,
       hideSpoilers: hideSpoilers,
+      homeActionsBuilder: _buildTvHeroActions,
       foreground: Stack(
         fit: StackFit.expand,
         clipBehavior: Clip.none,
