@@ -15,7 +15,6 @@ import 'player_subtitle_appearance.dart';
 import '../../focusable_list_tile.dart';
 import '../../overlay_sheet.dart';
 import '../../settings_builder.dart';
-import '../../setting_tile.dart';
 import '../models/track_controls_state.dart';
 import 'base_video_control_sheet.dart';
 import 'danmaku_settings_sheet.dart';
@@ -29,7 +28,7 @@ enum PlayerDrawerTab { video, audio, subtitles, danmaku }
 /// sheets, which render headerless inside it ([EmbeddedVideoControlSheet]).
 class PlayerSettingsDrawer extends StatefulWidget {
   static double widthFor(BuildContext context) {
-    if (!PlatformDetector.isTV()) return OverlayTokens.drawerWidth;
+    if (!PlatformDetector.isTV()) return PlatformDetector.isTablet(context) ? 400 : OverlayTokens.drawerWidth;
     final width = MediaQuery.sizeOf(context).width;
     final maximum = width * .85;
     final minimum = maximum < 240 ? maximum : 240.0;
@@ -149,7 +148,9 @@ class _PlayerSettingsDrawerState extends State<PlayerSettingsDrawer> {
               padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
               child: Row(
                 children: [
-                  Expanded(child: Text(t.videoControls.moreButton, style: Theme.of(context).textTheme.titleMedium)),
+                  Expanded(
+                    child: Text(t.videoControls.playbackSettings, style: Theme.of(context).textTheme.titleMedium),
+                  ),
                   IconButton(
                     tooltip: t.common.close,
                     onPressed: () => OverlaySheetController.of(context).close(),
@@ -221,25 +222,7 @@ class _PlayerSettingsDrawerState extends State<PlayerSettingsDrawer> {
       padding: const EdgeInsets.only(bottom: 8),
       children: [
         _AspectRatioRow(state: widget.state),
-        if (!widget.state.isLive) ...[
-          const _AutoSkipRow(),
-          SettingNumberTile(
-            pref: SettingsService.customSkipIntroSeconds,
-            icon: Symbols.fast_forward_rounded,
-            title: t.settings.customSkipIntroSeconds,
-            subtitleBuilder: (v) => v == 0 ? t.settings.skipSecondsOff : t.settings.secondsUnit(seconds: v.toString()),
-            labelText: t.settings.secondsLabel,
-            suffixText: t.settings.secondsShort,
-          ),
-          SettingNumberTile(
-            pref: SettingsService.customSkipEndSeconds,
-            icon: Symbols.skip_next_rounded,
-            title: t.settings.customSkipEndSeconds,
-            subtitleBuilder: (v) => v == 0 ? t.settings.skipSecondsOff : t.settings.secondsUnit(seconds: v.toString()),
-            labelText: t.settings.secondsLabel,
-            suffixText: t.settings.secondsShort,
-          ),
-        ],
+        if (!widget.state.isLive) const _AutoSkipRow(),
         PlayerDrawerHeading(t.videoControls.moreButton),
         if (widget.coreLabel != null)
           FocusableListTile(

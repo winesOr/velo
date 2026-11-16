@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:plezy/i18n/strings.g.dart';
+import 'package:plezy/focus/input_mode_tracker.dart';
+import 'package:plezy/profiles/active_profile_provider.dart';
+import 'package:plezy/profiles/profile.dart';
+import 'package:plezy/services/settings_service.dart';
+import 'package:plezy/utils/platform_detector.dart';
+import 'package:plezy/widgets/overlay_sheet.dart';
+import '../test_helpers/prefs.dart';
 import 'package:plezy/media/ids.dart';
 import 'package:plezy/media/media_item.dart';
 import 'package:plezy/services/jellyfin_mappers.dart';
@@ -63,14 +71,15 @@ void main() {
     }
   });
 
-  testWidgets('portrait header keeps all six controls without squeezing the title', (tester) async {
+  testWidgets('portrait header fits the room pill and four actions without squeezing the title', (tester) async {
     await _pumpHeader(
       tester,
       metadata: _mappedItem({'Id': 'movie', 'Type': 'Movie', 'Name': 'Movie title'}),
       style: VideoHeaderStyle.multiLine,
       width: 328,
-      trailing: const SizedBox(width: 288, height: 48),
+      trailing: const SizedBox(width: 160, height: 48),
       trailingOnSeparateRow: true,
+      sessionProvider: _HeaderSessionProvider(),
     );
     expect(tester.takeException(), isNull);
     expect(tester.getSize(find.text('Movie title')).width, greaterThan(100));
@@ -106,12 +115,41 @@ void main() {
 
       final expectedEpisodeLine = switch (style) {
         VideoHeaderStyle.singleLine => 'Mapped Series · S2E3 · ${t.common.unknown}',
-        VideoHeaderStyle.multiLine =>
-          '${t.videoControls.seasonNumber(n: 2)} · ${t.videoControls.episodeNumber(n: 3)} · ${t.common.unknown}',
+        VideoHeaderStyle.multiLine => 'S2 · E3  ${t.common.unknown}',
       };
       expect(find.text(expectedEpisodeLine), findsOneWidget, reason: style.name);
       expect(tester.takeException(), isNull, reason: style.name);
     }
+  });
+
+  testWidgets('TV together pill opens create and join controls without a session', (tester) async {
+    resetSharedPreferencesForTest();
+    SettingsService.resetForTesting();
+    await SettingsService.getInstance();
+    TvDetectionService.debugSetAppleTVOverride(true);
+    addTearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
+    final nodes = List.generate(4, (_) => FocusNode());
+    addTearDown(() {
+      for (final node in nodes) {
+        node.dispose();
+      }
+    });
+    await _pumpHeader(
+      tester,
+      metadata: _mappedItem({'Id': 'movie', 'Type': 'Movie', 'Name': 'Movie'}),
+      style: VideoHeaderStyle.multiLine,
+      tvFocusNodes: nodes,
+    );
+    expect(find.text(t.watchTogether.title), findsOneWidget);
+    nodes[2].requestFocus();
+    await tester.pump();
+    expect(nodes[2].hasFocus, isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.text(t.watchTogether.createSession), findsOneWidget);
+    expect(find.text(t.watchTogether.joinSession), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('ordinary mapped episode shows its number and title', (tester) async {
@@ -129,8 +167,7 @@ void main() {
 
       final expectedEpisodeLine = switch (style) {
         VideoHeaderStyle.singleLine => 'Mapped Series · S1E4 · The Arrival',
-        // Season 1 is implied; no duration on the line.
-        VideoHeaderStyle.multiLine => '${t.videoControls.episodeNumber(n: 4)} · The Arrival',
+        VideoHeaderStyle.multiLine => 'S1 · E4  The Arrival',
       };
       expect(find.text(expectedEpisodeLine), findsOneWidget, reason: style.name);
       expect(find.text(t.common.unknown), findsNothing, reason: style.name);
@@ -155,30 +192,41 @@ Future<void> _pumpHeader(
   double textScale = 1,
   Widget? trailing,
   bool trailingOnSeparateRow = false,
+  List<FocusNode>? tvFocusNodes,
+  WatchTogetherProvider? sessionProvider,
 }) async {
-  final watchTogether = WatchTogetherProvider();
+  final watchTogether = sessionProvider ?? WatchTogetherProvider();
   addTearDown(watchTogether.dispose);
 
   await tester.pumpWidget(
     TranslationProvider(
-      child: ChangeNotifierProvider<WatchTogetherProvider>.value(
-        value: watchTogether,
-        child: MaterialApp(
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
-            child: child!,
-          ),
-          home: Scaffold(
-            backgroundColor: Colors.black,
-            body: SizedBox(
-              width: width,
-              child: VideoControlsHeader(
-                metadata: metadata,
-                style: style,
-                showClock: width > 400,
-                trailing: trailing,
-                trailingOnSeparateRow: trailingOnSeparateRow,
-                onBack: () {},
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider<WatchTogetherProvider>.value(value: watchTogether),
+          ChangeNotifierProvider<ActiveProfileProvider>(create: (_) => _HeaderProfile()),
+        ],
+        child: InputModeTracker(
+          child: MaterialApp(
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+              child: child!,
+            ),
+            home: Scaffold(
+              backgroundColor: Colors.black,
+              body: OverlaySheetHost(
+                child: SizedBox(
+                  width: width,
+                  child: VideoControlsHeader(
+                    tvFocusNodes: tvFocusNodes,
+                    mobileLayout: true,
+                    metadata: metadata,
+                    style: style,
+                    showClock: width > 400,
+                    trailing: trailing,
+                    trailingOnSeparateRow: trailingOnSeparateRow,
+                    onBack: () {},
+                  ),
+                ),
               ),
             ),
           ),
@@ -186,4 +234,20 @@ Future<void> _pumpHeader(
       ),
     ),
   );
+}
+
+class _HeaderProfile extends ChangeNotifier implements ActiveProfileProvider {
+  @override
+  String get activeId => 'header-test-profile';
+  @override
+  Profile? get active => null;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _HeaderSessionProvider extends WatchTogetherProvider {
+  @override
+  bool get isInSession => true;
+  @override
+  int get participantCount => 3;
 }

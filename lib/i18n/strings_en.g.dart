@@ -2308,6 +2308,15 @@ class Translations$videoControls$en {
 
 	// Translations
 
+	/// en: 'Playback Settings'
+	String get playbackSettings => 'Playback Settings';
+
+	/// en: 'S${season} · E${episode}'
+	String seasonEpisodeShort({required Object season, required Object episode}) => 'S${season} · E${episode}';
+
+	/// en: 'E${n}'
+	String episodeShort({required Object n}) => 'E${n}';
+
 	/// en: 'Audio'
 	String get audioLabel => 'Audio';
 
@@ -9028,6 +9037,9 @@ extension on Translations {
 			'tooltips.markAsWatched' => 'Mark as watched',
 			'tooltips.markAsUnwatched' => 'Mark as unwatched',
 			'audioTracks.track' => ({required Object n}) => 'Audio Track ${n}',
+			'videoControls.playbackSettings' => 'Playback Settings',
+			'videoControls.seasonEpisodeShort' => ({required Object season, required Object episode}) => 'S${season} · E${episode}',
+			'videoControls.episodeShort' => ({required Object n}) => 'E${n}',
 			'videoControls.audioLabel' => 'Audio',
 			'videoControls.subtitlesLabel' => 'Subtitles',
 			'videoControls.addTime' => ({required Object amount, required Object unit}) => '+${amount}${unit}',
@@ -9317,11 +9329,11 @@ extension on Translations {
 			'profiles.makeDefault' => 'Make default',
 			'profiles.removeConnection' => 'Remove',
 			'profiles.profileRenamed' => 'Profile renamed.',
+			_ => null,
+		} ?? switch (path) {
 			'profiles.borrowAddTo' => ({required Object displayName}) => 'Add to ${displayName}',
 			'profiles.borrowExplain' => 'Borrow another profile\'s connection. PIN-protected profiles require a PIN.',
 			'profiles.borrowEmpty' => 'Nothing to borrow yet.',
-			_ => null,
-		} ?? switch (path) {
 			'profiles.borrowEmptySubtitle' => 'Connect Plex, Jellyfin, or Emby to another profile first.',
 			'profiles.borrowLoadFailed' => 'Available connections could not be loaded. Try again.',
 			'profiles.borrowFromProfile' => ({required Object displayName}) => 'From ${displayName}',
@@ -9831,11 +9843,11 @@ extension on Translations {
 			'liveTv.scheduledRecordings' => 'Scheduled',
 			'liveTv.recordingRules' => 'Recording Rules',
 			'liveTv.noScheduledRecordings' => 'Nothing scheduled to record',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.manageRecording' => 'Manage recording',
 			'liveTv.cancelRecording' => 'Cancel recording',
 			'liveTv.cancelRecordingTitle' => 'Cancel this recording?',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.cancelRecordingMessage' => ({required Object title}) => '${title} will no longer be recorded.',
 			'liveTv.deleteRule' => 'Delete rule',
 			'liveTv.deleteRuleTitle' => 'Delete recording rule?',
@@ -10345,11 +10357,11 @@ extension on Translations {
 			'performanceOverlay.dvRpuFailed' => ({required Object converted, required Object failures}) => '${converted} (${failures} failed)',
 			'externalPlayer.title' => 'External Player',
 			'externalPlayer.useExternalPlayer' => 'Use External Player',
+			_ => null,
+		} ?? switch (path) {
 			'externalPlayer.useExternalPlayerDescription' => 'Open videos in another app',
 			'externalPlayer.selectPlayer' => 'Select Player',
 			'externalPlayer.customPlayers' => 'Custom Players',
-			_ => null,
-		} ?? switch (path) {
 			'externalPlayer.systemDefault' => 'System Default',
 			'externalPlayer.addCustomPlayer' => 'Add Custom Player',
 			'externalPlayer.playerName' => 'Player Name',

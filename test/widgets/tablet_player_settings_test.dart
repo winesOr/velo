@@ -22,7 +22,7 @@ void main() {
     await loadTabletFonts();
   });
 
-  testWidgets('player drawer edits the same persisted intro and end durations as global settings', (tester) async {
+  testWidgets('player drawer hides fallback durations and preserves the saved settings', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -49,14 +49,10 @@ void main() {
       (title: t.settings.customSkipIntroSeconds, pref: SettingsService.customSkipIntroSeconds, seconds: 85),
       (title: t.settings.customSkipEndSeconds, pref: SettingsService.customSkipEndSeconds, seconds: 120),
     ]) {
-      await tester.ensureVisible(find.text(entry.title));
-      await tester.tap(find.text(entry.title));
+      await SettingsService.instance.write(entry.pref, entry.seconds);
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), '${entry.seconds}');
-      await tester.tap(find.text(t.common.save));
-      await tester.pumpAndSettle();
+      expect(find.text(entry.title), findsNothing);
       expect(SettingsService.instance.read(entry.pref), entry.seconds);
-      expect(find.text(t.settings.secondsUnit(seconds: '${entry.seconds}')), findsOneWidget);
     }
     expect(tester.takeException(), isNull);
   });
@@ -86,14 +82,12 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        for (final label in [
-          t.videoControls.autoSkipSection,
-          t.videoControls.autoSkipToggle,
-          t.settings.customSkipIntroSeconds,
-          t.settings.customSkipEndSeconds,
-        ]) {
+        for (final label in [t.videoControls.autoSkipSection, t.videoControls.autoSkipToggle]) {
           expect(find.text(label), isLive ? findsNothing : findsOneWidget);
         }
+        expect(find.text(t.settings.customSkipIntroSeconds), findsNothing);
+        expect(find.text(t.settings.customSkipEndSeconds), findsNothing);
+        expect(find.text(t.videoControls.playbackSettings), findsOneWidget);
         expect(find.widgetWithText(PlayerDrawerHeading, t.videoControls.moreButton), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
@@ -128,7 +122,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       final panel = tester.getSize(find.byType(PlayerSettingsDrawer));
-      expect(panel.width, 340);
+      expect(panel.width, 400);
       expect(panel.height, size.height);
       await tester.tap(find.text(t.videoControls.tabAudio));
       await tester.pumpAndSettle();

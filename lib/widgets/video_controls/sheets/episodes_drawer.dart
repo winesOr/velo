@@ -23,6 +23,7 @@ import '../../settings_builder.dart';
 import '../widgets/media_selector_thumbnail.dart';
 import 'base_video_control_sheet.dart';
 import 'player_initial_focus.dart';
+import 'player_settings_controls.dart';
 import 'player_popovers.dart' show episodePopoverLabel;
 
 /// Shared player drawer. Queue items retain their original queue identity.
@@ -36,7 +37,13 @@ class EpisodesDrawer extends StatefulWidget {
     required this.isAuthorized,
     required this.onRepeat,
     required this.onShuffle,
+    this.chapters,
+    this.hasMediaSelection = true,
   });
+
+  /// Existing chapter controls embedded as the second selector tab.
+  final Widget? chapters;
+  final bool hasMediaSelection;
   final MediaItem current;
   final bool offline;
   final bool canNavigate;
@@ -67,6 +74,7 @@ class _EpisodesDrawerState extends State<EpisodesDrawer> {
   MediaItem? _season;
   MediaItem? _nextSeasonFirst;
   MediaItem? _nextSeason;
+  late bool _showChapters = !widget.hasMediaSelection;
   bool _loading = false;
   bool _failed = false;
   bool _hasMore = false;
@@ -97,14 +105,17 @@ class _EpisodesDrawerState extends State<EpisodesDrawer> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _loadInitial();
+      if (mounted && widget.hasMediaSelection) _loadInitial();
     });
   }
 
   @override
   void didUpdateWidget(covariant EpisodesDrawer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.current.globalKey != widget.current.globalKey || oldWidget.offline != widget.offline) _loadInitial();
+    if (widget.hasMediaSelection &&
+        (oldWidget.current.globalKey != widget.current.globalKey || oldWidget.offline != widget.offline)) {
+      _loadInitial();
+    }
   }
 
   @override
@@ -365,159 +376,194 @@ class _EpisodesDrawerState extends State<EpisodesDrawer> {
               _scopeReloadScheduled = true;
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _scopeReloadScheduled = false;
-                if (mounted) _loadInitial();
+                if (mounted && widget.hasMediaSelection) _loadInitial();
               });
             }
             return const Center(child: CircularProgressIndicator());
           }
           final episodes = _episodeMode;
           return BaseVideoControlSheet(
-            title: episodes ? t.videoControls.episodesButton : t.videoControls.playlistDrawer,
+            title: !widget.hasMediaSelection
+                ? t.videoControls.chapters
+                : episodes
+                ? t.videoControls.episodesButton
+                : t.videoControls.playlistDrawer,
             icon: Symbols.format_list_bulleted_rounded,
             child: Column(
               children: [
-                if (episodes && _seasons.isNotEmpty)
-                  SizedBox(
-                    height: 52,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
+                if (widget.chapters != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
                       children: [
-                        for (final season in _seasons)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: ChoiceChip(
-                              label: Text(
-                                season.title ??
-                                    (season.index == null
-                                        ? t.common.unknown
-                                        : t.videoControls.seasonNumber(n: season.index!)),
-                              ),
-                              selected: _season?.id == season.id,
-                              onSelected: (_) => _chooseSeason(season),
+                        if (widget.hasMediaSelection) ...[
+                          Expanded(
+                            child: PlayerDrawerChoice(
+                              tab: true,
+                              label: episodes ? t.videoControls.episodesButton : t.videoControls.playlistDrawer,
+                              selected: !_showChapters,
+                              onTap: () => setState(() => _showChapters = false),
                             ),
                           ),
+                          const SizedBox(width: 8),
+                        ],
+                        Expanded(
+                          child: PlayerDrawerChoice(
+                            tab: true,
+                            label: t.videoControls.chapters,
+                            selected: _showChapters,
+                            onTap: () => setState(() => _showChapters = true),
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                if (!episodes)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton.icon(
-                          onPressed: !widget.canNavigate || !widget.isAuthorized() || queue.queueModeChangePending
-                              ? null
-                              : () async {
-                                  final next = switch (queue.repeatMode) {
-                                    VideoQueueRepeatMode.off => VideoQueueRepeatMode.all,
-                                    VideoQueueRepeatMode.all => VideoQueueRepeatMode.one,
-                                    VideoQueueRepeatMode.one => VideoQueueRepeatMode.off,
-                                  };
-                                  await widget.onRepeat(next);
-                                },
-                          icon: Icon(
-                            queue.repeatMode == VideoQueueRepeatMode.one
-                                ? Symbols.repeat_one_rounded
-                                : Symbols.repeat_rounded,
-                          ),
-                          label: Text(switch (queue.repeatMode) {
-                            VideoQueueRepeatMode.off => t.videoControls.repeatOff,
-                            VideoQueueRepeatMode.all => t.videoControls.repeatAll,
-                            VideoQueueRepeatMode.one => t.videoControls.repeatOne,
-                          }),
-                        ),
-                      ),
-                      Expanded(
-                        child: TextButton.icon(
-                          onPressed: !widget.canNavigate || !widget.isAuthorized() || queue.queueModeChangePending
-                              ? null
-                              : () async {
-                                  final generation = ++_generation;
-                                  final ok = await widget.onShuffle(
-                                    !queue.isShuffleActive,
-                                    () => mounted && generation == _generation && widget.isAuthorized(),
-                                  );
-                                  if (!mounted || generation != _generation || !_scopeCurrent()) return;
-                                  if (ok) {
-                                    await _loadInitial();
-                                  } else {
-                                    setState(() => _failed = true);
-                                  }
-                                },
-                          icon: Icon(
-                            Symbols.shuffle_rounded,
-                            color: queue.isShuffleActive ? Theme.of(context).colorScheme.primary : null,
-                          ),
-                          label: Text(t.common.shuffle),
-                        ),
-                      ),
-                    ],
-                  ),
-                Expanded(
-                  child: SettingValueBuilder<bool>(
-                    pref: SettingsService.hideSpoilers,
-                    builder: (context, hideSpoilers, _) {
-                      final currentId = queue.currentPlayQueueItemID;
-                      final currentIndex = _items.indexWhere(
-                        (item) => episodes
-                            ? item.globalKey == widget.current.globalKey
-                            : queue.isQueueActive
-                            ? queue.playQueueItemIdFor(item) == currentId
-                            : item.globalKey == widget.current.globalKey,
-                      );
-                      if (currentIndex >= 0 && _scrollToCurrent) {
-                        scrollToCurrentItem(
-                          _scroll,
-                          _firstKey,
-                          currentIndex,
-                          isCurrent: () => mounted && _scopeCurrent(),
-                        );
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            final target = _currentKey.currentContext;
-                            if (mounted && _scopeCurrent() && target != null) {
-                              _scrollToCurrent = false;
-                              Scrollable.ensureVisible(target, alignment: .25);
-                              _initialFocus.focusWhenVisible();
-                            }
-                          });
-                        });
-                      }
-                      return ListView(
-                        controller: _scroll,
+                if (_showChapters && widget.chapters != null)
+                  Expanded(child: EmbeddedVideoControlSheet(child: widget.chapters!))
+                else ...[
+                  if (episodes && _seasons.isNotEmpty)
+                    SizedBox(
+                      height: 52,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
                         children: [
-                          for (var index = 0; index < _items.length; index++)
-                            _row(
-                              _items[index],
-                              key: index == currentIndex ? _currentKey : (index == 0 ? _firstKey : null),
-                              current: index == currentIndex,
-                              next: index == currentIndex + 1 && currentIndex >= 0,
-                              hideSpoilers: hideSpoilers,
-                            ),
-                          if (_nextSeasonFirst != null) ...[
-                            ListTile(
-                              title: Text(
-                                _nextSeason?.index == null
-                                    ? t.videoControls.nextPlaying
-                                    : t.videoControls.nextSeason(n: _nextSeason!.index!),
+                          for (final season in _seasons)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: ChoiceChip(
+                                label: Text(
+                                  season.title ??
+                                      (season.index == null
+                                          ? t.common.unknown
+                                          : t.videoControls.seasonNumber(n: season.index!)),
+                                ),
+                                selected: _season?.id == season.id,
+                                onSelected: (_) => _chooseSeason(season),
                               ),
                             ),
-                            _row(_nextSeasonFirst!, current: false, next: true, hideSpoilers: hideSpoilers),
-                          ],
-                          if (_items.isEmpty && !_loading && !_failed)
-                            ListTile(title: Text(t.videoControls.noQueueItems)),
-                          if (_loading) const Center(child: CircularProgressIndicator()),
-                          if (_failed)
-                            TextButton(
-                              onPressed: _items.isEmpty || (episodes && _season == null) ? _loadInitial : _more,
-                              child: Text(t.common.retry),
-                            ),
-                          if (_hasMore && !_loading && !_failed)
-                            TextButton(onPressed: _more, child: Text(t.videoControls.drawerLoadMore)),
                         ],
-                      );
-                    },
+                      ),
+                    ),
+                  if (!episodes)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton.icon(
+                            onPressed: !widget.canNavigate || !widget.isAuthorized() || queue.queueModeChangePending
+                                ? null
+                                : () async {
+                                    final next = switch (queue.repeatMode) {
+                                      VideoQueueRepeatMode.off => VideoQueueRepeatMode.all,
+                                      VideoQueueRepeatMode.all => VideoQueueRepeatMode.one,
+                                      VideoQueueRepeatMode.one => VideoQueueRepeatMode.off,
+                                    };
+                                    await widget.onRepeat(next);
+                                  },
+                            icon: Icon(
+                              queue.repeatMode == VideoQueueRepeatMode.one
+                                  ? Symbols.repeat_one_rounded
+                                  : Symbols.repeat_rounded,
+                            ),
+                            label: Text(switch (queue.repeatMode) {
+                              VideoQueueRepeatMode.off => t.videoControls.repeatOff,
+                              VideoQueueRepeatMode.all => t.videoControls.repeatAll,
+                              VideoQueueRepeatMode.one => t.videoControls.repeatOne,
+                            }),
+                          ),
+                        ),
+                        Expanded(
+                          child: TextButton.icon(
+                            onPressed: !widget.canNavigate || !widget.isAuthorized() || queue.queueModeChangePending
+                                ? null
+                                : () async {
+                                    final generation = ++_generation;
+                                    final ok = await widget.onShuffle(
+                                      !queue.isShuffleActive,
+                                      () => mounted && generation == _generation && widget.isAuthorized(),
+                                    );
+                                    if (!mounted || generation != _generation || !_scopeCurrent()) return;
+                                    if (ok) {
+                                      await _loadInitial();
+                                    } else {
+                                      setState(() => _failed = true);
+                                    }
+                                  },
+                            icon: Icon(
+                              Symbols.shuffle_rounded,
+                              color: queue.isShuffleActive ? Theme.of(context).colorScheme.primary : null,
+                            ),
+                            label: Text(t.common.shuffle),
+                          ),
+                        ),
+                      ],
+                    ),
+                  Expanded(
+                    child: SettingValueBuilder<bool>(
+                      pref: SettingsService.hideSpoilers,
+                      builder: (context, hideSpoilers, _) {
+                        final currentId = queue.currentPlayQueueItemID;
+                        final currentIndex = _items.indexWhere(
+                          (item) => episodes
+                              ? item.globalKey == widget.current.globalKey
+                              : queue.isQueueActive
+                              ? queue.playQueueItemIdFor(item) == currentId
+                              : item.globalKey == widget.current.globalKey,
+                        );
+                        if (currentIndex >= 0 && _scrollToCurrent) {
+                          scrollToCurrentItem(
+                            _scroll,
+                            _firstKey,
+                            currentIndex,
+                            isCurrent: () => mounted && _scopeCurrent(),
+                          );
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              final target = _currentKey.currentContext;
+                              if (mounted && _scopeCurrent() && target != null) {
+                                _scrollToCurrent = false;
+                                Scrollable.ensureVisible(target, alignment: .25);
+                                _initialFocus.focusWhenVisible();
+                              }
+                            });
+                          });
+                        }
+                        return ListView(
+                          controller: _scroll,
+                          children: [
+                            for (var index = 0; index < _items.length; index++)
+                              _row(
+                                _items[index],
+                                key: index == currentIndex ? _currentKey : (index == 0 ? _firstKey : null),
+                                current: index == currentIndex,
+                                next: index == currentIndex + 1 && currentIndex >= 0,
+                                hideSpoilers: hideSpoilers,
+                              ),
+                            if (_nextSeasonFirst != null) ...[
+                              ListTile(
+                                title: Text(
+                                  _nextSeason?.index == null
+                                      ? t.videoControls.nextPlaying
+                                      : t.videoControls.nextSeason(n: _nextSeason!.index!),
+                                ),
+                              ),
+                              _row(_nextSeasonFirst!, current: false, next: true, hideSpoilers: hideSpoilers),
+                            ],
+                            if (_items.isEmpty && !_loading && !_failed)
+                              ListTile(title: Text(t.videoControls.noQueueItems)),
+                            if (_loading) const Center(child: CircularProgressIndicator()),
+                            if (_failed)
+                              TextButton(
+                                onPressed: _items.isEmpty || (episodes && _season == null) ? _loadInitial : _more,
+                                child: Text(t.common.retry),
+                              ),
+                            if (_hasMore && !_loading && !_failed)
+                              TextButton(onPressed: _more, child: Text(t.videoControls.drawerLoadMore)),
+                          ],
+                        );
+                      },
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           );

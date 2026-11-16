@@ -777,6 +777,9 @@
     "track": "Audio Track ${n}"
   },
   "videoControls": {
+    "playbackSettings": "Playback Settings",
+    "seasonEpisodeShort": "S${season} · E${episode}",
+    "episodeShort": "E${n}",
     "audioLabel": "Audio",
     "subtitlesLabel": "Subtitles",
     "addTime": "+${amount}${unit}",

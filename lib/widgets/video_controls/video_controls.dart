@@ -1411,15 +1411,19 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
                                                       onSpeedTap: (_) => _openSpeedDrawer(context, state),
                                                       onSubtitlesTap: (_) =>
                                                           _openPlayerDrawer(context, state, PlayerDrawerTab.subtitles),
-                                                      onEpisodesTap: !widget.isLive && widget.canNavigateMediaItems
+                                                      onEpisodesTap:
+                                                          !widget.isLive &&
+                                                              (widget.canNavigateMediaItems || _chapters.isNotEmpty)
                                                           ? (_) => _openEpisodesDrawer(context)
                                                           : null,
-                                                      episodesLabel: episodeMode
+                                                      episodesLabel:
+                                                          !episodeMode &&
+                                                              !playbackState.isQueueActive &&
+                                                              _chapters.isNotEmpty
+                                                          ? t.videoControls.chapters
+                                                          : episodeMode
                                                           ? t.videoControls.episodesButton
                                                           : t.videoControls.playlistDrawer,
-                                                      onChapters: _chapters.isNotEmpty
-                                                          ? () => _openChapterDrawer(context)
-                                                          : null,
                                                       onDanmakuTap: (_) =>
                                                           _openPlayerDrawer(context, state, PlayerDrawerTab.danmaku),
                                                       onDanmakuToggle: _toggleDanmaku,
@@ -1613,13 +1617,15 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
                             ignoring: !((_showControls && !_isScreenLocked) || (_isScreenLocked && _showLockIcon)),
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.42),
-                                borderRadius: BorderRadius.circular(22),
+                                color: Colors.black.withValues(alpha: 0.32),
+                                borderRadius: BorderRadius.circular(18),
                                 border: Border.all(color: Colors.white.withValues(alpha: 0.18), width: 0.8),
                               ),
                               child: IconButton(
                                 tooltip: _isScreenLocked ? t.videoControls.unlockScreen : t.videoControls.lockScreen,
-                                constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+                                constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+                                padding: EdgeInsets.zero,
+                                style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                                 onPressed: () {
                                   if (_isScreenLocked) {
                                     _unlockScreen();
@@ -1631,7 +1637,7 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
                                   _isScreenLocked ? Symbols.lock_rounded : Symbols.lock_open_rounded,
                                   semanticLabel: t.videoControls.screenLockButton,
                                   color: _isScreenLocked ? const Color(0xFFFFB74D) : Colors.white,
-                                  size: 22,
+                                  size: 20,
                                 ),
                               ),
                             ),

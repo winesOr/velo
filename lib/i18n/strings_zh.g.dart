@@ -931,6 +931,9 @@ class Translations$videoControls$zh extends Translations$videoControls$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String get playbackSettings => '播放设置';
+	@override String seasonEpisodeShort({required Object season, required Object episode}) => 'S${season} · E${episode}';
+	@override String episodeShort({required Object n}) => 'E${n}';
 	@override String get audioLabel => '音频';
 	@override String get subtitlesLabel => '字幕';
 	@override String addTime({required Object amount, required Object unit}) => '+${amount}${unit}';
@@ -4168,6 +4171,9 @@ extension on TranslationsZh {
 			'tooltips.markAsWatched' => '标记为已观看',
 			'tooltips.markAsUnwatched' => '标记为未观看',
 			'audioTracks.track' => ({required Object n}) => '音轨 ${n}',
+			'videoControls.playbackSettings' => '播放设置',
+			'videoControls.seasonEpisodeShort' => ({required Object season, required Object episode}) => 'S${season} · E${episode}',
+			'videoControls.episodeShort' => ({required Object n}) => 'E${n}',
 			'videoControls.audioLabel' => '音频',
 			'videoControls.subtitlesLabel' => '字幕',
 			'videoControls.addTime' => ({required Object amount, required Object unit}) => '+${amount}${unit}',
@@ -4457,11 +4463,11 @@ extension on TranslationsZh {
 			'profiles.makeDefault' => '设为默认',
 			'profiles.removeConnection' => '移除',
 			'profiles.profileRenamed' => '用户资料已重命名。',
+			_ => null,
+		} ?? switch (path) {
 			'profiles.borrowAddTo' => ({required Object displayName}) => '添加到 ${displayName}',
 			'profiles.borrowExplain' => '使用另一个用户资料的连接。受 PIN 保护的用户资料需要输入 PIN。',
 			'profiles.borrowEmpty' => '暂无可用连接。',
-			_ => null,
-		} ?? switch (path) {
 			'profiles.borrowEmptySubtitle' => '请先将 Plex、Jellyfin 或 Emby 连接到另一个用户资料。',
 			'profiles.borrowLoadFailed' => '无法加载可用连接。请重试。',
 			'profiles.borrowFromProfile' => ({required Object displayName}) => '来自 ${displayName}',
@@ -4971,11 +4977,11 @@ extension on TranslationsZh {
 			'liveTv.scheduledRecordings' => '计划录制',
 			'liveTv.recordingRules' => '录制规则',
 			'liveTv.noScheduledRecordings' => '没有安排的录制',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.manageRecording' => '管理录制',
 			'liveTv.cancelRecording' => '取消录制',
 			'liveTv.cancelRecordingTitle' => '取消此次录制？',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.cancelRecordingMessage' => ({required Object title}) => '将不再录制 ${title}。',
 			'liveTv.deleteRule' => '删除规则',
 			'liveTv.deleteRuleTitle' => '删除录制规则？',
@@ -5485,11 +5491,11 @@ extension on TranslationsZh {
 			'performanceOverlay.dvRpuFailed' => ({required Object converted, required Object failures}) => '${converted}（${failures} 个失败）',
 			'externalPlayer.title' => '外部播放器',
 			'externalPlayer.useExternalPlayer' => '使用外部播放器',
+			_ => null,
+		} ?? switch (path) {
 			'externalPlayer.useExternalPlayerDescription' => '在其他应用中打开视频',
 			'externalPlayer.selectPlayer' => '选择播放器',
 			'externalPlayer.customPlayers' => '自定义播放器',
-			_ => null,
-		} ?? switch (path) {
 			'externalPlayer.systemDefault' => '系统默认',
 			'externalPlayer.addCustomPlayer' => '添加自定义播放器',
 			'externalPlayer.playerName' => '播放器名称',

@@ -16,6 +16,7 @@ import 'package:plezy/providers/playback_state_provider.dart';
 import 'package:plezy/services/settings_service.dart';
 import 'package:plezy/widgets/video_controls/sheets/queue_sheet.dart';
 import 'package:plezy/widgets/video_controls/sheets/episodes_drawer.dart';
+import 'package:plezy/widgets/video_controls/sheets/player_settings_controls.dart';
 import 'package:plezy/widgets/video_controls/widgets/content_strip.dart';
 import 'package:plezy/widgets/video_controls/widgets/media_selector_thumbnail.dart';
 import 'package:provider/provider.dart';
@@ -388,6 +389,45 @@ void main() {
     expect(find.text(t.videoControls.episodesButton), findsOneWidget);
     expect(find.text('Episode 21 · Episode 20'), findsOneWidget);
   });
+
+  for (final hasMediaSelection in [true, false]) {
+    testWidgets('chapter tab stays reachable with media selection $hasMediaSelection', (tester) async {
+      final current = testMediaItem(id: 'chapter-movie', title: 'Chapter movie');
+      final playback = PlaybackStateProvider();
+      addTearDown(playback.dispose);
+      await tester.pumpWidget(
+        _queueHarness(
+          playback: playback,
+          child: EpisodesDrawer(
+            current: current,
+            offline: true,
+            canNavigate: false,
+            hasMediaSelection: hasMediaSelection,
+            chapters: const Text('Chapter controls'),
+            onSelect: (_) async => false,
+            isAuthorized: () => false,
+            onRepeat: (_) async => false,
+            onShuffle: (_, _) async => false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(PlayerDrawerChoice), findsNWidgets(hasMediaSelection ? 2 : 1));
+      if (hasMediaSelection) {
+        expect(find.text('Chapter controls'), findsNothing);
+        await tester.tap(find.widgetWithText(PlayerDrawerChoice, t.videoControls.chapters));
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('Chapter controls'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      if (hasMediaSelection) {
+        await tester.tap(find.widgetWithText(PlayerDrawerChoice, t.videoControls.playlistDrawer));
+        await tester.pumpAndSettle();
+        expect(find.text('Chapter controls'), findsNothing);
+        expect(find.text('Chapter movie'), findsOneWidget);
+      }
+    });
+  }
 
   testWidgets('queue sheet blurs spoiler episode thumbnails', (tester) async {
     await SettingsService.instance.write(SettingsService.hideSpoilers, true);

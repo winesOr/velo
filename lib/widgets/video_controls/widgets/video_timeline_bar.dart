@@ -7,14 +7,14 @@ import '../../../mpv/mpv.dart';
 import '../../../media/media_source_info.dart';
 import '../../../services/scrub_preview_source.dart';
 import '../../../utils/formatters.dart';
-import 'finish_time_builder.dart';
+import '../../../utils/platform_detector.dart';
 import 'timeline_slider.dart';
 
 /// Encapsulates the StreamBuilder stack for video timeline with timestamps.
 ///
 /// This widget listens to player position and duration streams, and displays
 /// a timeline slider with formatted timestamps. Supports both horizontal
-/// layout (timestamps beside slider) and vertical layout (timestamps below slider).
+/// layout (timestamps beside slider) and TV layout (timestamps above slider).
 class VideoTimelineBar extends StatelessWidget {
   final Player player;
   final List<MediaChapter> chapters;
@@ -26,8 +26,8 @@ class VideoTimelineBar extends StatelessWidget {
   final VoidCallback? onScrubStart;
   final VoidCallback? onScrubEnd;
 
-  /// If true, timestamps are shown in a row beside the slider (desktop layout).
-  /// If false, timestamps are shown in a row below the slider (mobile layout).
+  /// Desktop timestamps retain remaining time; touch uses total duration.
+  /// TV always puts timestamps above the track.
   final bool horizontalLayout;
 
   /// Optional FocusNode for D-pad/keyboard navigation.
@@ -40,9 +40,6 @@ class VideoTimelineBar extends StatelessWidget {
   final ValueChanged<bool>? onFocusChange;
 
   final bool enabled;
-
-  /// Whether to show the estimated finish time next to the remaining timestamp (mobile).
-  final bool showFinishTime;
 
   /// Optional callback that returns thumbnail image bytes for a given timestamp.
   final ScrubFrame? Function(Duration time)? thumbnailDataBuilder;
@@ -70,7 +67,6 @@ class VideoTimelineBar extends StatelessWidget {
     this.onKeyEvent,
     this.onFocusChange,
     this.enabled = true,
-    this.showFinishTime = false,
     this.thumbnailDataBuilder,
     this.showKeyRepeatThumbnail = false,
     this.previewPosition,
@@ -97,9 +93,14 @@ class VideoTimelineBar extends StatelessWidget {
                 final remaining = position - duration; // We want this to be negative
 
                 return RepaintBoundary(
-                  child: horizontalLayout
-                      ? _buildHorizontalLayout(position, duration, remaining, bufferRanges)
-                      : _buildVerticalLayout(position, duration, remaining, bufferRanges),
+                  child: PlatformDetector.isTV()
+                      ? _buildTvLayout(position, duration, bufferRanges)
+                      : _buildHorizontalLayout(
+                          position,
+                          duration,
+                          horizontalLayout ? remaining : duration,
+                          bufferRanges,
+                        ),
                 );
               },
             );
@@ -132,22 +133,14 @@ class VideoTimelineBar extends StatelessWidget {
     );
   }
 
-  Widget _buildVerticalLayout(
-    Duration position,
-    Duration duration,
-    Duration remaining,
-    List<BufferRange> bufferRanges,
-  ) {
+  Widget _buildTvLayout(Duration position, Duration duration, List<BufferRange> bufferRanges) {
     return Column(
       children: [
-        _buildSlider(position, duration, bufferRanges),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: .spaceBetween,
-            children: [_buildTimestamp(position), _buildRemainingTimestamp(remaining)],
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [_buildTimestamp(position), _buildTimestamp(duration)],
         ),
+        _buildSlider(position, duration, bufferRanges),
       ],
     );
   }
@@ -160,18 +153,6 @@ class VideoTimelineBar extends StatelessWidget {
 
   Widget _buildTimestamp(Duration time) {
     return Text(formatDurationTimestamp(time), style: _timestampStyle);
-  }
-
-  Widget _buildRemainingTimestamp(Duration remaining) {
-    if (!showFinishTime) return _buildTimestamp(remaining);
-    return FinishTimeBuilder(
-      player: player,
-      builder: (context, finishTime) {
-        if (finishTime == null) return _buildTimestamp(remaining);
-        final clock = formatClockTime(finishTime, is24Hour: MediaQuery.alwaysUse24HourFormatOf(context));
-        return Text('${formatDurationTimestamp(remaining)} · $clock', style: _timestampStyle);
-      },
-    );
   }
 
   Widget _buildSlider(Duration position, Duration duration, List<BufferRange> bufferRanges) {

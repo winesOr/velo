@@ -1,6 +1,7 @@
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../focus/focus_theme.dart';
+import '../../../focus/focusable_wrapper.dart';
 import '../video_control_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -49,6 +50,7 @@ class VideoControlsHeader extends StatelessWidget {
   /// Optional trailing widget (e.g., track/chapter controls)
   final Widget? trailing;
   final bool trailingOnSeparateRow;
+  final bool mobileLayout;
 
   /// Optional callback for back button. If null, defaults to Navigator.pop(true).
   final VoidCallback? onBack;
@@ -72,6 +74,7 @@ class VideoControlsHeader extends StatelessWidget {
     this.style = VideoHeaderStyle.multiLine,
     this.trailing,
     this.trailingOnSeparateRow = false,
+    this.mobileLayout = false,
     this.onBack,
     this.onCancelAutoHide,
     this.onStartAutoHide,
@@ -93,19 +96,7 @@ class VideoControlsHeader extends StatelessWidget {
         AppBarBackButton(style: BackButtonStyle.video, onPressed: onBack ?? () => Navigator.of(context).pop(true)),
         const SizedBox(width: 16),
         Expanded(child: _buildTitle(context, itemTitle)),
-        Selector<WatchTogetherProvider, bool>(
-          selector: (_, p) => p.isInSession,
-          builder: (context, inSession, child) {
-            if (!inSession) return const SizedBox.shrink();
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: WatchTogetherSessionIndicator(
-                onCancelAutoHide: onCancelAutoHide,
-                onStartAutoHide: onStartAutoHide,
-              ),
-            );
-          },
-        ),
+        if (!trailingOnSeparateRow) _sessionIndicator(),
         if (showClock)
           const Padding(
             padding: EdgeInsets.only(right: 8),
@@ -122,44 +113,44 @@ class VideoControlsHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         header,
-        Align(alignment: Alignment.centerRight, child: trailing),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Flexible(child: _sessionIndicator()),
+            trailing!,
+          ],
+        ),
       ],
     );
   }
 
+  Widget _sessionIndicator() => Selector<WatchTogetherProvider, bool>(
+    selector: (_, provider) => provider.isInSession,
+    builder: (context, inSession, _) => inSession
+        ? Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: WatchTogetherSessionIndicator(onCancelAutoHide: onCancelAutoHide, onStartAutoHide: onStartAutoHide),
+          )
+        : const SizedBox.shrink(),
+  );
+
   Widget _buildTvHeader(BuildContext context, String itemTitle) {
     final scale = FocusTheme.tvPlayerScale(context);
-    Widget button(
-      int index,
-      IconData icon,
-      String label,
-      VoidCallback? action, {
-      bool? checked,
-      String? value,
-      String? visibleValue,
-    }) => VideoControlButton(
-      icon: icon,
-      iconBuilder: visibleValue == null
-          ? null
-          : (color) => Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppIcon(icon, color: color, size: 24 * scale),
-                SizedBox(width: 4 * scale),
-                Text(
-                  visibleValue,
-                  style: TextStyle(color: color, fontSize: 14 * scale),
-                ),
-              ],
-            ),
-      tooltip: label,
-      onPressed: action,
-      checked: checked,
-      isActive: checked ?? false,
-      semanticValue: value,
-      focusNode: tvFocusNodes![index],
-      onKeyEvent: onTvKeyEvent,
-      onFocusChange: onFocusChange,
+    Widget button(int index, IconData icon, String label, VoidCallback? action, {bool? checked}) => DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .14),
+        borderRadius: BorderRadius.circular(22 * scale),
+      ),
+      child: VideoControlButton(
+        icon: icon,
+        tooltip: label,
+        onPressed: action,
+        checked: checked,
+        isActive: checked ?? false,
+        focusNode: tvFocusNodes![index],
+        onKeyEvent: onTvKeyEvent,
+        onFocusChange: onFocusChange,
+      ),
     );
     final episode = effectiveEpisodeIndex(metadata);
     return Row(
@@ -181,9 +172,12 @@ class VideoControlsHeader extends StatelessWidget {
               if (episode != null)
                 Text(
                   [
-                    if (metadata.parentIndex != null) t.videoControls.seasonNumber(n: metadata.parentIndex!),
-                    t.videoControls.episodeNumber(n: episode),
-                  ].join(' · '),
+                        if (metadata.parentIndex != null) t.videoControls.seasonNumber(n: metadata.parentIndex!),
+                        t.videoControls.episodeNumber(n: episode),
+                      ].join(' · ') +
+                      (!looksLikeReleaseFileName(itemTitle) && itemTitle != metadata.grandparentTitle
+                          ? '  $itemTitle'
+                          : ''),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: Colors.white70, fontSize: 14 * scale),
@@ -194,17 +188,56 @@ class VideoControlsHeader extends StatelessWidget {
         button(1, Symbols.subtitles_rounded, t.videoControls.danmakuToggle, onToggleDanmaku, checked: danmakuEnabled),
         SizedBox(width: 8 * scale),
         Consumer<WatchTogetherProvider>(
-          builder: (context, provider, _) => button(
-            2,
-            Symbols.group_rounded,
-            t.watchTogether.title,
-            () {
+          builder: (context, provider, _) {
+            void openDrawer() {
               onCancelAutoHide?.call();
               showWatchTogetherPlayerDrawer(context).whenComplete(() => onStartAutoHide?.call());
-            },
-            value: provider.isInSession ? '${t.watchTogether.participants}: ${provider.participantCount}' : null,
-            visibleValue: provider.isInSession ? '${provider.participantCount}' : null,
-          ),
+            }
+
+            final label = provider.isInSession
+                ? '${t.watchTogether.title} · ${provider.participantCount}'
+                : t.watchTogether.title;
+            return FocusableWrapper(
+              focusNode: tvFocusNodes![2],
+              onSelect: openDrawer,
+              onKeyEvent: onTvKeyEvent,
+              onFocusChange: onFocusChange,
+              semanticLabel: t.watchTogether.title,
+              semanticValue: provider.isInSession
+                  ? '${t.watchTogether.participants}: ${provider.participantCount}'
+                  : null,
+              descendantsAreFocusable: false,
+              autoScroll: false,
+              borderRadius: 22 * scale,
+              useBackgroundFocus: true,
+              child: Material(
+                color: const Color(0x4D6FD6CF),
+                borderRadius: BorderRadius.circular(22 * scale),
+                child: InkWell(
+                  onTap: openDrawer,
+                  canRequestFocus: false,
+                  borderRadius: BorderRadius.circular(22 * scale),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16 * scale),
+                    child: SizedBox(
+                      height: 44 * scale,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AppIcon(Symbols.group_rounded, color: Colors.white, size: 18 * scale),
+                          SizedBox(width: 6 * scale),
+                          Text(
+                            label,
+                            style: TextStyle(color: Colors.white, fontSize: 14 * scale, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
         SizedBox(width: 8 * scale),
         button(3, Symbols.more_horiz_rounded, t.videoControls.moreButton, onMore),
@@ -241,30 +274,33 @@ class VideoControlsHeader extends StatelessWidget {
     );
   }
 
-  /// "第 12 集 · 提供八字能取前世财" for an episode. A release file name is
-  /// dropped (the number says it all); no episode number means no line.
   String? _episodeLine(String itemTitle) {
     final episode = effectiveEpisodeIndex(metadata);
     if (episode == null) return null;
-    final parts = <String>[
-      if (metadata.parentIndex != null && metadata.parentIndex! > 1)
-        t.videoControls.seasonNumber(n: metadata.parentIndex!),
-      t.videoControls.episodeNumber(n: episode),
-      if (!looksLikeReleaseFileName(itemTitle) && itemTitle != metadata.grandparentTitle) itemTitle,
-    ];
-    return parts.join(' · ');
+    if (!mobileLayout) {
+      return [
+        if (metadata.parentIndex != null && metadata.parentIndex! > 1)
+          t.videoControls.seasonNumber(n: metadata.parentIndex!),
+        t.videoControls.episodeNumber(n: episode),
+        if (!looksLikeReleaseFileName(itemTitle) && itemTitle != metadata.grandparentTitle) itemTitle,
+      ].join(' · ');
+    }
+    final number = metadata.parentIndex == null
+        ? t.videoControls.episodeShort(n: episode)
+        : t.videoControls.seasonEpisodeShort(season: metadata.parentIndex!, episode: episode);
+    return '$number${!looksLikeReleaseFileName(itemTitle) && itemTitle != metadata.grandparentTitle ? '  $itemTitle' : ''}';
   }
 
   Widget _episodeText(String line) => Text(
     line,
-    style: const TextStyle(color: Colors.white70, fontSize: 13),
+    style: TextStyle(color: Colors.white70, fontSize: mobileLayout ? 11 : 13),
     maxLines: 1,
     overflow: .ellipsis,
   );
 
   Widget _buildSeriesName(String itemTitle) => Text(
     metadata.grandparentTitle ?? itemTitle,
-    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: .bold),
+    style: TextStyle(color: Colors.white, fontSize: mobileLayout ? 22 : 16, fontWeight: .bold),
     maxLines: 1,
     overflow: .ellipsis,
   );

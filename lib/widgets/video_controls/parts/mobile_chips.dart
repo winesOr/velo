@@ -23,26 +23,6 @@ extension _PlexVideoControlsMobileChipMethods on _PlexVideoControlsState {
         .whenComplete(_startHideTimer);
   }
 
-  void _openChapterDrawer(BuildContext context) {
-    widget.chromeController.cancelAutoHide();
-    OverlaySheetController.of(context)
-        .show(
-          style: OverlaySheetStyle.glass,
-          presentation: OverlaySheetPresentation.edgeDrawer,
-          constraints: BoxConstraints(maxWidth: PlayerSettingsDrawer.widthFor(context)),
-          builder: (_) => ChapterSheet(
-            player: widget.player,
-            chapters: _chapters,
-            chaptersLoaded: _chaptersLoaded,
-            canControl: widget.canControl,
-            serverId: widget.metadata.serverId,
-            onSeekRequested: widget.onSeekRequested,
-            onSeekCompleted: widget.onSeekCompleted,
-          ),
-        )
-        .whenComplete(_startHideTimer);
-  }
-
   void _openEpisodesDrawer(BuildContext context) {
     widget.chromeController.cancelAutoHide();
     final host = context.findAncestorStateOfType<VideoPlayerScreenState>();
@@ -52,6 +32,19 @@ extension _PlexVideoControlsMobileChipMethods on _PlexVideoControlsState {
           presentation: OverlaySheetPresentation.edgeDrawer,
           constraints: BoxConstraints(maxWidth: PlayerSettingsDrawer.widthFor(context)),
           builder: (_) => EpisodesDrawer(
+            hasMediaSelection:
+                widget.metadata.isEpisode || context.read<PlaybackStateProvider>().isQueueActive || _chapters.isEmpty,
+            chapters: _chapters.isEmpty
+                ? null
+                : ChapterSheet(
+                    player: widget.player,
+                    chapters: _chapters,
+                    chaptersLoaded: _chaptersLoaded,
+                    canControl: widget.canControl,
+                    serverId: widget.metadata.serverId,
+                    onSeekRequested: widget.onSeekRequested,
+                    onSeekCompleted: widget.onSeekCompleted,
+                  ),
             current: widget.metadata,
             offline: widget.isOfflinePlayback,
             canNavigate: widget.canNavigateMediaItems,

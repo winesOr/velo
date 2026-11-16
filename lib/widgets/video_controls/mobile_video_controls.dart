@@ -75,7 +75,6 @@ class MobileVideoControls extends StatefulWidget {
   final ValueChanged<Rect>? onDanmakuTap;
 
   /// Top-right actions; a null callback hides its button.
-  final VoidCallback? onChapters;
   final VoidCallback? onDanmakuToggle;
   final bool danmakuEnabled;
   final VoidCallback? onCast;
@@ -120,7 +119,6 @@ class MobileVideoControls extends StatefulWidget {
     this.onEpisodesTap,
     this.episodesLabel,
     this.onDanmakuTap,
-    this.onChapters,
     this.onDanmakuToggle,
     this.danmakuEnabled = false,
     this.onCast,
@@ -183,6 +181,7 @@ class _MobileVideoControlsState extends State<MobileVideoControls> {
         padding: const EdgeInsets.fromLTRB(12, 8, 8, 0),
         child: VideoControlsHeader(
           metadata: widget.metadata,
+          mobileLayout: true,
           style: VideoHeaderStyle.multiLine,
           onCancelAutoHide: widget.onCancelAutoHide,
           onStartAutoHide: widget.onStartAutoHide,
@@ -211,8 +210,6 @@ class _MobileVideoControlsState extends State<MobileVideoControls> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (widget.onChapters != null)
-          button(Symbols.format_list_numbered_rounded, t.videoControls.chapters, widget.onChapters),
         if (widget.onDanmakuToggle != null)
           button(
             Symbols.subtitles_rounded,
@@ -352,7 +349,6 @@ class _MobileVideoControlsState extends State<MobileVideoControls> {
               onScrubEnd: widget.onScrubEnd,
               horizontalLayout: false,
               enabled: widget.canControl,
-              showFinishTime: true,
               thumbnailDataBuilder: widget.thumbnailDataBuilder,
             ),
             _buildTransportRow(),

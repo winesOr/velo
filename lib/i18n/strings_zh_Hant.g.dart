@@ -901,6 +901,9 @@ class _Translations$videoControls$zh_Hant extends Translations$videoControls$zh 
 	final TranslationsZhHant _root; // ignore: unused_field
 
 	// Translations
+	@override String get playbackSettings => '播放設定';
+	@override String seasonEpisodeShort({required Object season, required Object episode}) => 'S${season} · E${episode}';
+	@override String episodeShort({required Object n}) => 'E${n}';
 	@override String get audioLabel => '音訊';
 	@override String get subtitlesLabel => '字幕';
 	@override String addTime({required Object amount, required Object unit}) => '+${amount} ${unit}';
@@ -4062,6 +4065,9 @@ extension on TranslationsZhHant {
 			'tooltips.markAsWatched' => '標記為已觀看',
 			'tooltips.markAsUnwatched' => '標記為未觀看',
 			'audioTracks.track' => ({required Object n}) => '音軌 ${n}',
+			'videoControls.playbackSettings' => '播放設定',
+			'videoControls.seasonEpisodeShort' => ({required Object season, required Object episode}) => 'S${season} · E${episode}',
+			'videoControls.episodeShort' => ({required Object n}) => 'E${n}',
 			'videoControls.audioLabel' => '音訊',
 			'videoControls.subtitlesLabel' => '字幕',
 			'videoControls.addTime' => ({required Object amount, required Object unit}) => '+${amount} ${unit}',
@@ -4371,11 +4377,11 @@ extension on TranslationsZhHant {
 			'accountPreferences.sectionTitle' => '帳戶偏好設定',
 			'accountPreferences.hubSubtitleSingle' => ({required Object account}) => '已在 ${account} 上儲存音訊、字幕與媒體庫選項',
 			'accountPreferences.hubSubtitleMultiple' => ({required Object count}) => '已在 ${count} 個帳戶上儲存音訊、字幕與媒體庫選項',
+			_ => null,
+		} ?? switch (path) {
 			'accountPreferences.pickAccount' => '每個帳戶都會儲存各自的偏好設定。請選擇要編輯的帳戶。',
 			'accountPreferences.storedOnAccount' => '這些選項會儲存在帳戶本身，因此登入該帳戶的所有應用程式都會使用它們，包括您其他裝置上的 Velo。',
 			'accountPreferences.noAccounts' => '沒有可設定的帳戶',
-			_ => null,
-		} ?? switch (path) {
 			'accountPreferences.noAccountsHint' => '登入 Plex，或連線至 Jellyfin 或 Emby 伺服器，儲存在該帳戶上的偏好設定便會顯示在此處。',
 			'accountPreferences.unavailable' => '無法連線至此帳戶',
 			'accountPreferences.loadFailed' => '無法載入這些偏好設定',
@@ -4885,11 +4891,11 @@ extension on TranslationsZhHant {
 			'liveTv.invalidPlaybackData' => ({required Object product}) => '${product} 傳回了無效的直播電視播放資料',
 			'liveTv.failedToStartChannel' => '無法啟動直播頻道',
 			'liveTv.failedToBuildStreamUrl' => '無法建立串流 URL',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.playbackStartFailed' => ({required Object reason}) => '無法開始播放此頻道：${reason}',
 			'liveTv.channelSwitchFailed' => ({required Object reason}) => '無法切換頻道：${reason}',
 			'collections.title' => '收藏集',
-			_ => null,
-		} ?? switch (path) {
 			'collections.collection' => '收藏集',
 			'collections.empty' => '收藏集為空',
 			'collections.deleteCollection' => '刪除收藏集',
@@ -5399,11 +5405,11 @@ extension on TranslationsZhHant {
 			'metadataEdit.libraryDefault' => '媒體庫預設',
 			'metadataEdit.accountDefault' => '帳戶預設',
 			'metadataEdit.seriesDefault' => '影集預設',
+			_ => null,
+		} ?? switch (path) {
 			'metadataEdit.episodeSorting' => '單集排序方式',
 			'metadataEdit.oldestFirst' => '由舊到新',
 			'metadataEdit.newestFirst' => '由新到舊',
-			_ => null,
-		} ?? switch (path) {
 			'metadataEdit.keep' => '保留集數',
 			'metadataEdit.allEpisodes' => '所有單集',
 			'metadataEdit.latestEpisodes' => ({required Object count}) => '最新 ${count} 集',

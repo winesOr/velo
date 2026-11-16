@@ -1,4 +1,3 @@
-import '../../theme/overlay_tokens.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -64,7 +63,7 @@ class WatchTogetherSessionIndicator extends StatelessWidget {
       OverlaySheetController.of(context)
           .show(
             presentation: OverlaySheetPresentation.edgeDrawer,
-            constraints: const BoxConstraints(maxWidth: OverlayTokens.drawerWidth),
+            constraints: BoxConstraints(maxWidth: PlayerSettingsDrawer.widthFor(context)),
             builder: (context) => ListenableBuilder(
               listenable: provider,
               builder: (context, _) => _SessionMenuSheet(provider: provider),
@@ -108,47 +107,19 @@ class _SessionIndicator extends StatelessWidget {
       borderRadius: 20,
       useBackgroundFocus: true,
       child: Material(
-        color: Colors.black54,
+        color: const Color(0x476FD6CF),
         borderRadius: const BorderRadius.all(Radius.circular(20)),
         child: InkWell(
           canRequestFocus: false,
           onTap: onTap,
           borderRadius: const BorderRadius.all(Radius.circular(20)),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              mainAxisSize: .min,
-              children: [
-                if (isSyncing)
-                  SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: PlatformDetector.isTV()
-                        ? const AppIcon(Symbols.sync_rounded, size: 16, color: Colors.white)
-                        : const CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                else
-                  AppIcon(Symbols.group_rounded, size: 18, color: isHost ? Colors.amber : Colors.white),
-                const SizedBox(width: 6),
-                Text(
-                  '$participantCount',
-                  style: const TextStyle(color: Colors.white, fontWeight: .bold, fontSize: 14),
-                ),
-                if (isHost) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: const BoxDecoration(
-                      color: Colors.amber,
-                      borderRadius: BorderRadius.all(Radius.circular(4)),
-                    ),
-                    child: Text(
-                      t.watchTogether.hostBadge,
-                      style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: .bold),
-                    ),
-                  ),
-                ],
-              ],
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Text(
+              '${t.watchTogether.title} · $participantCount',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Color(0xFF6FD6CF), fontWeight: FontWeight.w600, fontSize: 12),
             ),
           ),
         ),

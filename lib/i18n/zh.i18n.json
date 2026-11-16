@@ -774,6 +774,9 @@
     "track": "音轨 ${n}"
   },
   "videoControls": {
+    "playbackSettings": "播放设置",
+    "seasonEpisodeShort": "S${season} · E${episode}",
+    "episodeShort": "E${n}",
     "audioLabel": "音频",
     "subtitlesLabel": "字幕",
     "addTime": "+${amount}${unit}",
