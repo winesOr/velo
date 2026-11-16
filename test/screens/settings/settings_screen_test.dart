@@ -25,7 +25,6 @@ import 'package:plezy/providers/download_provider.dart';
 import 'package:plezy/providers/seerr_account_provider.dart';
 import 'package:plezy/providers/theme_provider.dart';
 import 'package:plezy/providers/trackers_provider.dart';
-import 'package:plezy/screens/settings/general_settings_screen.dart';
 import 'package:plezy/screens/settings/settings_screen.dart';
 import 'package:plezy/services/background_work_diagnostics_service.dart';
 import 'package:plezy/services/crash_reporting_config.dart';
@@ -98,6 +97,20 @@ void main() {
       final harness = await _pumpSettingsScreen(tester, size: size, fixtureFont: true);
       addTearDown(() => harness.dispose(tester));
       expect(find.byType(SettingsCategoryPane), findsOneWidget);
+      final categories = tester.widget<SettingsCategoryPane>(find.byType(SettingsCategoryPane)).categories;
+      expect(categories.map((category) => category.id), [
+        'connections',
+        'playback',
+        'subtitles',
+        'danmaku',
+        'together',
+        'appearance',
+        'downloads',
+        'services',
+        'about',
+      ]);
+      expect(categories[6].title, t.settings.downloadsOffline);
+      expect(categories[7].title, t.settings.connectionsIntegrations);
       final category = find.byWidgetPredicate(
         (w) => w is FocusableListTile && w.focusNode?.debugLabel == 'settings_category_subtitles',
       );
@@ -141,8 +154,9 @@ void main() {
       expect(focused, startsWith('settings_category_'));
       visited.add(focused);
     }
-    expect(visited, contains('settings_category_general'));
-    expect(find.byType(GeneralSettingsScreen), findsOneWidget);
+    expect(visited, contains('settings_category_services'));
+    expect(_focusableTileFor(t.settings.services), findsOneWidget);
+    expect(find.text(t.settings.companionRemoteServer), findsOneWidget);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.select);
     await _pumpUi(tester);
@@ -176,7 +190,18 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await _pumpUi(tester);
     }
-    expect(seen.length, greaterThan(8));
+    expect(seen, {
+      'settings_category_connections',
+      'settings_category_playback',
+      'settings_category_subtitles',
+      'settings_category_danmaku',
+      'settings_category_together',
+      'settings_category_appearance',
+      'settings_category_services',
+      'settings_category_about',
+    });
+    expect(find.text(t.settings.general), findsOneWidget);
+    expect(find.text(t.settings.debugLogging), findsOneWidget);
   });
 
   testWidgets('TV category list enters details with arrow right', (tester) async {
@@ -194,6 +219,9 @@ void main() {
       FocusManager.instance.primaryFocus?.ancestors.any((n) => n.debugLabel == 'settings_category_details'),
       isTrue,
     );
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await _pumpUi(tester);
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'settings_category_playback');
   });
 
   testWidgets('tablet settings returns to one column for enlarged text', (tester) async {

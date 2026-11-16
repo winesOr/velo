@@ -330,35 +330,42 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
     return SettingsPage(
       title: Text(title),
       children: [
-        if (destination == _SettingsDestination.connections) ...[
-          _buildConnectionsSection(context, extra: [if (hasLibraries) _buildManageLibrariesTile(context)]),
-        ],
-        if (destination == _SettingsDestination.downloads) _buildDownloadsSection(),
-        if (destination == _SettingsDestination.integrations) ...[
-          SettingsGroup(title: t.settings.services, children: [_buildServicesTile()]),
-          if (_keyboardShortcutsSupported || PlatformDetector.shouldActAsRemoteHost(context))
-            _buildControlsSection(context),
-        ],
-        if (destination == _SettingsDestination.together) SettingsGroup(children: [_buildRelayTile()]),
-        if (destination == _SettingsDestination.application) ...[
-          SettingsGroup(
-            children: [
-              _buildGeneralTile(),
-              SettingNavigationTile(
-                icon: Symbols.info_rounded,
-                title: t.settings.about,
-                destinationBuilder: (_) => const AboutScreen(),
-              ),
-            ],
-          ),
-          _buildAdvancedSection(),
-          if (UpdateService.isUpdateCheckAvailable) _buildUpdateSection(),
-          if (!PlatformDetector.isTV() || PlatformDetector.isDesktopOS()) _buildBackupSection(),
-        ],
+        ..._destinationSections(context, destination, hasLibraries: hasLibraries),
         const SizedBox(height: 24),
       ],
     );
   }
+
+  List<Widget> _destinationSections(
+    BuildContext context,
+    _SettingsDestination destination, {
+    required bool hasLibraries,
+  }) => [
+    if (destination == _SettingsDestination.connections)
+      _buildConnectionsSection(context, extra: [if (hasLibraries) _buildManageLibrariesTile(context)]),
+    if (destination == _SettingsDestination.downloads) _buildDownloadsSection(),
+    if (destination == _SettingsDestination.integrations) ...[
+      SettingsGroup(title: t.settings.services, children: [_buildServicesTile()]),
+      if (_keyboardShortcutsSupported || PlatformDetector.shouldActAsRemoteHost(context))
+        _buildControlsSection(context),
+    ],
+    if (destination == _SettingsDestination.together) SettingsGroup(children: [_buildRelayTile()]),
+    if (destination == _SettingsDestination.application) ...[
+      SettingsGroup(
+        children: [
+          _buildGeneralTile(),
+          SettingNavigationTile(
+            icon: Symbols.info_rounded,
+            title: t.settings.about,
+            destinationBuilder: (_) => const AboutScreen(),
+          ),
+        ],
+      ),
+      _buildAdvancedSection(),
+      if (UpdateService.isUpdateCheckAvailable) _buildUpdateSection(),
+      if (!PlatformDetector.isTV() || PlatformDetector.isDesktopOS()) _buildBackupSection(),
+    ],
+  ];
 
   Widget _buildCategoryContent(BuildContext context, {required bool hasLibraries}) => Scaffold(
     body: SettingsCategoryPane(
@@ -371,8 +378,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
           icon: Symbols.dns_rounded,
           builder: (context) => _categoryList([
             _buildIdentitySummary(context),
-            _buildConnectionsSection(context),
-            if (hasLibraries) SettingsGroup(children: [_buildManageLibrariesTile(context)]),
+            ..._destinationSections(context, _SettingsDestination.connections, hasLibraries: hasLibraries),
           ]),
         ),
         SettingsCategory(
@@ -382,6 +388,12 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
           builder: (_) => const PlaybackSettingsScreen(),
         ),
         SettingsCategory(
+          id: 'subtitles',
+          title: t.settings.subtitles,
+          icon: Symbols.subtitles_rounded,
+          builder: (_) => const SubtitleStylingScreen(),
+        ),
+        SettingsCategory(
           id: 'danmaku',
           title: t.danmaku.title,
           icon: Symbols.chat_rounded,
@@ -389,18 +401,11 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
               DanmakuSettingsSheet(settingsPage: true, onBack: () => _categoryPaneKey.currentState?.focusCategory()),
         ),
         SettingsCategory(
-          id: 'subtitles',
-          title: t.settings.subtitles,
-          icon: Symbols.subtitles_rounded,
-          builder: (_) => const SubtitleStylingScreen(),
-        ),
-        SettingsCategory(
           id: 'together',
           title: t.watchTogether.title,
           icon: Symbols.groups_rounded,
-          builder: (_) => _categoryList([
-            SettingsGroup(children: [_buildRelayTile()]),
-          ]),
+          builder: (context) =>
+              _categoryList(_destinationSections(context, _SettingsDestination.together, hasLibraries: hasLibraries)),
         ),
         SettingsCategory(
           id: 'appearance',
@@ -408,47 +413,30 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
           icon: Symbols.palette_rounded,
           builder: (_) => const AppearanceSettingsScreen(),
         ),
-        SettingsCategory(
-          id: 'general',
-          title: t.settings.general,
-          icon: Symbols.settings_rounded,
-          builder: (_) => const GeneralSettingsScreen(),
-        ),
-        SettingsCategory(
-          id: 'services',
-          title: t.settings.services,
-          icon: Symbols.sync_rounded,
-          builder: (_) => const ServicesSettingsScreen(),
-        ),
         if (!PlatformDetector.isAppleTV())
           SettingsCategory(
             id: 'downloads',
-            title: t.settings.downloads,
+            title: t.settings.downloadsOffline,
             icon: Symbols.download_rounded,
-            builder: (_) => _categoryList([_buildDownloadsSection()]),
-          ),
-        if (_keyboardShortcutsSupported || PlatformDetector.shouldActAsRemoteHost(context))
-          SettingsCategory(
-            id: 'controls',
-            title: t.settings.controls,
-            icon: Symbols.gamepad_rounded,
-            builder: (context) => _categoryList([_buildControlsSection(context)]),
+            builder: (context) => _categoryList(
+              _destinationSections(context, _SettingsDestination.downloads, hasLibraries: hasLibraries),
+            ),
           ),
         SettingsCategory(
-          id: 'advanced',
-          title: t.settings.advanced,
-          icon: Symbols.tune_rounded,
-          builder: (_) => _categoryList([
-            _buildAdvancedSection(),
-            if (UpdateService.isUpdateCheckAvailable) _buildUpdateSection(),
-            if (!PlatformDetector.isTV() || PlatformDetector.isDesktopOS()) _buildBackupSection(),
-          ]),
+          id: 'services',
+          title: t.settings.connectionsIntegrations,
+          icon: Symbols.language_rounded,
+          builder: (context) => _categoryList(
+            _destinationSections(context, _SettingsDestination.integrations, hasLibraries: hasLibraries),
+          ),
         ),
         SettingsCategory(
           id: 'about',
           title: t.settings.about,
           icon: Symbols.info_rounded,
-          builder: (_) => const AboutScreen(),
+          builder: (context) => _categoryList(
+            _destinationSections(context, _SettingsDestination.application, hasLibraries: hasLibraries),
+          ),
         ),
       ],
     ),
