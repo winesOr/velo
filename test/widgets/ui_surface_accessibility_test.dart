@@ -174,6 +174,64 @@ void main() {
     expect(second, isFalse);
   });
 
+  testWidgets('closed routes discard queued retries and invalid undo operations', (tester) async {
+    late BuildContext source;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: monoTheme(dark: true),
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (context) {
+                  source = context;
+                  return const Scaffold(body: Text('Source route'));
+                },
+              ),
+            ),
+            child: const Text('Open source'),
+          ),
+        ),
+      ),
+    );
+    addTearDown(() => AppToast.dismiss(immediately: true));
+    await tester.tap(find.text('Open source'));
+    await tester.pumpAndSettle();
+    final first = notifications.confirmUndoableAction(source, 'Valid removal');
+    await tester.pump();
+    var retried = false;
+    notifications.showErrorSnackBar(
+      source,
+      'Obsolete retry',
+      actionLabel: t.common.retry,
+      onAction: () => retried = true,
+    );
+    var valid = true;
+    bool? second;
+    unawaited(
+      notifications
+          .confirmUndoableAction(source, 'Invalid removal', canCommit: () => valid)
+          .then((value) => second = value),
+    );
+    valid = false;
+    Navigator.of(source).pop();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    for (var frame = 0; frame < 20 && source.mounted; frame++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(source.mounted, isFalse);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pump();
+    expect(await first, isTrue);
+    expect(second, isFalse);
+    expect(find.text('Obsolete retry'), findsNothing);
+    expect(find.text('Invalid removal'), findsNothing);
+    expect(retried, isFalse);
+  });
+
   testWidgets('disposing the overlay cancels active and queued removals', (tester) async {
     final context = await _pumpHost(tester, size: const Size(390, 844), dark: true);
     final first = notifications.confirmUndoableAction(context, 'Active removal');

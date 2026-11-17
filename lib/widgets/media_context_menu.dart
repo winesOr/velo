@@ -52,6 +52,7 @@ import '../screens/music/artist_detail_screen.dart';
 import '../utils/smart_deletion_handler.dart';
 import '../utils/video_player_navigation.dart';
 import '../utils/deletion_notifier.dart';
+import '../utils/watch_state_notifier.dart';
 import '../widgets/app_menu.dart';
 import '../widgets/tag_edit_dialog.dart';
 import '../widgets/file_info_bottom_sheet.dart';
@@ -1016,11 +1017,15 @@ class MediaContextMenuState extends State<MediaContextMenu> {
     try {
       final client = _getMediaClientForItem();
       final session = client.authenticationSessionId;
-      if (!await confirmUndoableAction(context, t.messages.removingFromContinueWatching) || !context.mounted) return;
-      if (!identical(_tryGetMediaClientForItem(), client) || !identical(client.authenticationSessionId, session)) {
+      final servers = context.read<MultiServerProvider>();
+      bool canCommit() =>
+          identical(servers.getClientForServer(ServerId(client.serverId)), client) &&
+          identical(client.authenticationSessionId, session);
+      if (!await confirmUndoableAction(context, t.messages.removingFromContinueWatching, canCommit: canCommit)) {
         return;
       }
-      await WatchActions.removeFromContinueWatching(context, item);
+      await client.removeFromContinueWatching(item);
+      WatchStateNotifier().notifyRemovedFromContinueWatching(item: item);
       if (context.mounted) {
         showSuccessSnackBar(context, t.messages.removedFromContinueWatching);
         if (widget.onRemoveFromContinueWatching != null) {
@@ -1030,8 +1035,11 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         }
       }
     } catch (e) {
+      final message = t.messages.errorLoading(error: localizedErrorReason(e));
       if (context.mounted) {
-        showErrorSnackBar(context, t.messages.errorLoading(error: localizedErrorReason(e)));
+        showErrorSnackBar(context, message);
+      } else {
+        showGlobalErrorSnackBar(message);
       }
     }
   }

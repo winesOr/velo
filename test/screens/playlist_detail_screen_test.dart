@@ -39,6 +39,7 @@ import 'package:plezy/utils/active_client_scope.dart';
 import 'package:plezy/utils/media_navigation_helper.dart';
 import 'package:plezy/utils/media_server_http_client.dart';
 import 'package:plezy/utils/platform_detector.dart';
+import 'package:plezy/utils/snackbar_helper.dart';
 import 'package:plezy/widgets/app_menu.dart';
 import 'package:plezy/widgets/media_card.dart';
 import 'package:plezy/widgets/focusable_media_card.dart';
@@ -581,6 +582,68 @@ void main() {
     expect(tester.widgetList<PlaylistItemCard>(find.byType(PlaylistItemCard)).every((card) => card.canReorder), isTrue);
   });
 
+  testWidgets('pending entry removal deduplicates clicks and blocks keyboard reorder until undo', (tester) async {
+    final harness = await _createHarness(_mediaItems(3));
+    await _pushPlaylistRoute(tester, harness, trackInput: true);
+    addTearDown(() => AppToast.dismiss(immediately: true));
+    final remove = tester.widget<PlaylistItemCard>(find.byType(PlaylistItemCard).first).onRemove!;
+    remove();
+    remove();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(tester.widget<PlaylistItemCard>(find.byType(PlaylistItemCard).first).onRemove, isNull);
+    expect(tester.widget<PlaylistItemCard>(find.byType(PlaylistItemCard).at(1)).onRemove, isNotNull);
+    expect(
+      tester.widgetList<PlaylistItemCard>(find.byType(PlaylistItemCard)).every((card) => !card.canReorder),
+      isTrue,
+    );
+    final list = find.byWidgetPredicate((widget) => widget is Focus && widget.focusNode?.debugLabel == 'playlist_list');
+    tester.widget<Focus>(list).focusNode!.requestFocus();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.pump();
+    expect(tester.widget<PlaylistItemCard>(find.byType(PlaylistItemCard).first).focusedColumn, 0);
+    expect(harness.client.moveRequests, isEmpty);
+
+    await tester.tap(find.text(t.common.undo));
+    await tester.pumpAndSettle();
+    expect(harness.client.removeRequests, isEmpty);
+    expect(find.byType(AppToast), findsNothing);
+    expect(tester.widget<PlaylistItemCard>(find.byType(PlaylistItemCard).first).onRemove, isNotNull);
+    expect(tester.widgetList<PlaylistItemCard>(find.byType(PlaylistItemCard)).every((card) => card.canReorder), isTrue);
+
+    remove();
+    remove();
+    await tester.pumpAndSettle();
+    expect(harness.client.removeRequests.map((request) => request.item.id), ['item_0']);
+    harness.client.completeRemove(0, true, applyToServer: true);
+    await tester.pumpAndSettle();
+    expect(harness.client.removeRequests, hasLength(1));
+    expect(harness.client.authoritativeItemIds, ['item_1', 'item_2']);
+  });
+
+  for (final throws in [false, true]) {
+    testWidgets('removal ${throws ? 'exception' : 'rejection'} after leaving shows a global error', (tester) async {
+      final harness = await _createHarness(_mediaItems(2));
+      await _pushPlaylistRoute(tester, harness);
+      addTearDown(() => AppToast.dismiss(immediately: true));
+      await tester.tap(find.byTooltip(t.playlists.removeItem).first);
+      Navigator.of(tester.element(find.byType(PlaylistDetailScreen))).pop();
+      await tester.pumpAndSettle();
+      expect(find.byType(PlaylistDetailScreen), findsNothing);
+      expect(harness.client.removeRequests, hasLength(1));
+      if (throws) {
+        harness.client.failRemove(0);
+      } else {
+        harness.client.completeRemove(0, false);
+      }
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.text(t.playlists.errorRemoving), findsOneWidget);
+      expect(harness.client.authoritativeItemIds, ['item_0', 'item_1']);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   for (final leavePage in [false, true]) {
     testWidgets('queued removals keep their entry IDs${leavePage ? ' after leaving the page' : ''}', (tester) async {
       final harness = await _createHarness([
@@ -834,19 +897,19 @@ Future<void> _startFirstItemMoveDown(WidgetTester tester) async {
   await tester.pump();
 }
 
-Future<void> _pushPlaylistRoute(WidgetTester tester, _PlaylistHarness harness) async {
-  await tester.pumpWidget(
-    harness.wrap(
-      Builder(
-        builder: (context) => TextButton(
-          onPressed: () => Navigator.of(
-            context,
-          ).push<void>(MaterialPageRoute(builder: (_) => const PlaylistDetailScreen(playlist: _playlist))),
-          child: const Text('Open playlist'),
-        ),
+Future<void> _pushPlaylistRoute(WidgetTester tester, _PlaylistHarness harness, {bool trackInput = false}) async {
+  final app = harness.wrap(
+    Builder(
+      key: rootToastContextKey,
+      builder: (context) => TextButton(
+        onPressed: () => Navigator.of(
+          context,
+        ).push<void>(MaterialPageRoute(builder: (_) => const PlaylistDetailScreen(playlist: _playlist))),
+        child: const Text('Open playlist'),
       ),
     ),
   );
+  await tester.pumpWidget(trackInput ? InputModeTracker(child: app) : app);
   await tester.tap(find.text('Open playlist'));
   await tester.pumpAndSettle();
   expect(find.byType(PlaylistDetailScreen), findsOneWidget);

@@ -23,6 +23,7 @@ import '../../providers/multi_server_provider.dart';
 import '../../services/settings_service.dart';
 import '../../services/base_peer_service.dart';
 import '../../utils/app_logger.dart';
+import '../../utils/error_message_utils.dart';
 import '../../utils/platform_detector.dart';
 import '../../theme/mono_presentation.dart';
 import '../../utils/dialogs.dart';
@@ -551,13 +552,27 @@ class _NotInSessionViewState extends State<_NotInSessionView> with MountedSetSta
     final profileId = _profileId;
     if (profileId == null || profileId.isEmpty) return;
     final endpoint = _relayEndpoint;
-    if (!await confirmUndoableAction(context, t.messages.pendingRemoval) ||
-        !mounted ||
-        _profileId != profileId ||
-        _relayEndpoint != endpoint)
+    final settings = SettingsService.instanceOrNull;
+    bool canCommit() =>
+        WatchTogetherRelayEndpoint.resolve(settings?.read(SettingsService.customRelayUrl)) == endpoint &&
+        RecentRoomsService.getRecentRooms(
+          profileId: profileId,
+          endpoint: endpoint,
+        ).any((entry) => entry.code == room.code);
+    if (!await confirmUndoableAction(context, t.messages.pendingRemoval, canCommit: canCommit)) {
       return;
-    await RecentRoomsService.removeRoom(room.code, profileId: profileId, endpoint: endpoint);
-    setStateIfMounted(() => _recentRooms = _loadRecentRooms());
+    }
+    try {
+      await RecentRoomsService.removeRoom(room.code, profileId: profileId, endpoint: endpoint);
+      setStateIfMounted(() => _recentRooms = _loadRecentRooms());
+    } catch (error) {
+      final message = t.messages.errorLoading(error: localizedErrorReason(error));
+      if (mounted) {
+        showErrorSnackBar(context, message);
+      } else {
+        showGlobalErrorSnackBar(message);
+      }
+    }
   }
 }
 

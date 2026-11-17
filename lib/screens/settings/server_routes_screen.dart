@@ -124,7 +124,9 @@ class _ServerRouteListState extends State<_ServerRouteList> with AsyncFormStateM
     return [for (final url in urls) ServerRoute(name: url, url: url)];
   }
 
-  Future<void> _write(Connection expected, ServerRouteSettings settings) async {
+  Future<void> _write(Connection expected, ServerRouteSettings settings) => _prepareWrite(expected).write(settings);
+
+  ({bool Function() canCommit, Future<void> Function(ServerRouteSettings) write}) _prepareWrite(Connection expected) {
     _checkScope();
     final db = context.read<AppDatabase>();
     final registry = context.read<ConnectionRegistry>();
@@ -132,32 +134,55 @@ class _ServerRouteListState extends State<_ServerRouteList> with AsyncFormStateM
     final active = context.read<ActiveProfileProvider>();
     final binder = context.read<ActiveProfileBinder>();
     final provider = context.read<MultiServerProvider>();
-    await db.runIdentityMutation(() async {
-      _checkScope();
-      final row = _profileId == null ? null : await ownership.get(_profileId, expected.id);
-      _checkScope();
-      if (row == null && active.active?.parentConnectionId != expected.id) {
-        throw StateError('Connection access changed.');
-      }
-      if (expected is PlexAccountConnection) {
-        if (_profileId == null ||
-            !provider.serverManager.hasPlexServerAuthorization(
-              ServerId(widget.serverId),
-              accountId: expected.id,
-              profileId: _profileId,
-            )) {
-          throw StateError('Server authorization changed.');
+    final serverId = widget.serverId;
+    final profileId = _profileId;
+    final generation = _generation;
+    bool canCommit() =>
+        active.activeId == profileId &&
+        active.identityMutationGeneration == generation &&
+        active.connectionsById[expected.id] == expected &&
+        (expected is! PlexAccountConnection ||
+            profileId != null &&
+                provider.serverManager.hasPlexServerAuthorization(
+                  ServerId(serverId),
+                  accountId: expected.id,
+                  profileId: profileId,
+                ));
+    void checkCurrent() {
+      if (!canCommit()) throw StateError('The connection scope changed.');
+    }
+
+    Future<void> write(ServerRouteSettings settings) async {
+      checkCurrent();
+      await db.runIdentityMutation(() async {
+        checkCurrent();
+        final row = _profileId == null ? null : await ownership.get(_profileId, expected.id);
+        checkCurrent();
+        if (row == null && active.active?.parentConnectionId != expected.id) {
+          throw StateError('Connection access changed.');
         }
-      }
-      final routes = {...expected.serverRoutes, widget.serverId: settings};
-      final updated = switch (expected) {
-        JellyfinConnection c => c.copyWith(serverRoutes: routes),
-        PlexAccountConnection c => c.copyWith(serverRoutes: routes),
-      };
-      await registry.upsert(updated, expected: expected, checkCurrent: _checkScope, updateServerRoutes: true);
-    });
-    if (mounted) setState(() {});
-    await binder.rebindActive();
+        if (expected is PlexAccountConnection) {
+          if (_profileId == null ||
+              !provider.serverManager.hasPlexServerAuthorization(
+                ServerId(serverId),
+                accountId: expected.id,
+                profileId: _profileId,
+              )) {
+            throw StateError('Server authorization changed.');
+          }
+        }
+        final routes = {...expected.serverRoutes, serverId: settings};
+        final updated = switch (expected) {
+          JellyfinConnection c => c.copyWith(serverRoutes: routes),
+          PlexAccountConnection c => c.copyWith(serverRoutes: routes),
+        };
+        await registry.upsert(updated, expected: expected, checkCurrent: checkCurrent, updateServerRoutes: true);
+      });
+      if (mounted) setState(() {});
+      await binder.rebindActive();
+    }
+
+    return (canCommit: canCommit, write: write);
   }
 
   Future<void> _perform(Future<void> Function() body) => runAsync<void>(
@@ -276,18 +301,31 @@ class _ServerRouteListState extends State<_ServerRouteList> with AsyncFormStateM
                 title: Text(t.common.delete),
                 onTap: busy
                     ? null
-                    : () => _perform(() async {
-                        if (!await confirmUndoableAction(this.context, t.messages.pendingRemoval) || !mounted) return;
-                        final remaining = routes.where((r) => r.url != route.url).toList();
-                        await _write(
-                          connection,
-                          ServerRouteSettings(
-                            routes: remaining,
-                            selectedUrl: selected == route.url ? null : selected,
-                            usePrimary: remaining.isNotEmpty && usePrimary,
-                          ),
-                        );
-                      }),
+                    : () async {
+                        final operation = _prepareWrite(connection);
+                        await _perform(() async {
+                          if (!await confirmUndoableAction(
+                            this.context,
+                            t.messages.pendingRemoval,
+                            canCommit: operation.canCommit,
+                          )) {
+                            return;
+                          }
+                          final remaining = routes.where((r) => r.url != route.url).toList();
+                          try {
+                            await operation.write(
+                              ServerRouteSettings(
+                                routes: remaining,
+                                selectedUrl: selected == route.url ? null : selected,
+                                usePrimary: remaining.isNotEmpty && usePrimary,
+                              ),
+                            );
+                          } catch (_) {
+                            if (!mounted) showGlobalErrorSnackBar(t.routes.saveFailed);
+                            rethrow;
+                          }
+                        });
+                      },
               ),
             ],
           ),

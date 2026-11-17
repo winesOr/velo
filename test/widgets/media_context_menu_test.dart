@@ -19,6 +19,7 @@ import 'package:plezy/navigation/profile_navigation_scope.dart';
 import 'package:plezy/media/ids.dart';
 import 'package:plezy/media/library_query.dart';
 import 'package:plezy/media/media_backend.dart';
+import 'package:plezy/media/media_browser_dialect.dart';
 import 'package:plezy/media/media_file_info.dart';
 import 'package:plezy/media/media_item.dart';
 import 'package:plezy/media/media_kind.dart';
@@ -141,6 +142,42 @@ void main() {
   });
 
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('Continue Watching removal commits after its source page closes', (tester) async {
+    final requests = <http.Request>[];
+    final menuKey = await _pumpJellyfinItemMenu(
+      tester,
+      isAdministrator: false,
+      onPushedRoute: true,
+      isInContinueWatching: true,
+      dialect: MediaBrowserDialect.emby,
+      item: testMediaItem(id: 'resume-1', backend: MediaBackend.emby, kind: MediaKind.movie, serverId: 'srv-1'),
+      handler: (request) async {
+        requests.add(request);
+        return http.Response('{}', 200);
+      },
+    );
+    addTearDown(() => AppToast.dismiss(immediately: true));
+    await _openMenu(tester, menuKey);
+    await tester.tap(find.text(t.mediaMenu.removeFromContinueWatching));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text(t.messages.removingFromContinueWatching), findsOneWidget);
+    expect(requests.where((request) => request.url.path.endsWith('/HideFromResume')), isEmpty);
+    final sourceRoute = ModalRoute.of(menuKey.currentContext!)!;
+    Navigator.of(menuKey.currentContext!).removeRoute(sourceRoute);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+    expect(menuKey.currentState, isNull);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    final removal = requests.singleWhere((request) => request.url.path.endsWith('/HideFromResume'));
+    expect(removal.method, 'POST');
+    expect(removal.url.path, contains('/resume-1/'));
+    expect(removal.url.queryParameters['Hide'], 'true');
+    expect(tester.takeException(), isNull);
+  });
 
   group('isAdminActionAllowedForMediaItem', () {
     test('blocks non-admin Plex Home users on Plex items', () {
@@ -1843,13 +1880,15 @@ Future<GlobalKey<MediaContextMenuState>> _pumpJellyfinItemMenu(
   /// Push the menu onto a route above a home screen, so the navigator has
   /// something below the menu that a stray pop could reach.
   bool onPushedRoute = false,
+  bool isInContinueWatching = false,
+  MediaBrowserDialect dialect = MediaBrowserDialect.jellyfin,
 }) async {
   LocaleSettings.setLocaleSync(AppLocale.en);
   TvDetectionService.debugSetAppleTVOverride(true);
   addTearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
 
   final client = JellyfinClient.forTesting(
-    connection: testJellyfinConnection(isAdministrator: isAdministrator),
+    connection: testJellyfinConnection(isAdministrator: isAdministrator, dialect: dialect),
     httpClient: MockClient((request) async {
       requests?.add(request.url);
       return handler(request);
@@ -1873,6 +1912,7 @@ Future<GlobalKey<MediaContextMenuState>> _pumpJellyfinItemMenu(
       child: MediaContextMenu(
         key: menuKey,
         item: item,
+        isInContinueWatching: isInContinueWatching,
         child: const SizedBox(width: 120, height: 80, child: Text('delete target')),
       ),
     ),

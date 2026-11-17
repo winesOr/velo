@@ -25,6 +25,7 @@ AppToastHandle? showSnackBar(
   VoidCallback? onAction,
   VoidCallback? onDismiss,
   VoidCallback? onExpire,
+  bool Function()? canPresent,
 }) {
   if (!context.mounted) return null;
   return AppToast.show(
@@ -41,6 +42,7 @@ AppToastHandle? showSnackBar(
     onAction: onAction,
     onDismiss: onDismiss,
     onExpire: onExpire,
+    canPresent: canPresent,
   );
 }
 
@@ -70,13 +72,18 @@ void showSuccessSnackBar(BuildContext context, String message, {String? actionLa
 /// destructive request starts. Other notices wait for this window; Undo cancels
 /// it. Route disposal does not cancel an accepted operation; callers retain
 /// their target/client and guard UI updates separately from writes.
-Future<bool> confirmUndoableAction(BuildContext context, String message) async {
+Future<bool> confirmUndoableAction(BuildContext context, String message, {bool Function()? canCommit}) async {
   if (!context.mounted) return false;
   final overlay = Overlay.maybeOf(context, rootOverlay: true);
   if (overlay == null) return false;
   final profiles = context.read<ActiveProfileProvider?>();
   final profileId = profiles?.activeId;
   final generation = profiles?.identityMutationGeneration;
+  bool isCurrent() =>
+      profiles?.activeId == profileId &&
+      profiles?.identityMutationGeneration == generation &&
+      (canCommit?.call() ?? true);
+  if (!isCurrent()) return false;
   final result = Completer<bool>();
   AppToastHandle? handle;
   handle = showSnackBar(
@@ -84,6 +91,7 @@ Future<bool> confirmUndoableAction(BuildContext context, String message) async {
     message,
     dismissible: false,
     actionLabel: t.common.undo,
+    canPresent: isCurrent,
     onAction: () {
       if (!result.isCompleted) result.complete(false);
       handle?.dismiss();
@@ -97,5 +105,5 @@ Future<bool> confirmUndoableAction(BuildContext context, String message) async {
   );
   if (handle == null) result.complete(false);
   final confirmed = await result.future;
-  return confirmed && profiles?.activeId == profileId && profiles?.identityMutationGeneration == generation;
+  return confirmed && isCurrent();
 }

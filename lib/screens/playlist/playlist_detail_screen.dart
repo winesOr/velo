@@ -165,6 +165,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
   List<MediaItem>? _originalOrder;
   bool _isPlaylistMutationPending = false;
   Completer<void>? _playlistMutation;
+  final _pendingRemovalIds = <Object>{};
 
   late final ContinuationPaginationCoordinator<MediaItem> _continuation = ContinuationPaginationCoordinator<MediaItem>(
     loadPage: _fetchPlaylistContinuationPage,
@@ -177,7 +178,8 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
   bool get _isPlaylistFullyLoaded => _continuation.totalCount != null && items.length >= _continuation.totalCount!;
 
   bool get _canEditPlaylist => !_isReadOnly && _isPlaylistFullyLoaded;
-  bool get _canMutatePlaylist => _canEditPlaylist && !_isPlaylistMutationPending;
+  bool get _canMutatePlaylist => _canEditPlaylist && !_isPlaylistMutationPending && _pendingRemovalIds.isEmpty;
+  bool get _canRemovePlaylistItems => _canEditPlaylist && !_isPlaylistMutationPending && _movingIndex == null;
 
   @override
   void dispose() {
@@ -394,27 +396,42 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
   };
 
   Future<void> _removeItem(int index) async {
-    if (!_canMutatePlaylist) return;
+    if (!_canRemovePlaylistItems) return;
     if (items.isEmpty || index < 0 || index >= items.length) return;
     final item = items[index];
     final entryId = _playlistEntryId(item);
+    if (!_pendingRemovalIds.add(entryId)) return;
+    setState(() => _focusedColumn = 0);
+    try {
+      await _removeEntry(item, entryId);
+    } finally {
+      if (mounted) {
+        setState(() => _pendingRemovalIds.remove(entryId));
+      } else {
+        _pendingRemovalIds.remove(entryId);
+      }
+    }
+  }
+
+  Future<void> _removeEntry(MediaItem item, Object entryId) async {
     final playlistId = widget.playlist.id;
     final owner = mediaClient;
     final session = owner.authenticationSessionId;
     final profiles = context.read<ActiveProfileProvider?>();
     final profileId = profiles?.activeId;
     final generation = profiles?.identityMutationGeneration;
-    if (!await confirmUndoableAction(context, t.messages.pendingRemoval)) return;
+    bool canCommit() =>
+        identical(owner.authenticationSessionId, session) &&
+        profiles?.activeId == profileId &&
+        profiles?.identityMutationGeneration == generation &&
+        _movingIndex == null;
+    if (!await confirmUndoableAction(context, t.messages.pendingRemoval, canCommit: canCommit)) return;
     // Accepted removals wait for writes already in flight, including reorders.
     // Neither a shifted row index nor a disposed route invalidates the target.
     while (_playlistMutation != null) {
       await _playlistMutation!.future;
     }
-    if (!identical(owner.authenticationSessionId, session) ||
-        profiles?.activeId != profileId ||
-        profiles?.identityMutationGeneration != generation) {
-      return;
-    }
+    if (!canCommit()) return;
     final mutation = Completer<void>();
     _playlistMutation = mutation;
     final currentIndex = items.indexWhere((entry) => _playlistEntryId(entry) == entryId);
@@ -442,7 +459,10 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
         appLogger.e('Failed to remove playlist item', error: e, stackTrace: stackTrace);
       }
 
-      if (!mounted) return;
+      if (!mounted) {
+        if (!success) showGlobalErrorSnackBar(t.playlists.errorRemoving);
+        return;
+      }
       if (success) {
         // The server's total shrank with the list; without this the loaded
         // rows fall one short of the old total and editing locks.
@@ -457,7 +477,11 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
       } else {
         await loadItems();
       }
-      if (mounted) showErrorSnackBar(context, t.playlists.errorRemoving);
+      if (mounted) {
+        showErrorSnackBar(context, t.playlists.errorRemoving);
+      } else {
+        showGlobalErrorSnackBar(t.playlists.errorRemoving);
+      }
     } finally {
       if (mounted) {
         setState(() => _isPlaylistMutationPending = false);
@@ -630,7 +654,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
       }
       if (key.isRightKey) {
         // Navigate right within columns
-        if (_focusedColumn == 0 && _canMutatePlaylist) {
+        if (_focusedColumn == 0 && _canRemovePlaylistItems) {
           // Go to remove button (column 2)
           _focusedColumn = 2;
           _notifyFocusChanged();
@@ -663,7 +687,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
         _originalIndex = _focusedIndex;
         _originalOrder = List.from(items);
       });
-    } else if (_focusedColumn == 2 && _canMutatePlaylist) {
+    } else if (_focusedColumn == 2 && _canRemovePlaylistItems) {
       _removeItem(_focusedIndex);
     }
   }
@@ -846,7 +870,9 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
                 key: _cardKeys.putIfAbsent(keyId, GlobalKey<PlaylistItemCardState>.new),
                 item: item,
                 index: index,
-                onRemove: _canMutatePlaylist ? () => _removeItem(index) : null,
+                onRemove: _canRemovePlaylistItems && !_pendingRemovalIds.contains(_playlistEntryId(item))
+                    ? () => _removeItem(index)
+                    : null,
                 onTap: () => _playFromItem(index),
                 onRefresh: updateItem,
                 canReorder: _canMutatePlaylist,
