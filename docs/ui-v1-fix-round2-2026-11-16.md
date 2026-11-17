@@ -51,3 +51,18 @@
 | R2-26 | `test/widgets/continue_watching_progress_test.dart` | Continue Watching retains progress in the phone / phone_light / phone_large / tv layout |
 
 处理原则：先判断是实现回归还是用例过时。实现回归修代码；用例跟随已确认的新设计改写断言；golden 只在确认新画面符合原型后重生成。不得删除用例或放宽断言来通过。
+
+## 收尾验收（14542d8，Linux + Flutter 3.47.1）
+
+- R2-01～R2-26 全部修复；另修 CI 3.47.1 编译兼容（5f59ce8）、在 Linux 重生成 12 张 golden（80f18f7）、播放列表与撤销生命周期（2fc7aa2、14542d8）。
+- `flutter analyze lib test` 无错误/警告；`scripts/ci_guard_checks.sh` 通过；`flutter test` 8919 通过 / 8 跳过 / 0 失败。
+- 未在真机/模拟器上运行，TV 方向键路径需实机走查。
+
+### 遗留问题（低风险，暂不修）
+
+| 编号 | 问题 | 位置 |
+|---|---|---|
+| L-01 | 页面挂载时发出的删除失败提示若排在另一条撤销提示之后，用户随即离页，该错误提示会被丢弃（全局兜底只覆盖失败时页面已销毁的情况） | `lib/widgets/app_toast.dart` 约 392 |
+| L-02 | 线路删除时 `_prepareWrite` 的作用域检查抛错成为未处理异步异常，界面无反馈 | `lib/screens/settings/server_routes_screen.dart` 约 305 |
+| L-03 | 撤销窗口内连接对象重绑定（如刷新令牌）时，线路删除按对象同一性判断被静默取消 | `server_routes_screen.dart` 约 143 |
+| L-04 | 线路、最近房间、继续观看缺少“离页后删除仍执行 / 失败有全局提示”的测试 | `test/` |
