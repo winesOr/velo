@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import '../theme/home_typography.dart';
 import '../theme/mono_presentation.dart';
 import 'package:plezy/widgets/app_icon.dart';
