@@ -86,8 +86,11 @@ void main() {
     final switching = key.currentState!
         .debugSwitchPlaybackSourceForTesting(newAudioStreamId: newAudioStreamId, newPreset: newPreset)
         .then((value) => outcome = value);
-    // Drift/database work needs real-event-loop yields.
-    for (var i = 0; i < 400 && outcome == null; i++) {
+    // Drift/database work needs real-event-loop yields. A fixed frame budget
+    // can expire before real I/O finishes under full-suite contention; awaiting
+    // switching then strands callbacks in FakeAsync with no more pumps. Keep
+    // both queues moving until completion, within the existing test timeout.
+    while (outcome == null) {
       await tester.pump(const Duration(milliseconds: 50));
       if (outcome == null) {
         await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 2)));
