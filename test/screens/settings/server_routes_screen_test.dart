@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -54,6 +57,90 @@ void main() {
     expectSelected(_routeOne.name, _routeTwo.name);
     expect(tester.takeException(), isNull);
   });
+
+  for (final response in [
+    (status: 401, body: '<MediaContainer machineIdentifier="server"/>', error: () => t.routes.authenticationFailed),
+    (status: 403, body: '<MediaContainer machineIdentifier="server"/>', error: () => t.routes.authenticationFailed),
+    (status: 500, body: '<MediaContainer machineIdentifier="server"/>', error: () => t.routes.unreachable),
+    (status: 200, body: '<MediaContainer machineIdentifier="other"/>', error: () => t.routes.identityMismatch),
+    (status: 200, body: 'invalid XML', error: () => t.routes.unreachable),
+  ]) {
+    testWidgets(
+      'R2-17/19 real identity ${response.status} ${response.body} disables Add and reports the precise failure',
+      (tester) async {
+        final previousOverrides = HttpOverrides.current;
+        HttpOverrides.global = null;
+        addTearDown(() => HttpOverrides.global = previousOverrides);
+        final received = Completer<HttpRequest>();
+        final server = (await tester.runAsync(() async {
+          final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+          server.listen(received.complete);
+          return server;
+        }))!;
+        addTearDown(() => server.close(force: true));
+        await _openServer(tester, _connection());
+
+        final add = find.widgetWithText(SettingNavigationTile, t.routes.add);
+        await tester.tap(add);
+        await tester.pumpAndSettle();
+        final fields = find.byType(TextFormField);
+        expect(fields, findsNWidgets(3));
+        await tester.enterText(fields.at(0), 'Verified candidate');
+        await tester.enterText(fields.at(1), 'http://127.0.0.1');
+        await tester.enterText(fields.at(2), '${server.port}');
+        await tester.tap(find.widgetWithText(FilledButton, t.common.save));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byType(TextFormField), findsNothing, reason: 'the valid form must close before probing');
+        await _pumpNetworkUntil(
+          tester,
+          () => received.isCompleted,
+          reason: 'the anonymous identity request must reach loopback',
+        );
+        final request = await received.future;
+        expect(request.uri.path, '/identity');
+        expect(request.headers.value('X-Plex-Token'), isNull);
+        final busyAdd = tester.widget<SettingNavigationTile>(add);
+        expect(busyAdd.enabled, isFalse);
+        expect(busyAdd.onTap, isNull);
+        expect(find.byType(LinearProgressIndicator), findsOneWidget);
+        await tester.tap(add, warnIfMissed: false);
+        await tester.pump();
+        expect(find.byType(TextFormField), findsNothing, reason: 'busy Add cannot reopen the form');
+
+        await tester.runAsync(() async {
+          request.response.statusCode = response.status;
+          request.response.headers.contentType = ContentType('application', 'xml');
+          request.response.write(response.body);
+          await request.response.close();
+        });
+        await _pumpNetworkUntil(
+          tester,
+          () => find.text(response.error()).evaluate().isNotEmpty,
+          reason: 'the exact HTTP or identity failure must be displayed',
+        );
+        expect(find.text(response.error()), findsOneWidget);
+        expect(find.text(t.routes.saveFailed), findsNothing);
+        expect(find.byType(LinearProgressIndicator), findsNothing);
+        expect(tester.widget<SettingNavigationTile>(add).enabled, isTrue);
+        expect(tester.widget<SettingNavigationTile>(add).onTap, isNotNull);
+        expect(find.text('Verified candidate'), findsNothing, reason: 'a failed probe cannot persist the route');
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+}
+
+/// Network completions run on the real event loop, but the continuation that
+/// resumes after closing the form is registered in the widget's FakeAsync zone.
+/// Both queues must advance; waiting only in runAsync deadlocks that handoff.
+Future<void> _pumpNetworkUntil(WidgetTester tester, bool Function() ready, {required String reason}) async {
+  final elapsed = Stopwatch()..start();
+  while (!ready() && elapsed.elapsed < const Duration(seconds: 5)) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+    await tester.pump();
+  }
+  expect(ready(), isTrue, reason: reason);
 }
 
 final _checkIcon = find.byWidgetPredicate((widget) => widget is AppIcon && widget.icon == Symbols.check_rounded);
