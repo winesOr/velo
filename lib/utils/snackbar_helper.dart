@@ -68,9 +68,12 @@ void showSuccessSnackBar(BuildContext context, String message, {String? actionLa
 
 /// Gives the user the toast's full (pause-aware) action window before a
 /// destructive request starts. Other notices wait for this window; Undo cancels
-/// it. Callers recheck their route/session before writing.
+/// it. Route disposal does not cancel an accepted operation; callers retain
+/// their target/client and guard UI updates separately from writes.
 Future<bool> confirmUndoableAction(BuildContext context, String message) async {
-  if (!context.mounted || Overlay.maybeOf(context, rootOverlay: true) == null) return false;
+  if (!context.mounted) return false;
+  final overlay = Overlay.maybeOf(context, rootOverlay: true);
+  if (overlay == null) return false;
   final profiles = context.read<ActiveProfileProvider?>();
   final profileId = profiles?.activeId;
   final generation = profiles?.identityMutationGeneration;
@@ -94,8 +97,5 @@ Future<bool> confirmUndoableAction(BuildContext context, String message) async {
   );
   if (handle == null) result.complete(false);
   final confirmed = await result.future;
-  return confirmed &&
-      context.mounted &&
-      profiles?.activeId == profileId &&
-      profiles?.identityMutationGeneration == generation;
+  return confirmed && profiles?.activeId == profileId && profiles?.identityMutationGeneration == generation;
 }

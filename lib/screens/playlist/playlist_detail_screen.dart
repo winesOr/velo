@@ -7,6 +7,7 @@ import '../../focus/focusable_action_bar.dart';
 import '../../media/library_query.dart';
 import '../../media/media_item.dart';
 import '../../media/media_playlist.dart';
+import '../../profiles/active_profile_provider.dart';
 import '../../services/media_list_playback_launcher.dart';
 import '../../services/playlist_items_loader.dart';
 import '../../utils/app_logger.dart';
@@ -163,6 +164,7 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
   int? _originalIndex;
   List<MediaItem>? _originalOrder;
   bool _isPlaylistMutationPending = false;
+  Completer<void>? _playlistMutation;
 
   late final ContinuationPaginationCoordinator<MediaItem> _continuation = ContinuationPaginationCoordinator<MediaItem>(
     loadPage: _fetchPlaylistContinuationPage,
@@ -350,6 +352,8 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
     required List<MediaItem> originalOrder,
   }) async {
     appLogger.d('Persisting move from $originalIndex to $newIndex');
+    final mutation = Completer<void>();
+    _playlistMutation = mutation;
     Object? failure;
     var success = false;
 
@@ -378,38 +382,61 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
       if (mounted) {
         setState(() => _isPlaylistMutationPending = false);
       }
+      _playlistMutation = null;
+      mutation.complete();
     }
   }
+
+  Object _playlistEntryId(MediaItem item) => switch (item) {
+    PlexMediaItem(:final playlistItemId?) => playlistItemId,
+    JellyfinMediaItem(:final playlistItemId?) => playlistItemId,
+    _ => item.globalKey,
+  };
 
   Future<void> _removeItem(int index) async {
     if (!_canMutatePlaylist) return;
     if (items.isEmpty || index < 0 || index >= items.length) return;
     final item = items[index];
+    final entryId = _playlistEntryId(item);
+    final playlistId = widget.playlist.id;
     final owner = mediaClient;
     final session = owner.authenticationSessionId;
-    if (!await confirmUndoableAction(context, t.messages.pendingRemoval) || !mounted || !_canMutatePlaylist) return;
-    if (!identical(mediaClient, owner) ||
-        !identical(owner.authenticationSessionId, session) ||
-        index >= items.length ||
-        !identical(items[index], item))
+    final profiles = context.read<ActiveProfileProvider?>();
+    final profileId = profiles?.activeId;
+    final generation = profiles?.identityMutationGeneration;
+    if (!await confirmUndoableAction(context, t.messages.pendingRemoval)) return;
+    // Accepted removals wait for writes already in flight, including reorders.
+    // Neither a shifted row index nor a disposed route invalidates the target.
+    while (_playlistMutation != null) {
+      await _playlistMutation!.future;
+    }
+    if (!identical(owner.authenticationSessionId, session) ||
+        profiles?.activeId != profileId ||
+        profiles?.identityMutationGeneration != generation) {
       return;
+    }
+    final mutation = Completer<void>();
+    _playlistMutation = mutation;
+    final currentIndex = items.indexWhere((entry) => _playlistEntryId(entry) == entryId);
     final originalOrder = List<MediaItem>.of(items);
     appLogger.d('Removing item ${item.title} from playlist');
 
-    setState(() {
-      _isPlaylistMutationPending = true;
-      _focusedColumn = 0;
-      items.removeAt(index);
-      if (_focusedIndex >= items.length) {
-        _focusedIndex = (items.length - 1).clamp(0, items.length);
-      }
-    });
+    if (mounted) {
+      setState(() {
+        _isPlaylistMutationPending = true;
+        _focusedColumn = 0;
+        if (currentIndex >= 0) items.removeAt(currentIndex);
+        if (_focusedIndex >= items.length) {
+          _focusedIndex = (items.length - 1).clamp(0, items.length);
+        }
+      });
+    }
 
     Object? failure;
     var success = false;
     try {
       try {
-        success = await mediaClient.removeFromPlaylist(playlistId: widget.playlist.id, item: item);
+        success = await owner.removeFromPlaylist(playlistId: playlistId, item: item);
       } catch (e, stackTrace) {
         failure = e;
         appLogger.e('Failed to remove playlist item', error: e, stackTrace: stackTrace);
@@ -419,14 +446,14 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
       if (success) {
         // The server's total shrank with the list; without this the loaded
         // rows fall one short of the old total and editing locks.
-        _continuation.noteLoadedItemsRemoved();
+        if (currentIndex >= 0) _continuation.noteLoadedItemsRemoved();
         showSuccessSnackBar(context, t.playlists.itemRemoved);
         return;
       }
 
       appLogger.e('Failed to remove playlist item, recovering UI');
       if (failure == null) {
-        _restorePlaylistOrder(originalOrder, focusedIndex: index);
+        _restorePlaylistOrder(originalOrder, focusedIndex: currentIndex);
       } else {
         await loadItems();
       }
@@ -435,6 +462,8 @@ class _PlaylistDetailScreenState extends BaseMediaListDetailScreen<PlaylistDetai
       if (mounted) {
         setState(() => _isPlaylistMutationPending = false);
       }
+      _playlistMutation = null;
+      mutation.complete();
     }
   }
 

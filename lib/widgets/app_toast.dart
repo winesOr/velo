@@ -38,6 +38,7 @@ class AppToastHandle {
       AppToast._queue[queued] = (
         id: _id,
         source: request.source,
+        overlay: request.overlay,
         notice: _ToastNotice(
           message,
           type,
@@ -236,7 +237,8 @@ class AppToast extends StatefulWidget {
   static WeakReference<BuildContext>? _source;
   static _ToastNotice? _next;
   static int _queuedCount = 1;
-  static final _queue = <({Object id, WeakReference<BuildContext> source, _ToastNotice notice})>[];
+  static final _queue =
+      <({Object id, WeakReference<BuildContext> source, WeakReference<OverlayState> overlay, _ToastNotice notice})>[];
   static bool get _undoWindowOpen => _next?.hasAction == true && _next?.onDismiss != null;
   static final _anchors = <_AppToastAnchorState>{};
   static final _players = <_AppToastPlayerRegionState>{};
@@ -254,16 +256,17 @@ class AppToast extends StatefulWidget {
   }) {
     final id = Object();
     if (!context.mounted) return AppToastHandle._(id).._cancelled = true;
+    final overlay = _host?._overlayKey.currentState ?? Overlay.maybeOf(context, rootOverlay: true);
+    if (overlay == null) return AppToastHandle._(id).._cancelled = true;
     if (_undoWindowOpen || _queue.isNotEmpty) {
       _queue.add((
         id: id,
         source: WeakReference(context),
+        overlay: WeakReference(overlay),
         notice: _ToastNotice(message, type, duration, dismissible, actionLabel, onAction, onDismiss, onExpire),
       ));
       return AppToastHandle._(id);
     }
-    final overlay = _host?._overlayKey.currentState ?? Overlay.maybeOf(context, rootOverlay: true);
-    if (overlay == null) return AppToastHandle._(id).._cancelled = true;
     if (_overlay != null && _overlay != overlay) dismiss(immediately: true);
     _overlay = overlay;
     _owner = id;
@@ -368,27 +371,26 @@ class AppToast extends StatefulWidget {
       }
     } else if (_queue.isNotEmpty) {
       final request = _queue.removeAt(0);
-      final context = request.source.target;
-      if (context != null && context.mounted) {
+      // A queued undo belongs to its root overlay, not the route that opened
+      // it. Leaving that route must still allow its full action window.
+      final overlay = request.overlay.target;
+      if (overlay != null && overlay.mounted) {
         final notice = request.notice;
-        final overlay = _host?._overlayKey.currentState ?? Overlay.maybeOf(context, rootOverlay: true);
-        if (overlay != null) {
-          _overlay = overlay;
-          _owner = request.id;
-          _source = request.source;
-          _present(
-            request.id,
-            notice.message,
-            type: notice.type,
-            duration: notice.duration,
-            dismissible: notice.dismissible,
-            actionLabel: notice.actionLabel,
-            onAction: notice.onAction,
-            onDismiss: notice.onDismiss,
-            onExpire: notice.onExpire,
-          );
-          return;
-        }
+        _overlay = overlay;
+        _owner = request.id;
+        _source = request.source;
+        _present(
+          request.id,
+          notice.message,
+          type: notice.type,
+          duration: notice.duration,
+          dismissible: notice.dismissible,
+          actionLabel: notice.actionLabel,
+          onAction: notice.onAction,
+          onDismiss: notice.onDismiss,
+          onExpire: notice.onExpire,
+        );
+        return;
       }
       request.notice.finish();
       _remove();

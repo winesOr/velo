@@ -581,6 +581,54 @@ void main() {
     expect(tester.widgetList<PlaylistItemCard>(find.byType(PlaylistItemCard)).every((card) => card.canReorder), isTrue);
   });
 
+  for (final leavePage in [false, true]) {
+    testWidgets('queued removals keep their entry IDs${leavePage ? ' after leaving the page' : ''}', (tester) async {
+      final harness = await _createHarness([
+        for (final (index, item) in _mediaItems(3).indexed)
+          (item as PlexMediaItem).copyWith(playlistItemId: 100 + index),
+      ]);
+      await _pushPlaylistRoute(tester, harness);
+      addTearDown(() => AppToast.dismiss(immediately: true));
+
+      await tester.tap(find.byTooltip(t.playlists.removeItem).at(0));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.tap(find.byTooltip(t.playlists.removeItem).at(1));
+      await tester.pump();
+      expect(harness.client.removeRequests, isEmpty, reason: 'both removals retain their undo window');
+
+      if (leavePage) {
+        Navigator.of(tester.element(find.byType(PlaylistDetailScreen))).pop();
+        await tester.pumpAndSettle(const Duration(milliseconds: 100));
+        expect(find.byType(PlaylistDetailScreen), findsNothing);
+      }
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump();
+      expect(harness.client.removeRequests.map((request) => request.item.id), ['item_0']);
+
+      // Let the second undo expire while the first server request is pending.
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(harness.client.removeRequests, hasLength(1));
+      harness.client.completeRemove(0, true, applyToServer: true);
+      await tester.pumpAndSettle();
+      expect(harness.client.removeRequests.map((request) => request.item.id), ['item_0', 'item_1']);
+      expect(harness.client.removeRequests.map((request) => (request.item as PlexMediaItem).playlistItemId), [
+        100,
+        101,
+      ]);
+      harness.client.completeRemove(1, true, applyToServer: true);
+      await tester.pumpAndSettle();
+      expect(harness.client.authoritativeItemIds, ['item_2']);
+      expect(harness.client.peakMutationCount, 1);
+      if (!leavePage) expect(_visiblePlaylistItemIds(tester), ['item_2']);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('playlist remove rejection restores its snapshot and ambiguous failure refetches', (tester) async {
     final harness = await _createHarness(_mediaItems(3));
     await _pushPlaylistRoute(tester, harness);
