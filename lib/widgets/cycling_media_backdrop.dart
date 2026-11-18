@@ -275,7 +275,9 @@ class _CyclingMediaBackdropState extends State<CyclingMediaBackdrop> with Widget
       artworkKey: (widget.mediaKey, path),
       imageErrorKey: path,
       image: provider,
-      pending: pending,
+      // A rejected path will advance to its next candidate after this frame.
+      // Keep the last picture up while that candidate is being resolved.
+      pending: pending || (path != null && provider == null),
       duration: fadeDuration,
       fit: widget.fit,
       alignment: widget.alignment,
@@ -344,9 +346,10 @@ class _BackdropArtworkCrossfadeState extends State<_BackdropArtworkCrossfade> wi
   /// the frames this state reacts to, so `oldWidget` can still carry a key this
   /// state has already transitioned away from, which would restart a finished
   /// fade and leave both layers painted.
-  late Object? _currentKey = widget.artworkKey;
-  late ImageProvider? _base = widget.pending ? null : widget.image;
-  late Object? _baseErrorKey = widget.imageErrorKey;
+  Object? _currentKey;
+  ImageProvider? _base;
+  Object? _baseErrorKey;
+  int _fadeRevision = 0;
   ImageProvider? _incoming;
   Object? _incomingErrorKey;
   bool _incomingIsColor = false;
@@ -356,6 +359,9 @@ class _BackdropArtworkCrossfadeState extends State<_BackdropArtworkCrossfade> wi
   @override
   void initState() {
     super.initState();
+    _currentKey = widget.artworkKey;
+    _base = widget.pending ? null : widget.image;
+    _baseErrorKey = widget.imageErrorKey;
     _fade = AnimationController(vsync: this, duration: widget.duration);
   }
 
@@ -363,6 +369,21 @@ class _BackdropArtworkCrossfadeState extends State<_BackdropArtworkCrossfade> wi
   void didUpdateWidget(covariant _BackdropArtworkCrossfade oldWidget) {
     super.didUpdateWidget(oldWidget);
     _fade.duration = widget.duration;
+    if (_fadeStarted &&
+        (widget.duration == Duration.zero || (_fade.value == 1 && _fade.status != AnimationStatus.reverse))) {
+      _settleIncoming();
+    }
+    // A partly visible layer is part of the painted picture. Finish this
+    // blend before starting the latest request so the old base cannot flash.
+    if (_fade.isAnimating && widget.duration != Duration.zero) {
+      if (widget.artworkKey != _currentKey) _reportedProvider = null;
+      _currentKey = widget.artworkKey;
+      if (!widget.pending && widget.image == _base && _fade.status != AnimationStatus.reverse) {
+        _baseErrorKey = widget.imageErrorKey;
+        _runFade(reverse: true);
+      }
+      return;
+    }
     if (widget.artworkKey == _currentKey) {
       if (widget.pending) return;
       if (oldWidget.pending) {
@@ -421,19 +442,27 @@ class _BackdropArtworkCrossfadeState extends State<_BackdropArtworkCrossfade> wi
   void _startFade() {
     if (_fadeStarted) return;
     _fadeStarted = true;
-    _fade.forward().whenComplete(_promoteIncoming);
+    _runFade(reverse: false);
   }
 
-  void _promoteIncoming() {
-    if (!mounted) return;
-    setState(() {
-      _base = _incoming;
-      _baseErrorKey = _incomingErrorKey;
-      _dropIncoming();
+  void _runFade({required bool reverse}) {
+    final revision = ++_fadeRevision;
+    final animation = reverse ? _fade.reverse() : _fade.forward();
+    animation.whenComplete(() {
+      if (!mounted || revision != _fadeRevision) return;
+      setState(reverse ? _dropIncoming : _settleIncoming);
+      if (!widget.pending && widget.image != _base) _transitionToIncoming();
     });
   }
 
+  void _settleIncoming() {
+    _base = _incoming;
+    _baseErrorKey = _incomingErrorKey;
+    _dropIncoming();
+  }
+
   void _dropIncoming() {
+    _fadeRevision++;
     _incoming = null;
     _incomingErrorKey = null;
     _incomingIsColor = false;

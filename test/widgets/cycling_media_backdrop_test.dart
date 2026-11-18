@@ -173,7 +173,9 @@ void main() {
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
     }
     await tester.pump();
-    await tester.pump(fadeDuration);
+    // Advance past the last painted blend frame so its completed ticker can
+    // retire the outgoing image as well.
+    await tester.pump(fadeDuration + const Duration(milliseconds: 1));
     await tester.pump();
   }
 
