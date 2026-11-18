@@ -12,6 +12,7 @@ import 'package:plezy/focus/focusable_action_bar.dart';
 import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/media/media_kind.dart';
 import 'package:plezy/media/media_rating.dart';
+import 'package:plezy/widgets/media_ratings_strip.dart';
 import 'package:plezy/media/media_item.dart';
 import 'package:plezy/media/media_version.dart';
 import 'package:plezy/models/catalog/catalog_cast_member.dart';
@@ -902,6 +903,51 @@ void main() {
 
     expect(find.text('Secret identity'), findsOneWidget);
     expect(find.text(t.explore.detail.revealSpoilerTags), findsNothing);
+  });
+
+  testWidgets('phone title uses the four public scores above its actions and collapses when disabled', (tester) async {
+    TvDetectionService.debugSetAppleTVOverride(false);
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const item = CatalogItem(
+      source: CatalogSourceId.trakt,
+      kind: MediaKind.movie,
+      title: 'Rated Movie',
+      ids: CatalogItemIds(tmdb: 11),
+      ratings: [
+        MediaRatingSource(source: 'personal', value: 9.9),
+        MediaRatingSource(source: 'imdb', value: 8.6),
+        MediaRatingSource(source: 'critic', value: 7.2),
+        MediaRatingSource(source: 'audience', value: 8.8),
+        MediaRatingSource(source: 'simkl', value: 8.1),
+        MediaRatingSource(source: 'mal', value: 8.3),
+      ],
+    );
+    final source = _FakeCatalogSource(detail: const CatalogDetail(item: item));
+    await _pumpDetail(tester, source, item: item);
+
+    final strip = find.byType(MediaRatingsStrip);
+    expect(strip, findsOneWidget);
+    final values = ['8.6', '7.2', '8.8', '8.1'].map((v) => find.descendant(of: strip, matching: find.text(v)));
+    for (final value in values) {
+      expect(value, findsOneWidget);
+      expect(tester.getCenter(value).dy, closeTo(tester.getCenter(values.first).dy, 1));
+    }
+    expect(find.text('9.9'), findsNothing);
+    expect(find.text('8.3'), findsNothing);
+    await SettingsService.instance.write(SettingsService.disabledRatingSources, [
+      'imdb',
+      'critic',
+      'audience',
+      'simkl',
+      'mal',
+    ]);
+    await tester.pumpAndSettle();
+    expect(tester.getSize(strip).height, 0);
+    expect(find.text(t.ratingDetails.noPublicRating), findsNothing);
   });
 
   testWidgets('ratings row labels every score source without a brand mark', (tester) async {

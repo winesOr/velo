@@ -94,6 +94,34 @@ void main() {
     expect(tester.getSize(find.byType(MediaRatingsStrip)).height, height * 2);
   });
 
+  testWidgets('four compact public scores fit on a 390px phone and wrap with large text', (tester) async {
+    final strip = MediaRatingsStrip(item: _item(_scores), showSourceLabels: false);
+    for (final scale in [1.0, 2.0]) {
+      await tester.pumpWidget(
+        TranslationProvider(
+          child: MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+              child: Scaffold(
+                body: Center(
+                  child: SizedBox(width: 390 - 2 * 24, child: strip),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      final cells = ['92%', '88%', '8.1', '79%'].map((s) => tester.getRect(find.text(s))).toList();
+      expect(find.text('8.2'), findsNothing);
+      if (scale == 1) {
+        expect(cells.last.center.dy, closeTo(cells.first.center.dy, 1));
+      } else {
+        expect(cells.last.center.dy, greaterThan(cells.first.center.dy));
+      }
+      expect(tester.takeException(), isNull);
+    }
+  });
+
   testWidgets('320px at 200% text stays readable in bright and dark themes', (tester) async {
     for (final brightness in Brightness.values) {
       await _pump(tester, MediaRatingsStrip(item: _item(_scores)), scale: 2, brightness: brightness);

@@ -45,22 +45,30 @@ extension _MediaDetailResponsiveLayout on _MediaDetailScreenState {
     });
   }
 
+  bool _isPortraitPhone(BuildContext context) =>
+      PlatformDetector.isPhone(context) && MediaQuery.orientationOf(context) == Orientation.portrait;
+
   Widget _buildHeroHeader(BuildContext context, MediaItem metadata) {
     final centered =
         MediaQuery.sizeOf(context).width < 720 ||
         (MonoPresentation.isTablet(context) && !MonoPresentation.isLandscapeTablet(context));
-    final inset = MonoPresentation.pageInset(context);
-    final artwork = metadata.thumbPath?.isNotEmpty == true || metadata.artPath?.isNotEmpty == true;
+    final size = MediaQuery.sizeOf(context);
+    final phone = _isPortraitPhone(context);
+    final inset = phone ? 24.0 : MonoPresentation.pageInset(context);
+    final artwork =
+        metadata.thumbPath?.isNotEmpty == true ||
+        metadata.heroArtCandidates(containerAspectRatio: size.aspectRatio).isNotEmpty;
+    final toolbarBottom = MediaQuery.paddingOf(context).top + _heroChromeHeight;
+    // In portrait the title begins at the lower edge of the poster. Everything
+    // after it flows naturally as sources, title length and text scale change.
+    final top = phone
+        ? math.max(toolbarBottom + 12, artwork ? math.min(size.width * (320 / 390), size.height * .4) : 0.0)
+        : toolbarBottom + (artwork ? (centered ? 120 : 64) : 24);
     return SafeArea(
       top: false,
       bottom: false,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          inset,
-          MediaQuery.paddingOf(context).top + _heroChromeHeight + (artwork ? (centered ? 120 : 64) : 24),
-          inset,
-          16,
-        ),
+        padding: EdgeInsets.fromLTRB(inset, top, inset, 16),
         child: Align(
           alignment: centered ? Alignment.bottomCenter : Alignment.bottomLeft,
           child: ConstrainedBox(

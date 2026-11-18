@@ -561,7 +561,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                 onNavigateDown: _focusBelowActionRow,
                 onNavigateUp: _focusAboveActionRow,
               ),
-              const SizedBox(height: 6),
+              if (!_isPortraitPhone(context)) const SizedBox(height: 6),
               IconButtonTheme(
                 data: const IconButtonThemeData(
                   style: ButtonStyle(backgroundColor: WidgetStatePropertyAll(Colors.transparent)),
@@ -569,7 +569,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                 child: Center(
                   child: FocusableActionBar(
                     actions: [favoriteAction, watchedAction],
-                    spacing: 12,
+                    spacing: _isPortraitPhone(context) ? 28 : 12,
                     onNavigateDown: _focusBelowActionRow,
                     onNavigateUp: () => _playButtonFocusNode.requestFocus(),
                   ),

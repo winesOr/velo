@@ -355,7 +355,14 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   RouteObserver<PageRoute<dynamic>>? _routeObserver;
   late final ScrollController _scrollController;
   bool _watchStateChanged = false;
-  final HomeThemeController _detailTheme = HomeThemeController();
+  final HomeThemeController _detailTheme = HomeThemeController(
+    resolve: (image) async {
+      final sampled = await AmbientPaletteExtractor.extractFromImageProvider(image);
+      // The detail surface carries white copy below the entire poster, so it
+      // uses the full artwork palette mixed with the V1 neutral backing.
+      return Color.lerp(AmbientPaletteExtractor.defaultFallback, sampled, .76)!;
+    },
+  );
   MediaItem? _detailSelectedEpisode;
   int _detailEpisodeRailIndex = 0;
   int _detailEpisodeRailRevision = 0;
@@ -2929,6 +2936,21 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     _scheduleInitialMobileDetailFocus(metadata);
 
     final blockSystemBack = InputModeTracker.shouldBlockSystemBack(context);
+    final backButton = FocusableWrapper(
+      focusNode: _backButtonFocusNode,
+      onSelect: () => Navigator.pop(context, _watchStateChanged),
+      descendantsAreFocusable: false,
+      disableScale: true,
+      child: IconButton(
+        tooltip: t.common.back,
+        onPressed: () => Navigator.pop(context, _watchStateChanged),
+        icon: const DetailActionIcon(DetailActionGlyph.back),
+        style: IconButton.styleFrom(
+          foregroundColor: Theme.of(context).colorScheme.onSurface,
+          backgroundColor: Colors.transparent,
+        ),
+      ),
+    );
     final content = PrimaryScrollController(
       controller: _scrollController,
       child: OverlaySheetHost(
@@ -2945,7 +2967,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
               children: [
                 // Background art sits behind the scroll view so it can be
                 // taller than the hero sliver without displacing content.
-                if (!isTv) _buildHeroBackdropLayer(context, metadata, size, headerHeight),
+                if (!isTv && (hasHeroArtwork || !_isPortraitPhone(context)))
+                  _buildHeroBackdropLayer(context, metadata, size, headerHeight),
 
                 CustomScrollView(
                   key: isTv ? const ValueKey('tv_detail_content_scroll') : null,
@@ -2955,7 +2978,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                     SliverToBoxAdapter(
                       child: ConstrainedBox(
                         key: const ValueKey('detail_hero'),
-                        constraints: BoxConstraints(minHeight: headerHeight),
+                        constraints: BoxConstraints(minHeight: _isPortraitPhone(context) ? 0 : headerHeight),
                         child: isTv ? _buildTvScrollableHero(context, metadata) : _buildHeroHeader(context, metadata),
                       ),
                     ),
@@ -2998,6 +3021,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                                   maxLines: MonoPresentation.isTablet(context) ? 3 : (compact ? 2 : (isMobile ? 3 : 4)),
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     fontSize: MonoPresentation.isTablet(context) ? 14 : (compact ? 12 : 13),
+                                    color: _isPortraitPhone(context)
+                                        ? theme.colorScheme.onSurface.withValues(alpha: .76)
+                                        : null,
                                     height: 1.8,
                                   ),
                                   focusNode: _overviewFocusNode,
@@ -3216,24 +3242,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                 Positioned(
                   top: isMobile ? MediaQuery.paddingOf(context).top + 5 : 0,
                   left: isMobile ? 12 + MediaQuery.paddingOf(context).left : 0,
-                  child: DesktopAppBarHelper.buildAdjustedLeading(
-                    FocusableWrapper(
-                      focusNode: _backButtonFocusNode,
-                      onSelect: () => Navigator.pop(context, _watchStateChanged),
-                      descendantsAreFocusable: false,
-                      disableScale: true,
-                      child: IconButton(
-                        tooltip: t.common.back,
-                        onPressed: () => Navigator.pop(context, _watchStateChanged),
-                        icon: const DetailActionIcon(DetailActionGlyph.back),
-                        style: IconButton.styleFrom(
-                          foregroundColor: Theme.of(context).colorScheme.onSurface,
-                          backgroundColor: Colors.transparent,
-                        ),
-                      ),
-                    ),
-                    context: context,
-                  )!,
+                  child: isMobile
+                      ? backButton
+                      : DesktopAppBarHelper.buildAdjustedLeading(backButton, context: context)!,
                 ),
               ],
             ),
@@ -3533,7 +3544,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   /// it keeps the hero's fixed, no-parallax relationship to the content.
   Widget _buildHeroBackdropLayer(BuildContext context, MediaItem metadata, Size size, double headerHeight) {
     final pixelRatio = MediaQuery.devicePixelRatioOf(context);
-    final artHeight = (_heroArtHeight(size, headerHeight) * pixelRatio).ceilToDouble() / pixelRatio;
+    final phone = _isPortraitPhone(context);
+    final portraitSeries = phone && (metadata.isShow || metadata.isSeason || metadata.isEpisode);
+    final imageHeight = phone ? size.width * ((portraitSeries ? 380 : 603) / 390) : _heroArtHeight(size, headerHeight);
+    final artHeight = (imageHeight * pixelRatio).ceilToDouble() / pixelRatio;
 
     return Positioned(
       top: 0,
@@ -3615,7 +3629,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                       allowNetwork: !widget.isOffline,
                       width: size.width,
                       height: artHeight,
-                      alignment: Alignment.topCenter,
+                      alignment: phone && !portraitSeries ? const Alignment(0, -.6) : Alignment.topCenter,
                       fallbackColor: surface,
                       onImageReady: (provider) {
                         if (!_canUseDetail || _metadata.globalKey != metadata.globalKey) return;
@@ -3624,7 +3638,24 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                         );
                       },
                     ),
-                    DecoratedBox(decoration: BoxDecoration(gradient: MonoPresentation.artworkBlend(surface))),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: phone
+                            ? LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                stops: portraitSeries ? const [0, .55, .72, .85, 1] : const [0, .35, .48, .60, .70],
+                                colors: [
+                                  surface.withValues(alpha: 0),
+                                  surface.withValues(alpha: 0),
+                                  surface.withValues(alpha: .38),
+                                  surface.withValues(alpha: .81),
+                                  surface,
+                                ],
+                              )
+                            : MonoPresentation.artworkBlend(surface),
+                      ),
+                    ),
                     // Keep status-bar contrast separate from the long blend.
                     DecoratedBox(
                       decoration: BoxDecoration(

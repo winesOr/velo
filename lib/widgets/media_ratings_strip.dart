@@ -97,8 +97,12 @@ class _MediaRatingsStripState extends State<MediaRatingsStrip> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final width = constraints.hasBoundedWidth ? constraints.maxWidth : 320.0;
-            final columns = MediaRatingsStrip.columnsFor(width, scaler, widget.maxRatings);
-            final cellWidth = width / columns;
+            // Compact scores do not need room for a source caption. Keep two
+            // scores grouped centrally, and fit four in a regular phone hero.
+            final columns = widget.showSourceLabels
+                ? MediaRatingsStrip.columnsFor(width, scaler, widget.maxRatings)
+                : (width / scaler.scale(76)).floor().clamp(1, widget.maxRatings);
+            final cellWidth = widget.showSourceLabels ? width / columns : math.min(width / columns, scaler.scale(88));
             final cellHeight = 48 * scaler.scale(1);
             return SizedBox(
               width: width,

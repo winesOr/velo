@@ -59,7 +59,6 @@ import 'package:plezy/services/offline_watch_sync_service.dart';
 import 'package:plezy/services/plex_api_cache.dart';
 import 'package:plezy/services/settings_service.dart';
 import 'package:plezy/theme/mono_theme.dart';
-import 'package:plezy/theme/mono_presentation.dart';
 import 'package:plezy/utils/ambient_palette_extractor.dart';
 import 'package:plezy/utils/layout_constants.dart';
 import 'package:plezy/utils/media_server_http_client.dart';
@@ -73,6 +72,7 @@ import 'package:plezy/widgets/cycling_media_backdrop.dart';
 import 'package:plezy/widgets/episode_card.dart';
 import 'package:plezy/widgets/detail_action_icon.dart';
 import 'package:plezy/utils/episode_titles.dart';
+import 'package:plezy/widgets/backend_badge.dart';
 import 'package:plezy/widgets/app_select_field.dart';
 import 'package:plezy/widgets/app_glass_surface.dart';
 import 'package:plezy/screens/video_player_screen.dart';
@@ -1935,6 +1935,7 @@ void main() {
 
   group('phone layout', () {
     const artworkUrl = 'https://detail-artwork.fixture/dune.jpg';
+    const captureFolder = String.fromEnvironment('DETAIL_VISUAL_FIXTURE_DIR');
     late Directory artworkDirectory;
     late PathProviderPlatform previousPathProvider;
 
@@ -1953,6 +1954,16 @@ void main() {
         key: 'plex_optimized_${sha1.convert(utf8.encode(artworkUrl))}',
         fileExtension: 'png',
       );
+      for (final kind in ['series', 'movie']) {
+        final url = 'https://detail-artwork.fixture/$kind.png';
+        final source = File(captureFolder.isEmpty ? 'test/fixtures/artwork/dune.png' : '$captureFolder/$kind-art.png');
+        await PlexImageCacheManager.instance.putFile(
+          url,
+          await source.readAsBytes(),
+          key: 'plex_optimized_${sha1.convert(utf8.encode(url))}',
+          fileExtension: 'png',
+        );
+      }
       await LocaleSettings.setLocale(AppLocale.zh);
     });
 
@@ -2276,7 +2287,7 @@ void main() {
         final movie = PlexMappers.mediaItemFromCacheJson(raw, serverId: ServerId('server_1'));
         final client = _FakeMediaServerClient(show: movie, childrenByParent: {}, rawItems: {movie.id: raw});
         final base = monoTheme(dark: dark);
-        await pumpPhoneDetail(tester, client, movie, theme: base);
+        await pumpPhoneDetail(tester, client, movie, theme: base, viewport: const Size(390, 844));
         await tester.pump(const Duration(milliseconds: 450));
         await tester.pump();
 
@@ -2290,7 +2301,9 @@ void main() {
           final theme = Theme.of(tester.element(field));
           final material = tester.widget<Material>(find.descendant(of: field, matching: find.byType(Material)).first);
           final background = Color.alphaBlend(material.color!, theme.colorScheme.surface);
-          expect(theme.brightness, base.brightness);
+          expect(material.color!.a, inExclusiveRange(0, 1));
+          final brand = tester.widget<AppSelectField<String>>(field).leading as BackendBadge;
+          expect(brand.color, BackendBadge.brandColor(MediaBackend.plex));
           expect(contrast(theme.colorScheme.onSurface, background), greaterThanOrEqualTo(4.5));
           expect(contrast(theme.colorScheme.onSurfaceVariant, background), greaterThanOrEqualTo(4.5));
           expect(contrast(IconTheme.of(tester.element(field)).color!, background), greaterThanOrEqualTo(3));
@@ -3369,15 +3382,159 @@ void main() {
       }
     });
 
-    testWidgets('phone identifies an unrated title only after receiving its detail metadata', (tester) async {
+    for (final kind in ['series', 'movie', 'four']) {
+      final series = kind == 'series';
+      final four = kind == 'four';
+      testWidgets('390px Android $kind detail lays the V1 controls over the artwork', (tester) async {
+        final url = 'https://detail-artwork.fixture/${series ? 'series' : 'movie'}.png';
+        tester.view.padding = const FakeViewPadding(top: 38);
+        addTearDown(tester.view.resetPadding);
+        await tester.runAsync(loadPreviewFonts);
+        LocaleSettings.setLocaleSync(AppLocale.zh);
+        final item =
+            testMediaItem(
+              id: kind,
+              backend: MediaBackend.emby,
+              kind: series ? MediaKind.show : MediaKind.movie,
+              title: series ? '一念永恒' : '沙丘：第二部',
+              serverId: 'server_1',
+              serverName: 'Emby',
+              thumbPath: url,
+              artPath: url,
+              year: 2024,
+              studio: series ? 'Tencent Video' : null,
+              genres: series ? ['动画'] : ['科幻', '冒险'],
+              summary: series
+                  ? '平凡少年踏上修行之路，在一次次奇遇中寻找属于自己的答案。热血与羁绊交织，一段新的旅程就此展开。'
+                  : '当命运将熟悉的世界推向未知，一场关于选择、信念与人性的旅程缓缓展开。',
+              childCount: series ? 4 : null,
+              durationMs: (series ? 21 : 167) * 60000,
+              mediaVersions: series ? null : phoneMediaVersions.reversed.toList(),
+            ).copyWith(
+              ratings: [
+                MediaRatingSource(source: 'critic', value: series ? 8.6 : 8.3),
+                const MediaRatingSource(source: 'imdb', value: 8.2),
+                if (four) ...const [
+                  MediaRatingSource(source: 'tmdb', value: 7.5),
+                  MediaRatingSource(source: 'rottenTomatoesCritic', value: 9.1),
+                  MediaRatingSource(source: 'simkl', value: 5.7),
+                ],
+              ],
+            );
+        final settings = await SettingsService.getInstance();
+        await settings.write(SettingsService.ratingSourceOrder, [
+          'critic',
+          'imdb',
+          'tmdb',
+          'rottenTomatoesCritic',
+          'simkl',
+        ]);
+        final season = testMediaItem(
+          id: 'season4',
+          title: '第 4 季',
+          kind: MediaKind.season,
+          backend: item.backend,
+          index: 4,
+          parentId: item.id,
+          serverId: item.serverId,
+          serverName: item.serverName,
+        );
+        final client = _FakeMediaServerClient(
+          show: item,
+          serverBackend: MediaBackend.emby,
+          artworkUrl: url,
+          childrenByParent: series
+              ? {
+                  item.id: [season],
+                  season.id: [
+                    for (var i = 1; i <= 4; i++)
+                      testMediaItem(
+                        id: 'ep$i',
+                        kind: MediaKind.episode,
+                        backend: item.backend,
+                        title: '第 $i 集',
+                        index: i,
+                        parentId: season.id,
+                        parentIndex: season.index,
+                        grandparentId: item.id,
+                        serverId: item.serverId,
+                        serverName: item.serverName,
+                        thumbPath: url,
+                        durationMs: 21 * 60000,
+                        mediaVersions: phoneMediaVersions,
+                      ),
+                  ],
+                }
+              : {},
+          fileInfo: phoneFileInfo,
+        );
+        final boundary = GlobalKey();
+        final base = monoTheme(dark: true);
+        await pumpPhoneDetail(
+          tester,
+          client,
+          item,
+          viewport: const Size(390, 844),
+          screenshotKey: boundary,
+          theme: base.copyWith(
+            platform: TargetPlatform.android,
+            textTheme: base.textTheme.apply(fontFamily: 'DetailFixture'),
+          ),
+        );
+        for (var i = 0; i < 50; i++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+          await tester.pump(const Duration(milliseconds: 100));
+          if (HomeThemeScope.colorOf(tester.element(find.byKey(const ValueKey('detail_hero')))) !=
+              AmbientPaletteExtractor.defaultFallback) {
+            break;
+          }
+        }
+        await tester.pumpAndSettle();
+        expect(
+          HomeThemeScope.colorOf(tester.element(find.byKey(const ValueKey('detail_hero')))),
+          isNot(AmbientPaletteExtractor.defaultFallback),
+        );
+        if (captureFolder.isNotEmpty) {
+          await tester.runAsync(() async {
+            final render = boundary.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+            final image = await render.toImage();
+            final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+            await File('$captureFolder/detail-$kind.png').writeAsBytes(bytes!.buffer.asUint8List());
+            image.dispose();
+          });
+        }
+        final title = tester.getRect(find.byKey(const ValueKey('detail_natural_title')));
+        final play = tester.getRect(find.byKey(const ValueKey('detail_primary_play')));
+        expect(title.top, closeTo(320, 3));
+        expect(play.left, 24);
+        expect(play.right, 366);
+        expect(play.top, closeTo(490, 12));
+        expect(find.text('8.2').hitTestable(), findsOneWidget);
+        if (four) {
+          final scores = ['8.3', '8.2', '75%', '91%'].map((s) => tester.getRect(find.text(s).hitTestable())).toList();
+          expect(scores.last.center.dy, closeTo(scores.first.center.dy, 1));
+          expect(find.text('5.7'), findsNothing);
+        }
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('phone collapses the entire rating row while loading and after an unrated response', (tester) async {
       final row = buildShow().copyWith(userRating: 9.9);
       final client = singleSeasonClient(row)..metadataGate = Completer<void>();
-      await pumpPhoneDetail(tester, client, row);
+      await pumpPhoneDetail(
+        tester,
+        client,
+        row,
+        viewport: const Size(390, 844),
+        theme: monoTheme(dark: true).copyWith(platform: TargetPlatform.android),
+      );
       expect(find.text(t.ratingDetails.noPublicRating), findsNothing);
 
       client.metadataGate!.complete();
       await tester.pumpAndSettle();
-      expect(find.text(t.ratingDetails.noPublicRating).hitTestable(), findsOneWidget);
+      expect(find.text(t.ratingDetails.noPublicRating), findsNothing);
+      expect(tester.getSize(find.byType(MediaRatingsStrip)).height, 0);
       expect(find.text('9.9'), findsNothing);
     });
 
@@ -3551,14 +3708,6 @@ void main() {
         expect(
           tester.widget<Text>(find.byKey(const ValueKey('detail_natural_title'))).style!.color,
           theme.colorScheme.onSurface,
-        );
-        expect(
-          find.byWidgetPredicate(
-            (widget) =>
-                widget is DecoratedBox &&
-                widget.decoration == BoxDecoration(gradient: MonoPresentation.artworkBlend(surface)),
-          ),
-          findsOneWidget,
         );
         final backdrop = tester.widget<CyclingMediaBackdrop>(find.byType(CyclingMediaBackdrop));
         expect(backdrop.height, backdrop.height.roundToDouble(), reason: 'no fractional-pixel artwork edge');

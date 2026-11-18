@@ -38,7 +38,10 @@ extension _MediaDetailPlaybackSelectors on _MediaDetailScreenState {
           MediaBackend.jellyfin => 'Jellyfin',
           MediaBackend.emby => 'Emby',
         };
-        final controlsTheme = _DetailControlsTheme.of(context);
+        final base = _DetailControlsTheme.of(context);
+        final phone = !PlatformDetector.isTV() && ScreenBreakpoints.isMobile(MediaQuery.sizeOf(context).shortestSide);
+        final controlsTheme = phone ? _phoneVersionTheme(base, Theme.of(context).colorScheme.surface) : base;
+        final badgeColor = phone ? BackendBadge.brandColor(item.backend) : null;
         final fieldsContent = Theme(
           data: controlsTheme,
           child: Focus(
@@ -70,7 +73,7 @@ extension _MediaDetailPlaybackSelectors on _MediaDetailScreenState {
                       selectedLabel: selected == null
                           ? placeholder
                           : _detailVersionSummary(selected, versions.length, movie: item.isMovie),
-                      leading: BackendBadge(backend: item.backend, size: 17),
+                      leading: BackendBadge(backend: item.backend, size: phone ? 18 : 17, color: badgeColor),
                       inlineContent: Text.rich(
                         TextSpan(
                           children: [
@@ -104,7 +107,7 @@ extension _MediaDetailPlaybackSelectors on _MediaDetailScreenState {
                             value: version.id,
                             label: '$backendName · ${_detailVersionQuality(version, separator: ' ')}',
                             subtitle: _detailVersionOptionSubtitle(version, index, versions.length),
-                            leading: BackendBadge(backend: item.backend, size: 20),
+                            leading: BackendBadge(backend: item.backend, size: 20, color: badgeColor),
                             enabled: version.isPlayable,
                           ),
                       ],
@@ -138,6 +141,26 @@ extension _MediaDetailPlaybackSelectors on _MediaDetailScreenState {
                 child: fieldsContent,
               );
       },
+    );
+  }
+
+  ThemeData _phoneVersionTheme(ThemeData base, Color artwork) {
+    final darkArtwork = ThemeData.estimateBrightnessForColor(artwork) == Brightness.dark;
+    // Match the prototype's light wash while measuring ink contrast against
+    // the actual, composited artwork. The popup keeps the app's own theme.
+    final wash = Colors.white.withAlpha(darkArtwork ? 6 : 102);
+    final surface = Color.alphaBlend(wash, artwork);
+    final useWhiteInk = 1.05 / (surface.computeLuminance() + .05) >= 4.5;
+    final ink = useWhiteInk ? Colors.white : Colors.black;
+    return base.copyWith(
+      colorScheme: base.colorScheme.copyWith(
+        brightness: useWhiteInk ? Brightness.dark : Brightness.light,
+        surface: artwork,
+        surfaceContainerHigh: wash,
+        onSurface: ink,
+        onSurfaceVariant: ink,
+      ),
+      iconTheme: base.iconTheme.copyWith(color: ink),
     );
   }
 

@@ -282,6 +282,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
 
   Widget _buildCompactDetailHeader(BuildContext context, MediaItem metadata) {
     final tv = PlatformDetector.isTV();
+    final portraitPhone = _isPortraitPhone(context);
     final centered =
         !tv &&
         (MediaQuery.sizeOf(context).width < 720 ||
@@ -316,13 +317,19 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
         ),
         const SizedBox(height: 7),
         for (final (index, labels) in [firstLine, secondLine].indexed)
-          if (labels.isNotEmpty)
+          if (labels.isNotEmpty) ...[
+            if (index == 1 && firstLine.isNotEmpty && portraitPhone) const SizedBox(height: 4),
             Text(
               labels.join(' · '),
               key: ValueKey(index == 0 ? 'detail_plain_metadata' : 'detail_secondary_metadata'),
               textAlign: centered ? TextAlign.center : TextAlign.start,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12, height: 1.6),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontSize: 12,
+                height: 1.6,
+                color: portraitPhone ? Theme.of(context).colorScheme.onSurface.withValues(alpha: .78) : null,
+              ),
             ),
+          ],
       ],
     );
     void openDetails() => _openTvDetailsSheet(
@@ -365,7 +372,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
         Column(
           key: tv ? _tvDetailRatingsGroupKey : null,
           children: [
-            if (_hasReceivedDetailMetadata && lacksPublicTitleRating(metadata))
+            if (!PlatformDetector.isPhone(context) && _hasReceivedDetailMetadata && lacksPublicTitleRating(metadata))
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(t.ratingDetails.noPublicRating, style: Theme.of(context).textTheme.bodySmall),
@@ -377,7 +384,9 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
               firstFocusNode: _detailRatingSourceFocusNode,
               onNavigateUp: tv ? _tvDetailInfoFocusNode.requestFocus : _backButtonFocusNode.requestFocus,
               onNavigateDown: tv ? _focusTvDetailActionRow : _playButtonFocusNode.requestFocus,
-              padding: centered ? const EdgeInsets.only(top: 12, bottom: 16) : const EdgeInsets.only(bottom: 18),
+              padding: centered
+                  ? EdgeInsets.only(top: 12, bottom: portraitPhone ? 24 : 16)
+                  : const EdgeInsets.only(bottom: 18),
             ),
           ],
         ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -45,6 +46,7 @@ import '../utils/rating_display_policy.dart';
 import '../utils/rating_utils.dart';
 import '../utils/snackbar_helper.dart';
 import '../widgets/media_rating_badge.dart';
+import '../widgets/media_ratings_strip.dart';
 import '../widgets/settings_builder.dart';
 import '../widgets/app_bar_back_button.dart';
 import '../widgets/app_icon.dart';
@@ -683,7 +685,7 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
         children: [
           const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
           const SizedBox(width: 10),
-          Text(t.explore.checkingLibrary, style: mutedStyle),
+          Flexible(child: Text(t.explore.checkingLibrary, style: mutedStyle)),
         ],
       );
     }
@@ -1312,17 +1314,119 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
     // The backdrop strip spans the full screen width (Positioned left/right: 0
     // below), and backdropFor is width-keyed: target the rendered width, not
     // the 320px slot height.
-    final backdropUrl = item.backdropFor(
-      MediaImageHelper.artworkTargetPx(context, MediaQuery.sizeOf(context).width, imageType: ImageType.art),
-    );
-    final posterUrl = item.posterFor(MediaImageHelper.artworkTargetPx(context, 140));
     final isMobile = PlatformDetector.isMobile(context);
+    final size = MediaQuery.sizeOf(context);
+    final centeredHeader = PlatformDetector.isPhone(context) && size.height >= size.width;
+    final double backdropHeight = centeredHeader ? math.min(size.width * (320 / 390), size.height * .4) : 320;
+    final artworkWidth = MediaImageHelper.artworkTargetPx(
+      context,
+      MediaQuery.sizeOf(context).width,
+      imageType: ImageType.art,
+    );
+    final backdropUrl = item.backdropFor(artworkWidth) ?? (centeredHeader ? item.posterFor(artworkWidth) : null);
+    final posterUrl = item.posterFor(MediaImageHelper.artworkTargetPx(context, 140));
 
     final viewInsets = MediaQuery.paddingOf(context);
+    final headerTop = centeredHeader
+        ? math.max(viewInsets.top + kToolbarHeight, backdropUrl == null ? 0.0 : backdropHeight)
+        : viewInsets.top + 120;
     final blockSystemBack = PlatformDetector.isTV() || InputModeTracker.shouldBlockSystemBack(context);
     // Match the established detail-screen back policy: TV/keyboard back is
     // owned by the focus tree, while native mobile back and iOS swipe-back
     // remain route-driven. The overlay host always gets first refusal.
+    final header = Builder(
+      builder: (hostContext) => Column(
+        crossAxisAlignment: centeredHeader ? .center : .start,
+        children: [
+          if (item.tagline?.trim() case final tagline? when tagline.isNotEmpty) ...[
+            Text(
+              tagline,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
+          Text(
+            item.title,
+            textAlign: centeredHeader ? TextAlign.center : TextAlign.start,
+            style: centeredHeader
+                ? theme.textTheme.headlineMedium?.copyWith(
+                    fontSize: 32,
+                    height: 1.15,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -.6,
+                  )
+                : theme.textTheme.headlineMedium,
+            maxLines: 3,
+            overflow: .ellipsis,
+          ),
+          if (_metaLine.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              _metaLine,
+              textAlign: centeredHeader ? TextAlign.center : TextAlign.start,
+              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
+            ),
+          ],
+          if (item.genres?.isNotEmpty ?? false) ...[
+            const SizedBox(height: 8),
+            Text(
+              item.genres!.join(' • '),
+              textAlign: centeredHeader ? TextAlign.center : TextAlign.start,
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+            ),
+          ],
+          if (centeredHeader)
+            MediaRatingsStrip(
+              item: item.toMediaItem(),
+              showSourceLabels: false,
+              padding: const EdgeInsets.only(top: 12),
+            ),
+          if (_hasActions) const SizedBox(height: 16),
+          if (_hasActions)
+            FocusableActionBar(
+              key: _actionBarKey,
+              onNavigateDown: _focusSectionBelowActions,
+              actions: [
+                if (_watchlistSource != null)
+                  FocusableAction(
+                    // Stable identities so the focused binding survives the
+                    // list-shape changes of async enrichment (watchlist/request
+                    // sources and trailer URL arrive at different times).
+                    debugLabel: 'catalog_watchlist',
+                    icon: onWatchlist ?? false ? Symbols.bookmark_added_rounded : Symbols.bookmark_add_rounded,
+                    tooltip: onWatchlist ?? false ? t.explore.removeFromWatchlist : t.explore.addToWatchlist,
+                    onPressed: () => unawaited(_toggleWatchlist()),
+                  ),
+                if (_requestSource case final SeerrCatalogSource seerr when tmdbId != null)
+                  FocusableAction(
+                    debugLabel: 'catalog_request',
+                    icon: Symbols.download_rounded,
+                    tooltip: t.seerr.request,
+                    onPressed: () => unawaited(
+                      showSeerrRequestSheet(
+                        hostContext,
+                        source: seerr,
+                        kind: item.kind,
+                        tmdbId: tmdbId,
+                        title: item.title,
+                      ),
+                    ),
+                  ),
+                if (item.trailerUrl?.trim() case final trailer? when trailer.isNotEmpty)
+                  FocusableAction(
+                    debugLabel: 'catalog_trailer',
+                    icon: Symbols.play_circle_rounded,
+                    tooltip: t.explore.detail.watchTrailer,
+                    onPressed: () => unawaited(_openExternalUrl(trailer)),
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
     return OverlaySheetHost(
       canPop: !blockSystemBack,
       onSystemBack: _handleSystemBack,
@@ -1346,7 +1450,7 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
                           top: 0,
                           left: 0,
                           right: 0,
-                          height: 320,
+                          height: backdropHeight,
                           child: ShaderMask(
                             shaderCallback: (rect) => LinearGradient(
                               begin: Alignment.topCenter,
@@ -1358,7 +1462,7 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
                             child: OptimizedMediaImage.thumb(
                               imagePath: backdropUrl,
                               width: double.infinity,
-                              height: 320,
+                              height: backdropHeight,
                               fit: BoxFit.cover,
                               fallbackIcon: null,
                             ),
@@ -1372,115 +1476,34 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
                         top: false,
                         bottom: false,
                         child: Padding(
-                          padding: EdgeInsets.fromLTRB(24, viewInsets.top + 120, 24, viewInsets.bottom + 32),
+                          padding: EdgeInsets.fromLTRB(24, headerTop, 24, viewInsets.bottom + 32),
                           child: Column(
                             crossAxisAlignment: .start,
                             children: [
-                              Row(
-                                crossAxisAlignment: .start,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: OptimizedMediaImage.poster(imagePath: posterUrl, width: 140, height: 210),
-                                  ),
-                                  const SizedBox(width: 20),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: .start,
-                                      children: [
-                                        if (item.tagline?.trim() case final tagline? when tagline.isNotEmpty) ...[
-                                          Text(
-                                            tagline,
-                                            style: theme.textTheme.titleMedium?.copyWith(
-                                              color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
-                                              fontStyle: FontStyle.italic,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                        ],
-                                        Text(
-                                          item.title,
-                                          style: theme.textTheme.headlineMedium,
-                                          maxLines: 3,
-                                          overflow: .ellipsis,
-                                        ),
-                                        if (_metaLine.isNotEmpty) ...[
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            _metaLine,
-                                            style: theme.textTheme.bodyMedium?.copyWith(
-                                              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                                            ),
-                                          ),
-                                        ],
-                                        if (item.genres?.isNotEmpty ?? false) ...[
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            item.genres!.join(' • '),
-                                            style: theme.textTheme.bodySmall?.copyWith(
-                                              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                                            ),
-                                          ),
-                                        ],
-                                        const SizedBox(height: 16),
-                                        if (_hasActions)
-                                          FocusableActionBar(
-                                            key: _actionBarKey,
-                                            onNavigateDown: _focusSectionBelowActions,
-                                            actions: [
-                                              if (_watchlistSource != null)
-                                                FocusableAction(
-                                                  // Stable identities so the focused binding survives the
-                                                  // list-shape changes of async enrichment (watchlist/request
-                                                  // sources and trailer URL arrive at different times).
-                                                  debugLabel: 'catalog_watchlist',
-                                                  icon: onWatchlist ?? false
-                                                      ? Symbols.bookmark_added_rounded
-                                                      : Symbols.bookmark_add_rounded,
-                                                  tooltip: onWatchlist ?? false
-                                                      ? t.explore.removeFromWatchlist
-                                                      : t.explore.addToWatchlist,
-                                                  onPressed: () => unawaited(_toggleWatchlist()),
-                                                ),
-                                              if (_requestSource case final SeerrCatalogSource seerr
-                                                  when tmdbId != null)
-                                                FocusableAction(
-                                                  debugLabel: 'catalog_request',
-                                                  icon: Symbols.download_rounded,
-                                                  tooltip: t.seerr.request,
-                                                  onPressed: () => unawaited(
-                                                    showSeerrRequestSheet(
-                                                      hostContext,
-                                                      source: seerr,
-                                                      kind: item.kind,
-                                                      tmdbId: tmdbId,
-                                                      title: item.title,
-                                                    ),
-                                                  ),
-                                                ),
-                                              if (item.trailerUrl?.trim() case final trailer? when trailer.isNotEmpty)
-                                                FocusableAction(
-                                                  debugLabel: 'catalog_trailer',
-                                                  icon: Symbols.play_circle_rounded,
-                                                  tooltip: t.explore.detail.watchTrailer,
-                                                  onPressed: () => unawaited(_openExternalUrl(trailer)),
-                                                ),
-                                            ],
-                                          ),
-                                      ],
+                              if (centeredHeader)
+                                header
+                              else
+                                Row(
+                                  crossAxisAlignment: .start,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: OptimizedMediaImage.poster(imagePath: posterUrl, width: 140, height: 210),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              SettingsBuilder(
-                                prefs: ratingDisplayPrefs,
-                                builder: (context) {
-                                  final ratings = _buildRatingsSection(theme);
-                                  return ratings == null
-                                      ? const SizedBox.shrink()
-                                      : Padding(padding: const EdgeInsets.only(top: 20), child: ratings);
-                                },
-                              ),
+                                    const SizedBox(width: 20),
+                                    Expanded(child: header),
+                                  ],
+                                ),
+                              if (!centeredHeader)
+                                SettingsBuilder(
+                                  prefs: ratingDisplayPrefs,
+                                  builder: (context) {
+                                    final ratings = _buildRatingsSection(theme);
+                                    return ratings == null
+                                        ? const SizedBox.shrink()
+                                        : Padding(padding: const EdgeInsets.only(top: 20), child: ratings);
+                                  },
+                                ),
                               if (_buildStatsChips() case final Widget chips) ...[const SizedBox(height: 20), chips],
                               if (item.overview?.trim() case final overview? when overview.isNotEmpty) ...[
                                 const SizedBox(height: 24),
