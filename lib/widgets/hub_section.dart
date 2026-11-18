@@ -7,7 +7,6 @@ import '../theme/mono_presentation.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../focus/dpad_navigator.dart';
-import '../focus/focusable_button.dart';
 import '../focus/dpad_select_long_press_controller.dart';
 import '../focus/focus_theme.dart';
 import '../focus/input_mode_tracker.dart';
@@ -34,8 +33,6 @@ import '../utils/scroll_utils.dart';
 import 'horizontal_scroll_with_arrows.dart';
 import 'tv_browse_rail.dart';
 import '../i18n/strings.g.dart';
-import '../utils/dialogs.dart';
-import 'rating_source_dialog.dart';
 import 'press_feedback.dart';
 
 enum HubCardSizing {
@@ -108,7 +105,6 @@ class HubSection extends StatefulWidget {
   /// Controls whether cards follow top-level shelf or grid geometry.
   final HubCardSizing cardSizing;
   final double? cardWidthOverride;
-  final bool showRatingSources;
   final VoidCallback? onBrowseAll;
 
   /// Overrides the global episode artwork mode for this hub.
@@ -142,7 +138,6 @@ class HubSection extends StatefulWidget {
     this.inset = false,
     this.cardSizing = HubCardSizing.shelf,
     this.cardWidthOverride,
-    this.showRatingSources = false,
     this.onBrowseAll,
     this.episodePosterModeOverride,
     this.focusScrollAlignment = 0.3,
@@ -485,13 +480,6 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
     );
   }
 
-  Future<void> _showRatingSources() async {
-    await showScopedDialog<void>(
-      context: context,
-      builder: (_) => const RatingSourceDialog(ratings: []),
-    );
-  }
-
   /// TV shelf cards share [TvBrowseRailLayout.cardWidthFor] so the two
   /// remaining HubSection-on-TV surfaces (live TV "What's On", catalog item
   /// related rows) match the rails every neighboring TV screen renders —
@@ -619,26 +607,6 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
             ),
           ),
 
-          if (homePhone && widget.showRatingSources)
-            Padding(
-              padding: EdgeInsets.only(left: leadingPadding, bottom: 7),
-              child: FocusableButton(
-                onPressed: _showRatingSources,
-                dimWhenUnfocused: false,
-                child: GestureDetector(
-                  onTap: _showRatingSources,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: .06),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(t.ratingDetails.sourceInfo, style: const TextStyle(fontSize: 10)),
-                  ),
-                ),
-              ),
-            ),
-          if (homePhone) const SizedBox(height: 7),
           if (widget.hub.items.isNotEmpty)
             Focus(
               focusNode: _hubFocusNode,

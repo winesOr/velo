@@ -1339,7 +1339,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       return _buildTvContent(context, isInitialLoading: isInitialLoading);
     }
 
-    final bottomPadding = MediaQuery.paddingOf(context).bottom + 100;
+    final bottomPadding = MediaQuery.paddingOf(context).bottom + 32;
     final continueWatchingHub = _onDeck.isEmpty ? null : _continueWatchingHub;
     final showServerName = svc.read(SettingsService.showServerNameOnHubs) || _hubsSpanMultipleServers();
     return Material(
@@ -1415,9 +1415,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       focusMemory: _hubFocusMemory,
                       icon: hubIconFor(_hubs[i]),
                       showServerName: showServerName,
-                      showRatingSources:
-                          _hubs[i].type == 'movie' ||
-                          (_hubs[i].items.isNotEmpty && _hubs[i].items.every((item) => item.isMovie)),
                       episodePosterModeOverride:
                           _hubs[i].type == 'show' ||
                               (_hubs[i].items.isNotEmpty &&
