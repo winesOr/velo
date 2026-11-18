@@ -629,11 +629,39 @@ void main() {
     test('path-encodes chapter thumbnail item id and image tag', () {
       final extras = jellyfinPlaybackExtrasFromRaw({
         'Chapters': [
-          {'StartPositionTicks': 0, 'ImageTag': 'chapter/tag ?x'},
+          {'Name': 'Prologue', 'StartPositionTicks': 0, 'ImageTag': 'chapter/tag ?x'},
         ],
       }, 'folder/item #1?x');
 
       expect(extras.chapters.single.thumb, '/Items/folder%2Fitem%20%231%3Fx/Images/Chapter/0?tag=chapter%2Ftag%20%3Fx');
+    });
+
+    test('hides generated chapter grids in both media info and player extras, preserving skip markers', () {
+      for (final stepMs in [300000, 90000]) {
+        final rows = [
+          {'Name': '第 1 章', 'StartPositionTicks': 0, 'ImageTag': 'preview'},
+          {'Name': 'Intro', 'StartPositionTicks': _ticks(5000), 'MarkerType': 'IntroStart'},
+          {'Name': 'Intro End', 'StartPositionTicks': _ticks(30000), 'MarkerType': 'IntroEnd'},
+          {'Name': '第 2 章', 'StartPositionTicks': _ticks(stepMs)},
+          {'Name': '第 3 章', 'StartPositionTicks': _ticks(2 * stepMs)},
+        ];
+        expect(jellyfinMediaSourceToMediaSourceInfo({}, chapters: rows).chapters, isEmpty);
+        final extras = jellyfinPlaybackExtrasFromRaw({'Chapters': rows}, 'episode');
+        expect(extras.chapters, isEmpty);
+        expect(extras.markers.single.endTimeOffset, 30000);
+      }
+    });
+
+    test('keeps named chapters at regular intervals and numbered chapters at irregular times', () {
+      for (final (name, lastStart) in [('Finale', 600000), ('Chapter 3', 599920)]) {
+        final rows = [
+          {'Name': 'Chapter 1', 'StartPositionTicks': 0},
+          {'Name': 'Chapter 2', 'StartPositionTicks': _ticks(300000)},
+          {'Name': name, 'StartPositionTicks': _ticks(lastStart)},
+        ];
+        expect(jellyfinMediaSourceToMediaSourceInfo({}, chapters: rows).chapters, hasLength(3));
+        expect(jellyfinPlaybackExtrasFromRaw({'Chapters': rows}, 'episode').chapters.last.title, name);
+      }
     });
 
     test('uses default OP and ED chapter patterns for skip markers', () {
@@ -683,7 +711,7 @@ void main() {
         ],
       }, 'item-1');
 
-      expect(extras.chapters, hasLength(6));
+      expect(extras.chapters.map((c) => c.title), ['Chapter 1', 'Chapter 2', 'Chapter 3']);
       expect(extras.markers.map((m) => m.type), ['intro', 'credits']);
       expect(extras.markers[0].startTimeOffset, 270138);
       expect(extras.markers[0].endTimeOffset, 301087);

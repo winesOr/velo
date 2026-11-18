@@ -388,6 +388,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(t.videoControls.episodesButton), findsOneWidget);
     expect(find.text('Episode 21 · Episode 20'), findsOneWidget);
+    expect(find.text(t.videoControls.chapters), findsNothing);
   });
 
   for (final hasMediaSelection in [true, false]) {

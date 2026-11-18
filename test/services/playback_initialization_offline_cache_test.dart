@@ -408,7 +408,7 @@ void main() {
 
     expect(result.videoUrl, 'content://offline/jf-item-1');
     expect(result.mediaInfo?.audioTracks.single.languageCode, 'eng');
-    expect(result.mediaInfo?.chapters.single.title, 'Chapter 1');
+    expect(result.mediaInfo!.chapters, isEmpty);
   });
 
   test('SAF offline playback discovers app-managed sidecar subtitles', () async {

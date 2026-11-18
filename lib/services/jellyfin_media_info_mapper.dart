@@ -38,17 +38,6 @@ MediaSourceInfo jellyfinMediaSourceToMediaSourceInfo(
   final audioTracks = _withDefaultAudioSelection(parsedStreams.audioTracks, defaultAudioStreamIndex);
   final subtitleTracks = _withDefaultSubtitleSelection(parsedStreams.subtitleTracks, defaultSubtitleStreamIndex);
 
-  final mappedChapters = <MediaChapter>[];
-  if (chapters is List) {
-    for (var i = 0; i < chapters.length; i++) {
-      final entry = chapters[i];
-      if (entry is! Map<String, dynamic>) continue;
-      final startMs = jellyfinTicksToMs(entry['StartPositionTicks']) ?? 0;
-      mappedChapters.add(MediaChapter(id: i, index: i, startTimeOffset: startMs, title: entry['Name'] as String?));
-    }
-    MediaChapter.backfillEndOffsets(mappedChapters);
-  }
-
   final mediaSourceId = source['Id'] as String?;
   final trickplayByWidth = _parseTrickplayManifest(trickplay, mediaSourceId);
   // BIF tooltip aspect from the video stream's dimensions — the same source
@@ -65,7 +54,7 @@ MediaSourceInfo jellyfinMediaSourceToMediaSourceInfo(
     videoUrl: '',
     audioTracks: audioTracks,
     subtitleTracks: subtitleTracks,
-    chapters: mappedChapters,
+    chapters: _playableChapters(chapters),
     partId: partId,
     displayCriteria: jellyfinDisplayCriteriaFromStream(source, parsedStreams.videoStream),
     mediaSourceId: mediaSourceId,
@@ -98,6 +87,53 @@ List<MediaSubtitleTrack> _withDefaultSubtitleSelection(List<MediaSubtitleTrack> 
   ];
 }
 
+final _numberedChapter = RegExp(r'^(?:chapter\s*|章节\s*|章節\s*|第\s*)(\d+)\s*(?:章|节|節)?$', caseSensitive: false);
+
+bool _looksLikeGeneratedChapters(List<MediaChapter> chapters) {
+  if (chapters.isEmpty || chapters.first.startTimeOffset != 0) return false;
+  final step = chapters.length > 1 ? chapters[1].startTimeOffset! : 0;
+  // Servers expose no provenance flag. With just two entries recognize only
+  // the usual five-minute interval. A custom interval needs a repeated step.
+  if (chapters.length == 2 && step != const Duration(minutes: 5).inMilliseconds) return false;
+  if (chapters.length > 1 && (step <= 0 || step % Duration.millisecondsPerSecond != 0)) return false;
+  for (var i = 0; i < chapters.length; i++) {
+    final chapter = chapters[i];
+    if (chapter.startTimeOffset != step * i) return false;
+    final title = chapter.title?.trim() ?? '';
+    if (title.isEmpty) continue;
+    final number = _numberedChapter.firstMatch(title)?.group(1);
+    if (number == null || int.tryParse(number) != i + 1) return false;
+  }
+  return true;
+}
+
+bool _isSkipBoundary(String? type) => type == 'introstart' || type == 'introend' || type == 'creditsstart';
+
+List<MediaChapter> _playableChapters(Object? raw, {String? itemId, int? runtimeMs}) {
+  if (raw is! List) return const [];
+  final chapters = <MediaChapter>[];
+  for (var i = 0; i < raw.length; i++) {
+    final entry = raw[i];
+    if (entry is! Map || _isSkipBoundary(entry['MarkerType']?.toString().toLowerCase())) continue;
+    final startMs = jellyfinTicksToMs(entry['StartPositionTicks']);
+    if (startMs == null || startMs < 0) continue;
+    final imageTag = entry['ImageTag'];
+    chapters.add(
+      MediaChapter(
+        id: i,
+        index: chapters.length,
+        startTimeOffset: startMs,
+        title: entry['Name']?.toString(),
+        thumb: itemId != null && imageTag is String && imageTag.isNotEmpty
+            ? '/Items/${Uri.encodeComponent(itemId)}/Images/Chapter/$i?tag=${Uri.encodeComponent(imageTag)}'
+            : null,
+      ),
+    );
+  }
+  if (_looksLikeGeneratedChapters(chapters)) return const [];
+  return MediaChapter.backfillEndOffsets(chapters, runtimeMs: runtimeMs);
+}
+
 /// Parse Jellyfin chapters from the raw `BaseItemDto` payload into neutral
 /// playback extras. Native Jellyfin media segments are passed in separately;
 /// chapter title fallback uses the same intro/credits patterns as Plex.
@@ -109,38 +145,19 @@ PlaybackExtras jellyfinPlaybackExtrasFromRaw(
   bool forceChapterFallback = false,
   List<MediaMarker> markers = const [],
 }) {
-  String segment(String value) => Uri.encodeComponent(value);
-  String query(String value) => Uri.encodeComponent(value);
-
   final chapters = raw is Map<String, dynamic> ? raw['Chapters'] : null;
   final runtimeMs = raw is Map<String, dynamic> ? jellyfinTicksToMs(raw['RunTimeTicks']) : null;
-  final mapped = <MediaChapter>[];
+  final mapped = _playableChapters(chapters, itemId: itemId, runtimeMs: runtimeMs);
   final boundaries = <({int id, String type, int timeMs})>[];
-  final boundaryIds = <int>{};
   if (chapters is List) {
     for (var i = 0; i < chapters.length; i++) {
       final entry = chapters[i];
       if (entry is! Map<String, dynamic>) continue;
-      final startMs = jellyfinTicksToMs(entry['StartPositionTicks']) ?? 0;
       final markerType = entry['MarkerType']?.toString().toLowerCase();
-      if (markerType == 'introstart' || markerType == 'introend' || markerType == 'creditsstart') {
-        // Emby stores native boundaries among ordinary chapters. Pair their
-        // types directly: a generated five-minute chapter can lie inside an
-        // intro, and an "Intro End" title must never start another intro.
-        boundaryIds.add(i);
-        final timeMs = jellyfinTicksToMs(entry['StartPositionTicks']);
-        if (timeMs != null && timeMs >= 0) boundaries.add((id: i, type: markerType!, timeMs: timeMs));
-      }
-      // Jellyfin chapter image path: `/Items/{itemId}/Images/Chapter/{i}?tag=...`.
-      final imageTag = entry['ImageTag'];
-      final thumb = imageTag is String && imageTag.isNotEmpty
-          ? '/Items/${segment(itemId)}/Images/Chapter/$i?tag=${query(imageTag)}'
-          : null;
-      mapped.add(
-        MediaChapter(id: i, index: i, startTimeOffset: startMs, title: entry['Name']?.toString(), thumb: thumb),
-      );
+      if (!_isSkipBoundary(markerType)) continue;
+      final timeMs = jellyfinTicksToMs(entry['StartPositionTicks']);
+      if (timeMs != null && timeMs >= 0) boundaries.add((id: i, type: markerType!, timeMs: timeMs));
     }
-    MediaChapter.backfillEndOffsets(mapped, runtimeMs: runtimeMs);
   }
   boundaries.sort((a, b) => a.timeMs.compareTo(b.timeMs));
   final nativeMarkers = <MediaMarker>[];
@@ -166,14 +183,13 @@ PlaybackExtras jellyfinPlaybackExtrasFromRaw(
     }
   }
   final explicitTypes = markers.map((marker) => marker.type).toSet();
-  final extras = PlaybackExtras.withChapterFallback(
-    chapters: boundaryIds.isEmpty ? mapped : mapped.where((chapter) => !boundaryIds.contains(chapter.id)).toList(),
+  return PlaybackExtras.withChapterFallback(
+    chapters: mapped,
     markers: [...markers, ...nativeMarkers.where((marker) => !explicitTypes.contains(marker.type))],
     introPatternStr: introPattern,
     creditsPatternStr: creditsPattern,
     forceChapterFallback: forceChapterFallback,
   );
-  return PlaybackExtras(chapters: mapped, markers: extras.markers);
 }
 
 List<MediaMarker> jellyfinMediaSegmentsToMarkers(dynamic raw) {
