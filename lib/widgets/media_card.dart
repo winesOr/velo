@@ -659,7 +659,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
       knownWidth: knownWidth,
       knownHeight: knownHeight,
       artworkDim: widget.artworkDim,
-      showFallbackIcon: !widget.isInContinueWatching,
+      useResumeArtwork: widget.isInContinueWatching,
     );
     final badgeRating = item is MediaItem ? mediaCardRatingFor(item) : null;
     final overlays = <Widget>[
@@ -1158,7 +1158,7 @@ Widget _buildPosterImage(
   double? knownWidth,
   double? knownHeight,
   Animation<double>? artworkDim,
-  bool showFallbackIcon = true,
+  bool useResumeArtwork = false,
 }) {
   if (item is MediaPlaylist) {
     return OptimizedMediaImage(
@@ -1188,7 +1188,14 @@ Widget _buildPosterImage(
       null => MediaImageHelper.cardImageType(item, episodePosterMode, mixedHubContext: mixedHubContext),
     };
     final defaultPosterUrl = item.posterThumb(mode: episodePosterMode, mixedHubContext: mixedHubContext);
-    final defaultFallbackUrl = item.posterThumbFallback(mode: episodePosterMode, mixedHubContext: mixedHubContext);
+    final defaultFallbackUrl = useResumeArtwork
+        ? [
+            ...item.heroBackdropPaths,
+            item.thumbPath,
+            item.grandparentThumbPath,
+            item.parentThumbPath,
+          ].whereType<String>().where((path) => path.isNotEmpty && path != defaultPosterUrl).firstOrNull
+        : item.posterThumbFallback(mode: episodePosterMode, mixedHubContext: mixedHubContext);
     final targetPx = knownWidth != null && knownWidth.isFinite && knownWidth > 0
         ? MediaImageHelper.artworkTargetPx(context, knownWidth, imageType: imageType)
         : null;
@@ -1216,10 +1223,7 @@ Widget _buildPosterImage(
       fit: BoxFit.cover,
       placeholder: _buildPosterLoadingPlaceholder,
       fallbackIcon: fallbackIcon,
-      errorWidget: showFallbackIcon
-          ? errorWidget
-          : (context, path, error) =>
-                errorWidget?.call(context, path, error) ?? _buildPosterLoadingPlaceholder(context, path),
+      errorWidget: errorWidget,
       imageType: imageType,
       localFilePath: localFilePath,
       artworkDim: artworkDim,
@@ -1238,12 +1242,11 @@ Widget _buildPosterImage(
       };
     }
 
-    // 16:9 thumbs have never retried with the fallback URL; only poster and
-    // square artwork do.
+    // A resume thumbnail may be missing even when the series backdrop is available.
     final image = buildImage(
       posterUrl,
       localFilePath: localPosterPath,
-      errorWidget: imageType == ImageType.thumb ? null : retryWithFallback(),
+      errorWidget: useResumeArtwork || imageType != ImageType.thumb ? retryWithFallback() : null,
     );
 
     if (shouldBlur) {

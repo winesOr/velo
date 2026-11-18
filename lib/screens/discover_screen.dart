@@ -135,9 +135,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     _sourceItems = _selectedHomeServerId == null
         ? _discover.onDeck
         : _discover.onDeck.where((item) => item.serverId == _selectedHomeServerId).toList();
-    _sourceHubs = _selectedHomeServerId == null
-        ? _discover.hubs
-        : _discover.hubs.where((hub) => hub.serverId == _selectedHomeServerId).toList();
+    _sourceHubs = _discover.hubs
+        .where(
+          (hub) => hub.items.isNotEmpty && (_selectedHomeServerId == null || hub.serverId == _selectedHomeServerId),
+        )
+        .toList();
     _sourceHeroItems = _heroSelection.update(_sourceItems.followedBy(_sourceHubs.expand((hub) => hub.items)));
   }
 
@@ -589,7 +591,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
     // On initial load, focus content so the user doesn't start on the toolbar
     if (!_initialLoadComplete) {
-      if (PlatformDetector.isTV() && (_onDeck.isNotEmpty || _hubs.isNotEmpty)) {
+      // Arm the initial TV focus as soon as its first response arrives:
+      // the first visible row may land after the user moves to the sidebar.
+      if (PlatformDetector.isTV() && (_onDeck.isNotEmpty || _discover.hubs.isNotEmpty)) {
         _initialLoadComplete = true;
         _focusTvBrowseRailWhenReady();
       } else if (!PlatformDetector.isTV() && _heroItems.isNotEmpty) {
@@ -856,8 +860,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   }
 
   String _libraryLabel(MediaLibrary library, Set<String> serverIds) {
-    if (serverIds.length < 2) return library.title;
-    return '${library.title} · ${library.serverName ?? _serverTitle(library.serverId!)}';
+    final title = library.title.trim();
+    final label = title.isEmpty ? t.libraries.fallbackTitle : title;
+    if (serverIds.length < 2) return label;
+    return '$label · ${library.serverName ?? _serverTitle(library.serverId!)}';
   }
 
   Widget _buildLibraryLinks() => Consumer3<LibrariesProvider, HiddenLibrariesProvider, MultiServerProvider>(
@@ -1267,7 +1273,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     );
                   },
                 ),
-                SliverToBoxAdapter(child: _buildLibraryLinks()),
+                // The chips paint their own surfaces, so their labels use the app's
+                // surface colors independently of the artwork behind this page.
+                SliverToBoxAdapter(
+                  child: Theme(data: Theme.of(context), child: _buildLibraryLinks()),
+                ),
                 if (isInitialLoading)
                   SliverToBoxAdapter(
                     child: SizedBox(

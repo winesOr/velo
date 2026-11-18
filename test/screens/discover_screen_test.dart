@@ -63,6 +63,7 @@ import 'package:plezy/widgets/backend_badge.dart';
 import 'package:plezy/widgets/fusion_home_hero.dart';
 import 'package:plezy/widgets/hub_section.dart';
 import 'package:plezy/widgets/media_card.dart';
+import 'package:plezy/widgets/optimized_media_image.dart';
 import 'package:plezy/widgets/tv_browse_rail.dart';
 import 'package:plezy/widgets/system_clock.dart';
 import 'package:plezy/widgets/tv_spotlight_background.dart';
@@ -502,6 +503,41 @@ void main() {
     });
   }
 
+  testWidgets('Continue Watching uses alternate series artwork or a visible icon for missing thumbnails', (
+    tester,
+  ) async {
+    await (await SettingsService.getInstance()).write(SettingsService.showHeroSection, false);
+    final withoutThumb = testMediaItem(
+      id: 'no-thumb',
+      kind: MediaKind.episode,
+      serverId: 'server_1',
+      grandparentArtPath: 'https://home-visual.fixture/interstellar-backdrop.jpg',
+    );
+    final withoutArt = testMediaItem(id: 'no-art', kind: MediaKind.movie, serverId: 'server_1');
+    await _pumpDiscoverShell(
+      tester,
+      isTv: false,
+      size: const Size(390, 844),
+      clients: [
+        _FakeMediaServerClient(hubs: const [], continueWatching: [withoutThumb, withoutArt]),
+      ],
+    );
+    Finder card(MediaItem item) => find.byWidgetPredicate((widget) => widget is MediaCard && widget.item == item);
+    expect(
+      find.descendant(
+        of: card(withoutThumb),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is OptimizedMediaImage &&
+              widget.imagePath == 'https://home-visual.fixture/interstellar-backdrop.jpg',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(find.descendant(of: card(withoutArt), matching: find.byIcon(Symbols.movie_rounded)), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   for (final tv in [false, true]) {
     testWidgets('home lists real libraries including empty custom libraries on ${tv ? 'TV' : 'phone'}', (tester) async {
       final settings = await SettingsService.getInstance();
@@ -517,11 +553,12 @@ void main() {
       final variety = library('1', '综艺', 'server_1');
       final second = library('1', '综艺', 'other');
       final empty = library('2', '空库', 'server_1');
+      final unnamed = library('5', '  ', 'server_1');
       final hidden = library('3', '隐藏库', 'server_1', hidden: true);
       final userHidden = library('4', '自定义隐藏', 'server_1');
       final clients = [
         _FakeMediaServerClient(
-          libraries: [variety, empty, hidden, userHidden],
+          libraries: [variety, empty, hidden, userHidden, unnamed],
           hubs: [
             MediaHub(
               id: 'library.1.recent',
@@ -530,6 +567,7 @@ void main() {
               type: 'mixed',
               items: [testMediaItem(id: 'show', kind: MediaKind.show, serverId: 'server_1')],
             ),
+            MediaHub(id: 'empty-shelf', title: '空栏目', type: 'movie', serverId: 'server_1', items: []),
           ],
         ),
         _FakeMediaServerClient(id: 'other', name: 'Other source', libraries: [second], hubs: const []),
@@ -540,6 +578,16 @@ void main() {
         isTv: tv,
         size: tv ? const Size(1280, 720) : const Size(390, 844),
         clients: clients,
+        dark: false,
+        wrap: tv
+            ? (screen) => MainScreenFocusScope(
+                focusSidebar: () {},
+                selectLibrary: (key) => opened = key,
+                sideNavigationWidth: 0,
+                hasTopNavigation: true,
+                child: screen,
+              )
+            : null,
         onSelectLibrary: (key) => opened = key,
       );
       final context = tester.element(find.byType(DiscoverScreen));
@@ -553,7 +601,14 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
       } else {
         expect(find.text('综艺最近添加'), findsOneWidget);
+        expect(find.text('空栏目'), findsNothing);
+        final label = tester.widget<Text>(find.text('综艺 · server_1'));
+        final appColors = Theme.of(context).colorScheme;
+        final foreground = label.style!.color!.computeLuminance();
+        final background = appColors.surfaceContainerHighest.computeLuminance();
+        expect((background + .05) / (foreground + .05), greaterThanOrEqualTo(4.5));
       }
+      expect(find.text('${t.libraries.fallbackTitle} · server_1'), findsOneWidget);
       expect(find.text('综艺 · server_1'), findsOneWidget);
       expect(find.text('综艺 · other'), findsOneWidget);
       expect(find.text('空库 · server_1'), findsOneWidget);
