@@ -142,6 +142,48 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('version menu bounds long server labels and the field stays legible over artwork', (tester) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final name = List.filled(20, '剧场版.HDR.2160p.HEVC').join('.');
+    String? selected;
+    final field = AppSelectField<String>(
+      label: 'Versions',
+      value: 'main',
+      selectedLabel: '4K',
+      inlineContent: const Text('4K'),
+      options: [
+        const AppSelectOption(value: 'main', label: '4K'),
+        AppSelectOption(value: 'alt', label: name, subtitle: name),
+      ],
+      optionMaxLines: 2,
+      onChanged: (id) => selected = id,
+    );
+    await _pumpField(tester, ColoredBox(color: const Color(0xff554772), child: field), textScale: 2);
+    final background = tester
+        .widget<Material>(find.descendant(of: find.byWidget(field), matching: find.byType(Material)).first)
+        .color!;
+    final surface = Color.alphaBlend(background, const Color(0xff554772)).computeLuminance();
+    final ink = Theme.of(tester.element(find.byWidget(field))).colorScheme.onSurfaceVariant.computeLuminance();
+    expect((surface + .05) / (ink + .05), greaterThanOrEqualTo(4.5));
+    await tester.tap(find.byWidget(field));
+    await tester.pumpAndSettle();
+    for (final rowText in find.text(name).evaluate()) {
+      final paragraph = rowText.renderObject! as RenderParagraph;
+      expect(paragraph.maxLines, 2);
+      expect(paragraph.didExceedMaxLines, isTrue);
+    }
+    expect(find.text(name), findsNWidgets(2));
+    expect(find.bySemanticsLabel(RegExp(RegExp.escape(name))), findsWidgets);
+    await tester.ensureVisible(find.text(name).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(name).first);
+    await tester.pumpAndSettle();
+    expect(selected, 'alt');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('same-language options keep their subtitles and dispatch only once', (tester) async {
     final selected = <String>[];
     await _pumpField(

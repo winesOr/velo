@@ -85,6 +85,7 @@ Future<int?> showVersionPickerDialog(BuildContext context, List<MediaVersion> ve
   return showOptionPickerDialog<int>(
     context,
     title: title,
+    maxLabelLines: 2,
     options: List.generate(
       versions.length,
       (index) => (icon: Symbols.video_file_rounded, label: versions[index].displayLabel, value: index),

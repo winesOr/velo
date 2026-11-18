@@ -38,6 +38,7 @@ class AppSelectField<T> extends StatefulWidget {
     this.leading,
     this.selectedLabel,
     this.selectedSubtitle,
+    this.optionMaxLines,
     this.showChevron = true,
     this.inlineContent,
   });
@@ -57,6 +58,9 @@ class AppSelectField<T> extends StatefulWidget {
   /// When supplied, [selectedSubtitle] replaces the option subtitle, even null.
   final String? selectedLabel;
   final String? selectedSubtitle;
+
+  /// Maximum visible lines per option label or subtitle. Semantics retain the full text.
+  final int? optionMaxLines;
   final bool showChevron;
 
   /// Optional single-row capsule content; the default field layout is unchanged.
@@ -105,7 +109,13 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             AppMenuItem<T>(
               value: option.value,
               label: option.label,
-              subtitle: option.subtitle,
+              child: widget.optionMaxLines == null
+                  ? null
+                  : Text(option.label, maxLines: widget.optionMaxLines, overflow: TextOverflow.ellipsis),
+              subtitle: widget.optionMaxLines == null ? option.subtitle : null,
+              subtitleWidget: widget.optionMaxLines != null && option.subtitle != null
+                  ? Text(option.subtitle!, maxLines: widget.optionMaxLines, overflow: TextOverflow.ellipsis)
+                  : null,
               leading: option.leading,
               enabled: option.enabled,
               selected: option.value == widget.value,
@@ -180,7 +190,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
         pressed: _pressed,
         enabled: _enabled && !widget.busy,
         child: Material(
-          color: colors.onSurface.withValues(alpha: .04),
+          color: colors.surfaceContainerHigh,
           shape: RoundedRectangleBorder(
             borderRadius: radius,
             side: BorderSide(

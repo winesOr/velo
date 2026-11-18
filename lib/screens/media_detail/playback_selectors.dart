@@ -71,37 +71,29 @@ extension _MediaDetailPlaybackSelectors on _MediaDetailScreenState {
                           ? placeholder
                           : _detailVersionSummary(selected, versions.length, movie: item.isMovie),
                       leading: BackendBadge(backend: item.backend, size: 17),
-                      inlineContent: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      inlineContent: Text.rich(
+                        TextSpan(
                           children: [
-                            Text(
-                              backendName,
-                              style: TextStyle(fontSize: 11, color: controlsTheme.colorScheme.onSurfaceVariant),
-                            ),
-                            const SizedBox(width: 7),
-                            Text(
-                              selected == null ? placeholder : _detailVersionQuality(selected, movie: item.isMovie),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            TextSpan(text: '$backendName  '),
+                            TextSpan(
+                              text: selected == null
+                                  ? placeholder
+                                  : _detailVersionQuality(selected, movie: item.isMovie),
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                                 color: controlsTheme.colorScheme.onSurface,
                               ),
                             ),
-                            if (versions.isNotEmpty) ...[
-                              const SizedBox(width: 7),
-                              Text(
-                                t.detailPlayback.versionCount(n: versions.length),
-                                style: TextStyle(fontSize: 11, color: controlsTheme.colorScheme.onSurfaceVariant),
-                              ),
-                            ],
+                            if (versions.isNotEmpty)
+                              TextSpan(text: '  ${t.detailPlayback.versionCount(n: versions.length)}'),
                           ],
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 11, color: controlsTheme.colorScheme.onSurfaceVariant),
                       ),
+                      optionMaxLines: 2,
                       showChevron: true,
                       placeholder: placeholder,
                       busy: busy,
@@ -176,6 +168,7 @@ extension _MediaDetailPlaybackSelectors on _MediaDetailScreenState {
         version.parts.isNotEmpty && version.parts.every((part) => part.sizeBytes != null && part.sizeBytes! > 0);
     return [
       index == 0 ? t.detailPlayback.defaultRoute : t.detailPlayback.alternateVersion,
+      if (version.name?.trim() case final name? when name.isNotEmpty && name != _detailVersionQuality(version)) name,
       if (completeSize)
         ByteFormatter.formatBytes(version.parts.fold<int>(0, (total, part) => total + part.sizeBytes!), decimals: 2),
     ].join(' · ');

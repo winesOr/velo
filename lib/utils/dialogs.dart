@@ -615,6 +615,7 @@ Future<T?> showOptionPickerDialog<T>(
   required List<({IconData? icon, String label, T value})> options,
   Future<T?> Function(T value)? onBeforeClose,
   OptionPickerToggle? toggle,
+  int? maxLabelLines,
 }) {
   final focusFirstItem = InputModeTracker.isKeyboardMode(context, listen: false);
   return showScopedDialog<T>(
@@ -625,6 +626,7 @@ Future<T?> showOptionPickerDialog<T>(
       focusFirstItem: focusFirstItem,
       onBeforeClose: onBeforeClose,
       toggle: toggle,
+      maxLabelLines: maxLabelLines,
     ),
   );
 }
@@ -635,6 +637,7 @@ class _OptionPickerDialog<T> extends StatefulWidget {
   final bool focusFirstItem;
   final Future<T?> Function(T value)? onBeforeClose;
   final OptionPickerToggle? toggle;
+  final int? maxLabelLines;
 
   const _OptionPickerDialog({
     required this.title,
@@ -642,6 +645,7 @@ class _OptionPickerDialog<T> extends StatefulWidget {
     this.focusFirstItem = false,
     this.onBeforeClose,
     this.toggle,
+    this.maxLabelLines,
   });
 
   @override
@@ -723,7 +727,12 @@ class _OptionPickerDialogState<T> extends State<_OptionPickerDialog<T>> {
                 return FocusableListTile(
                   focusNode: index == 0 && widget.focusFirstItem ? _initialFocusNode : null,
                   leading: icon != null ? AppIcon(icon, fill: 1, size: 24) : null,
-                  title: Text(option.label, style: Theme.of(context).textTheme.bodyLarge),
+                  title: Text(
+                    option.label,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    maxLines: widget.maxLabelLines,
+                    overflow: widget.maxLabelLines == null ? null : TextOverflow.ellipsis,
+                  ),
                   contentPadding: rowPadding,
                   horizontalTitleGap: rowHorizontalTitleGap,
                   minLeadingWidth: rowMinLeadingWidth,

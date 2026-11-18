@@ -8,6 +8,7 @@ import '../../../models/transcode_quality_preset.dart';
 import '../../../utils/quality_preset_labels.dart';
 import '../../../widgets/focusable_list_tile.dart';
 import '../../../widgets/overlay_sheet.dart';
+import 'base_video_control_sheet.dart';
 import 'sheet_selection_column.dart';
 import 'sheet_split_columns.dart';
 
@@ -74,7 +75,25 @@ class VersionQualityPicker extends StatelessWidget {
     );
 
     if (showVersions && showQuality) {
-      return SheetSplitColumns(start: versionColumn, end: qualityColumn);
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          // Allow each column room for a scaled title plus the selection marker.
+          final minColumnWidth = 72 + 9 * MediaQuery.textScalerOf(context).scale(16);
+          if (constraints.maxWidth >= minColumnWidth * 2 + 1) {
+            return SheetSplitColumns(start: versionColumn, end: qualityColumn);
+          }
+          final embedded = BaseVideoControlSheet.embeddedIn(context);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (embedded) versionColumn else Flexible(child: versionColumn),
+              const Divider(height: 1),
+              if (embedded) qualityColumn else Flexible(child: qualityColumn),
+            ],
+          );
+        },
+      );
     } else if (showVersions) {
       return versionColumn;
     } else {
@@ -217,21 +236,22 @@ class _SelectionTile extends StatelessWidget {
     final titleColor = !enabled ? disabledColor : (isSelected ? primary : null);
     final trailingColor = !enabled ? disabledColor : scheme.onSurfaceVariant;
 
-    final hasText = trailingText != null && trailingText!.isNotEmpty;
-    final trailing = (hasText || isSelected)
-        ? Row(
-            mainAxisSize: .min,
-            children: [
-              if (hasText) Text(trailingText!, style: TextStyle(color: trailingColor)),
-              if (hasText && isSelected) const SizedBox(width: 8),
-              if (isSelected) AppIcon(Symbols.check_rounded, fill: 1, color: primary),
-            ],
-          )
-        : null;
-
     return FocusableListTile(
-      title: Text(label, style: TextStyle(color: titleColor)),
-      trailing: trailing,
+      title: Text(
+        label,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(color: titleColor),
+      ),
+      subtitle: trailingText == null
+          ? null
+          : Text(
+              trailingText!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: trailingColor),
+            ),
+      trailing: isSelected ? AppIcon(Symbols.check_rounded, fill: 1, color: primary) : null,
       enabled: enabled,
       onTap: onTap,
     );

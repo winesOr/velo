@@ -100,6 +100,7 @@ Future<TranscodeQualityPreset?> showQualityPickerDialog(
   return showOptionPickerDialog<TranscodeQualityPreset>(
     context,
     title: title ?? t.videoControls.qualityColumnHeader,
+    maxLabelLines: 2,
     options: TranscodeQualityPreset.displayOrder.map((p) => (icon: null, label: labelFor(p), value: p)).toList(),
   );
 }

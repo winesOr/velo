@@ -271,15 +271,21 @@ void main() {
   for (final textScale in [1.0, 2.0]) {
     testWidgets('long version summary preserves the Chinese setting label at ${textScale}x', (tester) async {
       LocaleSettings.setLocaleSync(AppLocale.zh);
+      tester.view.physicalSize = const Size(320, 720);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final releaseName = List.filled(20, '导演剪辑版.HDR.2160p.HEVC').join('.');
+      final version = MediaVersion(id: 'mp4', height: 2160, name: releaseName, bitrate: 4363);
       await _pumpSheet(
         tester,
-        width: 350,
+        width: 320,
         textScale: textScale,
         trackControlsState: TrackControlsState(
-          availableVersions: const [
-            MediaVersion(id: 'mp4', width: 3840, height: 2160, videoCodec: 'hevc', container: 'mp4', bitrate: 4363),
-            MediaVersion(id: 'strm', container: 'strm'),
+          availableVersions: [
+            version,
+            const MediaVersion(id: 'strm', container: 'strm'),
           ],
+          sourceDurationMs: 7200000,
           serverSupportsTranscoding: true,
           onSwitchVersion: (_) {},
         ),
@@ -291,6 +297,12 @@ void main() {
       await tester.tap(label);
       await tester.pumpAndSettle();
       expect(find.textContaining('STRM'), findsWidgets);
+      final versionText = find.text(version.displayLabel);
+      expect(tester.renderObject<RenderParagraph>(versionText).didExceedMaxLines, isTrue);
+      final versionHeader = find.text(t.videoControls.versionColumnHeader);
+      final qualityHeader = find.text(t.videoControls.qualityColumnHeader);
+      expect(tester.getTopLeft(qualityHeader).dy, greaterThan(tester.getBottomLeft(versionText).dy));
+      expect(tester.getTopLeft(qualityHeader).dx, tester.getTopLeft(versionHeader).dx);
       expect(tester.takeException(), isNull);
     });
   }
