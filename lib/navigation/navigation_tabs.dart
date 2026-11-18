@@ -113,7 +113,12 @@ String _getTogetherLabel() => t.watchTogether.title;
 /// All navigation tabs in display order
 const allNavigationTabs = [
   NavigationTab(id: NavigationTabId.discover, onlineOnly: true, icon: Symbols.home_rounded, getLabel: _getHomeLabel),
-  NavigationTab(id: NavigationTabId.libraries, onlineOnly: true, icon: Symbols.grid_view, getLabel: _getLibrariesLabel),
+  NavigationTab(
+    id: NavigationTabId.libraries,
+    onlineOnly: true,
+    icon: Symbols.search_rounded,
+    getLabel: _getLibrariesLabel,
+  ),
   NavigationTab(id: NavigationTabId.liveTv, onlineOnly: true, icon: Symbols.live_tv_rounded, getLabel: _getLiveTvLabel),
   NavigationTab(
     id: NavigationTabId.explore,
@@ -128,7 +133,12 @@ const allNavigationTabs = [
     icon: Symbols.download_rounded,
     getLabel: _getDownloadsLabel,
   ),
-  NavigationTab(id: NavigationTabId.settings, onlineOnly: false, icon: Symbols.tune, getLabel: _getSettingsLabel),
+  NavigationTab(
+    id: NavigationTabId.settings,
+    onlineOnly: false,
+    icon: Symbols.settings_rounded,
+    getLabel: _getSettingsLabel,
+  ),
   NavigationTab(
     id: NavigationTabId.together,
     onlineOnly: true,

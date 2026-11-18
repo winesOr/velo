@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/focus/input_mode_tracker.dart';
 import 'package:plezy/i18n/strings.g.dart';
@@ -132,6 +133,8 @@ void main() {
     );
     expect(icons.where((icon) => icon.fill == 1), hasLength(1));
     expect(icons.where((icon) => icon.fill == 0), hasLength(greaterThan(1)));
+    expect(icons.where((icon) => icon.icon == Symbols.search_rounded), hasLength(1));
+    expect(icons.where((icon) => icon.icon == Symbols.settings_rounded), hasLength(1));
 
     final destinations = tester.widgetList<Container>(
       find.descendant(of: find.byType(FusionNavigation), matching: find.byType(Container)),
