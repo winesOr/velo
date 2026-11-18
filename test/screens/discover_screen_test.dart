@@ -97,6 +97,22 @@ void main() {
     await loadTabletFonts();
     await initializeDateFormatting('en');
     await LocaleSettings.setLocale(AppLocale.zh);
+    final recorder = ui.PictureRecorder();
+    Canvas(recorder).drawRect(const Rect.fromLTWH(8, 8, 128, 18), Paint()..color = Colors.white);
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(160, 40);
+    final png = await image.toByteData(format: ui.ImageByteFormat.png);
+    image.dispose();
+    picture.dispose();
+    for (final (name, bytes) in [('ok', png!.buffer.asUint8List()), ('broken', utf8.encode('invalid logo'))]) {
+      final url = 'https://home-visual.fixture/title-$name.png';
+      await PlexImageCacheManager.instance.putFile(
+        url,
+        bytes,
+        key: 'plex_optimized_${sha1.convert(utf8.encode(url))}',
+        fileExtension: 'png',
+      );
+    }
     await (FontLoader('Go Noto Current')..addFont(rootBundle.load('assets/go-noto-current-regular.ttf'))).load();
     // Stand in for the platform serif face in the deterministic test renderer.
     await (FontLoader('Georgia')..addFont(rootBundle.load('assets/go-noto-current-regular.ttf'))).load();
@@ -276,6 +292,102 @@ void main() {
       await tester.pump(const Duration(seconds: 6));
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
       await tester.pump(const Duration(seconds: 1));
+    });
+  }
+
+  for (final size in [const Size(390, 844), const Size(1024, 768)]) {
+    testWidgets('home carousel shows the server title logo and falls back to the right title at $size', (tester) async {
+      const logoUrl = 'https://home-visual.fixture/title-ok.png';
+      const brokenUrl = 'https://home-visual.fixture/title-broken.png';
+      final movie = testMediaItem(id: 'logo-film', title: 'A film title', clearLogoPath: logoUrl, serverId: 'server_1');
+      final episode = testMediaItem(
+        id: 'logo-episode',
+        kind: MediaKind.episode,
+        title: 'A pilot',
+        grandparentTitle: 'The series',
+        clearLogoPath: logoUrl,
+        serverId: 'server_1',
+      );
+      final missing = testMediaItem(id: 'no-logo', title: 'Another title', serverId: 'server_1');
+      final broken = testMediaItem(
+        id: 'bad-logo',
+        kind: MediaKind.episode,
+        title: 'Final episode',
+        grandparentTitle: 'Different series',
+        clearLogoPath: brokenUrl,
+        serverId: 'server_1',
+      );
+      await _pumpDiscoverShell(
+        tester,
+        isTv: false,
+        size: size,
+        dark: true,
+        fixtureFont: true,
+        clients: [
+          _FakeMediaServerClient(continueWatching: [movie, episode, missing, broken], hubs: const []),
+        ],
+      );
+      Finder hero(MediaItem item) => find.byWidgetPredicate((w) => w is FusionHomeHero && w.item.id == item.id);
+      Future<Finder> select(MediaItem item) async {
+        final dot = find.byWidgetPredicate(
+          (w) =>
+              w is Semantics && w.key.toString().contains('home-hero-dot-') && w.properties.label == item.displayTitle,
+        );
+        await tester.tap(dot);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 450));
+        return hero(item);
+      }
+
+      for (final item in [movie, episode]) {
+        final page = await select(item);
+        final logo = find.descendant(of: page, matching: find.byType(ClearLogoImage));
+        expect(tester.widget<ClearLogoImage>(logo).logoPath, logoUrl);
+        final decoded = find.descendant(
+          of: logo,
+          matching: find.byWidgetPredicate((w) => w is RawImage && w.image != null),
+        );
+        for (var attempt = 0; attempt < 45 && decoded.evaluate().isEmpty; attempt++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 25)));
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(decoded, findsOneWidget);
+        final pixels = tester.widget<RawImage>(decoded).image!;
+        expect(pixels.width / pixels.height, closeTo(4, .05));
+        expect(tester.widget<RawImage>(decoded).fit, BoxFit.contain);
+        expect(
+          find.descendant(
+            of: page,
+            matching: find.text(item.kind == MediaKind.episode ? item.grandparentTitle! : item.displayTitle),
+          ),
+          findsNothing,
+        );
+      }
+      final noLogoPage = await select(missing);
+      expect(find.descendant(of: noLogoPage, matching: find.byType(ClearLogoImage)), findsNothing);
+      expect(find.descendant(of: noLogoPage, matching: find.text(missing.displayTitle)), findsOneWidget);
+      final page = await select(broken);
+      final logo = find.descendant(of: page, matching: find.byType(ClearLogoImage));
+      final image = tester.widget<Image>(find.descendant(of: logo, matching: find.byType(Image)));
+      Object? decodeError;
+      final stream = image.image.resolve(createLocalImageConfiguration(tester.element(logo)));
+      final listener = ImageStreamListener(
+        (frame, _) => frame.dispose(),
+        onError: (Object error, StackTrace? _) => decodeError = error,
+      );
+      stream.addListener(listener);
+      try {
+        for (var attempt = 0; attempt < 45 && decodeError == null; attempt++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 25)));
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(decodeError, isNotNull);
+        expect(find.descendant(of: page, matching: find.text(broken.grandparentTitle!)), findsOneWidget);
+      } finally {
+        stream.removeListener(listener);
+      }
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
     });
   }
 

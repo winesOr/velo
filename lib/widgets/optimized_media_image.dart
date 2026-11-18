@@ -335,8 +335,8 @@ class OptimizedMediaImage extends StatelessWidget {
       logoToneRemapMixed: logoToneRemapMixed,
     );
 
-    // Reduced tier: swap in directly, no fade machinery at all.
-    if (DevicePerformance.isReduced) {
+    // Swap in directly when a fade is disabled.
+    if (DevicePerformance.isReduced || fadeInDuration == Duration.zero) {
       return _withArtworkDim(
         artworkDim,
         (tint) => Image(
@@ -480,6 +480,7 @@ class ClearLogoImage extends StatelessWidget {
     this.alignment = Alignment.centerLeft,
     this.fadeInDuration = const Duration(milliseconds: 300),
     this.logoToneTarget,
+    this.naturalTitleFallback = false,
   });
 
   final MediaServerClient? client;
@@ -506,6 +507,10 @@ class ClearLogoImage extends StatelessWidget {
   final Alignment alignment;
   final Duration fadeInDuration;
 
+  /// Let the text title occupy its natural height while the logo loads or
+  /// when it is unavailable. Fixed-slot heroes retain their existing layout.
+  final bool naturalTitleFallback;
+
   /// See [OptimizedMediaImage.logoToneTarget]; heroes pass a target when the
   /// backdrop behind the logo is scrimmed toward a light background.
   final Color? logoToneTarget;
@@ -515,11 +520,12 @@ class ClearLogoImage extends StatelessWidget {
     final path = logoPath;
     return SizedBox(
       width: fallbackWidth,
-      height: height,
+      height: naturalTitleFallback ? null : height,
       child: path == null || path.isEmpty
           ? fallbackBuilder(context)
           : Align(
               alignment: alignment,
+              heightFactor: naturalTitleFallback ? 1 : null,
               child: OptimizedMediaImage(
                 client: client,
                 imagePath: path,
@@ -533,10 +539,11 @@ class ClearLogoImage extends StatelessWidget {
                 // Clear logos render on heroes where a mark's color is part of
                 // its identity: mixed-tone marks stay untouched.
                 logoToneRemapMixed: false,
-                placeholder: (context, _) => const SizedBox.shrink(),
+                placeholder: (context, _) => naturalTitleFallback ? fallbackBuilder(context) : const SizedBox.shrink(),
                 // Replaces the image under Align's loose constraints, so it can
                 // take the whole title slot rather than the logo's.
-                errorWidget: (context, _, _) => SizedBox.expand(child: fallbackBuilder(context)),
+                errorWidget: (context, _, _) =>
+                    naturalTitleFallback ? fallbackBuilder(context) : SizedBox.expand(child: fallbackBuilder(context)),
               ),
             ),
     );

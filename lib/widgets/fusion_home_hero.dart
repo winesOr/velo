@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -10,6 +12,8 @@ import '../theme/mono_presentation.dart';
 import '../theme/interaction_tokens.dart';
 import '../i18n/strings.g.dart';
 import '../utils/platform_detector.dart';
+import '../utils/tone_mapped_logo_image.dart';
+import 'optimized_media_image.dart';
 import 'hero_metadata_badges.dart';
 import 'app_icon.dart';
 import 'press_feedback.dart';
@@ -55,6 +59,7 @@ class FusionHomeHero extends StatelessWidget {
     final heroForeground = homeType?.heroTitle.color ?? foreground;
     final title = item.isEpisode ? item.grandparentTitle ?? item.displayTitle : item.displayTitle;
     final originalTitle = item.originalTitle?.trim();
+    final logoPath = item.clearLogoPath?.trim();
     final metadataStyle = TextStyle(
       color: homeType?.caption.color ?? foreground,
       fontSize: 12,
@@ -157,7 +162,24 @@ class FusionHomeHero extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                           ],
-                          fallbackTitle(context),
+                          if (logoPath != null && logoPath.isNotEmpty)
+                            LayoutBuilder(
+                              builder: (context, constraints) => ClearLogoImage(
+                                key: ValueKey((item.globalKey, logoPath)),
+                                client: client,
+                                logoPath: logoPath,
+                                width: math.min(constraints.maxWidth, tablet ? 400 : 310),
+                                height: compact ? 64 : 100,
+                                fallbackWidth: constraints.maxWidth,
+                                alignment: alignment,
+                                logoToneTarget: logoToneTargetFor(surface: color, foreground: heroForeground),
+                                naturalTitleFallback: true,
+                                fadeInDuration: Duration.zero,
+                                fallbackBuilder: fallbackTitle,
+                              ),
+                            )
+                          else
+                            fallbackTitle(context),
                           const SizedBox(height: 14),
                           HeroMetadataBadges(
                             item: item,

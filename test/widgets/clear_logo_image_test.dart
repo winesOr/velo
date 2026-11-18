@@ -110,6 +110,34 @@ void main() {
     }
   });
 
+  testWidgets('carousel keeps a readable title during loading and when the logo cannot resolve', (tester) async {
+    for (final path in ['https://logo.fixture/loading.png', '/unresolved/logo']) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Center(
+            child: ClearLogoImage(
+              client: null,
+              logoPath: path,
+              width: 240,
+              height: 60,
+              fallbackWidth: 260,
+              fadeInDuration: Duration.zero,
+              naturalTitleFallback: true,
+              fallbackBuilder: (_) => const SizedBox(height: 132, child: Text('Title at large text scale')),
+            ),
+          ),
+        ),
+      );
+      final title = find.text('Title at large text scale');
+      expect(title, findsOneWidget);
+      expect(tester.getSize(find.byType(ClearLogoImage)).height, 132);
+      if (path.startsWith('https')) {
+        expect(find.descendant(of: find.byType(Image), matching: title), findsOneWidget);
+        expect(find.byType(RawImage), findsNothing);
+      }
+    }
+  });
+
   test('the title slot is twice the logo slot, capped to the column', () {
     expect(ClearLogoImage.fallbackWidthFor(logoWidth: 400, available: 1068), 800);
     expect(ClearLogoImage.fallbackWidthFor(logoWidth: 400, available: 620), 620);
