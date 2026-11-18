@@ -149,7 +149,10 @@ void main() {
       ),
     );
     await pumpCard();
-    expect(find.byType(MediaCardRatingBadge), findsOneWidget);
+    final badge = find.byType(MediaCardRatingBadge);
+    expect(badge, findsOneWidget);
+    expect(find.descendant(of: badge, matching: find.byType(DecoratedBox)), findsNothing);
+    expect(find.descendant(of: badge, matching: find.byType(ColoredBox)), findsNothing);
     expect(find.text('8.1'), findsOneWidget);
     expect(find.text('9.0'), findsNothing);
     await SettingsService.instance.write(SettingsService.showRatingBadges, false);
