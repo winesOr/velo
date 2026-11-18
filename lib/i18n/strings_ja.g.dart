@@ -228,7 +228,7 @@ class _Translations$settings$ja extends Translations$settings$en {
 	// Translations
 	@override String get ratings => 'Ratings';
 	@override String get showRatingBadges => 'Show ratings on posters';
-	@override String get showRatingBadgesDescription => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.';
+	@override String get showRatingBadgesDescription => '設定したソースの順に、最初に見つかった公開評価を表示します。「視聴を続ける」には評価を表示しません。';
 	@override String get ratingSources => 'Rating sources';
 	@override String get ratingSourcesDescription => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.';
 	@override String get otherRatingSources => 'Other ratings';
@@ -3151,7 +3151,7 @@ extension on TranslationsJa {
 			'update.checkFailed' => 'アップデートの確認に失敗しました',
 			'settings.ratings' => 'Ratings',
 			'settings.showRatingBadges' => 'Show ratings on posters',
-			'settings.showRatingBadgesDescription' => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.',
+			'settings.showRatingBadgesDescription' => '設定したソースの順に、最初に見つかった公開評価を表示します。「視聴を続ける」には評価を表示しません。',
 			'settings.ratingSources' => 'Rating sources',
 			'settings.ratingSourcesDescription' => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.',
 			'settings.otherRatingSources' => 'Other ratings',

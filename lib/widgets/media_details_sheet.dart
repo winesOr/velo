@@ -9,6 +9,7 @@ import '../utils/media_quality_labels.dart';
 import 'bottom_sheet_page_scaffold.dart';
 import 'fitted_metadata_line.dart';
 import 'media_rating_badge.dart';
+import 'settings_builder.dart';
 
 /// The complete, non-truncating version of a detail hero's information block:
 /// every metadata field, every rating badge, the genres, and the full
@@ -78,11 +79,13 @@ class _MediaDetailsSheetState extends State<MediaDetailsSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => SettingsBuilder(prefs: ratingDisplayPrefs, builder: _buildSheet);
+
+  Widget _buildSheet(BuildContext context) {
     final theme = Theme.of(context);
     final item = widget.item;
     final labels = _metadataLabels(item);
-    final ratings = mediaRatingsFor(item);
+    final ratings = preferredMediaRatingsFor(item);
     final genres = widget.genres;
     final episodeTitle = item.isEpisode ? item.title : null;
     final description = widget.description;

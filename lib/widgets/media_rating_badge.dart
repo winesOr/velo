@@ -11,13 +11,39 @@ import '../utils/rating_utils.dart';
 import '../utils/text_measure_cache.dart';
 import 'app_icon.dart';
 
-/// Every attributed score for [item], falling back to [fallbackItem] as a
-/// whole rather than per-source — a show's ratings never mix with an
-/// episode's.
-List<MediaRatingSource> mediaRatingsFor(MediaItem item, {MediaItem? fallbackItem}) {
-  final ratings = _ratingsFor(item);
-  if (ratings.isNotEmpty || fallbackItem == null) return ratings;
-  return _ratingsFor(fallbackItem);
+/// Combines snapshots of the same server item. A detail value takes precedence
+/// over a listing's value for the same source. Older caches may only have a
+/// bare headline score, which is used when neither snapshot identifies a source.
+List<MediaRatingSource> mediaRatingsFor(
+  MediaItem item, {
+  MediaItem? fallbackItem,
+  RatingDisplayPolicy policy = const RatingDisplayPolicy(),
+  int? limit,
+}) {
+  final previous =
+      fallbackItem != null &&
+          item.serverId != null &&
+          item.serverId == fallbackItem.serverId &&
+          item.backend == fallbackItem.backend &&
+          item.kind == fallbackItem.kind &&
+          item.id == fallbackItem.id
+      ? fallbackItem
+      : null;
+  final named = [
+    for (final ratings in [item.ratings, if (previous != null) previous.ratings])
+      if (ratings != null)
+        for (final rating in ratings)
+          if (rating.source.isNotEmpty && RatingDisplayPolicy.isPublicScore(rating)) rating,
+  ];
+  if (named.isNotEmpty) return policy.select(named, limit: limit);
+  for (final snapshot in [item, ?previous]) {
+    final bare = snapshot.ratings?.where((r) => r.source.isEmpty && RatingDisplayPolicy.isValid(r.value)).firstOrNull;
+    if (bare != null) return policy.select([bare], limit: limit);
+    if (RatingDisplayPolicy.isValid(snapshot.rating)) {
+      return policy.select([MediaRatingSource(source: '', value: snapshot.rating!)], limit: limit);
+    }
+  }
+  return const [];
 }
 
 const ratingDisplayPrefs = <Pref<Object?>>[SettingsService.ratingSourceOrder, SettingsService.disabledRatingSources];
@@ -28,13 +54,10 @@ RatingDisplayPolicy currentRatingDisplayPolicy() => RatingDisplayPolicy(
 );
 
 List<MediaRatingSource> preferredMediaRatingsFor(MediaItem item, {MediaItem? fallbackItem, int? limit}) =>
-    currentRatingDisplayPolicy().select(mediaRatingsFor(item, fallbackItem: fallbackItem), limit: limit);
+    mediaRatingsFor(item, fallbackItem: fallbackItem, policy: currentRatingDisplayPolicy(), limit: limit);
 
 MediaRatingSource? mediaCardRatingFor(MediaItem item, {RatingDisplayPolicy? policy}) {
-  if (RatingDisplayPolicy.isValid(item.userRating)) {
-    return MediaRatingSource(source: 'personal', value: item.userRating!);
-  }
-  final ratings = (policy ?? currentRatingDisplayPolicy()).select(mediaRatingsFor(item), limit: 1);
+  final ratings = mediaRatingsFor(item, policy: policy ?? currentRatingDisplayPolicy(), limit: 1);
   return ratings.isEmpty ? null : ratings.first;
 }
 
@@ -43,26 +66,13 @@ MediaRatingSource? mediaCardRatingFor(MediaItem item, {RatingDisplayPolicy? poli
 String mediaRatingLabel(MediaRatingSource rating) =>
     ratingInfoForSource(rating.source, rating.value)?.formattedValue ?? rating.value.toStringAsFixed(1);
 
-List<MediaRatingSource> _ratingsFor(MediaItem item) {
-  final ratings = item.ratings;
-  if (ratings != null && ratings.isNotEmpty) {
-    final valid = const RatingDisplayPolicy().select(ratings);
-    if (valid.isNotEmpty) return valid;
-  }
-  // Backends that report a bare score with no provenance (and cached rows
-  // written before the attributed list existed) still get one badge.
-  final rating = item.rating;
-  return !RatingDisplayPolicy.isValid(rating) ? const [] : [MediaRatingSource(source: '', value: rating!)];
-}
-
 /// Every score read out as `<source> <value>`, for merged metadata-line
 /// announcements. Identifies scores whose source is not attributed.
 String ratingsSemanticLabel(List<MediaRatingSource> ratings) => [
   for (final rating in ratings)
     switch (ratingSourceLabel(rating.source)) {
       final label? => '$label ${mediaRatingLabel(rating)}',
-      null =>
-        '${rating.source == 'personal' ? t.explore.detail.yourRating : t.ratingDetails.unattributedSource} ${mediaRatingLabel(rating)}/10',
+      null => '${t.ratingDetails.unattributedSource} ${mediaRatingLabel(rating)}/10',
     },
 ].join(', ');
 

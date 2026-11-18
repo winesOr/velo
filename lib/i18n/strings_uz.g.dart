@@ -228,7 +228,7 @@ class _Translations$settings$uz extends Translations$settings$en {
 	// Translations
 	@override String get ratings => 'Ratings';
 	@override String get showRatingBadges => 'Show ratings on posters';
-	@override String get showRatingBadgesDescription => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.';
+	@override String get showRatingBadgesDescription => 'Manbalar tartibida birinchi mavjud ommaviy bahoni ko‘rsatadi. Ko‘rishni davom ettirish bo‘limida baholar yashiriladi.';
 	@override String get ratingSources => 'Rating sources';
 	@override String get ratingSourcesDescription => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.';
 	@override String get otherRatingSources => 'Other ratings';
@@ -3162,7 +3162,7 @@ extension on TranslationsUz {
 			'update.checkFailed' => 'Yangilanishlarni tekshirish imkoni boʻlmadi',
 			'settings.ratings' => 'Ratings',
 			'settings.showRatingBadges' => 'Show ratings on posters',
-			'settings.showRatingBadgesDescription' => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.',
+			'settings.showRatingBadgesDescription' => 'Manbalar tartibida birinchi mavjud ommaviy bahoni ko‘rsatadi. Ko‘rishni davom ettirish bo‘limida baholar yashiriladi.',
 			'settings.ratingSources' => 'Rating sources',
 			'settings.ratingSourcesDescription' => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.',
 			'settings.otherRatingSources' => 'Other ratings',

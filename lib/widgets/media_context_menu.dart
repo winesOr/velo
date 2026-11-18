@@ -58,7 +58,6 @@ import '../widgets/tag_edit_dialog.dart';
 import '../widgets/file_info_bottom_sheet.dart';
 import '../widgets/overlay_sheet.dart';
 import 'watchlist_source_chooser.dart';
-import '../widgets/rating_bottom_sheet.dart';
 import '../i18n/strings.g.dart';
 import '../utils/error_message_utils.dart';
 
@@ -644,7 +643,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         ),
       if (widget.isInContinueWatching && isVideoKind)
         _MenuAction(value: 'details', icon: Symbols.info_rounded, label: t.mediaMenu.viewDetails),
-      if (isVideoKind) _MenuAction(value: 'rate', icon: Symbols.star_rounded, label: t.mediaMenu.rate),
       // Edit Metadata — admin-only and backend-capability gated.
       if (menu.canEditMetadata)
         _MenuAction(value: 'edit_metadata', icon: Symbols.edit_rounded, label: t.metadataEdit.editMetadata),
@@ -899,9 +897,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         outcome.didNavigate = true;
         if (context.mounted) await navigateToMediaItemDetails(context, mediaItem, onRefresh: _notifyRefresh);
         break;
-      case 'rate':
-        if (context.mounted) await _handleRate(context, mediaItem);
-        break;
       case 'edit_metadata':
         outcome.didNavigate = true;
         if (context.mounted) await _pushAndRefresh(context, mediaItem, MetadataEditScreen(metadata: mediaItem));
@@ -1040,17 +1035,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         showErrorSnackBar(context, message);
       } else {
         showGlobalErrorSnackBar(message);
-      }
-    }
-  }
-
-  Future<void> _handleRate(BuildContext context, MediaItem item) async {
-    try {
-      final client = _getMediaClientForItem();
-      await _showRatingSheet(context, item, client);
-    } catch (e) {
-      if (context.mounted) {
-        showErrorSnackBar(context, t.messages.errorLoading(error: localizedErrorReason(e)));
       }
     }
   }
@@ -1690,23 +1674,6 @@ class MediaContextMenuState extends State<MediaContextMenu> {
         showErrorSnackBar(context, messages.addError);
       }
     }
-  }
-
-  Future<void> _showRatingSheet(BuildContext context, MediaItem item, MediaServerClient client) async {
-    if (!mounted) return;
-    // Presented from the menu's own context so a screen-level
-    // OverlaySheetHost is found (see _showContextMenu).
-    await OverlaySheetController.showAdaptive(
-      this.context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (context) => RatingBottomSheet(
-        item: item,
-        serverClient: client,
-        onServerRatingChanged: (_) => _notifyRefresh(item),
-        onServerFavoriteChanged: (_) => _notifyRefresh(item),
-      ),
-    );
   }
 
   Future<void> _handleRemoveFromCollection(BuildContext context, MediaItem item) async {

@@ -228,7 +228,7 @@ class _Translations$settings$de extends Translations$settings$en {
 	// Translations
 	@override String get ratings => 'Ratings';
 	@override String get showRatingBadges => 'Show ratings on posters';
-	@override String get showRatingBadgesDescription => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.';
+	@override String get showRatingBadgesDescription => 'Zeigt die erste verfügbare öffentliche Bewertung in der Reihenfolge deiner Quellen. Unter „Weiterschauen“ sind Bewertungen ausgeblendet.';
 	@override String get ratingSources => 'Rating sources';
 	@override String get ratingSourcesDescription => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.';
 	@override String get otherRatingSources => 'Other ratings';
@@ -3162,7 +3162,7 @@ extension on TranslationsDe {
 			'update.checkFailed' => 'Fehler bei der Updateprüfung',
 			'settings.ratings' => 'Ratings',
 			'settings.showRatingBadges' => 'Show ratings on posters',
-			'settings.showRatingBadgesDescription' => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.',
+			'settings.showRatingBadgesDescription' => 'Zeigt die erste verfügbare öffentliche Bewertung in der Reihenfolge deiner Quellen. Unter „Weiterschauen“ sind Bewertungen ausgeblendet.',
 			'settings.ratingSources' => 'Rating sources',
 			'settings.ratingSourcesDescription' => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.',
 			'settings.otherRatingSources' => 'Other ratings',

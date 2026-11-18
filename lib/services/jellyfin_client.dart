@@ -231,21 +231,23 @@ mixin _JellyfinClientInternals on MediaServerCacheMixin {
 
   /// Append the fields this dialect withholds, skipping any the set already
   /// names so Jellyfin's request strings stay byte-identical.
-  String _withDialectRowFields(String fields) {
+  String _withDialectRowFields(String fields, {bool publicRatings = false}) {
     if (dialect != MediaBrowserDialect.emby) return fields;
     final present = fields.split(',').map((field) => field.trim()).toSet();
     final missing = [
       ..._embyWithheldRowFields.where((field) => !present.contains(field)),
+      // Emby projects its public scores only when requested on list routes.
+      if (publicRatings) ...['CommunityRating', 'CriticRating'].where((field) => !present.contains(field)),
       if (present.contains('MediaSources') && !present.contains(_embyAlternateMediaSourcesField))
         _embyAlternateMediaSourcesField,
     ];
     return missing.isEmpty ? fields : '$fields,${missing.join(',')}';
   }
 
-  String get _browseFields => _withDialectRowFields(_baseBrowseFields);
-  String get _hubRowFields => _withDialectRowFields(_baseHubRowFields);
-  String get _episodeRowFields => _withDialectRowFields(_baseEpisodeRowFields);
-  String get _folderBrowseFields => _withDialectRowFields(_baseFolderBrowseFields);
+  String get _browseFields => _withDialectRowFields(_baseBrowseFields, publicRatings: true);
+  String get _hubRowFields => _withDialectRowFields(_baseHubRowFields, publicRatings: true);
+  String get _episodeRowFields => _withDialectRowFields(_baseEpisodeRowFields, publicRatings: true);
+  String get _folderBrowseFields => _withDialectRowFields(_baseFolderBrowseFields, publicRatings: true);
   String get _folderRowFields => _withDialectRowFields(_baseFolderRowFields);
   String get _musicAlbumRowFields => _withDialectRowFields(_baseMusicAlbumRowFields);
   String get _musicTrackRowFields => _withDialectRowFields(_baseMusicTrackRowFields);

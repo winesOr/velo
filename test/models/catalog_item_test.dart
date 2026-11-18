@@ -188,6 +188,31 @@ void main() {
       expect(merged.dropRate, 0.031);
     });
 
+    test('detail scores update matching sources and preserve other public row scores', () {
+      const row = CatalogItem(
+        source: CatalogSourceId.simkl,
+        kind: MediaKind.movie,
+        title: 'Movie',
+        ids: CatalogItemIds(simkl: 42),
+        ratings: [
+          MediaRatingSource(source: 'imdb', value: 8.1),
+          MediaRatingSource(source: 'mal', value: 7.2),
+        ],
+      );
+      const detail = CatalogItem(
+        source: CatalogSourceId.simkl,
+        kind: MediaKind.movie,
+        title: 'Movie',
+        ids: CatalogItemIds(simkl: 42),
+        ratings: [
+          MediaRatingSource(source: 'imdb', value: 8.3),
+          MediaRatingSource(source: 'personal', value: 10),
+        ],
+      );
+      final ratings = row.enrichedWith(detail).ratings!;
+      expect({for (final rating in ratings) rating.source: rating.value}, {'imdb': 8.3, 'mal': 7.2});
+    });
+
     test('enrichedWith lets detail replace a row value and merges ids per key', () {
       const row = CatalogItem(
         source: CatalogSourceId.seerr,

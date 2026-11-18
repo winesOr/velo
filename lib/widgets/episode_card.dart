@@ -91,28 +91,6 @@ class _EpisodeCardState extends State<EpisodeCard> with ContextMenuTapMixin<Epis
       children.add(Text(formatFullDate(episode.originallyAvailableAt!), style: mutedStyle));
     }
 
-    if (episode.userRating != null && episode.userRating! > 0) {
-      addSeparator();
-      children.add(
-        Row(
-          mainAxisSize: .min,
-          children: [
-            const Padding(
-              padding: .only(top: 2),
-              child: AppIcon(Symbols.star_rounded, size: 12, fill: 1, color: Colors.amber),
-            ),
-            const SizedBox(width: 2),
-            Text(
-              (episode.userRating! / 2) == (episode.userRating! / 2).truncateToDouble()
-                  ? '${(episode.userRating! / 2).toInt()}'
-                  : formatRating(episode.userRating! / 2),
-              style: mutedStyle,
-            ),
-          ],
-        ),
-      );
-    }
-
     for (final label in qualityLabels) {
       addSeparator();
       children.add(Text(label, style: mutedStyle));

@@ -9,13 +9,18 @@ import 'package:plezy/media/media_rating.dart';
 import 'package:plezy/media/media_part.dart';
 import 'package:plezy/media/media_stream.dart';
 import 'package:plezy/media/media_version.dart';
+import 'package:plezy/services/settings_service.dart';
 import 'package:plezy/utils/formatters.dart';
 import 'package:plezy/widgets/media_details_sheet.dart';
+
+import '../test_helpers/prefs.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
+  setUp(() async {
+    resetSharedPreferencesForTest();
+    await SettingsService.getInstance();
     LocaleSettings.setLocaleSync(AppLocale.en);
   });
 
@@ -106,6 +111,11 @@ void main() {
     final descriptionText = tester.widget<Text>(find.text(summary));
     expect(descriptionText.maxLines, isNull);
     expect(descriptionText.overflow, isNot(TextOverflow.ellipsis));
+
+    await SettingsService.instance.write(SettingsService.disabledRatingSources, ['imdb']);
+    await tester.pump();
+    expect(find.text('7.4'), findsNothing);
+    expect(find.text('21%'), findsOneWidget);
   });
 
   testWidgets('names an episode and labels it with its number and air date instead of the year', (tester) async {

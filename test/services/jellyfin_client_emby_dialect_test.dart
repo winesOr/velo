@@ -167,7 +167,8 @@ void main() {
         'Limit': '300',
         // Emby withholds these from list rows unless asked, so the hub field set
         // is widened for it and only for it.
-        'Fields': 'Overview,DateCreated,Genres,ProductionYear,OfficialRating,PremiereDate,UserDataLastPlayedDate',
+        'Fields':
+            'Overview,DateCreated,Genres,ProductionYear,OfficialRating,PremiereDate,UserDataLastPlayedDate,CommunityRating,CriticRating',
         'MediaTypes': 'Video',
         'Recursive': 'true',
         'EnableTotalRecordCount': 'false',
@@ -247,10 +248,44 @@ void main() {
       // Jellyfin's request string must not gain them.
       expect(jellyfinFields, isNot(contains('ProductionYear')));
       expect(jellyfinFields, isNot(contains('OfficialRating')));
+      expect(jellyfinFields, isNot(contains('CommunityRating')));
+      expect(jellyfinFields, isNot(contains('CriticRating')));
       // Everything the base set already carried survives on both.
       expect(embyFields, containsAll(jellyfinFields));
       // No duplicate entries when the base set already names one of them.
       expect(embyFields.toSet().length, embyFields.length, reason: 'duplicated field: $embyFields');
+    });
+
+    test('Emby home and library posters receive both public ratings before opening detail', () async {
+      final requests = _RequestCapture((request) {
+        final fields = request.url.queryParameters['Fields']?.split(',') ?? [];
+        final detail = request.url.path == '/Users/user-1/Items/movie-1';
+        final movie = {
+          'Id': 'movie-1',
+          'Type': 'Movie',
+          'Name': 'Movie',
+          if (detail || fields.contains('CommunityRating')) 'CommunityRating': '8.1',
+          if (detail || fields.contains('CriticRating')) 'CriticRating': 92,
+        };
+        if (detail) return jsonResponse(movie);
+        if (request.url.path.endsWith('/Items/Latest')) return jsonResponse([movie]);
+        return jsonResponse({
+          'Items': [movie],
+          'TotalRecordCount': 1,
+        });
+      });
+      final client = testEmbyClient(handler: requests.handle);
+      addTearDown(client.close);
+
+      final hubs = await client.fetchGlobalHubs(includePlaybackHubs: false);
+      final page = await client.fetchLibraryPagedContent('lib-1', query: const LibraryQuery(limit: 5));
+      expect(requests.requests, hasLength(2));
+      final detail = await client.fetchItem('movie-1');
+
+      for (final item in [hubs.single.items.single, page.items.single, detail!]) {
+        expect(item.rating, 8.1);
+        expect(item.ratings!.map((r) => (r.source, r.value)), [('audience', 8.1), ('rottenTomatoesCritic', 9.2)]);
+      }
     });
 
     test('a field set that already names a withheld field is not duplicated', () async {

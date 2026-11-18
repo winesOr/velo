@@ -26,6 +26,8 @@ class RatingDisplayPolicy {
 
   static bool isValid(double? value) => value != null && value.isFinite && value > 0 && value <= 10;
 
+  static bool isPublicScore(MediaRatingSource rating) => rating.source != 'personal' && isValid(rating.value);
+
   static String canonicalSource(String source) => source == 'rottenTomatoes' ? 'rottenTomatoesCritic' : source;
 
   static String sourceGroup(String source) {
@@ -45,7 +47,7 @@ class RatingDisplayPolicy {
     final valid = <MediaRatingSource>[];
     for (final rating in ratings) {
       final source = canonicalSource(rating.source);
-      if (!isValid(rating.value) || disabled.contains(sourceGroup(source)) || !seen.add(source)) continue;
+      if (!isPublicScore(rating) || disabled.contains(sourceGroup(source)) || !seen.add(source)) continue;
       valid.add(MediaRatingSource(source: source, value: rating.value, votes: rating.votes));
     }
     // The original index breaks ties so unknown sources keep their server order.

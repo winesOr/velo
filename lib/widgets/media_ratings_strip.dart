@@ -177,18 +177,13 @@ class _RatingScore extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final info = ratingInfoForSource(rating.source, rating.value);
-    return Row(
+    final score = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (info != null)
           SizedBox(width: 18 * info.iconAspect, height: 18, child: SvgPicture.asset(info.assetPath))
         else
-          AppIcon(
-            rating.source == 'personal' ? Symbols.person_rounded : Symbols.star_rounded,
-            fill: 1,
-            size: 18,
-            color: rating.source == 'personal' ? foreground : const Color(0xfff5c544),
-          ),
+          AppIcon(Symbols.star_rounded, fill: 1, size: 18, color: const Color(0xfff5c544)),
         const SizedBox(width: 6),
         Text(
           mediaRatingLabel(rating),
@@ -202,10 +197,21 @@ class _RatingScore extends StatelessWidget {
         ),
       ],
     );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        score,
+        Text(
+          ratingSourceLabel(rating.source) ?? t.ratingDetails.serverRating,
+          maxLines: 1,
+          style: TextStyle(color: foreground, fontSize: 11),
+        ),
+      ],
+    );
   }
 }
 
-/// One real score on artwork; personal values are explicitly identified as /10.
+/// The highest-priority enabled public score on the poster.
 class MediaCardRatingBadge extends StatelessWidget {
   const MediaCardRatingBadge({super.key, required this.rating, this.withUnit = false});
 

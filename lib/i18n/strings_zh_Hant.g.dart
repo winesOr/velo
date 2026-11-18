@@ -284,7 +284,7 @@ class _Translations$settings$zh_Hant extends Translations$settings$zh {
 	@override String get aboutVelo => '關於 Velo';
 	@override String get ratings => '評分顯示';
 	@override String get showRatingBadges => '顯示海報評分';
-	@override String get showRatingBadgesDescription => '優先顯示你的評分，否則顯示首個可用的已啟用來源。繼續觀看不顯示評分。';
+	@override String get showRatingBadgesDescription => '依來源順序顯示首個可用的公開評分。繼續觀看不顯示評分。';
 	@override String get ratingSources => '評分來源';
 	@override String get ratingSourcesDescription => '啟用來源，並上移或下移調整顯示順序。僅顯示媒體服務已提供的評分。';
 	@override String get otherRatingSources => '其他評分';
@@ -3604,7 +3604,7 @@ extension on TranslationsZhHant {
 			'settings.aboutVelo' => '關於 Velo',
 			'settings.ratings' => '評分顯示',
 			'settings.showRatingBadges' => '顯示海報評分',
-			'settings.showRatingBadgesDescription' => '優先顯示你的評分，否則顯示首個可用的已啟用來源。繼續觀看不顯示評分。',
+			'settings.showRatingBadgesDescription' => '依來源順序顯示首個可用的公開評分。繼續觀看不顯示評分。',
 			'settings.ratingSources' => '評分來源',
 			'settings.ratingSourcesDescription' => '啟用來源，並上移或下移調整顯示順序。僅顯示媒體服務已提供的評分。',
 			'settings.otherRatingSources' => '其他評分',

@@ -18,7 +18,6 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import '../widgets/collapsible_text.dart';
 import '../widgets/detail_action_icon.dart';
-import '../widgets/rating_bottom_sheet.dart';
 import '../widgets/app_select_field.dart';
 import '../widgets/focusable_tab_chip.dart';
 import '../widgets/backend_badge.dart';
@@ -466,7 +465,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
   late final FocusNode _playButtonFocusNode;
   late final FocusNode _moreActionsFocusNode;
-  final FocusNode _tvRatingSourceFocusNode = FocusNode(debugLabel: 'detail_rating_source');
+  final FocusNode _detailRatingSourceFocusNode = FocusNode(debugLabel: 'detail_rating_source');
   late final FocusNode _backButtonFocusNode;
 
   // Context menu key for the three-dots button
@@ -589,13 +588,14 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   List<MediaItem> _freshAll(List<MediaItem> items) => context.readFreshWatchStateAll(items);
 
   MediaItem _normalizeRefreshedItem(MediaItem item, MediaItem fallback) {
-    return _withFallbackLibrary(
+    final normalized = _withFallbackLibrary(
       item.copyWith(
         serverId: item.serverId ?? fallback.serverId ?? _metadata.serverId,
         serverName: item.serverName ?? fallback.serverName ?? _metadata.serverName,
       ),
       fallback,
     );
+    return normalized.copyWith(ratings: mediaRatingsFor(normalized, fallbackItem: fallback));
   }
 
   void _patchItemEverywhere(String sourceGlobalKey, MediaItem item) {
@@ -828,10 +828,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       final metadata = result.item;
       final onDeckEpisode = result.onDeckEpisode;
       if (metadata != null) {
-        final refreshedMetadata = _withFallbackLibrary(
-          metadata.copyWith(serverId: serverId, serverName: serverName ?? metadata.serverName),
-          _metadata,
-        );
+        final refreshedMetadata = _normalizeRefreshedItem(metadata, _metadata);
         final refreshedOnDeck = onDeckEpisode == null
             ? null
             : _withFallbackLibrary(
@@ -1058,7 +1055,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     _versionSelectFocusNode.dispose();
     _playButtonStates.dispose();
     _moreActionsFocusNode.dispose();
-    _tvRatingSourceFocusNode.dispose();
+    _detailRatingSourceFocusNode.dispose();
     _backButtonFocusNode.dispose();
     _overviewFocusNode.dispose();
     _tvDetailInfoFocusNode.dispose();
@@ -1099,43 +1096,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
           ),
         ],
       ),
-    );
-  }
-
-  /// Numeric backends show the formatted rating when set; favorite backends
-  /// rely on the filled heart to communicate the favorite state and keep the
-  /// "Rate" label as the action prompt either way.
-  bool _canEditDetailRating(MediaItem metadata) {
-    if (widget.isOffline) return false;
-    final capabilities = _getMediaClientForMetadata(context)?.capabilities;
-    return capabilities != null && (capabilities.numericUserRating || capabilities.userFavorites);
-  }
-
-  void _showRatingDialog(BuildContext sheetContext, MediaItem metadata) {
-    final target = metadata.globalKey;
-    final hadFocus = _moreActionsFocusNode.hasFocus;
-    unawaited(
-      showScopedDialog<void>(
-        context: sheetContext,
-        builder: (dialogContext) => _detailDialog(
-          dialogContext,
-          RatingBottomSheet(
-            item: metadata,
-            serverClient: _getMediaClientForMetadata(context),
-            onClose: () => Navigator.of(dialogContext).pop(),
-            onServerRatingChanged: (rating) {
-              if (!_canUseDetail || _metadata.globalKey != target) return;
-              setStateIfMounted(() => _fullMetadata = _metadata.copyWith(userRating: rating));
-            },
-            onServerFavoriteChanged: (favorite) {
-              if (!_canUseDetail || _metadata.globalKey != target) return;
-              setStateIfMounted(() => _fullMetadata = _metadata.copyWith(isFavorite: favorite));
-            },
-          ),
-        ),
-      ).whenComplete(() {
-        if (mounted && hadFocus) FocusUtils.restoreFocusAfterBuild(this, _moreActionsFocusNode);
-      }),
     );
   }
 
@@ -1321,7 +1281,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
           : await context.read<DownloadProvider>().lookupOfflineMetadata(serverId, _metadata.id);
       if (!current()) return;
       setState(() {
-        _fullMetadata = cachedMetadata ?? _metadata;
+        if (cachedMetadata != null) _fullMetadata = _normalizeRefreshedItem(cachedMetadata, _metadata);
         _isLoadingMetadata = false;
         _hasLoadedExtras = true;
         _hasLoadedRelatedHubs = true;
@@ -1385,10 +1345,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       MediaItem publish(MediaItem source, {MediaItem? onDeckEpisode, bool onDeckSettled = false}) {
         final serverId = _metadata.serverId;
         final serverName = _metadata.serverName;
-        final base = _withFallbackLibrary(
-          source.copyWith(serverId: serverId ?? source.serverId, serverName: serverName ?? source.serverName),
-          _metadata,
-        );
+        final base = _normalizeRefreshedItem(source, _metadata);
         final onDeckWithServerId = onDeckEpisode == null
             ? null
             : _withFallbackLibrary(
@@ -2185,8 +2142,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   }
 
   void _focusTvRatingsOrAction() {
-    if (_tvRatingSourceFocusNode.context != null) {
-      _tvRatingSourceFocusNode.requestFocus();
+    if (_detailRatingSourceFocusNode.context != null) {
+      _detailRatingSourceFocusNode.requestFocus();
     } else {
       _focusTvDetailActionRow();
     }
@@ -2222,21 +2179,12 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     }
   }
 
-  void _focusTvRatingsOrInfo() {
-    final episode = _tvDetailFocusedEpisode.value;
-    final item = episode == null ? _metadata : _withProbedRatings(episode);
-    if (preferredMediaRatingsFor(item, fallbackItem: _metadata, limit: RatingDisplayPolicy.detailLimit).isNotEmpty &&
-        _tvRatingSourceFocusNode.context != null) {
-      _tvRatingSourceFocusNode.requestFocus();
-    } else {
-      _tvDetailInfoFocusNode.requestFocus();
-    }
-  }
-
   /// Focus the first available section above the primary action row.
   void _focusAboveActionRow() {
-    if (PlatformDetector.isTV()) {
-      _focusTvRatingsOrInfo();
+    if (_detailRatingSourceFocusNode.context?.mounted == true) {
+      _detailRatingSourceFocusNode.requestFocus();
+    } else if (PlatformDetector.isTV()) {
+      _tvDetailInfoFocusNode.requestFocus();
     } else {
       _backButtonFocusNode.requestFocus();
     }
@@ -2927,8 +2875,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     final isTv = PlatformDetector.isTV();
     final theme = Theme.of(context);
 
-    // Show loading state while fetching full metadata
-    if (_isLoadingMetadata) {
+    // A rated list snapshot can paint before the full record arrives.
+    if (_isLoadingMetadata && preferredMediaRatingsFor(metadata, limit: 1).isEmpty) {
       final loading = ListenableBuilder(
         listenable: FullscreenStateManager(),
         builder: (context, _) => Focus(
@@ -3276,7 +3224,34 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       ),
     );
 
-    return isTv ? _buildTvDetailRevealGate(content, _handleMediaDetailBackKey) : content;
+    if (!isTv) return content;
+    final gate = _buildTvDetailRevealGate(content, _handleMediaDetailBackKey);
+    final scores = _tvDetailRevealed
+        ? const <MediaRatingSource>[]
+        : preferredMediaRatingsFor(metadata, limit: RatingDisplayPolicy.detailLimit);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (scores.isNotEmpty) ColoredBox(color: theme.scaffoldBackgroundColor),
+        if (scores.isNotEmpty) Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 48),
+            child: Column(
+              key: const ValueKey('tv_detail_loading_scores'),
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(metadata.displayTitle, style: theme.textTheme.headlineMedium),
+                const SizedBox(height: 8),
+                Text(ratingsSemanticLabel(scores), style: theme.textTheme.titleMedium),
+              ],
+            ),
+          ),
+        ),
+        KeyedSubtree(key: const ValueKey('tv_detail_gate_content'), child: gate),
+      ],
+    );
   }
 
   /// Opens the full-information sheet for the TV hero: the complete metadata
@@ -3339,7 +3314,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   /// every other field.
   MediaItem _withProbedRatings(MediaItem episode) {
     final ratings = _probedRatings[episode.globalKey];
-    return ratings == null ? episode : episode.copyWith(ratings: ratings);
+    if (ratings == null) return episode;
+    final probed = episode.copyWith(ratings: ratings);
+    return probed.copyWith(ratings: mediaRatingsFor(probed, fallbackItem: episode));
   }
 
   String _tvDetailInformationSemanticLabel(
@@ -3370,7 +3347,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     final focusedEpisode = _tvDetailFocusedEpisode.value;
     final ratings = preferredMediaRatingsFor(
       focusedEpisode == null ? metadata : _withProbedRatings(focusedEpisode),
-      fallbackItem: focusedEpisode == null ? null : metadata,
       limit: RatingDisplayPolicy.detailLimit,
     );
     if (ratings.isNotEmpty) add(ratingsSemanticLabel(ratings));

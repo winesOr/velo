@@ -81,7 +81,6 @@ import 'package:plezy/focus/focusable_wrapper.dart';
 import 'package:plezy/widgets/media_card.dart';
 import 'package:plezy/widgets/media_details_sheet.dart';
 import 'package:plezy/widgets/media_detail_technical_info.dart';
-import 'package:plezy/widgets/rating_bottom_sheet.dart';
 import 'package:plezy/providers/trackers_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -761,6 +760,62 @@ void main() {
     expect(find.byType(DetailEpisodeRail), findsOneWidget);
     expect(find.text('1–6'), findsOneWidget);
   });
+  testWidgets('TV shows public scores without moving focus while metadata and supplemental rows load', (tester) async {
+    await SettingsService.getInstance();
+    tester.view.physicalSize = const Size(1280, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final row = testMediaItem(
+      id: 'rated-movie',
+      backend: MediaBackend.jellyfin,
+      kind: MediaKind.movie,
+      title: 'Rated Movie',
+      serverId: 'server_1',
+    ).copyWith(ratings: const [MediaRatingSource(source: 'imdb', value: 8.1)], userRating: 9.9);
+    final detail = row.copyWith(ratings: const [MediaRatingSource(source: 'audience', value: 7.2)]);
+    final related = Completer<List<MediaHub>>();
+    final client = _FakeMediaServerClient(show: detail, childrenByParent: {})
+      ..metadataGate = Completer<void>()
+      ..pendingRelated = related.future;
+    final provider = testMultiServer(clients: [client]).provider;
+    await tester.pumpWidget(
+      TranslationProvider(
+        child: MaterialApp(
+          theme: monoTheme(dark: true),
+          home: ChangeNotifierProvider<MultiServerProvider>.value(
+            value: provider,
+            child: withProfileNavigationScope(child: MediaDetailScreen(metadata: row)),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    final preview = find.byKey(const ValueKey('tv_detail_loading_scores'));
+    Finder previewText(String text) => find.descendant(of: preview, matching: find.textContaining(text));
+    void expectReadOnlyPreview() {
+      expect(previewText('IMDb 8.1').hitTestable(), findsOneWidget);
+      expect(previewText('9.9'), findsNothing);
+      expect(find.descendant(of: preview, matching: find.byType(Focus)), findsNothing);
+      expect(tester.widget<AnimatedOpacity>(find.byKey(tvDetailRevealGateKey)).opacity, 0);
+      expect(FocusManager.instance.primaryFocus?.debugLabel, isNot('play_button'));
+    }
+
+    expectReadOnlyPreview();
+    client.metadataGate!.complete();
+    await tester.pump();
+    await tester.pump();
+    expectReadOnlyPreview();
+    expect(previewText('7.2'), findsOneWidget);
+    related.complete(const []);
+    await tester.pumpAndSettle();
+    expect(preview, findsNothing);
+    expect(tester.widget<AnimatedOpacity>(find.byKey(tvDetailRevealGateKey)).opacity, 1);
+    expect(find.descendant(of: find.byType(MediaRatingsStrip), matching: find.text('8.1')), findsOneWidget);
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'play_button');
+  });
+
   testWidgets('TV detail reveal still waits for the supplemental sections', (tester) async {
     // Counterpart to the test above: the early paint does NOT move the TV
     // reveal. `_isTvDetailReadyToReveal` additionally requires extras, related
@@ -1358,7 +1413,7 @@ void main() {
       show: show,
       childrenByParent: {
         show.id: [season],
-        season.id: [episode('ep1', 1, 7.7), episode('ep2', 2, 7.1)],
+        season.id: [episode('ep1', 1, 7.7), episode('ep2', 2, 7.1), episode('ep3', 3, 0).copyWith(ratings: null)],
       },
       // Episode 1's own `/library/metadata/{id}` adds the `Rating[]` array;
       // episode 2's fetch returns its listing entry unchanged.
@@ -3314,25 +3369,32 @@ void main() {
       }
     });
 
-    testWidgets('personal rating moves into the top more dialog at 200 percent text', (tester) async {
-      final show = buildShow();
-      await pumpPhoneDetail(
-        tester,
-        singleSeasonClient(show, mediaVersions: phoneMediaVersions, fileInfo: phoneFileInfo),
-        show,
-        viewport: const Size(320, 844),
-        textScale: 2,
+    testWidgets('phone shows list scores immediately and merges refreshed public sources for the same item', (
+      tester,
+    ) async {
+      final row = buildShow().copyWith(
+        userRating: 9.9,
+        ratings: const [
+          MediaRatingSource(source: 'imdb', value: 8.1),
+          MediaRatingSource(source: 'tmdb', value: 7.5),
+        ],
       );
+      final detail = row.copyWith(ratings: const [MediaRatingSource(source: 'imdb', value: 8.4)]);
+      final client = singleSeasonClient(detail)..metadataGate = Completer<void>();
+      await pumpPhoneDetail(tester, client, row);
+      final scores = find.byType(MediaRatingsStrip);
+      Finder score(String value) => find.descendant(of: scores, matching: find.text(value));
+
+      expect(score('8.1'), findsOneWidget);
+      expect(score('75%'), findsOneWidget);
+      client.metadataGate!.complete();
+      await tester.pump();
+      await tester.pump();
+      expect(score('8.4'), findsOneWidget);
+      expect(score('8.1'), findsNothing);
+      expect(score('75%'), findsOneWidget);
       expect(find.byKey(const ValueKey('detail_personal_rating_target')), findsNothing);
-      await tester.tap(find.byTooltip(t.explore.detail.moreActions));
-      await tester.pumpAndSettle();
-      final target = find.widgetWithText(ListTile, t.explore.detail.yourRating);
-      expect(target, findsOneWidget);
-      expect(tester.getSize(target).height, greaterThanOrEqualTo(48));
-      await tester.tap(target);
-      await tester.pumpAndSettle();
-      expect(find.byType(RatingBottomSheet), findsOneWidget);
-      expect(tester.takeException(), isNull);
+      expect(find.bySemanticsLabel(RegExp(RegExp.escape(t.explore.detail.yourRating))), findsNothing);
     });
 
     testWidgets('narrow large-text source card keeps the version label inside the row', (tester) async {

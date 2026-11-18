@@ -163,7 +163,7 @@
     "aboutVelo": "關於 Velo",
     "ratings": "評分顯示",
     "showRatingBadges": "顯示海報評分",
-    "showRatingBadgesDescription": "優先顯示你的評分，否則顯示首個可用的已啟用來源。繼續觀看不顯示評分。",
+    "showRatingBadgesDescription": "依來源順序顯示首個可用的公開評分。繼續觀看不顯示評分。",
     "ratingSources": "評分來源",
     "ratingSourcesDescription": "啟用來源，並上移或下移調整顯示順序。僅顯示媒體服務已提供的評分。",
     "otherRatingSources": "其他評分",

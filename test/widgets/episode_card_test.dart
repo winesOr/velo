@@ -106,7 +106,8 @@ void main() {
     );
 
     // Wide layouts keep codec and size on the card; phones drop them.
-    await _pumpEpisodeCard(tester, episode, platform: TargetPlatform.macOS);
+    await _pumpEpisodeCard(tester, episode.copyWith(userRating: 10), platform: TargetPlatform.macOS);
+    expect(find.text('5'), findsNothing);
 
     final metadataWrap = find.ancestor(of: find.text('1.50 GB'), matching: find.byType(Wrap));
     expect(metadataWrap, findsOneWidget);

@@ -3,6 +3,7 @@ import '../../media/media_item.dart';
 import '../../media/media_kind.dart';
 import '../../media/media_rating.dart';
 import '../../utils/external_ids.dart';
+import '../../utils/rating_display_policy.dart';
 import 'catalog_cast_member.dart';
 import 'catalog_metadata.dart';
 
@@ -417,7 +418,9 @@ class CatalogItem {
     logoUrl: detail.logoUrl ?? logoUrl,
     bannerUrl: detail.bannerUrl ?? bannerUrl,
     accentColor: detail.accentColor ?? accentColor,
-    ratings: detail.ratings ?? ratings,
+    ratings: detail.ratings == null && ratings == null
+        ? null
+        : const RatingDisplayPolicy().select([...?detail.ratings, ...?ratings]),
     // Union rather than replace: the row and the detail body each carry
     // counters the other omits.
     audience: audience?.mergedWith(detail.audience ?? const CatalogAudience()) ?? detail.audience,

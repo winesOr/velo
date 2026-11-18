@@ -20,7 +20,6 @@ import '../i18n/strings.g.dart';
 import '../media/media_hub.dart';
 import '../media/media_item.dart';
 import '../media/media_item_merge.dart';
-import '../media/media_rating.dart';
 import '../media/media_version.dart';
 import '../models/catalog/catalog_cast_member.dart';
 import '../models/catalog/catalog_item.dart';
@@ -42,8 +41,11 @@ import '../utils/language_codes.dart';
 import '../utils/media_image_helper.dart';
 import '../utils/media_navigation_helper.dart';
 import '../utils/platform_detector.dart';
+import '../utils/rating_display_policy.dart';
 import '../utils/rating_utils.dart';
 import '../utils/snackbar_helper.dart';
+import '../widgets/media_rating_badge.dart';
+import '../widgets/settings_builder.dart';
 import '../widgets/app_bar_back_button.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/backend_badge.dart';
@@ -745,7 +747,7 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
     return values.isEmpty ? null : values.join(' • ');
   }
 
-  /// Headline score, leaderboard context, audience counts, availability and
+  /// Leaderboard context, audience counts, availability and
   /// release-shape facts that fit the established compact chip treatment.
   Widget? _buildStatsChips() {
     final item = _item;
@@ -758,13 +760,6 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
       }
     }
 
-    if (item.rating case final rating?) {
-      var score = rating.toStringAsFixed(1);
-      if (item.votes case final votes?) {
-        score = '$score (${t.explore.stats.votes(n: compact.format(votes))})';
-      }
-      add(score, icon: Symbols.star_rounded, iconColor: Colors.amber);
-    }
     if (item.airStatus case final status?) add(statusLabel(status));
     if (item.episodeCount case final count?) add(t.explore.episodeCount(n: count));
     if (item.unairedEpisodeCount case final count?) add(t.explore.detail.unairedEpisodes(n: count));
@@ -832,12 +827,13 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
   Widget? _buildRatingsSection(ThemeData theme) {
     final compact = NumberFormat.compact(locale: LocaleSettings.currentLocale.intlLocaleName);
     final chips = <Widget>[];
-    for (final rating in _item.ratings ?? const <MediaRatingSource>[]) {
-      final source = ratingSourceLabel(rating.source);
+    final item = _item;
+    final ratings = preferredMediaRatingsFor(item.toMediaItem(), limit: RatingDisplayPolicy.detailLimit);
+    for (final rating in ratings) {
+      final source = ratingSourceLabel(rating.source) ?? t.ratingDetails.unattributedSource;
       final badge = ratingInfoForSource(rating.source, rating.value);
-      if (source == null && badge == null) continue;
       var label = badge == null ? '$source ${rating.value.toStringAsFixed(1)}' : badge.formattedValue;
-      if (rating.votes case final votes?) {
+      if ((rating.votes ?? (rating.source.isEmpty ? item.votes : null)) case final votes?) {
         label = '$label (${t.explore.stats.votes(n: compact.format(votes))})';
       }
       chips.add(
@@ -979,7 +975,6 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
       add(t.explore.detail.physicalRelease, dateFormat.format(date.toLocal()));
     }
     if (item.endDate case final date?) add(t.explore.detail.ended, dateFormat.format(date.toLocal()));
-    if (item.userRating case final rating?) add(t.explore.detail.yourRating, rating.toStringAsFixed(1));
     if (item.budget case final budget?) add(t.explore.detail.budget, currency.format(budget));
     if (item.revenue case final revenue?) add(t.explore.detail.revenue, currency.format(revenue));
     add(t.explore.detail.contentAdvisory, item.contentAdvisory);
@@ -1472,6 +1467,15 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
                                   ),
                                 ],
                               ),
+                              SettingsBuilder(
+                                prefs: ratingDisplayPrefs,
+                                builder: (context) {
+                                  final ratings = _buildRatingsSection(theme);
+                                  return ratings == null
+                                      ? const SizedBox.shrink()
+                                      : Padding(padding: const EdgeInsets.only(top: 20), child: ratings);
+                                },
+                              ),
                               if (_buildStatsChips() case final Widget chips) ...[const SizedBox(height: 20), chips],
                               if (item.overview?.trim() case final overview? when overview.isNotEmpty) ...[
                                 const SizedBox(height: 24),
@@ -1496,10 +1500,6 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
                               if (_buildRecommendersSection(theme) case final Widget recommenders) ...[
                                 const SizedBox(height: 24),
                                 recommenders,
-                              ],
-                              if (_buildRatingsSection(theme) case final Widget ratings) ...[
-                                const SizedBox(height: 24),
-                                ratings,
                               ],
                               if (_buildScheduleSection(theme) case final Widget schedule) ...[
                                 const SizedBox(height: 24),

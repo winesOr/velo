@@ -154,7 +154,7 @@
   "settings": {
     "ratings": "Ratings",
     "showRatingBadges": "Show ratings on posters",
-    "showRatingBadgesDescription": "Show your score first, or the first available enabled source. Continue Watching stays score-free.",
+    "showRatingBadgesDescription": "설정한 출처 순서에 따라 처음으로 제공되는 공개 평점을 표시합니다. 이어보기에서는 평점을 숨깁니다.",
     "ratingSources": "Rating sources",
     "ratingSourcesDescription": "Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.",
     "otherRatingSources": "Other ratings",

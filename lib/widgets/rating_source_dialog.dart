@@ -19,9 +19,7 @@ import 'media_rating_badge.dart';
 /// Empty/invalid scores do not open a route. The nearest scoped navigator owns it.
 Future<void> showRatingSourceDialog(BuildContext context, List<MediaRatingSource> ratings) async {
   if (!context.mounted) return;
-  final valid = List<MediaRatingSource>.unmodifiable(
-    ratings.where((rating) => RatingDisplayPolicy.isValid(rating.value)),
-  );
+  final valid = List<MediaRatingSource>.unmodifiable(ratings.where(RatingDisplayPolicy.isPublicScore));
   if (valid.isEmpty) return;
   await showScopedDialog<void>(
     context: context,
@@ -110,7 +108,7 @@ class _RatingSourceDialogState extends State<RatingSourceDialog> {
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
                     ),
                     const SizedBox(height: 20),
-                    for (final rating in widget.ratings.where((rating) => RatingDisplayPolicy.isValid(rating.value)))
+                    for (final rating in widget.ratings.where(RatingDisplayPolicy.isPublicScore))
                       _RatingSourceRow(rating: rating),
                   ],
                 ),
@@ -155,8 +153,7 @@ class _RatingSourceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final personal = rating.source == 'personal';
-    final label = personal ? t.explore.detail.yourRating : ratingSourceLabel(rating.source);
+    final label = ratingSourceLabel(rating.source);
     final name = label ?? t.ratingDetails.serverRating;
     final info = ratingInfoForSource(rating.source, rating.value);
     final percent = switch (rating.source) {
@@ -166,9 +163,7 @@ class _RatingSourceRow extends StatelessWidget {
     final scale = percent ? t.ratingDetails.percentageScale : t.ratingDetails.tenPointScale;
     final value = percent ? mediaRatingLabel(rating) : '${mediaRatingLabel(rating)}/10';
     final unspecified = label == null || rating.source == 'critic' || rating.source == 'audience';
-    final description = personal
-        ? t.ratingDetails.personalExplanation(scale: scale)
-        : unspecified
+    final description = unspecified
         ? t.ratingDetails.serverExplanation(source: t.ratingDetails.sourceUnspecified, scale: scale)
         : t.ratingDetails.sourceExplanation(source: name, scale: scale);
     return Semantics(
@@ -183,11 +178,7 @@ class _RatingSourceRow extends StatelessWidget {
               height: 28,
               child: info == null
                   ? AppIcon(
-                      personal
-                          ? Symbols.person_rounded
-                          : unspecified
-                          ? Symbols.dns_rounded
-                          : Symbols.star_rounded,
+                      unspecified ? Symbols.dns_rounded : Symbols.star_rounded,
                       size: 24,
                       color: colors.onSurfaceVariant,
                     )

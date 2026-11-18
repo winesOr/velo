@@ -280,9 +280,6 @@ class Translations$ratingDetails$en {
 
 	/// en: 'Provided by the media server · ${source} · ${scale}.'
 	String serverExplanation({required Object source, required Object scale}) => 'Provided by the media server · ${source} · ${scale}.';
-
-	/// en: 'Your saved rating · ${scale}.'
-	String personalExplanation({required Object scale}) => 'Your saved rating · ${scale}.';
 }
 
 // Path: common
@@ -579,8 +576,8 @@ class Translations$settings$en {
 	/// en: 'Show ratings on posters'
 	String get showRatingBadges => 'Show ratings on posters';
 
-	/// en: 'Show your score first, or the first available enabled source. Continue Watching stays score-free.'
-	String get showRatingBadgesDescription => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.';
+	/// en: 'Show the first available public rating in your source order. Continue Watching hides ratings.'
+	String get showRatingBadgesDescription => 'Show the first available public rating in your source order. Continue Watching hides ratings.';
 
 	/// en: 'Rating sources'
 	String get ratingSources => 'Rating sources';
@@ -8680,7 +8677,6 @@ extension on Translations {
 			'ratingDetails.explanation' => 'Scores keep their own source and scale and are not averaged. A star does not identify a rating provider; a server icon identifies only the media server.',
 			'ratingDetails.sourceExplanation' => ({required Object source, required Object scale}) => '${source} · ${scale}.',
 			'ratingDetails.serverExplanation' => ({required Object source, required Object scale}) => 'Provided by the media server · ${source} · ${scale}.',
-			'ratingDetails.personalExplanation' => ({required Object scale}) => 'Your saved rating · ${scale}.',
 			'common.undo' => 'Undo',
 			'common.seasonCount' => ({required Object count}) => '${count} seasons',
 			'common.ratingValue' => ({required Object value}) => '${value}',
@@ -8789,7 +8785,7 @@ extension on Translations {
 			'settings.aboutVelo' => 'About Velo',
 			'settings.ratings' => 'Ratings',
 			'settings.showRatingBadges' => 'Show ratings on posters',
-			'settings.showRatingBadgesDescription' => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.',
+			'settings.showRatingBadgesDescription' => 'Show the first available public rating in your source order. Continue Watching hides ratings.',
 			'settings.ratingSources' => 'Rating sources',
 			'settings.ratingSourcesDescription' => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.',
 			'settings.otherRatingSources' => 'Other ratings',
@@ -9140,9 +9136,9 @@ extension on Translations {
 			'settings.gestureHorizontalSeekDescription' => 'Swipe left or right on the video to move through it',
 			'settings.longPressSpeed' => 'Hold-to-Speed Rate',
 			'settings.serverAccounts' => 'Servers & Accounts',
+			'settings.downloadsOffline' => 'Downloads & Offline',
 			_ => null,
 		} ?? switch (path) {
-			'settings.downloadsOffline' => 'Downloads & Offline',
 			'settings.connectionsIntegrations' => 'Connections & Integrations',
 			'settings.appearanceAndHome' => 'Appearance & Home',
 			'settings.application' => 'Application',
@@ -9654,9 +9650,9 @@ extension on Translations {
 			'profiles.confirmPinTitle' => 'Confirm PIN',
 			'profiles.pinSet' => 'PIN set',
 			'profiles.changePin' => 'Change',
+			'profiles.removePin' => 'Remove',
 			_ => null,
 		} ?? switch (path) {
-			'profiles.removePin' => 'Remove',
 			'profiles.connectionsLabel' => 'Connections',
 			'profiles.add' => 'Add',
 			'profiles.deleteProfileButton' => 'Delete profile',
@@ -10168,9 +10164,9 @@ extension on Translations {
 			'liveTv.previousPrograms' => 'Earlier programs',
 			'liveTv.nextPrograms' => 'Later programs',
 			'liveTv.title' => 'Live TV',
+			'liveTv.guide' => 'Guide',
 			_ => null,
 		} ?? switch (path) {
-			'liveTv.guide' => 'Guide',
 			'liveTv.noChannels' => 'No channels available',
 			'liveTv.noDvr' => 'No DVR configured on any server',
 			'liveTv.serverUnavailable' => 'Live TV server is not available.',
@@ -10682,9 +10678,9 @@ extension on Translations {
 			'videoSettings.performanceOverlay' => 'Performance Overlay',
 			'videoSettings.audioOutputDolbyAtmos' => 'Dolby Atmos',
 			'videoSettings.audioOutputDolbyAudio' => 'Dolby Audio',
+			'videoSettings.audioOutputSurround' => 'Surround',
 			_ => null,
 		} ?? switch (path) {
-			'videoSettings.audioOutputSurround' => 'Surround',
 			'videoSettings.audioOutputSpatial' => 'Spatial Audio',
 			'videoSettings.audioOutputStereo' => 'Stereo',
 			'videoSettings.audioNormalization' => 'Normalize Loudness',

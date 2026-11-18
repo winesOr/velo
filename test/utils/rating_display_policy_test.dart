@@ -46,15 +46,34 @@ void main() {
     expect(const RatingDisplayPolicy(disabledSources: ['other']).select(selected), hasLength(2));
   });
 
-  test('valid personal ratings win without changing their 0–10 unit', () {
-    const item = MediaItem.plex(id: 'film', kind: MediaKind.movie, title: 'Film', userRating: 9, ratings: scores);
-    final score = mediaCardRatingFor(item, policy: const RatingDisplayPolicy());
-    expect(score?.source, 'personal');
-    expect(score?.value, 9);
-    expect(
-      mediaCardRatingFor(item.copyWith(userRating: 12), policy: const RatingDisplayPolicy())?.source,
-      'rottenTomatoesCritic',
+  test('only public scores can appear, including from legacy cached rows', () {
+    const item = MediaItem.plex(
+      id: 'film',
+      kind: MediaKind.movie,
+      title: 'Film',
+      userRating: 9,
+      ratings: [
+        MediaRatingSource(source: 'personal', value: 9),
+        ...scores,
+      ],
     );
+    expect(mediaCardRatingFor(item, policy: const RatingDisplayPolicy())?.source, 'rottenTomatoesCritic');
+    final onlyPersonal = item.copyWith(ratings: [item.ratings!.first]);
+    expect(mediaCardRatingFor(onlyPersonal, policy: const RatingDisplayPolicy()), isNull);
+    expect(mediaRatingsFor(onlyPersonal), isEmpty);
+  });
+
+  test('snapshots merge public sources only within a server and item', () {
+    const row = MediaItem.plex(id: 'film', serverId: 'a', kind: MediaKind.movie, title: 'Film', ratings: scores);
+    final detail = row.copyWith(ratings: [const MediaRatingSource(source: 'imdb', value: 8.7)]);
+    final merged = mediaRatingsFor(detail, fallbackItem: row);
+    expect(merged, hasLength(scores.length));
+    expect(merged.singleWhere((r) => r.source == 'imdb').value, 8.7);
+    final empty = detail.copyWith(ratings: null);
+    expect(mediaRatingsFor(empty, fallbackItem: row), hasLength(scores.length));
+    expect(mediaRatingsFor(empty.copyWith(serverId: 'b'), fallbackItem: row), isEmpty);
+    expect(mediaRatingsFor(empty.copyWith(id: 'other'), fallbackItem: row), isEmpty);
+    expect(mediaRatingsFor(empty.copyWith(rating: 7), fallbackItem: row), hasLength(scores.length));
   });
 
   test('episode ratings never mix with show ratings, even after filtering', () {
@@ -69,6 +88,6 @@ void main() {
     expect(own.map((score) => score.value), [6.1]);
     expect(const RatingDisplayPolicy(disabledSources: ['imdb']).select(own), isEmpty);
     const empty = MediaItem.plex(id: 'empty', kind: MediaKind.episode, title: 'Empty');
-    expect(mediaRatingsFor(empty, fallbackItem: show), hasLength(5));
+    expect(mediaRatingsFor(empty, fallbackItem: show), isEmpty);
   });
 }

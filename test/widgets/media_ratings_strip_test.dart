@@ -73,6 +73,19 @@ void main() {
     });
   }
 
+  testWidgets('detail ignores the poster switch and collapses items with only a personal score', (tester) async {
+    await SettingsService.instance.write(SettingsService.showRatingBadges, false);
+    final personalOnly = _item(const [MediaRatingSource(source: 'personal', value: 9.5)]).copyWith(userRating: 9.5);
+    await _pump(tester, MediaRatingsStrip(item: personalOnly));
+    expect(tester.getSize(find.byType(MediaRatingsStrip)).height, 0);
+
+    final public = personalOnly.copyWith(ratings: const [MediaRatingSource(source: 'audience', value: 8.1)]);
+    await _pump(tester, MediaRatingsStrip(item: public));
+    expect(find.text('8.1'), findsOneWidget);
+    expect(find.text(t.common.ratingSource.audience), findsOneWidget);
+    expect(find.text('9.5'), findsNothing);
+  });
+
   testWidgets('filling additional sources does not change the reserved region height', (tester) async {
     await _pump(tester, MediaRatingsStrip(item: _item([_scores.first])));
     final height = tester.getSize(find.byType(MediaRatingsStrip)).height;
@@ -211,7 +224,8 @@ void main() {
     ]);
     await tester.pumpAndSettle();
     expect(find.text(t.ratingDetails.serverRating), findsOneWidget);
-    expect(find.text(t.explore.detail.yourRating), findsOneWidget);
+    expect(find.text(t.explore.detail.yourRating), findsNothing);
+    expect(find.text('8.0/10'), findsNothing);
     expect(find.textContaining('internal.future'), findsNothing);
     expect(find.text('0.0/10'), findsNothing);
     await tester.tap(find.text(t.common.close));

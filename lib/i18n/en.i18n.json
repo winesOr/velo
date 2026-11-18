@@ -55,8 +55,7 @@
     "percentageScale": "Percentage scale",
     "explanation": "Scores keep their own source and scale and are not averaged. A star does not identify a rating provider; a server icon identifies only the media server.",
     "sourceExplanation": "${source} · ${scale}.",
-    "serverExplanation": "Provided by the media server · ${source} · ${scale}.",
-    "personalExplanation": "Your saved rating · ${scale}."
+    "serverExplanation": "Provided by the media server · ${source} · ${scale}."
   },
   "common": {
     "undo": "Undo",
@@ -177,7 +176,7 @@
     "aboutVelo": "About Velo",
     "ratings": "Ratings",
     "showRatingBadges": "Show ratings on posters",
-    "showRatingBadgesDescription": "Show your score first, or the first available enabled source. Continue Watching stays score-free.",
+    "showRatingBadgesDescription": "Show the first available public rating in your source order. Continue Watching hides ratings.",
     "ratingSources": "Rating sources",
     "ratingSourcesDescription": "Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.",
     "otherRatingSources": "Other ratings",

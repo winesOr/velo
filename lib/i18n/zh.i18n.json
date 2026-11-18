@@ -55,8 +55,7 @@
     "percentageScale": "百分比制",
     "explanation": "各评分保留自己的来源和尺度，不做平均。星形图标不代表某个评分提供方；服务器图标仅代表媒体服务器。",
     "sourceExplanation": "${source} · ${scale}。",
-    "serverExplanation": "由媒体服务器提供 · ${source} · ${scale}。",
-    "personalExplanation": "你保存的评分 · ${scale}。"
+    "serverExplanation": "由媒体服务器提供 · ${source} · ${scale}。"
   },
   "common": {
     "undo": "撤销",
@@ -177,7 +176,7 @@
     "aboutVelo": "关于 Velo",
     "ratings": "评分展示",
     "showRatingBadges": "显示海报评分",
-    "showRatingBadgesDescription": "优先显示你的评分，否则显示首个可用的已启用来源。继续观看不显示评分。",
+    "showRatingBadgesDescription": "按来源顺序显示首个可用的公开评分。继续观看不显示评分。",
     "ratingSources": "评分来源",
     "ratingSourcesDescription": "启用来源，并上移或下移调整展示顺序。仅展示媒体服务已提供的评分。",
     "otherRatingSources": "其他评分",

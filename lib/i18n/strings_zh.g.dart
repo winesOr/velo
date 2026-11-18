@@ -174,7 +174,6 @@ class Translations$ratingDetails$zh extends Translations$ratingDetails$en {
 	@override String get explanation => '各评分保留自己的来源和尺度，不做平均。星形图标不代表某个评分提供方；服务器图标仅代表媒体服务器。';
 	@override String sourceExplanation({required Object source, required Object scale}) => '${source} · ${scale}。';
 	@override String serverExplanation({required Object source, required Object scale}) => '由媒体服务器提供 · ${source} · ${scale}。';
-	@override String personalExplanation({required Object scale}) => '你保存的评分 · ${scale}。';
 }
 
 // Path: common
@@ -298,7 +297,7 @@ class Translations$settings$zh extends Translations$settings$en {
 	@override String get aboutVelo => '关于 Velo';
 	@override String get ratings => '评分展示';
 	@override String get showRatingBadges => '显示海报评分';
-	@override String get showRatingBadgesDescription => '优先显示你的评分，否则显示首个可用的已启用来源。继续观看不显示评分。';
+	@override String get showRatingBadgesDescription => '按来源顺序显示首个可用的公开评分。继续观看不显示评分。';
 	@override String get ratingSources => '评分来源';
 	@override String get ratingSourcesDescription => '启用来源，并上移或下移调整展示顺序。仅展示媒体服务已提供的评分。';
 	@override String get otherRatingSources => '其他评分';
@@ -3617,7 +3616,6 @@ extension on TranslationsZh {
 			'ratingDetails.explanation' => '各评分保留自己的来源和尺度，不做平均。星形图标不代表某个评分提供方；服务器图标仅代表媒体服务器。',
 			'ratingDetails.sourceExplanation' => ({required Object source, required Object scale}) => '${source} · ${scale}。',
 			'ratingDetails.serverExplanation' => ({required Object source, required Object scale}) => '由媒体服务器提供 · ${source} · ${scale}。',
-			'ratingDetails.personalExplanation' => ({required Object scale}) => '你保存的评分 · ${scale}。',
 			'common.undo' => '撤销',
 			'common.seasonCount' => ({required Object count}) => '共 ${count} 季',
 			'common.ratingValue' => ({required Object value}) => '${value}分',
@@ -3726,7 +3724,7 @@ extension on TranslationsZh {
 			'settings.aboutVelo' => '关于 Velo',
 			'settings.ratings' => '评分展示',
 			'settings.showRatingBadges' => '显示海报评分',
-			'settings.showRatingBadgesDescription' => '优先显示你的评分，否则显示首个可用的已启用来源。继续观看不显示评分。',
+			'settings.showRatingBadgesDescription' => '按来源顺序显示首个可用的公开评分。继续观看不显示评分。',
 			'settings.ratingSources' => '评分来源',
 			'settings.ratingSourcesDescription' => '启用来源，并上移或下移调整展示顺序。仅展示媒体服务已提供的评分。',
 			'settings.otherRatingSources' => '其他评分',
@@ -4077,9 +4075,9 @@ extension on TranslationsZh {
 			'settings.gestureHorizontalSeekDescription' => '在视频上左右滑动以快进或快退',
 			'settings.longPressSpeed' => '长按倍速',
 			'settings.serverAccounts' => '服务器与账户',
+			'settings.downloadsOffline' => '下载与离线',
 			_ => null,
 		} ?? switch (path) {
-			'settings.downloadsOffline' => '下载与离线',
 			'settings.connectionsIntegrations' => '连接与集成',
 			'settings.appearanceAndHome' => '外观与首页',
 			'settings.application' => '应用',
@@ -4591,9 +4589,9 @@ extension on TranslationsZh {
 			'profiles.confirmPinTitle' => '确认 PIN',
 			'profiles.pinSet' => '已设置 PIN',
 			'profiles.changePin' => '更改',
+			'profiles.removePin' => '移除',
 			_ => null,
 		} ?? switch (path) {
-			'profiles.removePin' => '移除',
 			'profiles.connectionsLabel' => '连接',
 			'profiles.add' => '添加',
 			'profiles.deleteProfileButton' => '删除用户资料',
@@ -5105,9 +5103,9 @@ extension on TranslationsZh {
 			'liveTv.previousPrograms' => '更早的节目',
 			'liveTv.nextPrograms' => '更晚的节目',
 			'liveTv.title' => '直播电视',
+			'liveTv.guide' => '节目指南',
 			_ => null,
 		} ?? switch (path) {
-			'liveTv.guide' => '节目指南',
 			'liveTv.noChannels' => '没有可用的频道',
 			'liveTv.noDvr' => '没有服务器配置 DVR',
 			'liveTv.serverUnavailable' => '直播电视服务器不可用。',
@@ -5619,9 +5617,9 @@ extension on TranslationsZh {
 			'videoSettings.performanceOverlay' => '性能监控',
 			'videoSettings.audioOutputDolbyAtmos' => 'Dolby Atmos',
 			'videoSettings.audioOutputDolbyAudio' => 'Dolby Audio',
+			'videoSettings.audioOutputSurround' => '环绕声',
 			_ => null,
 		} ?? switch (path) {
-			'videoSettings.audioOutputSurround' => '环绕声',
 			'videoSettings.audioOutputSpatial' => '空间音频',
 			'videoSettings.audioOutputStereo' => '立体声',
 			'videoSettings.audioNormalization' => '响度标准化',

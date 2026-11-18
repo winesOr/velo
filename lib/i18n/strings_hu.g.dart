@@ -228,7 +228,7 @@ class _Translations$settings$hu extends Translations$settings$en {
 	// Translations
 	@override String get ratings => 'Ratings';
 	@override String get showRatingBadges => 'Show ratings on posters';
-	@override String get showRatingBadgesDescription => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.';
+	@override String get showRatingBadgesDescription => 'A források sorrendjében az első elérhető nyilvános értékelést jeleníti meg. A megtekintés folytatásánál az értékelések rejtve maradnak.';
 	@override String get ratingSources => 'Rating sources';
 	@override String get ratingSourcesDescription => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.';
 	@override String get otherRatingSources => 'Other ratings';
@@ -3162,7 +3162,7 @@ extension on TranslationsHu {
 			'update.checkFailed' => 'Nem sikerült az újabb frissítések ellenőrzése',
 			'settings.ratings' => 'Ratings',
 			'settings.showRatingBadges' => 'Show ratings on posters',
-			'settings.showRatingBadgesDescription' => 'Show your score first, or the first available enabled source. Continue Watching stays score-free.',
+			'settings.showRatingBadgesDescription' => 'A források sorrendjében az első elérhető nyilvános értékelést jeleníti meg. A megtekintés folytatásánál az értékelések rejtve maradnak.',
 			'settings.ratingSources' => 'Rating sources',
 			'settings.ratingSourcesDescription' => 'Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.',
 			'settings.otherRatingSources' => 'Other ratings',

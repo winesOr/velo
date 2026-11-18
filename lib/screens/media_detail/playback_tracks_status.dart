@@ -78,11 +78,13 @@ extension _MediaDetailPlaybackTracksStatus on _MediaDetailScreenState {
       if (!current()) return;
       if (fetched == null) throw StateError('Playback metadata is unavailable');
       final item = fetched.copyWith(
-        serverId: target.serverId ?? fetched.serverId,
+        serverId: fetched.serverId ?? target.serverId,
         serverName: target.serverName ?? fetched.serverName,
       );
       _probedPlaybackItems[key] = item;
-      _recordProbedRatings(key, item.ratings);
+      if (target.isEpisode && item.kind == target.kind && item.backend == target.backend && item.globalKey == key) {
+        _recordProbedRatings(key, mediaRatingsFor(item, fallbackItem: _withProbedRatings(target)));
+      }
       final choice = _detailPlaybackSelections.putIfAbsent(key, DetailPlaybackSelection.new);
       final explicitIndex = choice.versionIndex(item.mediaVersions);
       final downloaded = await downloads?.getCompletedDownload(key);
@@ -160,13 +162,10 @@ extension _MediaDetailPlaybackTracksStatus on _MediaDetailScreenState {
     }
   }
 
-  /// Repaints the TV hero only when the scores are new for the episode it
-  /// shows; a re-probe after a refresh returns the same scores.
-  void _recordProbedRatings(String key, List<MediaRatingSource>? ratings) {
-    if (ratings == null || ratings.isEmpty) return;
-    final isNew = !_probedRatings.containsKey(key);
+  void _recordProbedRatings(String key, List<MediaRatingSource> ratings) {
+    if (ratings.isEmpty) return;
     _probedRatings[key] = ratings;
-    if (isNew && _tvDetailFocusedEpisode.value?.globalKey == key) _focusedEpisodeRatingsRevision.value++;
+    if (_tvDetailFocusedEpisode.value?.globalKey == key) _focusedEpisodeRatingsRevision.value++;
   }
 
   String? _playbackSummaryLabel(MediaItem metadata) {

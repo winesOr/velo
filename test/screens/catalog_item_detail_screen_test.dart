@@ -909,6 +909,7 @@ void main() {
       title: 'Rated Movie',
       ids: CatalogItemIds(tmdb: 11),
       ratings: [
+        MediaRatingSource(source: 'personal', value: 9.9),
         MediaRatingSource(source: 'simkl', value: 8.1, votes: 11),
         MediaRatingSource(source: 'mal', value: 8.3, votes: 13),
         MediaRatingSource(source: 'critic', value: 7.2, votes: 14),
@@ -924,6 +925,10 @@ void main() {
     expect(find.text('MyAnimeList 8.3 (13 votes)'), findsOneWidget);
     expect(find.text('Critics 7.2 (14 votes)'), findsOneWidget);
     expect(find.text('Audience 8.8 (15 votes)'), findsOneWidget);
+    expect(find.textContaining('9.9'), findsNothing);
+    await SettingsService.instance.write(SettingsService.disabledRatingSources, ['mal']);
+    await tester.pumpAndSettle();
+    expect(find.text('MyAnimeList 8.3 (13 votes)'), findsNothing);
   });
 
   testWidgets('scores whose source owns a logo render the mark and that source scale', (tester) async {
@@ -1342,6 +1347,8 @@ void main() {
     expect(find.text('Open on StreamCo'), findsOneWidget);
     expect(find.text('Open on Official Site'), findsOneWidget);
     expect(find.text('Original Fact Title'), findsOneWidget);
+    expect(find.text(t.explore.detail.yourRating), findsNothing);
+    expect(find.text('9.0'), findsNothing);
     expect(find.text('Alternate Fact Title'), findsOneWidget);
     expect(find.text('Suitable for older teens.'), findsOneWidget);
     expect(find.textContaining('1,000,000'), findsOneWidget);

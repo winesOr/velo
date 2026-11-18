@@ -154,7 +154,7 @@
   "settings": {
     "ratings": "Ratings",
     "showRatingBadges": "Show ratings on posters",
-    "showRatingBadgesDescription": "Show your score first, or the first available enabled source. Continue Watching stays score-free.",
+    "showRatingBadgesDescription": "Показва първата налична публична оценка според реда на източниците. В „Продължете да гледате“ оценките са скрити.",
     "ratingSources": "Rating sources",
     "ratingSourcesDescription": "Enable sources and move them up or down to set their display order. Only scores supplied by your media service are shown.",
     "otherRatingSources": "Other ratings",

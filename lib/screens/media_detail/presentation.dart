@@ -368,9 +368,9 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
             MediaRatingsStrip(
               item: metadata,
               alignment: centered ? WrapAlignment.center : WrapAlignment.start,
-              firstFocusNode: tv ? _tvRatingSourceFocusNode : null,
-              onNavigateUp: tv ? _tvDetailInfoFocusNode.requestFocus : null,
-              onNavigateDown: tv ? _focusTvDetailActionRow : null,
+              firstFocusNode: _detailRatingSourceFocusNode,
+              onNavigateUp: tv ? _tvDetailInfoFocusNode.requestFocus : _backButtonFocusNode.requestFocus,
+              onNavigateDown: tv ? _focusTvDetailActionRow : _playButtonFocusNode.requestFocus,
               padding: const EdgeInsets.only(bottom: 18),
             ),
           ],

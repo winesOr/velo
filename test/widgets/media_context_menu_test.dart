@@ -327,6 +327,7 @@ void main() {
 
       await _openMenu(tester, menuKey);
 
+      expect(find.text(t.mediaMenu.rate), findsNothing);
       expect(find.text(t.mediaMenu.deleteMovieFromServer), findsOneWidget);
       final probes = requests.where((uri) => uri.queryParameters['Fields'] == 'CanDelete').toList();
       expect(probes, hasLength(1));
@@ -424,9 +425,7 @@ void main() {
       expect(find.text(t.mediaMenu.deleteEpisodeFromServer), findsOneWidget);
       expect(find.text(t.mediaMenu.deleteShowFromServer), findsNothing);
 
-      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
-
-      await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
+      await _tapDeleteEpisode(tester);
       await tester.pumpAndSettle();
 
       final dialog = find.byWidgetPredicate((widget) => widget is AlertDialog);
@@ -490,8 +489,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
-      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
-      await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
+      await _tapDeleteEpisode(tester);
       await tester.pumpAndSettle();
       await tester.tap(find.text(t.common.cancel));
       await tester.pumpAndSettle();
@@ -540,8 +538,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
-      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
-      await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
+      await _tapDeleteEpisode(tester);
       await tester.pumpAndSettle();
 
       expect(find.textContaining(t.mediaMenu.deleteSharedFileHeading(n: 1)), findsOneWidget);
@@ -571,8 +568,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
-      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
-      await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
+      await _tapDeleteEpisode(tester);
       await tester.pumpAndSettle();
 
       expect(find.textContaining(t.mediaMenu.deleteSharedFileHeading(n: 7)), findsOneWidget);
@@ -606,8 +602,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
-      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
-      await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
+      await _tapDeleteEpisode(tester);
       await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
@@ -659,8 +654,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
-      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
-      await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
+      await _tapDeleteEpisode(tester);
       await tester.pumpAndSettle();
 
       expect(find.textContaining(t.mediaMenu.deleteMultiPartWarning(n: 2)), findsOneWidget);
@@ -687,8 +681,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
-      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
-      await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
+      await _tapDeleteEpisode(tester);
       await tester.pumpAndSettle();
 
       final dialog = find.byWidgetPredicate((widget) => widget is AlertDialog);
@@ -732,8 +725,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
-      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
-      await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
+      await _tapDeleteEpisode(tester);
       await tester.pumpAndSettle();
 
       final dialog = find.byWidgetPredicate((widget) => widget is AlertDialog);
@@ -761,8 +753,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
-      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
-      await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
+      await _tapDeleteEpisode(tester);
       await tester.pumpAndSettle();
 
       expect(find.textContaining(t.mediaMenu.deleteSharedFileHeading(n: 1)), findsOneWidget);
@@ -779,8 +770,7 @@ void main() {
       );
 
       await _openMenu(tester, menuKey);
-      await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
-      await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
+      await _tapDeleteEpisode(tester);
       await tester.pumpAndSettle();
 
       expect(find.text(t.mediaMenu.deleteScopeUnverifiedProbeFailed), findsOneWidget);
@@ -1836,10 +1826,15 @@ Future<http.Response> Function(http.Request) _deleteFlowHandler({
   };
 }
 
+Future<void> _tapDeleteEpisode(WidgetTester tester) async {
+  final delete = find.text(t.mediaMenu.deleteEpisodeFromServer);
+  await tester.ensureVisible(delete);
+  await tester.tap(delete);
+}
+
 Future<void> _confirmDelete(WidgetTester tester, GlobalKey<MediaContextMenuState> menuKey, String confirmLabel) async {
   await _openMenu(tester, menuKey);
-  await tester.ensureVisible(find.text(t.mediaMenu.deleteEpisodeFromServer));
-  await tester.tap(find.text(t.mediaMenu.deleteEpisodeFromServer));
+  await _tapDeleteEpisode(tester);
   await tester.pumpAndSettle();
   await tester.tap(find.text(confirmLabel));
   await tester.pumpAndSettle();

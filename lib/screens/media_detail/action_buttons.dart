@@ -798,7 +798,6 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                       Symbols.bookmark_add_rounded,
                       onWatchlist ? t.explore.removeFromWatchlist : t.explore.addToWatchlist,
                     ),
-                  if (_canEditDetailRating(metadata)) ('rate', Symbols.star_rounded, t.explore.detail.yourRating),
                 ])
                   FocusableWrapper(
                     onSelect: () => Navigator.of(dialogContext).pop(id),
@@ -836,8 +835,6 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
         await _showDetailExtras(actionContext);
       case 'watchlist':
         await _handleWatchlistTogglePressed(metadata);
-      case 'rate':
-        _showRatingDialog(context, metadata);
     }
   }
 
