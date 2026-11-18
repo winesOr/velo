@@ -93,6 +93,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
   LibrarySortDirection _direction = LibrarySortDirection.descending;
   String? _genre;
   String? _country;
+  String? _expandedWallFacet;
   List<MediaPerson> _people = [];
   final List<AbortController> _peopleAborts = [];
   int _peopleGeneration = 0;
@@ -684,64 +685,106 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
     );
   }
 
-  Widget _wallRow(String key, List<Widget> children) => Padding(
-    padding: const EdgeInsets.only(bottom: 7),
-    child: SingleChildScrollView(
-      key: ValueKey(key),
+  Widget _wallRow(String key, List<Widget> children, {String? label}) {
+    final inset = PlatformDetector.isTV() ? 34.0 : 17.0;
+    final expanded = label != null && _expandedWallFacet == key;
+    void toggle() => setState(() => _expandedWallFacet = expanded ? null : key);
+    final options = SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: EdgeInsets.symmetric(horizontal: PlatformDetector.isTV() ? 34 : 17),
+      padding: label == null ? EdgeInsets.symmetric(horizontal: inset) : EdgeInsets.zero,
+      child: Row(children: children),
+    );
+    return Padding(
+      key: ValueKey(key),
+      padding: const EdgeInsets.only(bottom: 7),
       child: FocusScope(
         node: _wallRows.putIfAbsent(
           key,
           () => FocusScopeNode(debugLabel: key, directionalTraversalEdgeBehavior: TraversalEdgeBehavior.parentScope),
         ),
-        child: Row(children: children),
+        child: label == null
+            ? options
+            : Padding(
+                padding: EdgeInsets.symmetric(horizontal: inset),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: Text(label, style: Theme.of(context).textTheme.labelLarge),
+                        ),
+                        Expanded(child: expanded ? const SizedBox.shrink() : options),
+                        Semantics(
+                          expanded: expanded,
+                          child: IconButton(
+                            key: ValueKey('$key-expand'),
+                            tooltip: '$label · ${expanded ? t.accessibility.collapseText : t.accessibility.expandText}',
+                            onPressed: toggle,
+                            constraints: const BoxConstraints(minWidth: 44, minHeight: 36),
+                            padding: EdgeInsets.zero,
+                            icon: AppIcon(
+                              expanded ? Symbols.expand_less_rounded : Symbols.expand_more_rounded,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (expanded) Wrap(spacing: 0, runSpacing: 7, children: children),
+                  ],
+                ),
+              ),
       ),
-    ),
-  );
+    );
+  }
 
   void _localFacetChanged() {
     _cancelWallFocus();
+    _expandedWallFacet = null;
     _controller.updateLocalSelection(_selection);
     if (_scroll.hasClients) _scroll.jumpTo(0);
   }
 
-  Widget _wallControls() => Column(
+  Widget _wallSearch() => Padding(
+    key: const ValueKey('wall-search-input'),
+    padding: const EdgeInsets.fromLTRB(17, 8, 17, 12),
+    child: SizedBox(
+      height: 40,
+      child: FocusableTextField(
+        controller: _search,
+        focusNode: _searchFocus,
+        tvTextInputAutoOpenBehavior: TvTextInputAutoOpenBehavior.never,
+        decoration: InputDecoration(
+          hintText: t.libraries.searchHint,
+          prefixIcon: const AppIcon(Symbols.search_rounded, size: 18),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          isDense: true,
+          filled: true,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          suffixIcon: _search.text.isEmpty
+              ? null
+              : IconButton(
+                  tooltip: t.common.clear,
+                  onPressed: () {
+                    _search.clear();
+                    _queryChanged();
+                  },
+                  icon: const AppIcon(Symbols.close_rounded, size: 18),
+                ),
+        ),
+        onChanged: (_) => _queryChanged(debounce: true),
+        onSubmitted: (_) => _queryChanged(),
+        onBack: widget.onBack,
+      ),
+    ),
+  );
+
+  Widget _wallControls({bool includeSearch = true}) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      if (!widget.searchInHeader)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(17, 8, 17, 12),
-          child: SizedBox(
-            height: 40,
-            child: FocusableTextField(
-              controller: _search,
-              focusNode: _searchFocus,
-              tvTextInputAutoOpenBehavior: TvTextInputAutoOpenBehavior.never,
-              decoration: InputDecoration(
-                hintText: t.libraries.searchHint,
-                prefixIcon: const AppIcon(Symbols.search_rounded, size: 18),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                isDense: true,
-                filled: true,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                suffixIcon: _search.text.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: t.common.clear,
-                        onPressed: () {
-                          _search.clear();
-                          _queryChanged();
-                        },
-                        icon: const AppIcon(Symbols.close_rounded, size: 18),
-                      ),
-              ),
-              onChanged: (_) => _queryChanged(debounce: true),
-              onSubmitted: (_) => _queryChanged(),
-              onBack: widget.onBack,
-            ),
-          ),
-        ),
+      if (includeSearch && !widget.searchInHeader) _wallSearch(),
       _wallRow('wall-types', [
         for (final type in LibraryWallType.values)
           _wallChip(_wallTypeLabel(type), _wallType == type, () {
@@ -773,7 +816,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
           ),
       ]),
       _wallRow('wall-genres', [
-        _wallChip(t.libraries.unrestricted, _genre == null, () {
+        _wallChip(t.libraries.all, _genre == null, () {
           _genre = null;
           _localFacetChanged();
         }),
@@ -782,9 +825,9 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
             _genre = genre;
             _localFacetChanged();
           }),
-      ]),
+      ], label: t.libraries.filterCategories.genre),
       _wallRow('wall-countries', [
-        _wallChip(t.libraries.unrestricted, _country == null, () {
+        _wallChip(t.libraries.all, _country == null, () {
           _country = null;
           _localFacetChanged();
         }),
@@ -793,9 +836,9 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
             _country = country;
             _localFacetChanged();
           }),
-      ]),
+      ], label: t.explore.detail.country),
       _wallRow('wall-years', [
-        _wallChip(t.libraries.unrestricted, _year.text.isEmpty, () {
+        _wallChip(t.libraries.all, _year.text.isEmpty, () {
           _year.clear();
           _localFacetChanged();
         }),
@@ -804,7 +847,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
             _year.text = '$year';
             _localFacetChanged();
           }),
-      ]),
+      ], label: t.libraries.filterCategories.year),
     ],
   );
 
@@ -815,11 +858,22 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
       final loading = _controller.groups.any((group) => group.loading);
       final failed = _controller.groups.any((group) => group.error != null);
       final hasMore = _controller.groups.any((group) => group.hasMore);
-      return CustomScrollView(
+      final wall = CustomScrollView(
         key: const PageStorageKey('all_sources_merged_wall'),
         controller: _scroll,
         slivers: [
-          SliverToBoxAdapter(child: _wallControls()),
+          if (PlatformDetector.isTV())
+            SliverToBoxAdapter(child: _wallControls())
+          else ...[
+            SliverFloatingHeader(
+              key: const ValueKey('wall-filter-header'),
+              animationStyle: MediaQuery.disableAnimationsOf(context) ? AnimationStyle.noAnimation : null,
+              child: Material(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                child: _wallControls(includeSearch: false),
+              ),
+            ),
+          ],
           if (_people.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(
@@ -896,6 +950,15 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 48)),
+        ],
+      );
+      if (PlatformDetector.isTV() || widget.searchInHeader) return wall;
+      // Keep the search outside the floating viewport so the returning filter
+      // rows cannot paint underneath it or cover its input hit target.
+      return Column(
+        children: [
+          Material(color: Theme.of(context).scaffoldBackgroundColor, child: _wallSearch()),
+          Expanded(child: wall),
         ],
       );
     },

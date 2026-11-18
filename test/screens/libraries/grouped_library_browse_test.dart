@@ -373,6 +373,106 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('facet headings stay before All and expanded options select distant values', (tester) async {
+    await pumpGrouped(tester, (library, query, abort) async {
+      return LibraryPage(
+        items: [
+          for (var i = 0; i < 30; i++)
+            MediaItem(
+              id: 'facet-$i',
+              backend: library.backend,
+              serverId: library.serverId,
+              kind: MediaKind.movie,
+              title: 'Facet $i',
+              year: 2025,
+              genres: ['Genre ${i.toString().padLeft(2, '0')}'],
+            ).copyWith(countries: ['US']),
+        ],
+        totalCount: 30,
+      );
+    });
+    for (final (key, label) in [
+      ('wall-genres', t.libraries.filterCategories.genre),
+      ('wall-countries', t.explore.detail.country),
+      ('wall-years', t.libraries.filterCategories.year),
+    ]) {
+      final row = find.byKey(ValueKey(key));
+      final heading = find.descendant(of: row, matching: find.text(label));
+      final all = find.descendant(of: row, matching: find.text(t.libraries.all));
+      expect(heading, findsOneWidget);
+      expect(tester.getTopLeft(heading).dx, lessThan(tester.getTopLeft(all).dx));
+      expect(find.descendant(of: row, matching: find.text(t.libraries.unrestricted)), findsNothing);
+    }
+    final genres = find.byKey(const ValueKey('wall-genres'));
+    final heading = find.descendant(of: genres, matching: find.text(t.libraries.filterCategories.genre));
+    final headingPosition = tester.getTopLeft(heading);
+    await tester.drag(find.descendant(of: genres, matching: find.byType(SingleChildScrollView)), const Offset(-800, 0));
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(heading), headingPosition, reason: 'the category is outside the horizontal options');
+    await tester.tap(find.byKey(const ValueKey('wall-genres-expand')));
+    await tester.pumpAndSettle();
+    await captureTablet(tester, find.byKey(const ValueKey('tablet-library')), 'phone-search-facets-expanded');
+    final last = find.descendant(of: genres, matching: find.text('Genre 29'));
+    await tester.ensureVisible(last);
+    await tester.pumpAndSettle();
+    expect(last.hitTestable(), findsOneWidget, reason: 'all options wrap instead of requiring sideways swipes');
+    await tester.tap(last);
+    await tester.pumpAndSettle();
+    final cards = tester.widgetList<FocusableMediaCard>(find.byType(FocusableMediaCard));
+    expect(cards, isNotEmpty);
+    expect(cards.every((card) => (card.item as MediaItem).genres!.contains('Genre 29')), isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('scrolling hides facets, pins search and restores facets before reaching the top', (tester) async {
+    var requests = 0;
+    await pumpGrouped(tester, (library, query, abort) async {
+      requests++;
+      return LibraryPage(
+        items: [
+          for (var i = 0; i < 60; i++)
+            MediaItem(
+              id: 'scroll-$i',
+              backend: library.backend,
+              serverId: library.serverId,
+              kind: MediaKind.movie,
+              title: 'Scroll $i',
+              genres: ['Drama'],
+            ),
+        ],
+        totalCount: 60,
+      );
+    });
+    final wall = find.byKey(const PageStorageKey('all_sources_merged_wall'));
+    final search = find.byKey(const ValueKey('wall-search-input'));
+    final toggle = find.byKey(const ValueKey('wall-genres-expand'));
+    final searchPosition = tester.getTopLeft(search);
+    final calls = requests;
+    final controller = tester.widget<CustomScrollView>(wall).controller!;
+    await captureTablet(tester, find.byKey(const ValueKey('tablet-library')), 'phone-search-facets-visible');
+    await tester.drag(wall, const Offset(0, -650));
+    await tester.pumpAndSettle();
+    expect(controller.offset, greaterThan(400));
+    expect(toggle.hitTestable(), findsNothing);
+    expect(search.hitTestable(), findsOneWidget);
+    expect(tester.getTopLeft(search), searchPosition);
+    await captureTablet(tester, find.byKey(const ValueKey('tablet-library')), 'phone-search-facets-collapsed');
+    await tester.drag(wall, const Offset(0, 90));
+    await tester.pumpAndSettle();
+    expect(controller.offset, greaterThan(200), reason: 'revealing filters does not require returning to the top');
+    expect(toggle.hitTestable(), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(const ValueKey('wall-types'))).dy,
+      greaterThanOrEqualTo(tester.getBottomLeft(search).dy),
+      reason: 'the entire returning filter header remains below the fixed search',
+    );
+    expect(tester.getTopLeft(toggle).dy, greaterThanOrEqualTo(tester.getBottomLeft(search).dy));
+    expect(tester.getTopLeft(search), searchPosition);
+    await captureTablet(tester, find.byKey(const ValueKey('tablet-library')), 'phone-search-facets-restored');
+    expect(requests, calls, reason: 'scrolling preserves the loaded results and selection');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('phone combines real facets, reverses sorting and filters keywords in the wall', (tester) async {
     final requests = <LibraryQuery>[];
     await pumpGrouped(
