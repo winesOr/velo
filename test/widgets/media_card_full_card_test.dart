@@ -2,7 +2,7 @@ import 'dart:collection';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/focus/focus_glow_overlay.dart';
 import 'package:plezy/focus/focus_theme.dart';
@@ -161,6 +161,46 @@ void main() {
     await SettingsService.instance.write(SettingsService.showRatingBadges, true);
     await pumpCard(continuing: true);
     expect(find.byType(MediaCardRatingBadge), findsNothing);
+  });
+
+  testWidgets('poster score paints only white glyphs on a transparent layer', (tester) async {
+    const layer = Key('score-paint-layer');
+    await tester.pumpWidget(
+      const Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(
+          child: RepaintBoundary(
+            key: layer,
+            child: Padding(
+              padding: EdgeInsets.all(6),
+              child: DefaultTextStyle(
+                style: TextStyle(backgroundColor: Colors.black),
+                child: MediaCardRatingBadge(rating: MediaRatingSource(source: 'imdb', value: 8.3)),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(layer));
+    final pixels = await tester.runAsync(() async {
+      final image = await boundary.toImage(pixelRatio: 2);
+      try {
+        return (await image.toByteData(format: ui.ImageByteFormat.rawStraightRgba))!.buffer.asUint8List();
+      } finally {
+        image.dispose();
+      }
+    });
+    expect(pixels, isNotNull);
+    var visible = 0;
+    for (var i = 0; i < pixels!.length; i += 4) {
+      if (pixels[i + 3] < 16) continue;
+      visible++;
+      expect(pixels.sublist(i, i + 3), everyElement(greaterThanOrEqualTo(248)));
+    }
+    expect(visible, greaterThan(0));
+    expect(pixels[3], 0);
   });
 
   test('full bleed grid delegates use image aspect ratios', () {

@@ -227,17 +227,9 @@ class MediaCardRatingBadge extends StatelessWidget {
     return Semantics(
       label: ratingsSemanticLabel([rating]),
       excludeSemantics: true,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        child: Text(
-          withUnit ? t.common.ratingValue(value: value) : value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            shadows: [Shadow(color: Colors.black87, blurRadius: 3, offset: Offset(0, 1))],
-          ),
-        ),
+      child: Text(
+        withUnit ? t.common.ratingValue(value: value) : value,
+        style: const TextStyle(inherit: false, color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
       ),
     );
   }
