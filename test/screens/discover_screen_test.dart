@@ -62,9 +62,9 @@ import 'package:plezy/watch_together/watch_together.dart';
 import 'package:plezy/widgets/side_navigation_rail.dart';
 import 'package:plezy/widgets/backend_badge.dart';
 import 'package:plezy/widgets/fusion_home_hero.dart';
+import 'package:plezy/widgets/cycling_media_backdrop.dart';
 import 'package:plezy/widgets/hub_section.dart';
 import 'package:plezy/widgets/media_card.dart';
-import 'package:plezy/widgets/cycling_media_backdrop.dart';
 import 'package:plezy/widgets/optimized_media_image.dart';
 import 'package:plezy/widgets/tv_browse_rail.dart';
 import 'package:plezy/widgets/system_clock.dart';
@@ -546,137 +546,6 @@ void main() {
     });
   }
 
-  testWidgets('home renders one continuous backdrop through fades, rapid dot taps and wraparound', (tester) async {
-    final assets = ['dune', 'spirited', 'interstellar', 'blade'];
-    final items = [
-      for (final asset in assets)
-        testMediaItem(
-          id: asset,
-          title: asset,
-          serverId: 'server_1',
-          backend: MediaBackend.emby,
-          thumbPath: 'https://home-visual.fixture/$asset.jpg',
-          artPath: 'https://home-visual.fixture/$asset.jpg',
-        ),
-    ];
-    final boundary = GlobalKey();
-    await _pumpDiscoverShell(
-      tester,
-      isTv: false,
-      size: const Size(390, 844),
-      fixtureFont: true,
-      heroRandom: _KeepHeroOrder(),
-      clients: [_FakeMediaServerClient(protocol: MediaBackend.emby, continueWatching: items, hubs: const [])],
-      wrap: (child) => RepaintBoundary(key: boundary, child: child),
-    );
-    final backdrop = find.byKey(const ValueKey('home_carousel_backdrop'));
-    final original = tester.state(backdrop);
-    final dots = [for (int i = 0; i < items.length; i++) find.byKey(ValueKey('home-hero-dot-$i'))];
-    final labels = dots.map((d) => tester.widget<Semantics>(d).properties.label!).toList();
-    Finder pictures() =>
-        find.descendant(of: backdrop, matching: find.byWidgetPredicate((w) => w is RawImage && w.image != null));
-    Future<void> waitForPicture({bool incoming = false}) async {
-      for (var attempt = 0; attempt < 80; attempt++) {
-        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 12)));
-        await tester.pump(const Duration(milliseconds: 1));
-        if (tester.widgetList<RawImage>(pictures()).any((w) => !incoming || w.opacity != null)) return;
-      }
-      fail('The carousel did not decode its ${incoming ? 'incoming' : 'initial'} artwork');
-    }
-
-    Future<List<int>> frame(String name) async {
-      final result = await tester.runAsync(() async {
-        final render = boundary.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-        final picture = await render.toImage(pixelRatio: 1);
-        try {
-          const dir = String.fromEnvironment('HOME_CAROUSEL_FRAME_DIR');
-          if (dir.isNotEmpty) {
-            final png = await picture.toByteData(format: ui.ImageByteFormat.png);
-            await File('$dir/$name.png').writeAsBytes(png!.buffer.asUint8List());
-          }
-          final bytes = (await picture.toByteData(format: ui.ImageByteFormat.rawRgba))!.buffer.asUint8List();
-          return [
-            for (var y = 80; y < 190; y += 7)
-              for (var x = 30; x < 360; x += 9)
-                for (var channel = 0; channel < 3; channel++) bytes[(y * picture.width + x) * 4 + channel],
-          ];
-        } finally {
-          picture.dispose();
-        }
-      });
-      return result!;
-    }
-
-    double difference(List<int> a, List<int> b) {
-      var delta = 0;
-      for (var index = 0; index < a.length; index++) {
-        delta += (a[index] - b[index]).abs();
-      }
-      return delta / a.length;
-    }
-
-    await waitForPicture();
-    await tester.pump(const Duration(milliseconds: 700));
-    final first = await frame('01-before');
-    final title = find.descendant(of: find.byType(FusionHomeHero), matching: find.text(labels.first));
-    final start = tester.getCenter(title).dx;
-    await tester.tap(dots[1]);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 140));
-    expect(tester.getCenter(title).dx, lessThan(start));
-    expect(difference(first, await frame('02-title-slide')), lessThan(1));
-    await tester.pump(const Duration(milliseconds: 250));
-    await waitForPicture(incoming: true);
-    await tester.pump(const Duration(milliseconds: 220));
-    final middle = await frame('03-blend');
-    expect(difference(first, middle), greaterThan(3));
-    // Dot 3 is two real pages away. Jump the foreground straight to it;
-    // the already visible mix must survive the retarget unchanged.
-    await tester.tap(dots[3]);
-    await tester.pump();
-    expect(tester.widget<Semantics>(dots[3]).properties.selected, isTrue);
-    expect(
-      tester.widget<CyclingMediaBackdrop>(backdrop).mediaKey,
-      items.firstWhere((i) => i.displayTitle == labels[3]).globalKey,
-    );
-    expect(difference(middle, await frame('04-retarget')), lessThan(1));
-    await tester.pump(const Duration(milliseconds: 380));
-    await tester.pump();
-    await waitForPicture(incoming: true);
-    await tester.pump(const Duration(milliseconds: 280));
-    final nextMiddle = await frame('05-next-blend');
-    await tester.pump(const Duration(milliseconds: 350));
-    await tester.pump();
-    final last = await frame('06-destination');
-    expect(difference(nextMiddle, last), greaterThan(3));
-    await tester.drag(find.byType(PageView), const Offset(-300, 0));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 700));
-    expect(tester.widget<Semantics>(dots[0]).properties.selected, isTrue);
-    expect(tester.state(backdrop), same(original), reason: 'the wraparound page keeps the same painting layers');
-    await waitForPicture();
-    await tester.pump(const Duration(milliseconds: 700));
-    await tester.pump();
-    expect(difference(first, await frame('07-wrapped')), lessThan(1));
-    await tester.tap(dots[2]);
-    await tester.pump();
-    await waitForPicture(incoming: true);
-    await tester.pump(const Duration(milliseconds: 220));
-    final reversing = await frame('08-before-reverse');
-    expect(difference(first, reversing), greaterThan(3));
-    await tester.tap(dots[0]);
-    await tester.pump();
-    expect(difference(reversing, await frame('09-reverse')), lessThan(1));
-    await tester.pump(const Duration(milliseconds: 120));
-    final returning = await frame('10-returning');
-    expect(difference(first, returning), lessThan(difference(first, reversing)));
-    await tester.pump(const Duration(milliseconds: 600));
-    await tester.pump();
-    expect(difference(first, await frame('11-settled')), lessThan(1));
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-
   testWidgets('ten home banners rotate, wrap both ways and pause away from Home', (tester) async {
     final items = List.generate(12, (i) => testMediaItem(id: 'banner-$i', title: 'Banner $i', serverId: 'server_1'));
     await _pumpDiscoverShell(
@@ -705,6 +574,26 @@ void main() {
     expect(dot(10), findsNothing);
     expect(tester.getRect(dot(9)).right, lessThanOrEqualTo(320));
     expect(tester.element(pages).read<DiscoverProvider>().onDeck, hasLength(12));
+
+    // The artwork and title must move together within each page.
+    final firstHero = find.byType(FusionHomeHero).first;
+    final firstArtwork = find.descendant(of: firstHero, matching: find.byType(CyclingMediaBackdrop));
+    expect(firstArtwork, findsOneWidget);
+    final heroStart = tester.getTopLeft(firstHero);
+    final artworkStart = tester.getTopLeft(firstArtwork);
+    final swipe = await tester.startGesture(tester.getCenter(pages));
+    await swipe.moveBy(const Offset(-100, 0));
+    await tester.pump();
+    await swipe.moveBy(const Offset(-40, 0));
+    await tester.pump();
+    final heroMovement = tester.getTopLeft(firstHero) - heroStart;
+    final artworkMovement = tester.getTopLeft(firstArtwork) - artworkStart;
+    expect(heroMovement.dx, lessThan(-20));
+    expect(artworkMovement, heroMovement);
+    await swipe.cancel();
+    await finish();
+    await tester.tap(dot(0));
+    await finish();
 
     await tester.drag(pages, const Offset(300, 0));
     await finish();
@@ -775,8 +664,6 @@ void main() {
       expect(dot(0).properties.selected, isTrue);
       expect(dot(0).properties.customSemanticsActions, isNull);
       if (!single) {
-        final backdrop = tester.widget<CyclingMediaBackdrop>(find.byKey(const ValueKey('home_carousel_backdrop')));
-        expect(backdrop.fadeDuration, Duration.zero);
         await tester.tap(find.byKey(const ValueKey('home-hero-dot-2')));
         await tester.pump();
         expect(dot(2).properties.selected, isTrue);

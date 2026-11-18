@@ -405,12 +405,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     _heroTimer ??= Timer(_heroInterval, () {
       _heroTimer = null;
       if (_heroController.hasClients && _heroItems.length > 1) {
-        _goToHero((_heroIndex.value + 1) % _heroItems.length);
+        _goToHero((_heroIndex.value + 1) % _heroItems.length, duration: const Duration(milliseconds: 500));
       }
     });
   }
 
-  void _goToHero(int index) {
+  void _goToHero(int index, {Duration? duration}) {
     if (!_heroController.hasClients || _heroItems.length < 2) return;
     _cancelHeroRotation();
     final last = _heroItems.length - 1;
@@ -419,12 +419,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     // one page, then the idle scroll view returns to the matching real page.
     if (last > 1 && _heroIndex.value == 0 && index == last) page = 0;
     if (_heroIndex.value == last && index == 0) page = last + 2;
-    final position = _heroController.page ?? _heroPageFor(_heroIndex.value).toDouble();
-    if (_reduceMotion || _heroIndex.value == index || (page - position).abs() > 1.01) {
+    if (_reduceMotion || _heroIndex.value == index) {
       _heroController.jumpToPage(page);
       _syncHeroRotation();
     } else {
-      _heroController.animateToPage(page, duration: MonoPresentation.artworkDuration, curve: Curves.easeInOutCubic);
+      _heroController.animateToPage(page, duration: duration ?? tokens(context).slow, curve: Curves.easeInOut);
     }
   }
 
@@ -744,7 +743,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       onRight: () {
         if (_heroItems.length > 1) {
           _heroHasNavigated = true;
-          _goToHero((_heroIndex.value + 1) % _heroItems.length);
+          _goToHero((_heroIndex.value + 1) % _heroItems.length, duration: const Duration(milliseconds: 500));
         }
       },
       onSelect: () {
@@ -1816,8 +1815,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     // otherwise leaves a thin dark line even when both surfaces match.
     final pixelRatio = MediaQuery.devicePixelRatioOf(context);
     final heroHeight = (preferredHeroHeight * pixelRatio).ceilToDouble() / pixelRatio;
-    final width = MediaQuery.sizeOf(context).width;
-    final fusion = (!isTv && !ScreenBreakpoints.isWideTabletOrLarger(width)) || MonoPresentation.isTablet(context);
     return SliverToBoxAdapter(
       child: Focus(
         focusNode: _heroFocusNode,
@@ -1827,24 +1824,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: ValueListenableBuilder<int>(
-                    valueListenable: _heroIndex,
-                    builder: (context, index, _) {
-                      final items = _heroItems;
-                      if (items.isEmpty) return const SizedBox.shrink();
-                      return _buildCarouselBackdrop(
-                        context,
-                        items[index.clamp(0, items.length - 1)],
-                        width,
-                        heroHeight,
-                        fusion: fusion,
-                      );
-                    },
-                  ),
-                ),
-              ),
               NotificationListener<ScrollNotification>(
                 onNotification: _onHeroScroll,
                 child: Listener(
@@ -1863,8 +1842,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       _heroIndex.value = index;
                       _syncHomeTheme(_heroItems[index]);
                     },
-                    itemBuilder: (context, page) =>
-                        _buildHeroItem(_heroItems[_heroIndexFor(page)], heroHeight, fusion: fusion),
+                    itemBuilder: (context, page) => _buildHeroItem(_heroItems[_heroIndexFor(page)], heroHeight),
                   ),
                 ),
               ),
@@ -1967,88 +1945,36 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     }
   }
 
-  Widget _buildCarouselBackdrop(
-    BuildContext context,
-    MediaItem item,
-    double width,
-    double height, {
-    required bool fusion,
-  }) {
-    final surface = HomeThemeScope.colorOf(context);
-    final paths = item.heroArtCandidates(containerAspectRatio: width / height);
-    final artwork = CyclingMediaBackdrop(
-      key: const ValueKey('home_carousel_backdrop'),
-      mediaKey: item.globalKey,
-      imagePaths: paths.take(1).toList(),
-      fallbackImagePaths: paths,
-      client: _getMediaClientForItem(item),
-      width: width,
-      height: height,
-      alignment: fusion ? const Alignment(0, -.76) : Alignment.center,
-      active: false,
-      fadeDuration: _reduceMotion ? Duration.zero : MonoPresentation.artworkDuration,
-      fallbackColor: fusion ? surface : Theme.of(context).colorScheme.surfaceContainerHighest,
-      onImageReady: (image) => _onHeroImageReady(item, image),
-    );
-    if (fusion) return FusionHomeBackdrop(artwork: artwork);
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        ClipRect(
-          child: AnimatedBuilder(
-            animation: _scrollController,
-            builder: (context, child) {
-              final offset = _scrollController.hasClients ? _scrollController.offset : 0.0;
-              return Transform.translate(offset: Offset(0, offset * .3), child: child);
-            },
-            child: VidHubAmbientBackdrop(
-              preserveArtwork: true,
-              blurSigma: 0,
-              glowIntensity: PlatformDetector.isTV() ? .24 : .28,
-              accentColor: surface,
-              backgroundColor: surface,
-              animateColor: false,
-              backdropChild: artwork,
-            ),
-          ),
-        ),
-        if (paths.isEmpty)
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.transparent,
-                  surface.withValues(alpha: .4),
-                  surface.withValues(alpha: .85),
-                  surface,
-                ],
-                stops: const [0, .45, .72, .90, 1],
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildHeroItem(MediaItem heroItem, double heroHeight, {required bool fusion}) {
+  Widget _buildHeroItem(MediaItem heroItem, double heroHeight) {
     final heroClient = _getMediaClientForItem(heroItem);
-    if (fusion) {
+    final isEpisode = heroItem.isEpisode;
+    final showName = heroItem.grandparentTitle ?? heroItem.displayTitle;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final heroAspectRatio = screenWidth / heroHeight;
+    final heroArtPaths = heroItem.heroArtCandidates(containerAspectRatio: heroAspectRatio);
+    final isLargeScreen = ScreenBreakpoints.isWideTabletOrLarger(screenWidth);
+    final isTv = PlatformDetector.isTV();
+    final alignLeft = isTv || isLargeScreen;
+    if (!alignLeft || MonoPresentation.isTablet(context)) {
       return FusionHomeHero(
         item: heroItem,
         client: heroClient,
         compact: heroHeight < 450,
         onPlay: () => _openHero(heroItem),
+        backdrop: CyclingMediaBackdrop(
+          mediaKey: heroItem.globalKey,
+          imagePaths: heroArtPaths.take(1).toList(),
+          fallbackImagePaths: heroArtPaths,
+          client: heroClient,
+          active: false,
+          width: screenWidth,
+          height: heroHeight,
+          alignment: const Alignment(0, -.76),
+          fallbackColor: HomeThemeScope.colorOf(context),
+          onImageReady: (image) => _onHeroImageReady(heroItem, image),
+        ),
       );
     }
-    final isEpisode = heroItem.isEpisode;
-    final showName = heroItem.grandparentTitle ?? heroItem.displayTitle;
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final isLargeScreen = ScreenBreakpoints.isWideTabletOrLarger(screenWidth);
-    final isTv = PlatformDetector.isTV();
-    final alignLeft = isTv || isLargeScreen;
     final theme = _cinemaTheme;
     final colorScheme = theme.colorScheme;
     // A landscape phone hands the hero the whole ~400dp viewport; the usual
@@ -2076,7 +2002,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       hint: t.accessibility.tapToPlay,
       child: ClickableCursor(
         child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
           onTap: () {
             appLogger.d('Activating hero item: ${heroItem.title}');
             _openHero(heroItem, play: true);
@@ -2085,6 +2010,56 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             fit: StackFit.expand,
             clipBehavior: Clip.none,
             children: [
+              // Background Image with VidHub ambient glow and glass
+              if (heroArtPaths.isNotEmpty)
+                ClipRect(
+                  child: AnimatedBuilder(
+                    animation: _scrollController,
+                    builder: (context, child) {
+                      final scrollOffset = _scrollController.hasClients ? _scrollController.offset : 0.0;
+                      return Transform.translate(offset: Offset(0, scrollOffset * 0.3), child: child);
+                    },
+                    child: VidHubAmbientBackdrop(
+                      preserveArtwork: true,
+                      blurSigma: 0,
+                      glowIntensity: isTv ? 0.24 : 0.28,
+                      accentColor: HomeThemeScope.colorOf(context),
+                      backgroundColor: HomeThemeScope.colorOf(context),
+                      animateColor: false,
+                      backdropChild: CyclingMediaBackdrop(
+                        mediaKey: heroItem.globalKey,
+                        imagePaths: heroArtPaths.take(1).toList(),
+                        fallbackImagePaths: heroArtPaths,
+                        client: heroClient,
+                        active: false,
+                        width: screenWidth,
+                        height: heroHeight,
+                        fallbackColor: _cinemaTheme.colorScheme.surfaceContainerHighest,
+                        onImageReady: (image) => _onHeroImageReady(heroItem, image),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                ColoredBox(color: colorScheme.surfaceContainerHighest),
+              if (heroArtPaths.isEmpty)
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.transparent,
+                        theme.scaffoldBackgroundColor.withValues(alpha: .4),
+                        theme.scaffoldBackgroundColor.withValues(alpha: .85),
+                        theme.scaffoldBackgroundColor,
+                      ],
+                      stops: const [0, .45, .72, .90, 1],
+                    ),
+                  ),
+                ),
+
               // Content with responsive alignment
               Positioned(
                 bottom: isTv

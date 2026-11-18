@@ -28,7 +28,7 @@ class FusionHomeHero extends StatelessWidget {
   const FusionHomeHero({
     super.key,
     required this.item,
-    this.backdrop,
+    required this.backdrop,
     required this.onPlay,
     this.playButton,
     this.detailsButton,
@@ -38,7 +38,7 @@ class FusionHomeHero extends StatelessWidget {
 
   final MediaItem item;
   final MediaServerClient? client;
-  final Widget? backdrop;
+  final Widget backdrop;
   final VoidCallback onPlay;
   final Widget? playButton;
   final Widget? detailsButton;
@@ -100,12 +100,34 @@ class FusionHomeHero extends StatelessWidget {
       label: title,
       button: true,
       child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
         onTap: onPlay,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (backdrop case final artwork?) Positioned.fill(child: FusionHomeBackdrop(artwork: artwork)),
+            Positioned.fill(
+              child: ColoredBox(color: color, child: backdrop),
+            ),
+            // Spread the blend over most of the artwork, with a gentle start
+            // and finish. Every stop uses the page's current artwork color:
+            // appearance must never add a white veil over a colored poster.
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(decoration: BoxDecoration(gradient: MonoPresentation.artworkBlend(color))),
+              ),
+            ),
+            // Keep status-bar contrast separate from the content background.
+            IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.black.withValues(alpha: .13), Colors.transparent],
+                    stops: const [0, .24],
+                  ),
+                ),
+              ),
+            ),
             Positioned(
               left: tablet ? 32 : 24,
               right: tablet ? 32 : 24,
@@ -185,38 +207,6 @@ class FusionHomeHero extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Composite the artwork and its page-color gradient once behind the carousel.
-class FusionHomeBackdrop extends StatelessWidget {
-  const FusionHomeBackdrop({super.key, required this.artwork});
-  final Widget artwork;
-
-  @override
-  Widget build(BuildContext context) {
-    final surface = HomeThemeScope.colorOf(context);
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        ColoredBox(color: surface, child: artwork),
-        IgnorePointer(
-          child: DecoratedBox(decoration: BoxDecoration(gradient: MonoPresentation.artworkBlend(surface))),
-        ),
-        IgnorePointer(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.black.withValues(alpha: .13), Colors.transparent],
-                stops: const [0, .24],
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
