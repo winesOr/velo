@@ -34,6 +34,7 @@ import '../../mixins/mounted_set_state_mixin.dart';
 import '../../mpv/mpv.dart';
 import '../overlay_sheet.dart';
 import '../app_icon.dart';
+import 'video_control_button.dart';
 import '../../focus/dpad_navigator.dart';
 import '../../focus/focus_navigation_intent.dart';
 import '../../focus/transport_keys.dart';
@@ -1602,7 +1603,7 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
                         child: const SizedBox.expand(),
                       ),
                     ),
-                  // Floating screen lock button (like 真果鉴: left center, translucent, tap to lock/unlock)
+                  // Floating screen lock within reach on the left edge.
                   if (isMobile && !PlatformDetector.isTV())
                     Align(
                       alignment: Alignment.centerLeft,
@@ -1615,31 +1616,14 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
                           duration: const Duration(milliseconds: 200),
                           child: IgnorePointer(
                             ignoring: !((_showControls && !_isScreenLocked) || (_isScreenLocked && _showLockIcon)),
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.32),
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.18), width: 0.8),
-                              ),
-                              child: IconButton(
-                                tooltip: _isScreenLocked ? t.videoControls.unlockScreen : t.videoControls.lockScreen,
-                                constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-                                padding: EdgeInsets.zero,
-                                style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                                onPressed: () {
-                                  if (_isScreenLocked) {
-                                    _unlockScreen();
-                                  } else {
-                                    _toggleScreenLock();
-                                  }
-                                },
-                                icon: AppIcon(
-                                  _isScreenLocked ? Symbols.lock_rounded : Symbols.lock_open_rounded,
-                                  semanticLabel: t.videoControls.screenLockButton,
-                                  color: _isScreenLocked ? const Color(0xFFFFB74D) : Colors.white,
-                                  size: 20,
-                                ),
-                              ),
+                            child: VideoControlButton(
+                              icon: _isScreenLocked ? Symbols.lock_rounded : Symbols.lock_open_rounded,
+                              iconSize: 20,
+                              tooltip: _isScreenLocked ? t.videoControls.unlockScreen : t.videoControls.lockScreen,
+                              semanticLabel: t.videoControls.screenLockButton,
+                              checked: _isScreenLocked,
+                              overlayGlyph: true,
+                              onPressed: _isScreenLocked ? _unlockScreen : _toggleScreenLock,
                             ),
                           ),
                         ),

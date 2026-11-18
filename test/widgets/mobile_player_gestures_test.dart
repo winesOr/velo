@@ -1,3 +1,5 @@
+import 'dart:ui' as ui show CheckedState;
+
 import 'package:drift/native.dart';
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
@@ -14,6 +16,7 @@ import 'package:plezy/watch_together/providers/watch_together_provider.dart';
 import 'package:plezy/widgets/video_controls/mobile_video_controls.dart';
 import 'package:plezy/widgets/video_controls/player_chrome_controller.dart';
 import 'package:plezy/widgets/video_controls/video_controls.dart';
+import 'package:plezy/widgets/video_controls/video_control_button.dart';
 import 'package:plezy/widgets/video_controls/widgets/player_toast_indicator.dart';
 import 'package:plezy/widgets/video_controls/widgets/player_track_summary.dart';
 
@@ -34,6 +37,19 @@ Future<void> _finish(WidgetTester tester) async {
   _chrome?.cancelAutoHide();
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pump(const Duration(seconds: 5));
+}
+
+void expectToggle(WidgetTester tester, String tooltip, String label, bool checked, IconData glyph) {
+  final control = find.byTooltip(tooltip);
+  final icon = tester.widget<Icon>(find.descendant(of: control, matching: find.byIcon(glyph)));
+  expect(icon.fill, checked ? 1 : 0);
+  expect(icon.color, checked ? VideoControlButton.overlaySelectedColor : Colors.white);
+  expect(icon.weight, checked ? 700 : 400);
+  expect(icon.shadows, isNotEmpty);
+  final button = tester.widget<IconButton>(find.ancestor(of: control, matching: find.byType(IconButton)).first);
+  expect(button.style?.backgroundColor?.resolve({}), isNull);
+  final state = tester.getSemantics(find.bySemanticsLabel(label).last).getSemanticsData().flagsCollection.isChecked;
+  expect(state, checked ? ui.CheckedState.isTrue : ui.CheckedState.isFalse);
 }
 
 void main() {
@@ -125,6 +141,25 @@ void main() {
     });
   }
 
+  testWidgets('screen lock is a bare icon with distinct checked and unchecked states', (tester) async {
+    PlatformDetector.debugSetIsDesktopOSOverride(false);
+    addTearDown(() => PlatformDetector.debugSetIsDesktopOSOverride(null));
+    await pumpPlayer(tester);
+
+    final lock = t.videoControls.lockScreen;
+    final unlock = t.videoControls.unlockScreen;
+    final lockLabel = t.videoControls.screenLockButton;
+    expectToggle(tester, lock, lockLabel, false, Symbols.lock_open_rounded);
+    await tester.tap(find.byTooltip(lock));
+    await tester.pump();
+    expectToggle(tester, unlock, lockLabel, true, Symbols.lock_rounded);
+    await tester.tap(find.byTooltip(unlock));
+    await tester.pumpAndSettle();
+    expectToggle(tester, lock, lockLabel, false, Symbols.lock_open_rounded);
+
+    await _finish(tester);
+  });
+
   testWidgets('horizontal swipe previews the target and seeks once on release', (tester) async {
     final player = await pumpPlayer(tester);
     final gesture = await tester.startGesture(const Offset(800, 400));
@@ -183,6 +218,8 @@ void main() {
     addTearDown(player.dispose);
     addTearDown(watchTogether.dispose);
     final taps = <String>[];
+    final danmakuEnabled = ValueNotifier(false);
+    addTearDown(danmakuEnabled.dispose);
     Rect? speedRect;
     await tester.pumpWidget(
       ChangeNotifierProvider<WatchTogetherProvider>.value(
@@ -190,28 +227,35 @@ void main() {
         child: MaterialApp(
           theme: ThemeData(platform: TargetPlatform.android, extensions: const [testMonoTokens]),
           home: Scaffold(
-            body: MobileVideoControls(
-              player: player,
-              metadata: testMediaItem(id: 'mobile'),
-              chapters: const [],
-              chaptersLoaded: true,
-              onSeek: (_) {},
-              onSeekEnd: (_) {},
-              onPlayPause: () => taps.add('play'),
-              onNext: () => taps.add('next'),
-              onSpeedTap: (rect) {
-                speedRect = rect;
-                taps.add('speed');
-              },
-              onSubtitlesTap: (_) => taps.add('subs'),
-              onEpisodesTap: (_) => taps.add('eps'),
-              onDanmakuTap: (_) => taps.add('dm'),
-              onDanmakuToggle: () => taps.add('dmToggle'),
-              onCast: () => taps.add('cast'),
-              onToggleOrientation: () => taps.add('orient'),
-              onMore: () => taps.add('more'),
-              onScreenshot: () => taps.add('shot'),
-              onTogglePip: () => taps.add('pip'),
+            body: ValueListenableBuilder<bool>(
+              valueListenable: danmakuEnabled,
+              builder: (_, enabled, _) => MobileVideoControls(
+                player: player,
+                metadata: testMediaItem(id: 'mobile'),
+                chapters: const [],
+                chaptersLoaded: true,
+                onSeek: (_) {},
+                onSeekEnd: (_) {},
+                onPlayPause: () => taps.add('play'),
+                onNext: () => taps.add('next'),
+                onSpeedTap: (rect) {
+                  speedRect = rect;
+                  taps.add('speed');
+                },
+                onSubtitlesTap: (_) => taps.add('subs'),
+                onEpisodesTap: (_) => taps.add('eps'),
+                onDanmakuTap: (_) => taps.add('dm'),
+                danmakuEnabled: enabled,
+                onDanmakuToggle: () {
+                  taps.add('dmToggle');
+                  danmakuEnabled.value = !enabled;
+                },
+                onCast: () => taps.add('cast'),
+                onToggleOrientation: () => taps.add('orient'),
+                onMore: () => taps.add('more'),
+                onScreenshot: () => taps.add('shot'),
+                onTogglePip: () => taps.add('pip'),
+              ),
             ),
           ),
         ),
@@ -224,8 +268,10 @@ void main() {
     expect(find.byIcon(Symbols.skip_previous_rounded), findsNothing);
     expect(find.bySemanticsLabel(t.videoControls.chapters), findsNothing);
 
+    final toggle = t.videoControls.danmakuToggle;
+    expectToggle(tester, toggle, toggle, false, Symbols.subtitles_rounded);
     for (final label in [
-      t.videoControls.danmakuToggle,
+      toggle,
       t.videoControls.castButton,
       t.videoControls.orientationButton,
       t.videoControls.moreButton,
@@ -236,6 +282,11 @@ void main() {
       await tester.tap(find.bySemanticsLabel(label).last);
     }
     expect(taps, ['dmToggle', 'cast', 'orient', 'more', 'shot', 'pip', 'next']);
+    await tester.pump();
+    expectToggle(tester, toggle, toggle, true, Symbols.subtitles_rounded);
+    await tester.tap(find.byTooltip(toggle));
+    await tester.pump();
+    expectToggle(tester, toggle, toggle, false, Symbols.subtitles_rounded);
 
     taps.clear();
     await tester.tap(find.widgetWithText(PlayerChip, '1x'));
@@ -249,7 +300,13 @@ void main() {
     final shot = tester.getCenter(find.bySemanticsLabel(t.videoControls.screenshotButton).last);
     final pip = tester.getCenter(find.bySemanticsLabel(t.videoControls.pipButton).last);
     expect(shot.dx, closeTo(pip.dx, 1));
-    expect(shot.dy, lessThan(pip.dy));
+    expect(pip.dy - shot.dy, kMinInteractiveDimension);
+    for (final label in [t.videoControls.screenshotButton, t.videoControls.pipButton]) {
+      final action = find.bySemanticsLabel(label).last;
+      final bounds = tester.getSize(action);
+      expect(bounds.width, greaterThanOrEqualTo(kMinInteractiveDimension));
+      expect(bounds.height, greaterThanOrEqualTo(kMinInteractiveDimension));
+    }
     expect(tester.takeException(), isNull);
   });
 

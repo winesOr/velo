@@ -147,6 +147,7 @@ class VideoControlsHeader extends StatelessWidget {
         tooltip: label,
         onPressed: action,
         checked: checked,
+        overlayGlyph: checked != null,
         isActive: checked ?? false,
         focusNode: tvFocusNodes![index],
         onKeyEvent: onTvKeyEvent,

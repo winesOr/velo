@@ -39,6 +39,11 @@ class VideoControlButton extends StatelessWidget {
   /// Optional checked state for toggle-style controls.
   final bool? checked;
 
+  /// A bare icon on the video. A glyph shadow keeps it readable on bright
+  /// frames and a filled, heavier amber glyph marks the checked state.
+  final bool overlayGlyph;
+  static const overlaySelectedColor = Color(0xFFFFD45A);
+
   /// Whether this button represents an active state (e.g., a feature is enabled).
   /// When true, the icon uses the subdued brand foreground.
   final bool isActive;
@@ -65,6 +70,7 @@ class VideoControlButton extends StatelessWidget {
     this.semanticLabel,
     this.semanticValue,
     this.checked,
+    this.overlayGlyph = false,
     this.isActive = false,
     this.focusNode,
     this.onKeyEvent,
@@ -74,23 +80,40 @@ class VideoControlButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final idleColor = color ?? (isActive ? VeloBrand.foreground(Brightness.dark) : Colors.white);
+    final selected = overlayGlyph && checked == true;
+    final idleColor = selected
+        ? overlaySelectedColor
+        : color ?? (isActive ? VeloBrand.foreground(Brightness.dark) : Colors.white);
     final tvScale = FocusTheme.tvPlayerScale(context);
+    final targetSize = PlatformDetector.isTV()
+        ? 44 * tvScale
+        : overlayGlyph
+        ? kMinInteractiveDimension
+        : 40.0;
     final effectiveSemanticLabel = semanticLabel ?? tooltip;
 
     Widget button(Color iconColor) => IconButton(
       icon: iconBuilder == null
-          ? AppIcon(icon, color: iconColor, size: iconSize * tvScale)
+          ? AppIcon(
+              icon,
+              color: iconColor,
+              size: iconSize * tvScale,
+              fill: selected ? 1 : null,
+              weight: selected ? 700 : null,
+              shadows: overlayGlyph && iconColor == idleColor
+                  ? const [
+                      Shadow(color: Colors.black, blurRadius: 3),
+                      Shadow(color: Colors.black87, offset: Offset(0, 1)),
+                    ]
+                  : null,
+            )
           : PlatformDetector.isTV()
           ? FittedBox(child: iconBuilder!(iconColor))
           : iconBuilder!(iconColor),
       iconSize: iconSize * tvScale,
       onPressed: onPressed,
       tooltip: tooltip,
-      constraints: BoxConstraints(
-        minWidth: PlatformDetector.isTV() ? 44 * tvScale : 40,
-        minHeight: PlatformDetector.isTV() ? 44 * tvScale : 40,
-      ),
+      constraints: BoxConstraints(minWidth: targetSize, minHeight: targetSize),
     );
 
     if (focusNode != null) {

@@ -154,16 +154,19 @@ class _MobileVideoControlsState extends State<MobileVideoControls> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (widget.onScreenshot != null)
-            _RailButton(
+            VideoControlButton(
               icon: Symbols.photo_camera_rounded,
-              label: t.videoControls.screenshotButton,
+              tooltip: t.videoControls.screenshotButton,
+              overlayGlyph: true,
+              iconSize: 20,
               onPressed: widget.onScreenshot,
             ),
-          if (widget.onScreenshot != null && widget.onTogglePip != null) const SizedBox(height: 10),
           if (widget.onTogglePip != null)
-            _RailButton(
+            VideoControlButton(
               icon: Symbols.picture_in_picture_alt_rounded,
-              label: t.videoControls.pipButton,
+              tooltip: t.videoControls.pipButton,
+              overlayGlyph: true,
+              iconSize: 20,
               onPressed: widget.onTogglePip,
             ),
         ],
@@ -198,13 +201,14 @@ class _MobileVideoControlsState extends State<MobileVideoControls> {
 
   /// Danmaku toggle, cast, orientation and "more", right-aligned.
   Widget _buildTopActions() {
-    Widget button(IconData icon, String label, VoidCallback? onPressed, {bool active = false}) => VideoControlButton(
+    Widget button(IconData icon, String label, VoidCallback? onPressed, {bool? checked}) => VideoControlButton(
       icon: icon,
       semanticLabel: label,
       tooltip: label,
       iconSize: 22,
-      isActive: active,
-      color: active ? null : Colors.white,
+      checked: checked,
+      overlayGlyph: checked != null,
+      color: Colors.white,
       onPressed: onPressed,
     );
     return Row(
@@ -215,7 +219,7 @@ class _MobileVideoControlsState extends State<MobileVideoControls> {
             Symbols.subtitles_rounded,
             t.videoControls.danmakuToggle,
             widget.onDanmakuToggle,
-            active: widget.danmakuEnabled,
+            checked: widget.danmakuEnabled,
           ),
         if (widget.onCast != null) button(Symbols.cast_rounded, t.videoControls.castButton, widget.onCast),
         if (widget.onToggleOrientation != null)
@@ -374,22 +378,3 @@ class _MobileVideoControlsState extends State<MobileVideoControls> {
 }
 
 /// Round glass button on the player's side rails.
-class _RailButton extends StatelessWidget {
-  const _RailButton({required this.icon, required this.label, required this.onPressed});
-
-  final IconData icon;
-  final String label;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.32),
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.14), width: 0.8),
-      ),
-      child: VideoControlButton(icon: icon, semanticLabel: label, tooltip: label, iconSize: 20, onPressed: onPressed),
-    );
-  }
-}
