@@ -86,7 +86,7 @@ void main() {
         final home = HomeTypography.apply(monoTheme(dark: dark), tv: false, artworkSurface: surface);
         final typography = home.extension<HomeTypography>()!;
         expect(home.brightness, dark ? Brightness.dark : Brightness.light);
-        final ink = MonoPresentation.artworkTextColors(surface);
+        final ink = MonoPresentation.artworkTextColors(surface, highContrastCaption: true);
         expect(typography.heroTitle.color, ink.foreground);
         expect(typography.sectionTitle.color, ink.foreground);
         expect(typography.caption.color, ink.caption);

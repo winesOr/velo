@@ -149,7 +149,7 @@ class FusionHomeHero extends StatelessWidget {
                               style: TextStyle(
                                 fontFamily: 'Georgia',
                                 fontFamilyFallback: const ['Go Noto Current', 'serif'],
-                                color: metadataStyle.color!.withValues(alpha: .8),
+                                color: metadataStyle.color,
                                 fontSize: 9,
                                 height: 1.2,
                                 letterSpacing: 2.5,

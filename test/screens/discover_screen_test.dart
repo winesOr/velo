@@ -54,7 +54,7 @@ import 'package:plezy/services/storage_service.dart';
 import 'package:plezy/theme/mono_theme.dart';
 import 'package:plezy/theme/home_typography.dart';
 import 'package:plezy/theme/mono_presentation.dart';
-import 'package:plezy/theme/velo_brand.dart';
+import 'package:plezy/theme/mono_tokens.dart';
 import 'package:plezy/utils/layout_constants.dart';
 import 'package:plezy/utils/platform_detector.dart';
 import 'package:plezy/utils/ambient_palette_extractor.dart';
@@ -246,7 +246,7 @@ void main() {
       );
       expect(
         homeTheme.extension<HomeTypography>()!.caption.color,
-        MonoPresentation.artworkTextColors(controller.color).caption,
+        MonoPresentation.artworkTextColors(controller.color, highContrastCaption: true).caption,
       );
       expect(tester.takeException(), isNull);
       if (const bool.fromEnvironment('UPDATE_HOME_SCREENSHOTS')) {
@@ -276,6 +276,118 @@ void main() {
       await tester.pump(const Duration(seconds: 6));
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
       await tester.pump(const Duration(seconds: 1));
+    });
+  }
+
+  for (final (name, surface, dark) in const [
+    ('dark neutral', Color(0xff202020), false),
+    ('light neutral', Color(0xffededed), true),
+    ('red poster', Color(0xff622a32), false),
+    ('mid-luminance teal poster', Color(0xff58877f), false),
+    ('light gold poster', Color(0xffead691), true),
+  ]) {
+    testWidgets('home resume and recently added captions stand out on $name', (tester) async {
+      const artwork = 'https://home-visual.fixture/dune.jpg';
+      final episode = testMediaItem(
+        id: 'resume',
+        kind: MediaKind.episode,
+        title: 'The crossing',
+        grandparentTitle: 'A series',
+        parentIndex: 1,
+        index: 3,
+        serverId: 'server_1',
+        backend: MediaBackend.emby,
+        thumbPath: artwork,
+        artPath: artwork,
+        durationMs: 2500000,
+        viewOffsetMs: 1200000,
+      );
+      final film = testMediaItem(
+        id: 'film',
+        title: 'Another film',
+        genres: const ['Adventure'],
+        year: 1998,
+        serverId: 'server_1',
+        backend: MediaBackend.emby,
+        thumbPath: artwork,
+        artPath: artwork,
+      );
+      final series = testMediaItem(
+        id: 'series',
+        kind: MediaKind.show,
+        title: 'Another series',
+        childCount: 3,
+        serverId: 'server_1',
+        backend: MediaBackend.emby,
+        thumbPath: artwork,
+        artPath: artwork,
+      );
+      final controller = HomeThemeController(resolve: (_) async => surface);
+      addTearDown(controller.dispose);
+      await _pumpDiscoverShell(
+        tester,
+        isTv: false,
+        dark: dark,
+        size: const Size(390, 844),
+        wrap: (child) => HomeThemeScope(controller: controller, child: child),
+        clients: [
+          _FakeMediaServerClient(
+            protocol: MediaBackend.emby,
+            continueWatching: [episode],
+            hubs: [
+              MediaHub(id: 'recent', type: 'movie', title: 'Recently added', items: [film, series]),
+            ],
+          ),
+        ],
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      final filmDot = find.byWidgetPredicate(
+        (w) => w is Semantics && w.key.toString().contains('home-hero-dot-') && w.properties.label == film.displayTitle,
+      );
+      await tester.tap(filmDot);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+      for (var attempt = 0; attempt < 45 && controller.color != surface; attempt++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 25)));
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(controller.color, surface, reason: 'the home carousel delivered its decoded artwork');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+      final feed = find.descendant(of: find.byType(CustomScrollView).first, matching: find.byType(Scrollable)).first;
+      void checkInk(Finder text) {
+        expect(text, findsOneWidget);
+        final context = tester.element(text);
+        expect(HomeThemeScope.colorOf(context), surface);
+        final ink = tester
+            .renderObject<RenderParagraph>(find.descendant(of: text, matching: find.byType(RichText)))
+            .text
+            .style!
+            .color!;
+        expect(ink, tokens(context).textMuted);
+        expect(ink, Theme.of(context).extension<HomeTypography>()!.caption.color);
+        final base = surface.computeLuminance() + .05;
+        final caption = Color.alphaBlend(ink, surface).computeLuminance() + .05;
+        final maxContrast = math.max(1.05 / base, base / .05);
+        final contrast = math.max(caption / base, base / caption);
+        expect(contrast, greaterThanOrEqualTo(math.min(7, maxContrast) - .000001));
+        if (base < .1) expect(ink.computeLuminance(), greaterThan(.70));
+        if (base > .6) expect(ink.computeLuminance(), lessThan(.03));
+      }
+
+      checkInk(find.descendant(of: find.byType(FusionHomeHero), matching: find.text('Adventure')));
+      Future<void> checkCaption(MediaItem item, Finder label) async {
+        final card = find.byWidgetPredicate((widget) => widget is MediaCard && widget.item == item);
+        await tester.scrollUntilVisible(card, 160, scrollable: feed);
+        final text = find.descendant(of: card, matching: label);
+        checkInk(text);
+      }
+
+      await checkCaption(episode, find.textContaining('S1'));
+      await checkCaption(film, find.text('1998'));
+      await checkCaption(series, find.text(t.common.seasonCount(count: 3)));
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
     });
   }
 
@@ -379,12 +491,15 @@ void main() {
   });
 
   for (final dark in [false, true]) {
-    testWidgets('home secondary text uses the ${dark ? 'dark' : 'light'} caption token', (tester) async {
+    testWidgets('home secondary text uses the high-contrast caption on its ${dark ? 'dark' : 'light'} surface', (
+      tester,
+    ) async {
       await _pumpDiscoverShell(tester, isTv: false, dark: dark, size: const Size(390, 844));
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -1600));
       await tester.pump(const Duration(milliseconds: 700));
       final subtitle = tester.widget<Text>(find.text(t.discover.togetherBannerDescription));
-      expect(subtitle.style!.color, VeloPalette.caption(dark ? Brightness.dark : Brightness.light));
+      final context = tester.element(find.text(t.discover.togetherBannerDescription));
+      expect(subtitle.style!.color, Theme.of(context).extension<HomeTypography>()!.caption.color);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     });
@@ -1771,7 +1886,7 @@ void main() {
     expect(Theme.of(toolbarContext).brightness, Brightness.light);
     expect(
       Theme.of(toolbarContext).colorScheme.onSurface,
-      MonoPresentation.artworkTextColors(HomeThemeScope.colorOf(toolbarContext)).foreground,
+      MonoPresentation.artworkTextColors(HomeThemeScope.colorOf(toolbarContext), highContrastCaption: true).foreground,
     );
     final heroContext = tester.element(find.byType(FusionHomeHero).first);
     expect(Theme.of(heroContext).brightness, Brightness.light);

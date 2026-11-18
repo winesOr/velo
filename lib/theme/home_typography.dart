@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'mono_presentation.dart';
-import 'velo_brand.dart';
+import 'mono_tokens.dart';
 
 /// Home-only type hierarchy. Retains platform fonts and system text scaling.
 class HomeTypography extends ThemeExtension<HomeTypography> {
@@ -22,20 +22,24 @@ class HomeTypography extends ThemeExtension<HomeTypography> {
 
   static ThemeData apply(ThemeData theme, {required bool tv, bool tablet = false, Color? artworkSurface}) {
     final body = theme.textTheme.bodyMedium!;
-    final artworkColors = artworkSurface == null
-        ? null
-        : MonoPresentation.artworkTextColors(artworkSurface, brightness: theme.brightness);
-    final foreground = artworkColors?.foreground ?? theme.colorScheme.onSurface;
-    final caption = artworkColors?.caption ?? VeloPalette.caption(theme.brightness);
+    final ink = MonoPresentation.artworkTextColors(
+      artworkSurface ?? theme.scaffoldBackgroundColor,
+      brightness: theme.brightness,
+      highContrastCaption: true,
+    );
+    final foreground = artworkSurface != null ? ink.foreground : theme.colorScheme.onSurface;
+    final caption = ink.caption;
     return theme.copyWith(
-      colorScheme: artworkSurface != null
-          ? theme.colorScheme.copyWith(onSurface: foreground, onSurfaceVariant: caption)
-          : theme.colorScheme,
+      colorScheme: theme.colorScheme.copyWith(onSurface: foreground, onSurfaceVariant: caption),
       textTheme: theme.textTheme.apply(bodyColor: foreground, displayColor: foreground),
       iconTheme: theme.iconTheme.copyWith(color: foreground),
       textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: foreground)),
       extensions: [
-        ...theme.extensions.values.where((extension) => extension is! HomeTypography),
+        for (final extension in theme.extensions.values)
+          if (extension is MonoTokens)
+            extension.copyWith(text: foreground, textMuted: caption)
+          else if (extension is! HomeTypography)
+            extension,
         HomeTypography(
           heroTitle: body.copyWith(
             color: foreground,
@@ -61,7 +65,7 @@ class HomeTypography extends ThemeExtension<HomeTypography> {
           caption: body.copyWith(
             color: caption,
             fontSize: tablet ? 12 : 11,
-            fontWeight: FontWeight.w400,
+            fontWeight: FontWeight.w500,
             height: 1.5,
             letterSpacing: 0,
           ),

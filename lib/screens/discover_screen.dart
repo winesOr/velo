@@ -1184,11 +1184,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             : Brightness.dark,
       ),
       child: Theme(
-        data: HomeTypography.apply(
-          Theme.of(context),
-          tv: PlatformDetector.isTV(),
-          tablet: MonoPresentation.isTablet(context),
-        ),
+        data: _cinemaTheme,
         child: Builder(
           builder: (context) => SettingsBuilder(
             prefs: const [
@@ -1217,131 +1213,125 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final failedServerIds = _visibleFailedServerIds;
 
     if (PlatformDetector.isTV()) {
-      return Theme(
-        data: _cinemaTheme.copyWith(scaffoldBackgroundColor: HomeThemeScope.colorOf(context)),
-        child: Builder(builder: (context) => _buildTvContent(context, isInitialLoading: isInitialLoading)),
-      );
+      return _buildTvContent(context, isInitialLoading: isInitialLoading);
     }
 
     final bottomPadding = MediaQuery.paddingOf(context).bottom + 100;
     final continueWatchingHub = _onDeck.isEmpty ? null : _continueWatchingHub;
     final showServerName = svc.read(SettingsService.showServerNameOnHubs) || _hubsSpanMultipleServers();
-    return Theme(
-      data: _cinemaTheme.copyWith(scaffoldBackgroundColor: HomeThemeScope.colorOf(context)),
-      child: Material(
-        color: HomeThemeScope.colorOf(context),
-        child: Stack(
-          children: [
-            CustomScrollView(
-              controller: _scrollController,
-              slivers: [
-                // Hero Section (Continue Watching) - at top of screen
-                Builder(
-                  builder: (context) {
-                    if (_heroItems.isNotEmpty && showHeroSection) {
-                      return _buildHeroSection();
-                    }
-                    if (isInitialLoading) return const SliverToBoxAdapter(child: SizedBox.shrink());
-                    // Add top padding when hero is not shown
-                    return SliverToBoxAdapter(
-                      child: SizedBox(height: kToolbarHeight + MediaQuery.paddingOf(context).top + 16),
-                    );
-                  },
-                ),
-                if (isInitialLoading)
-                  SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: math.max(0, MediaQuery.sizeOf(context).height - MediaQuery.paddingOf(context).top - 8),
-                      child: const Padding(
-                        padding: EdgeInsets.only(bottom: 76),
-                        child: DiscoverLoadingSkeleton(isTv: false),
-                      ),
+    return Material(
+      color: HomeThemeScope.colorOf(context),
+      child: Stack(
+        children: [
+          CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              // Hero Section (Continue Watching) - at top of screen
+              Builder(
+                builder: (context) {
+                  if (_heroItems.isNotEmpty && showHeroSection) {
+                    return _buildHeroSection();
+                  }
+                  if (isInitialLoading) return const SliverToBoxAdapter(child: SizedBox.shrink());
+                  // Add top padding when hero is not shown
+                  return SliverToBoxAdapter(
+                    child: SizedBox(height: kToolbarHeight + MediaQuery.paddingOf(context).top + 16),
+                  );
+                },
+              ),
+              if (isInitialLoading)
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: math.max(0, MediaQuery.sizeOf(context).height - MediaQuery.paddingOf(context).top - 8),
+                    child: const Padding(
+                      padding: EdgeInsets.only(bottom: 76),
+                      child: DiscoverLoadingSkeleton(isTv: false),
                     ),
                   ),
-                if (showFullError) SliverErrorState(message: _errorMessage!, onRetry: _discover.load),
-                if (!isInitialLoading && !showFullError) ...[
-                  if (continueWatchingHub != null)
-                    SliverToBoxAdapter(
-                      child: HubSection(
-                        showWatchProgress: true,
-                        key: _continueWatchingHubKey,
-                        hub: continueWatchingHub,
-                        focusMemory: _hubFocusMemory,
-                        icon: hubIconFor(continueWatchingHub),
-                        onRefresh: _discover.updateItem,
-                        onRemoveFromContinueWatching: _discover.refreshContinueWatching,
-                        isInContinueWatching: true,
-                        episodePosterModeOverride: EpisodePosterMode.episodeThumbnail,
-                        cardWidthOverride: MonoPresentation.isTablet(context)
-                            ? 280
-                            : math.min(224, MediaQuery.sizeOf(context).width * .62),
-                        loadMoreItems: _discover.loadAllContinueWatching,
-                        onVerticalNavigation: (isUp) => _handleVerticalNavigation(0, isUp),
-                        onNavigateUp: _focusTopBoundary,
-                        onNavigateToSidebar: _navigateToSidebar,
-                      ),
+                ),
+              if (showFullError) SliverErrorState(message: _errorMessage!, onRetry: _discover.load),
+              if (!isInitialLoading && !showFullError) ...[
+                if (continueWatchingHub != null)
+                  SliverToBoxAdapter(
+                    child: HubSection(
+                      showWatchProgress: true,
+                      key: _continueWatchingHubKey,
+                      hub: continueWatchingHub,
+                      focusMemory: _hubFocusMemory,
+                      icon: hubIconFor(continueWatchingHub),
+                      onRefresh: _discover.updateItem,
+                      onRemoveFromContinueWatching: _discover.refreshContinueWatching,
+                      isInContinueWatching: true,
+                      episodePosterModeOverride: EpisodePosterMode.episodeThumbnail,
+                      cardWidthOverride: MonoPresentation.isTablet(context)
+                          ? 280
+                          : math.min(224, MediaQuery.sizeOf(context).width * .62),
+                      loadMoreItems: _discover.loadAllContinueWatching,
+                      onVerticalNavigation: (isUp) => _handleVerticalNavigation(0, isUp),
+                      onNavigateUp: _focusTopBoundary,
+                      onNavigateToSidebar: _navigateToSidebar,
                     ),
-                  if (showHubLoadingSkeleton)
-                    SliverToBoxAdapter(child: DiscoverHubLoadingSkeleton(rows: _onDeck.isEmpty ? 3 : 2)),
+                  ),
+                if (showHubLoadingSkeleton)
+                  SliverToBoxAdapter(child: DiscoverHubLoadingSkeleton(rows: _onDeck.isEmpty ? 3 : 2)),
 
-                  // Recommendation Hubs (Trending, Top in Genre, etc.)
-                  for (int i = 0; i < _hubs.length; i++)
-                    SliverToBoxAdapter(
-                      child: HubSection(
-                        showWatchProgress: false,
-                        showRatingBadge: true,
-                        key: i < _orderedHubKeys.length ? _orderedHubKeys[i] : null,
-                        hub: _hubs[i],
-                        cardWidthOverride: PlatformDetector.isMobile(context)
-                            ? 105
-                            : MediaQuery.sizeOf(context).width < 600 &&
-                                  _hubs[i].items.every((item) => item.isMovie || item.isShow)
-                            ? 105
-                            : null,
-                        focusMemory: _hubFocusMemory,
-                        icon: hubIconFor(_hubs[i]),
-                        showServerName: showServerName,
-                        showRatingSources:
-                            _hubs[i].type == 'movie' ||
-                            (_hubs[i].items.isNotEmpty && _hubs[i].items.every((item) => item.isMovie)),
-                        episodePosterModeOverride:
-                            _hubs[i].type == 'show' ||
-                                (_hubs[i].items.isNotEmpty &&
-                                    _hubs[i].items.every((item) => item.isShow || item.isSeason || item.isEpisode))
-                            ? EpisodePosterMode.seriesPoster
-                            : null,
-                        onRefresh: _discover.updateItem,
-                        // Hub index is i + 1 if continue watching exists, otherwise i
-                        onVerticalNavigation: (isUp) => _handleVerticalNavigation(_onDeck.isNotEmpty ? i + 1 : i, isUp),
-                        onNavigateUp: (i == 0 && _onDeck.isEmpty) ? _focusTopBoundary : null,
-                        onNavigateToSidebar: _navigateToSidebar,
-                      ),
+                // Recommendation Hubs (Trending, Top in Genre, etc.)
+                for (int i = 0; i < _hubs.length; i++)
+                  SliverToBoxAdapter(
+                    child: HubSection(
+                      showWatchProgress: false,
+                      showRatingBadge: true,
+                      key: i < _orderedHubKeys.length ? _orderedHubKeys[i] : null,
+                      hub: _hubs[i],
+                      cardWidthOverride: PlatformDetector.isMobile(context)
+                          ? 105
+                          : MediaQuery.sizeOf(context).width < 600 &&
+                                _hubs[i].items.every((item) => item.isMovie || item.isShow)
+                          ? 105
+                          : null,
+                      focusMemory: _hubFocusMemory,
+                      icon: hubIconFor(_hubs[i]),
+                      showServerName: showServerName,
+                      showRatingSources:
+                          _hubs[i].type == 'movie' ||
+                          (_hubs[i].items.isNotEmpty && _hubs[i].items.every((item) => item.isMovie)),
+                      episodePosterModeOverride:
+                          _hubs[i].type == 'show' ||
+                              (_hubs[i].items.isNotEmpty &&
+                                  _hubs[i].items.every((item) => item.isShow || item.isSeason || item.isEpisode))
+                          ? EpisodePosterMode.seriesPoster
+                          : null,
+                      onRefresh: _discover.updateItem,
+                      // Hub index is i + 1 if continue watching exists, otherwise i
+                      onVerticalNavigation: (isUp) => _handleVerticalNavigation(_onDeck.isNotEmpty ? i + 1 : i, isUp),
+                      onNavigateUp: (i == 0 && _onDeck.isEmpty) ? _focusTopBoundary : null,
+                      onNavigateToSidebar: _navigateToSidebar,
                     ),
+                  ),
 
-                  for (var i = 0; i < failedServerIds.length; i++)
-                    SliverToBoxAdapter(child: _buildHubRowError(failedServerIds[i], i)),
+                for (var i = 0; i < failedServerIds.length; i++)
+                  SliverToBoxAdapter(child: _buildHubRowError(failedServerIds[i], i)),
 
-                  if (_onDeck.isEmpty && _hubs.isEmpty && failedServerIds.isEmpty && !_areHubsLoading && !_isLoading)
-                    SliverEmptyState(
-                      message: t.discover.noContentAvailable,
-                      subtitle: t.discover.addMediaToLibraries,
-                      icon: Symbols.movie_rounded,
-                    ),
+                if (_onDeck.isEmpty && _hubs.isEmpty && failedServerIds.isEmpty && !_areHubsLoading && !_isLoading)
+                  SliverEmptyState(
+                    message: t.discover.noContentAvailable,
+                    subtitle: t.discover.addMediaToLibraries,
+                    icon: Symbols.movie_rounded,
+                  ),
 
-                  SliverToBoxAdapter(child: _buildTogetherBanner()),
+                SliverToBoxAdapter(child: _buildTogetherBanner()),
 
-                  SliverToBoxAdapter(child: SizedBox(height: 24 + bottomPadding)),
-                ],
+                SliverToBoxAdapter(child: SizedBox(height: 24 + bottomPadding)),
               ],
-            ),
-            // Overlaid app bar — excluded from default focus traversal so that
-            // initial/tab-switch focus lands on content (hero/hubs), not the toolbar.
-            // Toolbar buttons are still reachable via explicit UP from hero section.
-            if (_heroItems.isEmpty || !showHeroSection || PlatformDetector.shouldUseSideNavigation(context))
-              Positioned(top: 0, left: 0, right: 0, child: ExcludeFocusTraversal(child: _buildOverlaidAppBar())),
-            if (_switchingProfile) const ProfileSwitchingOverlay(),
-          ],
-        ),
+            ],
+          ),
+          // Overlaid app bar — excluded from default focus traversal so that
+          // initial/tab-switch focus lands on content (hero/hubs), not the toolbar.
+          // Toolbar buttons are still reachable via explicit UP from hero section.
+          if (_heroItems.isEmpty || !showHeroSection || PlatformDetector.shouldUseSideNavigation(context))
+            Positioned(top: 0, left: 0, right: 0, child: ExcludeFocusTraversal(child: _buildOverlaidAppBar())),
+          if (_switchingProfile) const ProfileSwitchingOverlay(),
+        ],
       ),
     );
   }

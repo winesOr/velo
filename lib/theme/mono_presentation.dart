@@ -62,19 +62,25 @@ abstract final class MonoPresentation {
   static ({Color foreground, Color caption}) artworkTextColors(
     Color surface, {
     Brightness brightness = Brightness.dark,
+    bool highContrastCaption = false,
   }) {
     final luminance = surface.computeLuminance();
     final whiteContrast = 1.05 / (luminance + .05);
     final blackContrast = (luminance + .05) / .05;
-    final lightInk = whiteContrast >= 4.5 && (blackContrast < 4.5 || brightness == Brightness.dark);
+    final lightInk = highContrastCaption
+        ? whiteContrast >= blackContrast
+        : whiteContrast >= 4.5 && (blackContrast < 4.5 || brightness == Brightness.dark);
     final foreground = lightInk ? Colors.white : Colors.black;
-    final muted = VeloPalette.caption(lightInk ? Brightness.dark : Brightness.light);
+    final muted = highContrastCaption
+        ? Color.lerp(surface, foreground, .88)!
+        : VeloPalette.caption(lightInk ? Brightness.dark : Brightness.light);
+    final minimumContrast = highContrastCaption ? 7.0 : 4.5;
     // Keep secondary text muted as far as the actual artwork permits.
     for (var step = 0; step < 8; step++) {
       final caption = Color.lerp(muted, foreground, step / 8)!;
       final ink = caption.computeLuminance();
       final contrast = ink >= luminance ? (ink + .05) / (luminance + .05) : (luminance + .05) / (ink + .05);
-      if (contrast >= 4.5) return (foreground: foreground, caption: caption);
+      if (contrast >= minimumContrast) return (foreground: foreground, caption: caption);
     }
     return (foreground: foreground, caption: foreground);
   }
