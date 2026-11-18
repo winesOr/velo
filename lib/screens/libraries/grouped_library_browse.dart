@@ -22,6 +22,10 @@ import '../../widgets/person_search_row.dart';
 import 'library_wall.dart';
 import '../../media/media_library.dart';
 import '../../providers/libraries_provider.dart';
+import '../../providers/multi_server_provider.dart';
+import '../../profiles/active_profile_provider.dart';
+import '../../services/library_page_snapshot_store.dart';
+import '../../media/ids.dart';
 import '../../services/settings_service.dart';
 import '../../utils/platform_detector.dart';
 import '../../utils/dialogs.dart';
@@ -146,6 +150,35 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
     super.initState();
     _scroll.addListener(_onScroll);
     _controller = GroupedLibraryController(
+      openPageCache: (library, query, {required collections, required isCurrent}) {
+        final profile = context.read<ActiveProfileProvider?>();
+        final servers = context.read<MultiServerProvider?>();
+        final profileId = profile?.activeId;
+        final id = library.serverId;
+        final client = id == null ? null : servers?.getClientForServer(ServerId(id));
+        if (profile == null ||
+            profileId == null ||
+            (profile.isBinding && !profile.isStartupIdentityReady) ||
+            client == null) {
+          return null;
+        }
+        final identity = profile.committedIdentityGeneration;
+        return const LibraryPageSnapshotStore().open(
+          profileId: profileId,
+          library: library,
+          client: client,
+          query: query,
+          collections: collections,
+          isCurrent: () =>
+              isCurrent() &&
+              mounted &&
+              (!profile.isBinding || profile.isStartupIdentityReady) &&
+              profile.activeId == profileId &&
+              profile.committedIdentityGeneration == identity &&
+              widget.libraries.any((item) => item.backend == library.backend && item.globalKey == library.globalKey) &&
+              identical(servers?.getClientForServer(ServerId(id!)), client),
+        );
+      },
       fetchCollectionsPage:
           widget.fetchCollectionsPage ??
           (library, query, abort) => context

@@ -7,6 +7,7 @@ import '../../media/media_item.dart';
 import '../../media/media_kind.dart';
 import '../../media/media_library.dart';
 import '../../media/media_playlist.dart';
+import '../../services/library_page_snapshot_store.dart';
 import 'library_wall.dart';
 import '../../utils/media_server_http_client.dart';
 
@@ -20,6 +21,14 @@ typedef GroupedPlaylistFetcher =
       AbortController abort,
       String playlistType,
     );
+
+typedef GroupedLibraryCacheFactory =
+    LibraryPageCacheEntry? Function(
+      MediaLibrary library,
+      LibraryQuery query, {
+      required bool collections,
+      required bool Function() isCurrent,
+    });
 
 enum GroupedLibrarySort { title, year, rating, updated, released }
 
@@ -139,6 +148,7 @@ class LibraryBrowseGroup {
   bool loading = false;
   Object? error;
   AbortController? _abort;
+  bool _showingCachedPage = false;
 
   bool get hasMore => offset < total;
 }
@@ -150,12 +160,14 @@ class GroupedLibraryController extends ChangeNotifier {
     required this.fetchPage,
     this.fetchCollectionsPage,
     this.fetchPlaylistsPage,
+    this.openPageCache,
     this.pageSize = 36,
   });
 
   final GroupedLibraryFetcher fetchPage;
   final GroupedLibraryFetcher? fetchCollectionsPage;
   final GroupedPlaylistFetcher? fetchPlaylistsPage;
+  final GroupedLibraryCacheFactory? openPageCache;
   final int pageSize;
   List<LibraryBrowseGroup> _groups = [];
   List<LibraryBrowseGroup> get groups => List.unmodifiable(_groups);
@@ -234,6 +246,8 @@ class GroupedLibraryController extends ChangeNotifier {
     for (final group in _groups) {
       group._abort?.abort();
     }
+    final previous = _groups;
+    final previousSelection = selection;
     selection = next;
     final included = next.wallType == null ? libraries : libraries.where(next.includesLibrary);
     final playlistOwners = <String>{};
@@ -255,6 +269,26 @@ class GroupedLibraryController extends ChangeNotifier {
         }
       }
     }
+    for (final group in groups) {
+      final old = previous
+          .where(
+            (candidate) =>
+                candidate.library.backend == group.library.backend &&
+                candidate.library.globalKey == group.library.globalKey &&
+                candidate.playlistType == group.playlistType,
+          )
+          .firstOrNull;
+      if (old == null ||
+          previousSelection.wallType != next.wallType ||
+          previousSelection.queryFor(group.library, 0, pageSize) != next.queryFor(group.library, 0, pageSize)) {
+        continue;
+      }
+      group.items.addAll(old.items);
+      group.playlists.addAll(old.playlists);
+      group.offset = old.offset;
+      group.total = old.total;
+      group._showingCachedPage = old.items.isNotEmpty || old.playlists.isNotEmpty;
+    }
     _groups = groups;
     notifyListeners();
     if (load) loadAll();
@@ -267,7 +301,12 @@ class GroupedLibraryController extends ChangeNotifier {
   }
 
   Future<void> loadMore(LibraryBrowseGroup group) async {
-    if (_disposed || !_groups.contains(group) || group.loading || (group.offset > 0 && !group.hasMore)) return;
+    if (_disposed ||
+        !_groups.contains(group) ||
+        group.loading ||
+        (!group._showingCachedPage && group.offset > 0 && !group.hasMore)) {
+      return;
+    }
     if (!selection.includesLibrary(group.library)) return;
     final generation = _generation;
     final abort = AbortController();
@@ -276,7 +315,26 @@ class GroupedLibraryController extends ChangeNotifier {
     group.error = null;
     notifyListeners();
     try {
-      final query = selection.queryFor(group.library, group.offset, pageSize);
+      final query = selection.queryFor(group.library, group._showingCachedPage ? 0 : group.offset, pageSize);
+      final cache = query.offset == 0 && selection.wallType != LibraryWallType.playlists
+          ? openPageCache?.call(
+              group.library,
+              query,
+              collections: selection.wallType == LibraryWallType.collections,
+              isCurrent: () => !_disposed && generation == _generation && !abort.isAborted,
+            )
+          : null;
+      if (cache != null && group.items.isEmpty) {
+        final cached = await cache.read();
+        if (_disposed || generation != _generation || abort.isAborted) return;
+        if (cached != null) {
+          group.items.addAll(cached.items);
+          group.offset = cached.items.length;
+          group.total = cached.totalCount;
+          group._showingCachedPage = true;
+          notifyListeners();
+        }
+      }
       final LibraryPage<Object> page;
       if (selection.wallType == LibraryWallType.playlists) {
         final fetcher = fetchPlaylistsPage;
@@ -289,6 +347,12 @@ class GroupedLibraryController extends ChangeNotifier {
         page = await fetcher(group.library, query, abort);
       }
       if (_disposed || generation != _generation || abort.isAborted) return;
+      if (group._showingCachedPage) {
+        group.items.clear();
+        group.playlists.clear();
+        group.offset = 0;
+        group._showingCachedPage = false;
+      }
       group.items.addAll(
         page.items.whereType<MediaItem>().map(
           (item) => item.serverId == null && group.library.serverId != null
@@ -308,6 +372,9 @@ class GroupedLibraryController extends ChangeNotifier {
               requestedSize: pageSize,
             )
           : page.totalCount;
+      if (cache != null) {
+        unawaited(cache.write(LibraryPage(items: List.of(group.items), totalCount: group.total)));
+      }
     } catch (error) {
       if (_disposed || generation != _generation || abort.isAborted) return;
       group.error = error;

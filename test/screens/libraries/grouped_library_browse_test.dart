@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/focus/focusable_text_field.dart';
 import 'package:plezy/focus/input_mode_tracker.dart';
+import 'package:plezy/database/app_database.dart';
+import 'package:plezy/profiles/active_profile_provider.dart';
 import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/media/library_query.dart';
 import 'package:plezy/media/media_backend.dart';
@@ -15,10 +18,14 @@ import 'package:plezy/media/media_person.dart';
 import 'package:plezy/media/ids.dart';
 import 'package:plezy/widgets/person_search_row.dart';
 import 'package:plezy/media/media_library.dart';
+import 'package:plezy/media/media_server_client.dart';
 import 'package:plezy/providers/multi_server_provider.dart';
 import 'package:plezy/screens/libraries/grouped_library_browse.dart';
 import 'package:plezy/screens/libraries/grouped_library_controller.dart';
+import 'package:plezy/screens/libraries/library_wall.dart';
 import 'package:plezy/services/settings_service.dart';
+import 'package:plezy/services/library_page_snapshot_store.dart';
+import 'package:plezy/services/plex_api_cache.dart';
 import 'package:plezy/theme/mono_theme.dart';
 import 'package:plezy/utils/platform_detector.dart';
 import 'package:plezy/widgets/focusable_media_card.dart';
@@ -27,6 +34,7 @@ import 'package:provider/provider.dart';
 import '../../test_helpers/multi_server_fixtures.dart';
 import '../../test_helpers/prefs.dart';
 import '../../test_helpers/tablet_screenshots.dart';
+import '../../test_helpers/home_startup_fixtures.dart';
 
 const libraryA = MediaLibrary(
   id: 'movies',
@@ -45,6 +53,19 @@ const libraryB = MediaLibrary(
   serverName: 'Source B',
 );
 
+class _ReadyBindingProfile extends ChangeNotifier implements ActiveProfileProvider {
+  @override
+  bool get isBinding => true;
+  @override
+  bool get isStartupIdentityReady => true;
+  @override
+  String get activeId => 'profile-a';
+  @override
+  int get committedIdentityGeneration => 1;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 Future<void> pumpGrouped(
   WidgetTester tester,
   GroupedLibraryFetcher fetcher, {
@@ -53,13 +74,16 @@ Future<void> pumpGrouped(
   double textScale = 1,
   GroupedPeopleFetcher? fetchPeople,
   FocusNode? headerSearchFocus,
+  ActiveProfileProvider? profile,
+  List<MediaServerClient> clients = const [],
+  bool settle = true,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = size ?? (tv ? const Size(960, 540) : const Size(390, 844));
   addTearDown(tester.view.reset);
   TvDetectionService.debugSetAppleTVOverride(tv ? true : null);
   addTearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
-  final servers = testMultiServer();
+  final servers = testMultiServer(clients: clients);
   final searchController = headerSearchFocus == null ? null : TextEditingController();
   if (searchController != null) addTearDown(searchController.dispose);
   final browser = GroupedLibraryBrowse(
@@ -71,8 +95,11 @@ Future<void> pumpGrouped(
     searchInHeader: headerSearchFocus != null,
   );
   await tester.pumpWidget(
-    ChangeNotifierProvider<MultiServerProvider>.value(
-      value: servers.provider,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<MultiServerProvider>.value(value: servers.provider),
+        if (profile != null) ChangeNotifierProvider<ActiveProfileProvider>.value(value: profile),
+      ],
       child: InputModeTracker(
         child: MaterialApp(
           theme: (size != null ? tabletFixtureTheme(monoTheme(dark: true)) : monoTheme(dark: true)).copyWith(
@@ -109,7 +136,11 @@ Future<void> pumpGrouped(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
 }
 
 void main() {
@@ -371,6 +402,83 @@ void main() {
     expect(find.byKey(const ValueKey('wall-years')), findsOneWidget);
     expect(find.byKey(const ValueKey('grouped-library-filter-button')), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('verified identity displays cached search while another server is still connecting', (tester) async {
+    final database = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(database.close);
+    PlexApiCache.initialize(database);
+    final profile = _ReadyBindingProfile();
+    addTearDown(profile.dispose);
+    final client = HomeStartupClient(libraryA.serverId!);
+    final fresh = Completer<LibraryPage<MediaItem>>();
+    const selection = GroupedLibrarySelection(
+      sort: GroupedLibrarySort.updated,
+      direction: LibrarySortDirection.descending,
+      wallType: LibraryWallType.all,
+    );
+    await tester.runAsync(() async {
+      await const LibraryPageSnapshotStore()
+          .open(
+            profileId: profile.activeId,
+            library: libraryA,
+            client: client,
+            query: selection.queryFor(libraryA, 0, 36),
+            collections: false,
+            isCurrent: () => true,
+          )!
+          .write(
+            LibraryPage(
+              items: [
+                MediaItem(
+                  id: 'cached',
+                  backend: libraryA.backend,
+                  kind: MediaKind.movie,
+                  title: 'Cached',
+                  serverId: libraryA.serverId,
+                ),
+              ],
+              totalCount: 1,
+            ),
+          );
+    });
+    await pumpGrouped(
+      tester,
+      (library, query, abort) => library.serverId == libraryA.serverId
+          ? fresh.future
+          : Future.value(const LibraryPage(items: [], totalCount: 0)),
+      profile: profile,
+      clients: [client],
+      settle: false,
+    );
+    Finder cachedCard() =>
+        find.byWidgetPredicate((w) => w is FocusableMediaCard && (w.item as MediaItem).id == 'cached');
+    for (var i = 0; i < 30 && cachedCard().evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    expect(profile.isBinding, isTrue);
+    expect(cachedCard(), findsOneWidget, reason: 'remaining connection probes do not block local display data');
+    fresh.complete(
+      LibraryPage(
+        items: [
+          MediaItem(
+            id: 'fresh',
+            backend: libraryA.backend,
+            kind: MediaKind.movie,
+            title: 'Fresh',
+            serverId: libraryA.serverId,
+          ),
+        ],
+        totalCount: 1,
+      ),
+    );
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 40)));
+    await tester.pumpAndSettle();
+    expect(cachedCard(), findsNothing);
+    expect(find.text('Fresh'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('facet headings stay before All and expanded options select distant values', (tester) async {

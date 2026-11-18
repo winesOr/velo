@@ -10,6 +10,7 @@ import 'package:plezy/media/media_playlist.dart';
 import 'package:plezy/screens/libraries/library_wall.dart';
 import 'package:plezy/screens/libraries/grouped_library_controller.dart';
 import 'package:plezy/services/library_query_translator.dart';
+import 'package:plezy/services/library_page_snapshot_store.dart';
 import 'package:plezy/utils/media_server_http_client.dart';
 
 const a = MediaLibrary(
@@ -35,7 +36,115 @@ MediaItem item(MediaLibrary library, String id) => MediaItem(
   serverId: library.serverId,
 );
 
+class _PageCache implements LibraryPageCacheEntry {
+  _PageCache(this.cached);
+  final Future<LibraryPage<MediaItem>?> cached;
+  final writes = <LibraryPage<MediaItem>>[];
+  @override
+  Future<LibraryPage<MediaItem>?> read() => cached;
+  @override
+  Future<void> write(LibraryPage<MediaItem> page) async => writes.add(page);
+}
+
 void main() {
+  test('cached first page is visible before network completion and fresh data replaces it once', () async {
+    final fresh = Completer<LibraryPage<MediaItem>>();
+    final cache = _PageCache(Future.value(LibraryPage(items: [item(a, 'cached')], totalCount: 8)));
+    var networkStarted = false;
+    final controller = GroupedLibraryController(
+      openPageCache: (_, _, {required collections, required isCurrent}) => cache,
+      fetchPage: (_, query, _) {
+        expect(query.offset, 0);
+        networkStarted = true;
+        return fresh.future;
+      },
+    );
+    addTearDown(controller.dispose);
+    controller.reset([a], const GroupedLibrarySelection(), load: false);
+    final pending = controller.loadMore(controller.groups.single);
+    await Future<void>.delayed(Duration.zero);
+    expect(networkStarted, isTrue);
+    expect(controller.entries.single.media!.id, 'cached');
+    expect(controller.groups.single.loading, isTrue);
+    fresh.complete(LibraryPage(items: [item(a, 'fresh')], totalCount: 9));
+    await pending;
+    expect(controller.entries.single.media!.id, 'fresh');
+    expect(controller.groups.single.offset, 1);
+    expect(controller.groups.single.total, 9);
+    expect(cache.writes.single.items.single.id, 'fresh');
+  });
+
+  test('failed revalidation keeps cached content and retries the first page rather than skipping ahead', () async {
+    final cache = _PageCache(Future.value(LibraryPage(items: [item(a, 'cached')], totalCount: 1)));
+    final offsets = <int>[];
+    var fail = true;
+    final controller = GroupedLibraryController(
+      openPageCache: (_, _, {required collections, required isCurrent}) => cache,
+      fetchPage: (_, query, _) async {
+        offsets.add(query.offset);
+        if (fail) throw StateError('offline');
+        return LibraryPage(items: [item(a, 'fresh')], totalCount: 1);
+      },
+    );
+    addTearDown(controller.dispose);
+    controller.reset([a], const GroupedLibrarySelection(), load: false);
+    await controller.loadMore(controller.groups.single);
+    expect(controller.entries.single.media!.id, 'cached');
+    expect(controller.groups.single.error, isNotNull);
+    expect(cache.writes, isEmpty);
+    fail = false;
+    await controller.loadMore(controller.groups.single);
+    expect(offsets, [0, 0]);
+    expect(controller.entries.single.media!.id, 'fresh');
+    expect(controller.groups.single.error, isNull);
+  });
+
+  test('delayed disk restore cannot repopulate a changed search or start an obsolete request', () async {
+    final disk = Completer<LibraryPage<MediaItem>?>();
+    final cache = _PageCache(disk.future);
+    var networkCalls = 0;
+    final controller = GroupedLibraryController(
+      openPageCache: (_, _, {required collections, required isCurrent}) => cache,
+      fetchPage: (_, _, _) async {
+        networkCalls++;
+        return const LibraryPage(items: [], totalCount: 0);
+      },
+    );
+    addTearDown(controller.dispose);
+    controller.reset([a], const GroupedLibrarySelection(search: 'old'), load: false);
+    final pending = controller.loadMore(controller.groups.single);
+    controller.reset([a], const GroupedLibrarySelection(search: 'new'), load: false);
+    disk.complete(LibraryPage(items: [item(a, 'old')], totalCount: 1));
+    await pending;
+    expect(controller.entries, isEmpty);
+    expect(networkCalls, 0);
+    expect(cache.writes, isEmpty);
+  });
+
+  test(
+    'refreshing the same query retains visible memory pages until replacement and another query stays isolated',
+    () async {
+      Completer<LibraryPage<MediaItem>>? gate;
+      final controller = GroupedLibraryController(
+        fetchPage: (_, _, _) async =>
+            gate?.future ?? Future.value(LibraryPage(items: [item(a, 'visible')], totalCount: 1)),
+      );
+      addTearDown(controller.dispose);
+      controller.reset([a], const GroupedLibrarySelection(), load: false);
+      await controller.loadMore(controller.groups.single);
+      gate = Completer<LibraryPage<MediaItem>>();
+      controller.reset([a], const GroupedLibrarySelection(), load: false);
+      expect(controller.entries.single.media!.id, 'visible');
+      final pending = controller.loadMore(controller.groups.single);
+      expect(controller.entries.single.media!.id, 'visible');
+      gate.complete(LibraryPage(items: [item(a, 'replacement')], totalCount: 1));
+      await pending;
+      expect(controller.entries.single.media!.id, 'replacement');
+      controller.reset([a], const GroupedLibrarySelection(search: 'other'), load: false);
+      expect(controller.entries, isEmpty);
+    },
+  );
+
   test('groups with matching library and media IDs retain separate owner cursors', () async {
     final requests = <(String, int)>[];
     final controller = GroupedLibraryController(
