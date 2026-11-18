@@ -123,6 +123,7 @@ import '../services/playback_initialization_types.dart';
 import '../utils/error_message_utils.dart';
 
 part 'media_detail/action_buttons.dart';
+part 'media_detail/all_episodes_page.dart';
 part 'media_detail/playback_tracks_status.dart';
 part 'media_detail/presentation.dart';
 part 'media_detail/playback_selectors.dart';

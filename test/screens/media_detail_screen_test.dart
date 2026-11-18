@@ -3199,12 +3199,24 @@ void main() {
             theme: tabletFixtureTheme(monoTheme(dark: dark)),
           );
           await tester.ensureVisible(find.text(t.common.viewAll));
+          final before = tester.getTopLeft(find.text(t.common.viewAll));
+          await tester.tap(find.text(t.common.viewAll));
+          await tester.pumpAndSettle();
+          await tester.pageBack();
+          await tester.pumpAndSettle();
+          expect(tester.getTopLeft(find.text(t.common.viewAll)), before);
+          expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 1)}'), findsOneWidget);
           await tester.tap(find.text(t.common.viewAll));
           await tester.pumpAndSettle();
           final grid = find.byKey(const ValueKey('detail_episode_grid'));
           expect(grid, findsOneWidget);
           expect(tester.widget<GridView>(grid).childrenDelegate.estimatedChildCount, 12);
-          final third = find.descendant(of: grid, matching: find.widgetWithText(TextButton, '3'));
+          final route = ModalRoute.of(tester.element(grid))!;
+          expect(route, isA<MaterialPageRoute<int>>());
+          expect(route.settings.name, 'detail/all-episodes');
+          expect(tester.getRect(find.byType(Scaffold).last).size, const Size(390, 844));
+          expect(find.byType(AppBar), findsOneWidget);
+          final third = find.byKey(const ValueKey('all_episodes_item_2'));
           await tester.tap(third);
           await tester.pumpAndSettle();
           expect(grid, findsNothing);
@@ -3239,15 +3251,17 @@ void main() {
         await tester.tap(find.text(t.common.viewAll));
         await tester.pumpAndSettle();
         final grid = find.byKey(const ValueKey('detail_episode_grid'));
-        final distant = find.descendant(of: grid, matching: find.widgetWithText(TextButton, '221'));
+        final distant = find.byKey(const ValueKey('all_episodes_item_220'));
         await tester.scrollUntilVisible(
           distant,
-          500,
+          1000,
+          maxScrolls: 60,
           scrollable: find.descendant(of: grid, matching: find.byType(Scrollable)).first,
         );
-        tester.widget<TextButton>(distant).onPressed!();
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+        expect(distant.hitTestable(), findsOneWidget);
+        await tester.tap(distant);
+        await tester.pumpAndSettle();
         expect(grid, findsNothing);
         expect(client.childrenPageCalls.any((call) => call.parentId == first.id && call.start == 200), isTrue);
 

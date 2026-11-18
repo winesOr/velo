@@ -144,7 +144,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
           ),
           if (_episodes.isNotEmpty)
             TextButton(
-              onPressed: () => unawaited(_showDetailEpisodeGrid(context)),
+              onPressed: () => unawaited(_openAllEpisodes(context)),
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
                 minimumSize: const Size(0, 32),
@@ -466,7 +466,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
     return current() && index >= 0 && index < _episodes.length;
   }
 
-  Future<void> _showDetailEpisodeGrid(BuildContext context) async {
+  Future<void> _openAllEpisodes(BuildContext context) async {
     final revision = _detailEpisodeRailRevision;
     final generation = _episodesLoadGeneration;
     final selectionRevision = ++_detailEpisodeSelectionRevision;
@@ -482,52 +482,37 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
         ? _seasons[_selectedSeasonIndex]
         : null;
     final title = [if (season != null) _seasonLabel(season), t.detailPlayback.allEpisodes].join(' · ');
-    final index = await OverlaySheetController.showAdaptive<int>(
-      context,
-      builder: (sheetContext) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(sheetContext).textTheme.titleMedium),
-            const SizedBox(height: 16),
-            Flexible(
-              child: GridView.builder(
-                key: const ValueKey('detail_episode_grid'),
-                shrinkWrap: true,
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 64,
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                ),
-                itemCount: _detailEpisodeCount,
-                itemBuilder: (context, index) {
-                  final episode = index < _episodes.length ? _fresh(_episodes[index]) : null;
-                  return FocusableWrapper(
-                    autofocus: episode?.globalKey == selected,
-                    disableScale: true,
-                    onSelect: () => OverlaySheetController.closeAdaptive(sheetContext, index),
-                    child: TextButton(
-                      onPressed: () => OverlaySheetController.closeAdaptive(sheetContext, index),
-                      style: TextButton.styleFrom(
-                        backgroundColor: episode?.globalKey == selected
-                            ? Theme.of(context).colorScheme.onSurface.withValues(alpha: .12)
-                            : null,
-                      ),
-                      child: Text('${episode == null ? index + 1 : effectiveEpisodeIndex(episode) ?? index + 1}'),
-                    ),
-                  );
-                },
-              ),
+    final theme = Theme.of(context);
+    final client = widget.isOffline ? null : _getArtworkMediaClient(context);
+    _EpisodePageData pageData() =>
+        (episodes: List.of(_episodes), count: _detailEpisodeCount, hasMore: _episodeListHasMore);
+    final initial = pageData();
+    final index = await Navigator.of(context).push<int>(
+      MaterialPageRoute<int>(
+        settings: const RouteSettings(name: 'detail/all-episodes'),
+        builder: (routeContext) => Theme(
+          data: theme,
+          child: _AllEpisodesPage(
+            title: title,
+            initial: initial,
+            selected: selected,
+            thumbnail: (episode) => OptimizedMediaImage.thumb(
+              client: client,
+              imagePath: widget.isOffline ? null : episode.thumbPath,
+              localFilePath: widget.isOffline ? _offlineArtworkCandidatePath(routeContext, episode.thumbPath) : null,
             ),
-          ],
+            loadNext: (index) async {
+              if (!requestCurrent()) return null;
+              await _ensureDetailEpisodeIndex(index, isRequestCurrent: requestCurrent);
+              return requestCurrent() ? pageData() : null;
+            },
+          ),
         ),
       ),
     );
     if (index == null || !requestCurrent()) return;
     final loaded = await _ensureDetailEpisodeIndex(index, isRequestCurrent: requestCurrent);
-    // Paging completes after the sheet has closed. A newer card selection,
+    // Paging can complete after the episode page has closed. A newer card selection,
     // grid request or season change owns the target even if the old page lands.
     if (!loaded || !requestCurrent()) return;
     _selectDetailEpisode(_fresh(_episodes[index]));
