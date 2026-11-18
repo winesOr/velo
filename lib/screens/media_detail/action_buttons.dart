@@ -171,11 +171,6 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
 
     final gap = isTv ? 12.0 * tvScale : 12.0;
 
-    final whitePlayStyle = FilledButton.styleFrom(
-      backgroundColor: const Color(0xfff4f5f6),
-      foregroundColor: const Color(0xff202126),
-    );
-
     Widget playButton(FocusableActionBuildState state) {
       final button = Semantics(
         label: playSemanticsLabel,
@@ -190,65 +185,44 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
             onPressed: _playLaunchPending ? null : onPlayPressed,
             style:
                 actionButtonStyle(
-                      showFocus: state.showFocus,
-                      padding: .symmetric(horizontal: isTv ? 17 * tvScale : 16, vertical: isTv ? 9 * tvScale : 12),
-                      shape: const StadiumBorder(),
-                    )
-                    .merge(
-                      (compactPresentation || isTv)
-                          ? FilledButton.styleFrom(
-                              backgroundColor: const Color(0xfff4f5f6),
-                              foregroundColor: const Color(0xff202126),
-                              shape: const StadiumBorder(),
-                              minimumSize: const Size(0, 48),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              visualDensity: VisualDensity.standard,
-                              elevation: 0,
-                            )
-                          : null,
-                    )
-                    .merge(whitePlayStyle)
-                    .merge(
-                      resumeProgress == null
-                          ? null
-                          : ButtonStyle(
-                              backgroundBuilder: (context, states, child) => ClipPath(
-                                clipper: ShapeBorderClipper(
-                                  shape: const StadiumBorder(),
-                                  textDirection: Directionality.of(context),
-                                ),
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Positioned.fill(
-                                      child: FractionallySizedBox(
-                                        alignment: AlignmentDirectional.centerStart,
-                                        widthFactor: resumeProgress,
-                                        child: ColoredBox(color: colorScheme.primary.withValues(alpha: .12)),
-                                      ),
-                                    ),
-                                    PositionedDirectional(
-                                      start: 0,
-                                      end: 0,
-                                      bottom: 0,
-                                      child: LinearProgressIndicator(
-                                        key: const ValueKey('detail-play-progress'),
-                                        value: resumeProgress,
-                                        minHeight: 2,
-                                        backgroundColor: Colors.transparent,
-                                        valueColor: AlwaysStoppedAnimation(colorScheme.primary.withValues(alpha: .65)),
-                                      ),
-                                    ),
-                                    ?child,
-                                  ],
-                                ),
+                  showFocus: state.showFocus,
+                  padding: .symmetric(horizontal: isTv ? 17 * tvScale : 16, vertical: isTv ? 9 * tvScale : 12),
+                  shape: const StadiumBorder(),
+                ).copyWith(
+                  backgroundColor: WidgetStatePropertyAll(
+                    resumeProgress == null ? const Color(0xfff4f5f6) : const Color(0xffcccccc),
+                  ),
+                  foregroundColor: const WidgetStatePropertyAll(Color(0xff202126)),
+                  iconColor: const WidgetStatePropertyAll(Color(0xff202126)),
+                  minimumSize: const WidgetStatePropertyAll(Size(0, 48)),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.standard,
+                  elevation: const WidgetStatePropertyAll(0),
+                  backgroundBuilder: resumeProgress == null
+                      ? null
+                      : (context, states, child) => Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Positioned.fill(
+                              child: FractionallySizedBox(
+                                key: const ValueKey('detail-play-progress'),
+                                alignment: AlignmentDirectional.centerStart,
+                                widthFactor: resumeProgress,
+                                child: const ColoredBox(color: Colors.white),
                               ),
                             ),
-                    ),
+                            ?child,
+                          ],
+                        ),
+                ),
             child: _playLaunchPending
                 ? SizedBox.square(
                     dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: t.common.loading),
+                    child: CircularProgressIndicator(
+                      color: const Color(0xff202126),
+                      strokeWidth: 2,
+                      semanticsLabel: t.common.loading,
+                    ),
                   )
                 : playButtonLabel.isNotEmpty
                 ? Row(
@@ -289,6 +263,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       String? tooltip,
       Color? foregroundColor,
       bool busy = false,
+      bool? selected,
     }) {
       if (busy) {
         icon = SizedBox.square(
@@ -296,6 +271,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
           child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: t.common.loading),
         );
       }
+      if (selected != null) icon = Semantics(selected: selected, child: icon);
       if (compactPresentation || isTv) {
         if (onPressed == null) {
           return IconButton(
@@ -507,6 +483,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                     state,
                     onPressed: () => unawaited(_toggleDetailFavorite(metadata)),
                     busy: _favoriteTarget == metadata.globalKey,
+                    selected: metadata.isFavorite == true,
                     icon: DetailActionIcon(DetailActionGlyph.favorite, selected: metadata.isFavorite == true),
                     tooltip: metadata.isFavorite == true ? t.rateSheet.favorited : t.rateSheet.favorite,
                   ),
@@ -518,6 +495,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                     state,
                     onPressed: onWatchlist == null ? null : watchlistAction?.onPressed,
                     busy: _watchlistTarget == metadata.globalKey,
+                    selected: onWatchlist,
                     icon: DetailActionIcon(DetailActionGlyph.favorite, selected: onWatchlist == true),
                     tooltip: onWatchlist == true ? t.explore.removeFromWatchlist : t.rateSheet.favorite,
                   ),
@@ -733,12 +711,15 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       builder: (states) => IconButton.filledTonal(
         statesController: states,
         onPressed: () => unawaited(_handleWatchedTogglePressed(metadata)),
-        icon: _watchedTarget == metadata.globalKey
-            ? SizedBox.square(
-                dimension: 18,
-                child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: t.common.loading),
-              )
-            : DetailActionIcon(DetailActionGlyph.watched, selected: metadata.isWatched),
+        icon: Semantics(
+          selected: metadata.isWatched,
+          child: _watchedTarget == metadata.globalKey
+              ? SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: t.common.loading),
+                )
+              : DetailActionIcon(DetailActionGlyph.watched, selected: metadata.isWatched),
+        ),
         tooltip: metadata.isWatched ? t.tooltips.markAsUnwatched : t.tooltips.markAsWatched,
         iconSize: PlatformDetector.isTV() ? 21 * tvScale : 20,
         style: actionButtonStyle(showFocus: showFocus),

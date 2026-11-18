@@ -4273,8 +4273,38 @@ void main() {
           ),
           screenshotKey: boundary,
         );
-        final bar = tester.widget<LinearProgressIndicator>(find.byKey(const ValueKey('detail-play-progress')));
-        expect(bar.value, .37);
+        final fill = find.byKey(const ValueKey('detail-play-progress'));
+        final button = find.byKey(const ValueKey('detail_primary_play'));
+        final white = find.descendant(of: fill, matching: find.byType(ColoredBox));
+        expect(tester.widget<ColoredBox>(white).color, Colors.white);
+        final whole = tester.getSize(fill);
+        final played = tester.getSize(white);
+        expect(played.height, whole.height);
+        expect(played.width / whole.width, closeTo(.37, .001));
+        expect(find.descendant(of: button, matching: find.byType(LinearProgressIndicator)), findsNothing);
+        final style = tester
+            .widget<FilledButton>(find.descendant(of: button, matching: find.byType(FilledButton)))
+            .style!;
+        expect(style.backgroundColor!.resolve({}), const Color(0xffcccccc));
+        expect(style.foregroundColor!.resolve({}), const Color(0xff202126));
+        expect(style.iconColor!.resolve({}), const Color(0xff202126));
+        if (fixture.name == 'movie-dark') {
+          final bounds = tester.getRect(fill).shift(-tester.getTopLeft(find.byKey(boundary)));
+          await tester.runAsync(() async {
+            final render = boundary.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+            final image = await render.toImage();
+            final pixels = (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+            int rgbAt(double widthFraction) {
+              final x = (bounds.left + widthFraction * bounds.width).floor();
+              final y = (bounds.top + 7).floor();
+              return pixels.getUint32(4 * (image.width * y + x)) >> 8;
+            }
+
+            expect(rgbAt(.2), 0xffffff);
+            expect(rgbAt(.8), 0xcccccc);
+            image.dispose();
+          });
+        }
         expect(find.textContaining('37%'), findsOneWidget);
         expect(tester.takeException(), isNull);
         if (const bool.fromEnvironment('UPDATE_FUSION_SCREENSHOTS')) {
@@ -4287,6 +4317,39 @@ void main() {
           });
         }
       });
+    }
+
+    for (final tv in [false, true]) {
+      for (final selected in [false, true]) {
+        testWidgets(
+          'favorite and watched actions expose their ${selected ? 'selected' : 'unselected'} state (TV: $tv)',
+          (tester) async {
+            final movie = testMediaItem(
+              id: 'action-states',
+              backend: MediaBackend.jellyfin,
+              kind: MediaKind.movie,
+              title: 'Action states',
+              serverId: 'server_1',
+              isFavorite: selected,
+              viewCount: selected ? 1 : 0,
+            );
+            await pumpPhoneDetail(
+              tester,
+              _FakeMediaServerClient(show: movie, childrenByParent: const {}),
+              movie,
+              tv: tv,
+              viewport: tv ? const Size(1280, 720) : const Size(390, 844),
+            );
+            for (final glyph in [DetailActionGlyph.favorite, DetailActionGlyph.watched]) {
+              final icon = find.byWidgetPredicate((w) => w is DetailActionIcon && w.glyph == glyph);
+              expect(tester.widget<DetailActionIcon>(icon).selected, selected);
+              final control = find.ancestor(of: icon, matching: find.byType(IconButton)).first;
+              final semantics = tester.getSemantics(control).getSemanticsData();
+              expect(semantics.flagsCollection.isSelected, selected ? ui.Tristate.isTrue : ui.Tristate.isFalse);
+            }
+          },
+        );
+      }
     }
 
     for (final offset in [0, -10, 6000000, 7000000]) {
