@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/focus/input_mode_tracker.dart';
 import 'package:plezy/profiles/active_profile_provider.dart';
@@ -122,6 +123,36 @@ void main() {
     }
   });
 
+  testWidgets('TV danmaku uses a white glyph with a filled, heavy checked state', (tester) async {
+    TvDetectionService.debugSetAppleTVOverride(true);
+    addTearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
+    final nodes = List.generate(4, (_) => FocusNode());
+    addTearDown(() {
+      for (final node in nodes) {
+        node.dispose();
+      }
+    });
+    for (final enabled in [false, true]) {
+      await _pumpHeader(
+        tester,
+        metadata: _mappedItem({'Id': 'movie', 'Type': 'Movie', 'Name': 'Movie'}),
+        style: VideoHeaderStyle.multiLine,
+        tvFocusNodes: nodes,
+        danmakuEnabled: enabled,
+      );
+      final icon = tester.widget<Icon>(find.byIcon(Symbols.subtitles_rounded));
+      expect(icon.color, Colors.white);
+      expect(icon.fill, enabled ? 1 : 0);
+      expect(icon.weight, enabled ? 700 : 400);
+      expect(icon.shadows, isNotEmpty);
+    }
+    nodes[1].requestFocus();
+    await tester.pump();
+    expect(nodes[1].hasFocus, isTrue);
+    expect(tester.widget<Icon>(find.byIcon(Symbols.subtitles_rounded)).fill, 1);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('TV together pill opens create and join controls without a session', (tester) async {
     resetSharedPreferencesForTest();
     SettingsService.resetForTesting();
@@ -193,6 +224,7 @@ Future<void> _pumpHeader(
   Widget? trailing,
   bool trailingOnSeparateRow = false,
   List<FocusNode>? tvFocusNodes,
+  bool danmakuEnabled = false,
   WatchTogetherProvider? sessionProvider,
 }) async {
   final watchTogether = sessionProvider ?? WatchTogetherProvider();
@@ -218,6 +250,8 @@ Future<void> _pumpHeader(
                   width: width,
                   child: VideoControlsHeader(
                     tvFocusNodes: tvFocusNodes,
+                    danmakuEnabled: danmakuEnabled,
+                    onToggleDanmaku: () {},
                     mobileLayout: true,
                     metadata: metadata,
                     style: style,

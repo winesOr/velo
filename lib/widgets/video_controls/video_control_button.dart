@@ -40,9 +40,8 @@ class VideoControlButton extends StatelessWidget {
   final bool? checked;
 
   /// A bare icon on the video. A glyph shadow keeps it readable on bright
-  /// frames and a filled, heavier amber glyph marks the checked state.
+  /// frames and a filled, heavier white glyph marks the checked state.
   final bool overlayGlyph;
-  static const overlaySelectedColor = Color(0xFFFFD45A);
 
   /// Whether this button represents an active state (e.g., a feature is enabled).
   /// When true, the icon uses the subdued brand foreground.
@@ -81,9 +80,7 @@ class VideoControlButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = overlayGlyph && checked == true;
-    final idleColor = selected
-        ? overlaySelectedColor
-        : color ?? (isActive ? VeloBrand.foreground(Brightness.dark) : Colors.white);
+    final idleColor = color ?? (isActive && !overlayGlyph ? VeloBrand.foreground(Brightness.dark) : Colors.white);
     final tvScale = FocusTheme.tvPlayerScale(context);
     final targetSize = PlatformDetector.isTV()
         ? 44 * tvScale

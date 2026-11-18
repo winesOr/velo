@@ -139,7 +139,7 @@ class VideoControlsHeader extends StatelessWidget {
     final scale = FocusTheme.tvPlayerScale(context);
     Widget button(int index, IconData icon, String label, VoidCallback? action, {bool? checked}) => DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .14),
+        color: checked == null ? Colors.white.withValues(alpha: .14) : Colors.transparent,
         borderRadius: BorderRadius.circular(22 * scale),
       ),
       child: VideoControlButton(

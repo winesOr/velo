@@ -16,7 +16,6 @@ import 'package:plezy/watch_together/providers/watch_together_provider.dart';
 import 'package:plezy/widgets/video_controls/mobile_video_controls.dart';
 import 'package:plezy/widgets/video_controls/player_chrome_controller.dart';
 import 'package:plezy/widgets/video_controls/video_controls.dart';
-import 'package:plezy/widgets/video_controls/video_control_button.dart';
 import 'package:plezy/widgets/video_controls/widgets/player_toast_indicator.dart';
 import 'package:plezy/widgets/video_controls/widgets/player_track_summary.dart';
 
@@ -43,7 +42,7 @@ void expectToggle(WidgetTester tester, String tooltip, String label, bool checke
   final control = find.byTooltip(tooltip);
   final icon = tester.widget<Icon>(find.descendant(of: control, matching: find.byIcon(glyph)));
   expect(icon.fill, checked ? 1 : 0);
-  expect(icon.color, checked ? VideoControlButton.overlaySelectedColor : Colors.white);
+  expect(icon.color, Colors.white);
   expect(icon.weight, checked ? 700 : 400);
   expect(icon.shadows, isNotEmpty);
   final button = tester.widget<IconButton>(find.ancestor(of: control, matching: find.byType(IconButton)).first);
