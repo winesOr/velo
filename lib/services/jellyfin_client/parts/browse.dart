@@ -831,7 +831,10 @@ mixin _JellyfinBrowseMethods on _JellyfinClientInternals {
       return null;
     }
     try {
-      final response = await _http.get(endpoint, queryParameters: {'Fields': _detailFields});
+      final fields = dialect == MediaBrowserDialect.emby
+          ? '$_detailFields,CommunityRating,CriticRating'
+          : _detailFields;
+      final response = await _http.get(endpoint, queryParameters: {'Fields': fields});
       throwIfHttpError(response);
       final data = response.data;
       if (data is! Map<String, dynamic>) return null;

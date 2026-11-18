@@ -248,6 +248,9 @@ class Translations$ratingDetails$en {
 
 	// Translations
 
+	/// en: 'No public rating available'
+	String get noPublicRating => 'No public rating available';
+
 	/// en: 'Rating sources explained'
 	String get sourceInfo => 'Rating sources explained';
 
@@ -8666,6 +8669,7 @@ extension on Translations {
 			'auth.quickConnectExpired' => 'Quick Connect expired. Try again.',
 			'auth.localDataRecoveryRequired' => 'Velo could not safely recover local sign-in and pending playback data. Please sign in again.',
 			'auth.pinCheckRejected' => 'The Plex PIN check was rejected',
+			'ratingDetails.noPublicRating' => 'No public rating available',
 			'ratingDetails.sourceInfo' => 'Rating sources explained',
 			'ratingDetails.title' => 'Ratings and sources',
 			'ratingDetails.viewSources' => 'View rating sources',
@@ -9136,9 +9140,9 @@ extension on Translations {
 			'settings.gestureHorizontalSeekDescription' => 'Swipe left or right on the video to move through it',
 			'settings.longPressSpeed' => 'Hold-to-Speed Rate',
 			'settings.serverAccounts' => 'Servers & Accounts',
-			'settings.downloadsOffline' => 'Downloads & Offline',
 			_ => null,
 		} ?? switch (path) {
+			'settings.downloadsOffline' => 'Downloads & Offline',
 			'settings.connectionsIntegrations' => 'Connections & Integrations',
 			'settings.appearanceAndHome' => 'Appearance & Home',
 			'settings.application' => 'Application',
@@ -9650,9 +9654,9 @@ extension on Translations {
 			'profiles.confirmPinTitle' => 'Confirm PIN',
 			'profiles.pinSet' => 'PIN set',
 			'profiles.changePin' => 'Change',
-			'profiles.removePin' => 'Remove',
 			_ => null,
 		} ?? switch (path) {
+			'profiles.removePin' => 'Remove',
 			'profiles.connectionsLabel' => 'Connections',
 			'profiles.add' => 'Add',
 			'profiles.deleteProfileButton' => 'Delete profile',
@@ -10164,9 +10168,9 @@ extension on Translations {
 			'liveTv.previousPrograms' => 'Earlier programs',
 			'liveTv.nextPrograms' => 'Later programs',
 			'liveTv.title' => 'Live TV',
-			'liveTv.guide' => 'Guide',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.guide' => 'Guide',
 			'liveTv.noChannels' => 'No channels available',
 			'liveTv.noDvr' => 'No DVR configured on any server',
 			'liveTv.serverUnavailable' => 'Live TV server is not available.',
@@ -10678,9 +10682,9 @@ extension on Translations {
 			'videoSettings.performanceOverlay' => 'Performance Overlay',
 			'videoSettings.audioOutputDolbyAtmos' => 'Dolby Atmos',
 			'videoSettings.audioOutputDolbyAudio' => 'Dolby Audio',
-			'videoSettings.audioOutputSurround' => 'Surround',
 			_ => null,
 		} ?? switch (path) {
+			'videoSettings.audioOutputSurround' => 'Surround',
 			'videoSettings.audioOutputSpatial' => 'Spatial Audio',
 			'videoSettings.audioOutputStereo' => 'Stereo',
 			'videoSettings.audioNormalization' => 'Normalize Loudness',

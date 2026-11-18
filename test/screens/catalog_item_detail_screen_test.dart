@@ -388,6 +388,7 @@ void main() {
     await _pumpDetail(tester, source);
     expect(find.text('Catalog Movie'), findsOneWidget);
     expect(find.text('Enriched overview'), findsNothing);
+    expect(find.text(t.ratingDetails.noPublicRating), findsNothing);
 
     detailCompleter.complete(
       const CatalogDetail(
@@ -405,6 +406,7 @@ void main() {
     expect(source.fetchDetailCalls, 1);
     expect(find.text('Enriched Catalog Movie'), findsOneWidget);
     expect(find.text('Enriched overview'), findsOneWidget);
+    expect(find.text(t.ratingDetails.noPublicRating), findsOneWidget);
     expect(find.text('Catalog Movie'), findsNothing);
   });
 

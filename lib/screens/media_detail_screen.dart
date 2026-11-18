@@ -338,6 +338,8 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   MediaItem? _fullMetadata;
   MediaItem? _onDeckEpisode;
   bool _isLoadingMetadata = true;
+  // Plex can paint the listing while its full item is still in flight.
+  bool _hasReceivedDetailMetadata = false;
   bool _isDeleted = false;
   StreamSubscription<LibraryChangeEvent>? _libraryContentSubscription;
 
@@ -1269,6 +1271,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     var supplementalStarted = false;
     setState(() {
       _isLoadingMetadata = true;
+      _hasReceivedDetailMetadata = false;
       _hasLoadedExtras = false;
       _hasLoadedRelatedHubs = false;
     });
@@ -1282,6 +1285,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       if (!current()) return;
       setState(() {
         if (cachedMetadata != null) _fullMetadata = _normalizeRefreshedItem(cachedMetadata, _metadata);
+        _hasReceivedDetailMetadata = cachedMetadata != null;
         _isLoadingMetadata = false;
         _hasLoadedExtras = true;
         _hasLoadedRelatedHubs = true;
@@ -1342,10 +1346,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       // again after playback, and clearing there would blank the play button
       // for the length of the on-deck round trip — while a reload that finds
       // the series finished still clears it.
-      MediaItem publish(MediaItem source, {MediaItem? onDeckEpisode, bool onDeckSettled = false}) {
+      MediaItem publish(MediaItem? source, {MediaItem? onDeckEpisode, bool onDeckSettled = false}) {
         final serverId = _metadata.serverId;
         final serverName = _metadata.serverName;
-        final base = _normalizeRefreshedItem(source, _metadata);
+        final base = source == null ? _metadata : _normalizeRefreshedItem(source, _metadata);
         final onDeckWithServerId = onDeckEpisode == null
             ? null
             : _withFallbackLibrary(
@@ -1358,6 +1362,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
         setState(() {
           _fullMetadata = base;
+          if (source != null) _hasReceivedDetailMetadata = true;
           if (onDeckSettled) _onDeckEpisode = onDeckWithServerId;
           _isLoadingMetadata = false;
         });
@@ -1380,7 +1385,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       final metadata = result.item;
 
       if (!current()) return;
-      final base = publish(metadata ?? _metadata, onDeckEpisode: result.onDeckEpisode, onDeckSettled: true);
+      final base = publish(metadata, onDeckEpisode: result.onDeckEpisode, onDeckSettled: true);
 
       if (base.isShow) {
         unawaited(_loadSeasons());
@@ -3233,22 +3238,23 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       fit: StackFit.expand,
       children: [
         if (scores.isNotEmpty) ColoredBox(color: theme.scaffoldBackgroundColor),
-        if (scores.isNotEmpty) Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 48),
-            child: Column(
-              key: const ValueKey('tv_detail_loading_scores'),
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(metadata.displayTitle, style: theme.textTheme.headlineMedium),
-                const SizedBox(height: 8),
-                Text(ratingsSemanticLabel(scores), style: theme.textTheme.titleMedium),
-              ],
+        if (scores.isNotEmpty)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 48),
+              child: Column(
+                key: const ValueKey('tv_detail_loading_scores'),
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(metadata.displayTitle, style: theme.textTheme.headlineMedium),
+                  const SizedBox(height: 8),
+                  Text(ratingsSemanticLabel(scores), style: theme.textTheme.titleMedium),
+                ],
+              ),
             ),
           ),
-        ),
         KeyedSubtree(key: const ValueKey('tv_detail_gate_content'), child: gate),
       ],
     );

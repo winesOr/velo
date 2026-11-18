@@ -163,6 +163,7 @@ class _Translations$ratingDetails$zh_Hant extends Translations$ratingDetails$zh 
 	final TranslationsZhHant _root; // ignore: unused_field
 
 	// Translations
+	@override String get noPublicRating => '暫無公開評分';
 	@override String get sourceInfo => '評分來源說明';
 }
 
@@ -3498,6 +3499,7 @@ extension on TranslationsZhHant {
 			'auth.quickConnectExpired' => '快速連線代碼已過期。請重試。',
 			'auth.localDataRecoveryRequired' => 'Velo 無法安全地復原本機登入資料與待處理的播放資料。請重新登入。',
 			'auth.pinCheckRejected' => 'Plex PIN 檢查遭到拒絕',
+			'ratingDetails.noPublicRating' => '暫無公開評分',
 			'ratingDetails.sourceInfo' => '評分來源說明',
 			'common.seasonCount' => ({required Object count}) => '共 ${count} 季',
 			'common.ratingValue' => ({required Object value}) => '${value}分',
@@ -3968,9 +3970,9 @@ extension on TranslationsZhHant {
 			'hotkeys.actions.volumeUp' => '調大音量',
 			'hotkeys.actions.volumeDown' => '調小音量',
 			'hotkeys.actions.seekForward' => ({required Object seconds}) => '快進（${seconds} 秒）',
-			'hotkeys.actions.seekBackward' => ({required Object seconds}) => '快退（${seconds} 秒）',
 			_ => null,
 		} ?? switch (path) {
+			'hotkeys.actions.seekBackward' => ({required Object seconds}) => '快退（${seconds} 秒）',
 			'hotkeys.actions.fullscreenToggle' => '切換全螢幕',
 			'hotkeys.actions.muteToggle' => '切換靜音',
 			'hotkeys.actions.subtitleToggle' => '切換字幕',
@@ -4482,9 +4484,9 @@ extension on TranslationsZhHant {
 			'profiles.tokenIdentityMismatch' => 'Plex 使用者設定檔權杖解析到非預期的伺服器',
 			'connections.sectionTitle' => '連線',
 			'connections.addConnection' => '新增連線',
-			'connections.addConnectionSubtitleNoProfile' => '使用 Plex 登入或連線至 Jellyfin 或 Emby 伺服器',
 			_ => null,
 		} ?? switch (path) {
+			'connections.addConnectionSubtitleNoProfile' => '使用 Plex 登入或連線至 Jellyfin 或 Emby 伺服器',
 			'connections.addConnectionSubtitleScoped' => ({required Object displayName}) => '新增至 ${displayName}：Plex、Jellyfin、Emby 或其他設定檔連線',
 			'connections.sessionExpiredOne' => ({required Object name}) => '${name} 的工作階段已過期',
 			'connections.sessionExpiredMany' => ({required Object count}) => '${count} 個伺服器的工作階段已過期',
@@ -4996,9 +4998,9 @@ extension on TranslationsZhHant {
 			'liveTv.record' => '錄製',
 			'liveTv.recordEpisode' => '錄製單集',
 			'liveTv.recordSeries' => '錄製整部影集',
-			'liveTv.recordOptions' => '錄製選項',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.recordOptions' => '錄製選項',
 			'liveTv.saveTo' => '儲存至',
 			'liveTv.recordings' => '已錄製內容',
 			'liveTv.scheduledRecordings' => '已排程錄製',
@@ -5510,9 +5512,9 @@ extension on TranslationsZhHant {
 			'performanceOverlay.decoderMediatekHw' => 'MediaTek 硬體',
 			'performanceOverlay.decoderExynosHw' => 'Exynos 硬體',
 			'performanceOverlay.decoderSoftware' => '軟體',
-			'performanceOverlay.decoderHardware' => '硬體',
 			_ => null,
 		} ?? switch (path) {
+			'performanceOverlay.decoderHardware' => '硬體',
 			'performanceOverlay.tunnelingActive' => '已啟用',
 			'performanceOverlay.dvRpuFailed' => ({required Object converted, required Object failures}) => '${converted}（${failures} 個失敗）',
 			'externalPlayer.title' => '外部播放器',

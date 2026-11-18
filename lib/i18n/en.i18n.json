@@ -45,6 +45,7 @@
     "pinCheckRejected": "The Plex PIN check was rejected"
   },
   "ratingDetails": {
+    "noPublicRating": "No public rating available",
     "sourceInfo": "Rating sources explained",
     "title": "Ratings and sources",
     "viewSources": "View rating sources",

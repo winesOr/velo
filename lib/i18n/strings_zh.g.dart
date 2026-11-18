@@ -163,6 +163,7 @@ class Translations$ratingDetails$zh extends Translations$ratingDetails$en {
 	final TranslationsZh _root; // ignore: unused_field
 
 	// Translations
+	@override String get noPublicRating => '暂无公开评分';
 	@override String get sourceInfo => '评分来源说明';
 	@override String get title => '评分与来源';
 	@override String get viewSources => '查看评分来源';
@@ -3605,6 +3606,7 @@ extension on TranslationsZh {
 			'auth.quickConnectExpired' => 'Quick Connect 已过期。请重试。',
 			'auth.localDataRecoveryRequired' => 'Velo 无法安全恢复本地登录状态和待处理的播放数据。请重新登录。',
 			'auth.pinCheckRejected' => 'Plex PIN 检查被拒绝',
+			'ratingDetails.noPublicRating' => '暂无公开评分',
 			'ratingDetails.sourceInfo' => '评分来源说明',
 			'ratingDetails.title' => '评分与来源',
 			'ratingDetails.viewSources' => '查看评分来源',
@@ -4075,9 +4077,9 @@ extension on TranslationsZh {
 			'settings.gestureHorizontalSeekDescription' => '在视频上左右滑动以快进或快退',
 			'settings.longPressSpeed' => '长按倍速',
 			'settings.serverAccounts' => '服务器与账户',
-			'settings.downloadsOffline' => '下载与离线',
 			_ => null,
 		} ?? switch (path) {
+			'settings.downloadsOffline' => '下载与离线',
 			'settings.connectionsIntegrations' => '连接与集成',
 			'settings.appearanceAndHome' => '外观与首页',
 			'settings.application' => '应用',
@@ -4589,9 +4591,9 @@ extension on TranslationsZh {
 			'profiles.confirmPinTitle' => '确认 PIN',
 			'profiles.pinSet' => '已设置 PIN',
 			'profiles.changePin' => '更改',
-			'profiles.removePin' => '移除',
 			_ => null,
 		} ?? switch (path) {
+			'profiles.removePin' => '移除',
 			'profiles.connectionsLabel' => '连接',
 			'profiles.add' => '添加',
 			'profiles.deleteProfileButton' => '删除用户资料',
@@ -5103,9 +5105,9 @@ extension on TranslationsZh {
 			'liveTv.previousPrograms' => '更早的节目',
 			'liveTv.nextPrograms' => '更晚的节目',
 			'liveTv.title' => '直播电视',
-			'liveTv.guide' => '节目指南',
 			_ => null,
 		} ?? switch (path) {
+			'liveTv.guide' => '节目指南',
 			'liveTv.noChannels' => '没有可用的频道',
 			'liveTv.noDvr' => '没有服务器配置 DVR',
 			'liveTv.serverUnavailable' => '直播电视服务器不可用。',
@@ -5617,9 +5619,9 @@ extension on TranslationsZh {
 			'videoSettings.performanceOverlay' => '性能监控',
 			'videoSettings.audioOutputDolbyAtmos' => 'Dolby Atmos',
 			'videoSettings.audioOutputDolbyAudio' => 'Dolby Audio',
-			'videoSettings.audioOutputSurround' => '环绕声',
 			_ => null,
 		} ?? switch (path) {
+			'videoSettings.audioOutputSurround' => '环绕声',
 			'videoSettings.audioOutputSpatial' => '空间音频',
 			'videoSettings.audioOutputStereo' => '立体声',
 			'videoSettings.audioNormalization' => '响度标准化',

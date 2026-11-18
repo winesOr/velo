@@ -45,6 +45,7 @@
     "pinCheckRejected": "Plex PIN 检查被拒绝"
   },
   "ratingDetails": {
+    "noPublicRating": "暂无公开评分",
     "sourceInfo": "评分来源说明",
     "title": "评分与来源",
     "viewSources": "查看评分来源",

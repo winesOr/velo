@@ -365,6 +365,11 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
         Column(
           key: tv ? _tvDetailRatingsGroupKey : null,
           children: [
+            if (_hasReceivedDetailMetadata && lacksPublicTitleRating(metadata))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(t.ratingDetails.noPublicRating, style: Theme.of(context).textTheme.bodySmall),
+              ),
             MediaRatingsStrip(
               item: metadata,
               alignment: centered ? WrapAlignment.center : WrapAlignment.start,

@@ -828,7 +828,8 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
     final compact = NumberFormat.compact(locale: LocaleSettings.currentLocale.intlLocaleName);
     final chips = <Widget>[];
     final item = _item;
-    final ratings = preferredMediaRatingsFor(item.toMediaItem(), limit: RatingDisplayPolicy.detailLimit);
+    final mediaItem = item.toMediaItem();
+    final ratings = preferredMediaRatingsFor(mediaItem, limit: RatingDisplayPolicy.detailLimit);
     for (final rating in ratings) {
       final source = ratingSourceLabel(rating.source) ?? t.ratingDetails.unattributedSource;
       final badge = ratingInfoForSource(rating.source, rating.value);
@@ -845,7 +846,11 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
               ),
       );
     }
-    if (chips.isEmpty) return null;
+    if (chips.isEmpty) {
+      return _detailItem != null && lacksPublicTitleRating(mediaItem)
+          ? Text(t.ratingDetails.noPublicRating, style: theme.textTheme.bodySmall)
+          : null;
+    }
     return Column(
       crossAxisAlignment: .start,
       children: [

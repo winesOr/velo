@@ -3369,6 +3369,18 @@ void main() {
       }
     });
 
+    testWidgets('phone identifies an unrated title only after receiving its detail metadata', (tester) async {
+      final row = buildShow().copyWith(userRating: 9.9);
+      final client = singleSeasonClient(row)..metadataGate = Completer<void>();
+      await pumpPhoneDetail(tester, client, row);
+      expect(find.text(t.ratingDetails.noPublicRating), findsNothing);
+
+      client.metadataGate!.complete();
+      await tester.pumpAndSettle();
+      expect(find.text(t.ratingDetails.noPublicRating).hitTestable(), findsOneWidget);
+      expect(find.text('9.9'), findsNothing);
+    });
+
     testWidgets('phone shows list scores immediately and merges refreshed public sources for the same item', (
       tester,
     ) async {
@@ -3385,16 +3397,20 @@ void main() {
       final scores = find.byType(MediaRatingsStrip);
       Finder score(String value) => find.descendant(of: scores, matching: find.text(value));
 
-      expect(score('8.1'), findsOneWidget);
-      expect(score('75%'), findsOneWidget);
+      expect(score('8.1').hitTestable(), findsOneWidget);
+      expect(score('75%').hitTestable(), findsOneWidget);
       client.metadataGate!.complete();
       await tester.pump();
       await tester.pump();
-      expect(score('8.4'), findsOneWidget);
+      expect(score('8.4').hitTestable(), findsOneWidget);
       expect(score('8.1'), findsNothing);
-      expect(score('75%'), findsOneWidget);
+      expect(score('75%').hitTestable(), findsOneWidget);
       expect(find.byKey(const ValueKey('detail_personal_rating_target')), findsNothing);
       expect(find.bySemanticsLabel(RegExp(RegExp.escape(t.explore.detail.yourRating))), findsNothing);
+      await tester.tap(find.byTooltip(t.explore.detail.moreActions));
+      await tester.pumpAndSettle();
+      expect(find.text(t.explore.detail.viewMediaInfo), findsOneWidget);
+      expect(find.text(t.explore.detail.yourRating), findsNothing);
     });
 
     testWidgets('narrow large-text source card keeps the version label inside the row', (tester) async {

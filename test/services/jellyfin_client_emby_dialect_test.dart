@@ -256,7 +256,7 @@ void main() {
       expect(embyFields.toSet().length, embyFields.length, reason: 'duplicated field: $embyFields');
     });
 
-    test('Emby home and library posters receive both public ratings before opening detail', () async {
+    test('Emby home, library and detail requests all select both public ratings', () async {
       final requests = _RequestCapture((request) {
         final fields = request.url.queryParameters['Fields']?.split(',') ?? [];
         final detail = request.url.path == '/Users/user-1/Items/movie-1';
@@ -264,8 +264,8 @@ void main() {
           'Id': 'movie-1',
           'Type': 'Movie',
           'Name': 'Movie',
-          if (detail || fields.contains('CommunityRating')) 'CommunityRating': '8.1',
-          if (detail || fields.contains('CriticRating')) 'CriticRating': 92,
+          if (fields.contains('CommunityRating')) 'CommunityRating': '8.1',
+          if (fields.contains('CriticRating')) 'CriticRating': 92,
         };
         if (detail) return jsonResponse(movie);
         if (request.url.path.endsWith('/Items/Latest')) return jsonResponse([movie]);

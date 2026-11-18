@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../media/media_item.dart';
+import '../media/media_item_types.dart';
 import '../media/media_rating.dart';
 import '../i18n/strings.g.dart';
 import '../services/settings_service.dart';
@@ -45,6 +46,10 @@ List<MediaRatingSource> mediaRatingsFor(
   }
   return const [];
 }
+
+/// A library folder or a playlist has no title-level score of its own.
+bool lacksPublicTitleRating(MediaItem item) =>
+    (item.isMovie || item.isShow || item.isSeason || item.isEpisode) && mediaRatingsFor(item, limit: 1).isEmpty;
 
 const ratingDisplayPrefs = <Pref<Object?>>[SettingsService.ratingSourceOrder, SettingsService.disabledRatingSources];
 
