@@ -547,7 +547,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
         final active = selected == episode.globalKey;
         final theme = Theme.of(context);
         final episodeNumber = effectiveEpisodeIndex(episode);
-        final status = active ? t.detailPlayback.pendingPlayback : t.libraries.filterCategories.unwatched;
+        final status = _episodeWatchLabel(episode);
         final local = widget.isOffline && episode.thumbPath != null
             ? _offlineArtworkCandidatePath(context, episode.thumbPath!)
             : null;
@@ -610,6 +610,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
                   children: [
                     _DetailEpisodeFrame(
                       episodeId: episode.id,
+                      episode: episode,
                       height: thumbHeight,
                       selected: active,
                       child: Stack(
@@ -737,15 +738,25 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
   }
 }
 
+String _episodeWatchLabel(MediaItem episode) {
+  if (episode.hasActiveProgress) {
+    final percent = (episode.viewOffsetMs! * 100 / episode.durationMs!).floor();
+    return t.accessibility.mediaCardPartiallyWatched(percent: percent);
+  }
+  return episode.isWatched ? t.libraries.watched : t.libraries.filterCategories.unwatched;
+}
+
 class _DetailEpisodeFrame extends StatelessWidget {
   const _DetailEpisodeFrame({
     required this.episodeId,
+    required this.episode,
     required this.height,
     required this.selected,
     required this.child,
   });
 
   final String episodeId;
+  final MediaItem? episode;
   final double height;
   final bool selected;
   final Widget child;
@@ -768,7 +779,13 @@ class _DetailEpisodeFrame extends StatelessWidget {
           child: ClipRRect(
             key: ValueKey('detail_episode_thumb_$episodeId'),
             borderRadius: BorderRadius.circular(10),
-            child: child,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                child,
+                if (episode case final item?) WatchedIndicator(item: item, size: WatchedIndicatorSize.compact),
+              ],
+            ),
           ),
         ),
       ),

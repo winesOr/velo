@@ -105,12 +105,14 @@ class _AllEpisodesPageState extends State<_AllEpisodesPage> {
                       itemCount: _data.count,
                       itemBuilder: (context, index) {
                         if (index >= _data.episodes.length - 1) _queueNextPage();
-                        final episode = _data.episodes.elementAtOrNull(index);
+                        final rawEpisode = _data.episodes.elementAtOrNull(index);
+                        final episode = rawEpisode == null ? null : context.readFreshWatchState(rawEpisode);
                         final selected = episode != null && episode.globalKey == widget.selected;
                         final title = episode == null
                             ? t.common.episodeNumber(number: index + 1)
                             : episodeDisplayTitle(episode);
                         return Semantics(
+                          value: episode == null ? null : _episodeWatchLabel(episode),
                           selected: selected,
                           button: true,
                           child: FocusableWrapper(
@@ -127,6 +129,7 @@ class _AllEpisodesPageState extends State<_AllEpisodesPage> {
                                 children: [
                                   _DetailEpisodeFrame(
                                     episodeId: episode?.id ?? 'unloaded_$index',
+                                    episode: episode,
                                     height: height,
                                     selected: selected,
                                     child: episode == null

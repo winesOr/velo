@@ -3131,6 +3131,51 @@ void main() {
       });
     }
 
+    testWidgets('episode watch labels and artwork follow each episode even when selection changes', (tester) async {
+      final show = buildShow();
+      final season = buildSeason(show, 1);
+      final watched = buildEpisode(show, season, 1).copyWith(viewCount: 1);
+      final partial = buildEpisode(show, season, 2).copyWith(viewOffsetMs: 900000);
+      final unseen = buildEpisode(show, season, 3);
+      final client = _FakeMediaServerClient(
+        show: show,
+        childrenByParent: {
+          show.id: [season],
+          season.id: [watched, partial, unseen],
+        },
+      );
+      await pumpPhoneDetail(tester, client, show, viewport: const Size(820, 1180));
+      final first = find.byKey(ValueKey('detail_episode_${watched.id}'));
+      await tester.ensureVisible(first);
+      expect(find.descendant(of: first, matching: find.textContaining(t.libraries.watched)), findsOneWidget);
+      expect(find.descendant(of: first, matching: find.byIcon(Symbols.check_rounded)), findsOneWidget);
+      await tester.tap(first);
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: first, matching: find.textContaining(t.libraries.watched)), findsOneWidget);
+      final second = find.byKey(ValueKey('detail_episode_${partial.id}'));
+      expect(
+        find.descendant(
+          of: second,
+          matching: find.textContaining(t.accessibility.mediaCardPartiallyWatched(percent: 50)),
+        ),
+        findsOneWidget,
+      );
+      final third = find.byKey(ValueKey('detail_episode_${unseen.id}'));
+      expect(
+        find.descendant(of: third, matching: find.textContaining(t.libraries.filterCategories.unwatched)),
+        findsOneWidget,
+      );
+      await tester.tap(find.text(t.common.viewAll));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('all_episodes_item_0')),
+          matching: find.byIcon(Symbols.check_rounded),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('compact season picker updates the episode rail and primary playback target', (tester) async {
       final show = buildShow();
       final first = buildSeason(show, 1).copyWith(parentTitle: show.title);
