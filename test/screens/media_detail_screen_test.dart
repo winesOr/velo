@@ -4221,11 +4221,13 @@ void main() {
     });
 
     for (final fixture in [
-      (name: 'movie-dark', dark: true, width: 390.0, scale: 1.0, container: false),
-      (name: 'movie-light', dark: false, width: 390.0, scale: 1.0, container: false),
-      (name: 'movie-large', dark: false, width: 320.0, scale: 2.0, container: false),
-      (name: 'show', dark: true, width: 390.0, scale: 1.0, container: true),
-      (name: 'split', dark: true, width: 1100.0, scale: 1.0, container: false),
+      (name: 'movie-dark', dark: true, width: 390.0, scale: 1.0, container: false, progress: .37),
+      (name: 'movie-light', dark: false, width: 390.0, scale: 1.0, container: false, progress: .37),
+      (name: 'movie-large', dark: false, width: 320.0, scale: 2.0, container: false, progress: .37),
+      (name: 'just-started', dark: true, width: 320.0, scale: 1.0, container: false, progress: .008),
+      (name: 'almost-done', dark: true, width: 320.0, scale: 1.0, container: false, progress: .992),
+      (name: 'show', dark: true, width: 390.0, scale: 1.0, container: true, progress: .37),
+      (name: 'split', dark: true, width: 1100.0, scale: 1.0, container: false, progress: .37),
     ]) {
       testWidgets('resume progress follows the playable target ${fixture.name}', (tester) async {
         await tester.runAsync(() async {
@@ -4235,6 +4237,10 @@ void main() {
           )..addFont(rootBundle.load('packages/material_symbols_icons/lib/fonts/MaterialSymbolsRounded.ttf'))).load();
         });
         await tester.pump();
+        if (const String.fromEnvironment('DETAIL_RESUME_CAPTURE').isNotEmpty && fixture.name == 'movie-dark') {
+          LocaleSettings.setLocaleSync(AppLocale.zh);
+          addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.en));
+        }
         final movie = testMediaItem(
           id: 'resume_movie',
           backend: MediaBackend.jellyfin,
@@ -4243,14 +4249,18 @@ void main() {
           serverId: 'server_1',
           serverName: 'Server',
           durationMs: 6000000,
-          viewOffsetMs: 2220000,
+          viewOffsetMs: (6000000 * fixture.progress).round(),
           mediaVersions: fixture.name == 'split'
               ? [MediaVersion(id: 'v1', videoResolution: '1080'), MediaVersion(id: 'v2', videoResolution: '4k')]
               : null,
         );
         final show = buildShow();
         final season = buildSeason(show, 1);
-        final episode = buildEpisode(show, season, 1).copyWith(durationMs: 6000000, viewOffsetMs: 2220000);
+        final episode = buildEpisode(
+          show,
+          season,
+          1,
+        ).copyWith(durationMs: 6000000, viewOffsetMs: (6000000 * fixture.progress).round());
         final metadata = fixture.container ? show : movie;
         final client = _FakeMediaServerClient(
           show: metadata,
@@ -4275,37 +4285,74 @@ void main() {
         );
         final fill = find.byKey(const ValueKey('detail-play-progress'));
         final button = find.byKey(const ValueKey('detail_primary_play'));
+        const capturePath = String.fromEnvironment('DETAIL_RESUME_CAPTURE');
+        if (capturePath.isNotEmpty && fixture.name == 'movie-dark') {
+          final crop = tester.getRect(button).shift(-tester.getTopLeft(find.byKey(boundary))).inflate(12);
+          await tester.runAsync(() async {
+            final render = boundary.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+            final layer = render.debugLayer! as OffsetLayer;
+            final image = await layer.toImage(crop, pixelRatio: 3);
+            final bytes = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+            await File(capturePath).writeAsBytes(bytes.buffer.asUint8List());
+            image.dispose();
+          });
+        }
         final white = find.descendant(of: fill, matching: find.byType(ColoredBox));
-        expect(tester.widget<ColoredBox>(white).color, Colors.white);
+        const playedOverlay = Color(0xcaffffff);
+        const remainingOverlay = Color(0xe6eaeae8);
+        expect(tester.widget<ColoredBox>(white).color, playedOverlay);
         final whole = tester.getSize(fill);
         final played = tester.getSize(white);
         expect(played.height, whole.height);
-        expect(played.width / whole.width, closeTo(.37, .001));
+        expect(played.width / whole.width, closeTo(fixture.progress, .001));
         expect(find.descendant(of: button, matching: find.byType(LinearProgressIndicator)), findsNothing);
         final style = tester
             .widget<FilledButton>(find.descendant(of: button, matching: find.byType(FilledButton)))
             .style!;
-        expect(style.backgroundColor!.resolve({}), const Color(0xffcccccc));
+        expect(style.backgroundColor!.resolve({}), remainingOverlay);
         expect(style.foregroundColor!.resolve({}), const Color(0xff202126));
         expect(style.iconColor!.resolve({}), const Color(0xff202126));
-        if (fixture.name == 'movie-dark') {
+        if (['movie-dark', 'just-started', 'almost-done'].contains(fixture.name)) {
           final bounds = tester.getRect(fill).shift(-tester.getTopLeft(find.byKey(boundary)));
           await tester.runAsync(() async {
             final render = boundary.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-            final image = await render.toImage();
+            final image = await render.toImage(pixelRatio: 3);
             final pixels = (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
-            int rgbAt(double widthFraction) {
-              final x = (bounds.left + widthFraction * bounds.width).floor();
-              final y = (bounds.top + 7).floor();
-              return pixels.getUint32(4 * (image.width * y + x)) >> 8;
+            Color colorAt(double dx, double dy) {
+              final x = ((bounds.left + dx) * 3).floor();
+              final y = ((bounds.top + dy) * 3).floor();
+              return Color(0xff000000 | (pixels.getUint32(4 * (image.width * y + x)) >> 8));
             }
 
-            expect(rgbAt(.2), 0xffffff);
-            expect(rgbAt(.8), 0xcccccc);
+            void expectColor(Color actual, Color expected) {
+              // Interior pixels may differ by one level due to compositor rounding.
+              expect(actual.r * 255, closeTo(expected.r * 255, 2));
+              expect(actual.g * 255, closeTo(expected.g * 255, 2));
+              expect(actual.b * 255, closeTo(expected.b * 255, 2));
+            }
+
+            final width = bounds.width;
+            final height = bounds.height;
+            final backdrop = colorAt(-1, height / 2);
+            final remaining = Color.alphaBlend(remainingOverlay, backdrop);
+            final playedColor = Color.alphaBlend(playedOverlay, remaining);
+            for (final y in [2.0, height - 2]) {
+              // Both ends must expose the underlying artwork outside the stadium.
+              expectColor(colorAt(2, y), backdrop);
+              expectColor(colorAt(width - 2, y), backdrop);
+            }
+            expectColor(colorAt(1, height / 2), playedColor);
+            expectColor(colorAt(width - 1, height / 2), remaining);
+            final split = width * fixture.progress;
+            final rows = fixture.name == 'movie-dark' ? [3.0, height - 3] : [height / 2];
+            for (final y in rows) {
+              expectColor(colorAt(split - 1, y), playedColor);
+              expectColor(colorAt(split + 1, y), remaining);
+            }
             image.dispose();
           });
         }
-        expect(find.textContaining('37%'), findsOneWidget);
+        expect(find.textContaining('${(fixture.progress * 100).floor().clamp(1, 99)}%'), findsOneWidget);
         expect(tester.takeException(), isNull);
         if (const bool.fromEnvironment('UPDATE_FUSION_SCREENSHOTS')) {
           await tester.runAsync(() async {

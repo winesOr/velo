@@ -181,6 +181,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: math.max(48, actionSize)),
           child: FilledButton(
+            clipBehavior: resumeProgress == null ? Clip.none : Clip.antiAlias,
             statesController: _playButtonStates,
             onPressed: _playLaunchPending ? null : onPlayPressed,
             style:
@@ -190,7 +191,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                   shape: const StadiumBorder(),
                 ).copyWith(
                   backgroundColor: WidgetStatePropertyAll(
-                    resumeProgress == null ? const Color(0xfff4f5f6) : const Color(0xffcccccc),
+                    resumeProgress == null ? const Color(0xfff4f5f6) : const Color(0xe6eaeae8),
                   ),
                   foregroundColor: const WidgetStatePropertyAll(Color(0xff202126)),
                   iconColor: const WidgetStatePropertyAll(Color(0xff202126)),
@@ -208,7 +209,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                                 key: const ValueKey('detail-play-progress'),
                                 alignment: AlignmentDirectional.centerStart,
                                 widthFactor: resumeProgress,
-                                child: const ColoredBox(color: Colors.white),
+                                child: const ColoredBox(color: Color(0xcaffffff)),
                               ),
                             ),
                             ?child,
