@@ -1298,6 +1298,7 @@ void main() {
               'Items': [
                 {'Id': 'movies', 'Name': 'Movies', 'CollectionType': 'movies'},
                 {'Id': 'shows', 'Name': 'Shows', 'CollectionType': 'tvshows'},
+                {'Id': 'variety', 'Name': '综艺', 'Type': 'CollectionFolder'},
               ],
             });
           }
@@ -1314,6 +1315,11 @@ void main() {
                   {'Id': 'show-1', 'Type': 'Series', 'Name': 'Latest Show'},
                 ],
               }),
+              'variety' => _json({
+                'Items': [
+                  {'Id': 'variety-1', 'Type': 'Series', 'Name': 'Variety Show'},
+                ],
+              }),
               _ => http.Response('mixed latest should not be requested', 500),
             };
           }
@@ -1327,12 +1333,17 @@ void main() {
       final hubs = result.hubs;
 
       expect(result.succeededServerIds, {'srv-1'});
-      expect(hubs.map((h) => h.identifier), ['library.movies.recent', 'library.shows.recent']);
-      expect(hubs.map((h) => h.items.single.id), ['movie-1', 'show-1']);
+      expect(hubs.map((h) => h.identifier), [
+        'library.movies.recent',
+        'library.shows.recent',
+        'library.variety.recent',
+      ]);
+      expect(hubs.map((h) => h.items.single.id), ['movie-1', 'show-1', 'variety-1']);
+      expect(hubs.last.title, contains('综艺'));
       expect(captured.where((uri) => uri.path == '/Users/user-1/Views'), hasLength(1));
       expect(
         captured.where((uri) => uri.path == '/Users/user-1/Items/Latest').map((uri) => uri.queryParameters['ParentId']),
-        ['movies', 'shows'],
+        ['movies', 'shows', 'variety'],
       );
       expect(
         captured.where((uri) => uri.path == '/Users/user-1/Items/Latest').map((uri) => uri.queryParameters['Limit']),

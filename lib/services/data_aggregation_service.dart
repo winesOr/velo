@@ -795,7 +795,9 @@ class DataAggregationService {
   }) async {
     final libs = libraries ?? await client.fetchLibraries();
     final visible = libs.where((l) {
-      if (!kinds.contains(l.kind)) return false;
+      // MediaBrowser mixed libraries expose their browseable kinds on the
+      // collection folder instead of assigning it a single movie/show kind.
+      if (!kinds.contains(l.kind) && !l.defaultBrowseKinds.any(kinds.contains)) return false;
       if (l.hidden) return false;
       if (hiddenLibraryKeys != null && hiddenLibraryKeys.contains(l.globalKey)) return false;
       return true;

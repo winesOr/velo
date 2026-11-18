@@ -502,6 +502,84 @@ void main() {
     });
   }
 
+  for (final tv in [false, true]) {
+    testWidgets('home lists real libraries including empty custom libraries on ${tv ? 'TV' : 'phone'}', (tester) async {
+      final settings = await SettingsService.getInstance();
+      await settings.write(SettingsService.showHeroSection, false);
+      MediaLibrary library(String id, String name, String server, {bool hidden = false}) => MediaLibrary(
+        id: id,
+        title: name,
+        serverId: server,
+        serverName: server,
+        backend: MediaBackend.plex,
+        hidden: hidden,
+      );
+      final variety = library('1', '综艺', 'server_1');
+      final second = library('1', '综艺', 'other');
+      final empty = library('2', '空库', 'server_1');
+      final hidden = library('3', '隐藏库', 'server_1', hidden: true);
+      final userHidden = library('4', '自定义隐藏', 'server_1');
+      final clients = [
+        _FakeMediaServerClient(
+          libraries: [variety, empty, hidden, userHidden],
+          hubs: [
+            MediaHub(
+              id: 'library.1.recent',
+              title: '综艺最近添加',
+              serverId: 'server_1',
+              type: 'mixed',
+              items: [testMediaItem(id: 'show', kind: MediaKind.show, serverId: 'server_1')],
+            ),
+          ],
+        ),
+        _FakeMediaServerClient(id: 'other', name: 'Other source', libraries: [second], hubs: const []),
+      ];
+      String? opened;
+      await _pumpDiscoverShell(
+        tester,
+        isTv: tv,
+        size: tv ? const Size(1280, 720) : const Size(390, 844),
+        clients: clients,
+        onSelectLibrary: (key) => opened = key,
+      );
+      final context = tester.element(find.byType(DiscoverScreen));
+      final catalog = context.read<LibrariesProvider>()
+        ..initialize(context.read<MultiServerProvider>().aggregationService);
+      await context.read<HiddenLibrariesProvider>().hideLibrary(userHidden.globalKey);
+      await catalog.loadLibraries();
+      await tester.pump();
+      if (tv) {
+        await tester.tap(find.byTooltip(t.libraries.allSources));
+        await tester.pump(const Duration(milliseconds: 300));
+      } else {
+        expect(find.text('综艺最近添加'), findsOneWidget);
+      }
+      expect(find.text('综艺 · server_1'), findsOneWidget);
+      expect(find.text('综艺 · other'), findsOneWidget);
+      expect(find.text('空库 · server_1'), findsOneWidget);
+      expect(find.textContaining('隐藏'), findsNothing);
+      final target = find.text('空库 · server_1');
+      await tester.ensureVisible(target);
+      await tester.tap(target);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(opened, empty.globalKey);
+      await tester.tap(find.byTooltip(t.libraries.allSources));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Other source').last);
+      await tester.pump(const Duration(milliseconds: 300));
+      if (tv) {
+        await tester.tap(find.byTooltip(t.libraries.allSources));
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+      expect(find.text('综艺'), findsOneWidget);
+      expect(find.textContaining('空库'), findsNothing);
+      await tester.tap(find.text('综艺'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(opened, second.globalKey);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
   testWidgets('home source selector uses actual protocol logos and filters the loaded hero', (tester) async {
     final settings = await SettingsService.getInstance();
     await settings.write(SettingsService.showHeroSection, true);
@@ -1816,6 +1894,7 @@ Future<void> _pumpDiscoverShell(
   math.Random? heroRandom,
   bool prepareHomeBeforeMount = false,
   void Function([Rect? anchorRect])? openNavigation,
+  ValueChanged<String>? onSelectLibrary,
 }) async {
   TvDetectionService.debugSetAppleTVOverride(isTv);
   await SettingsService.getInstance();
@@ -1896,6 +1975,7 @@ Future<void> _pumpDiscoverShell(
                 : monoTheme(dark: dark),
             home: MainScreenFocusScope(
               focusSidebar: () {},
+              selectLibrary: onSelectLibrary,
               sideNavigationWidth: SideNavigationRailState.expandedWidth,
               reservedSideNavigationWidth: SideNavigationRailState.tvCollapsedWidth,
               foregroundLeft: 0,
@@ -1933,6 +2013,7 @@ class _FakeMediaServerClient implements MediaServerClient {
   final Object authenticationSessionId = Object();
 
   final List<MediaHub> hubs;
+  final List<MediaLibrary> libraries;
   List<MediaItem> continueWatching;
   final String id;
   final String name;
@@ -1940,6 +2021,7 @@ class _FakeMediaServerClient implements MediaServerClient {
 
   _FakeMediaServerClient({
     required this.hubs,
+    this.libraries = const [],
     this.continueWatching = const [],
     this.id = 'server_1',
     this.name = 'Server',
@@ -1971,7 +2053,7 @@ class _FakeMediaServerClient implements MediaServerClient {
   }
 
   @override
-  Future<List<MediaLibrary>> fetchLibraries() async => const [];
+  Future<List<MediaLibrary>> fetchLibraries() async => libraries;
 
   @override
   Future<List<MediaHub>> fetchGlobalHubs({

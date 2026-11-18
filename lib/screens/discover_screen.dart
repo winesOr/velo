@@ -21,7 +21,10 @@ import '../media/media_item_types.dart';
 import '../media/media_server_client.dart';
 import '../media/media_hub.dart';
 import '../utils/home_hero_selection.dart';
-import '../utils/home_recent_hubs.dart';
+import '../media/media_library.dart';
+import '../providers/libraries_provider.dart';
+import '../providers/hidden_libraries_provider.dart';
+import '../widgets/focusable_tab_chip.dart';
 import '../utils/media_image_helper.dart';
 import '../widgets/cycling_media_backdrop.dart';
 import '../widgets/vidhub_ambient_backdrop.dart';
@@ -119,10 +122,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   HomeHeroSelection get _heroSelection =>
       _heroSelections.putIfAbsent(_selectedHomeServerId, () => HomeHeroSelection(random: widget.heroRandom));
   List<MediaHub> _sourceHubs = const [];
-  bool _usesPhoneHubs = false;
-  List<MediaHub>? _recentHubsInput;
-  AppLocale? _recentHubsLocale;
-  List<MediaHub> _recentHubs = const [];
   void _syncSourceLists() {
     if (_sourceSnapshotId == _selectedHomeServerId &&
         identical(_sourceItemsInput, _discover.onDeck) &&
@@ -154,18 +153,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   List<MediaHub> get _hubs {
     _syncSourceLists();
-    if (!_usesPhoneHubs) return _sourceHubs;
-    final locale = LocaleSettings.currentLocale;
-    if (!identical(_recentHubsInput, _sourceHubs) || _recentHubsLocale != locale) {
-      _recentHubsInput = _sourceHubs;
-      _recentHubsLocale = locale;
-      _recentHubs = homeRecentHubs(
-        _sourceHubs,
-        movieTitle: '${t.common.mediaKind.movie} · ${t.discover.recentlyAdded}',
-        showTitle: '${t.common.mediaKind.show} · ${t.discover.recentlyAdded}',
-      );
-    }
-    return _recentHubs;
+    return _sourceHubs;
   }
 
   bool get _hasMoreContinueWatching => _discover.hasMoreContinueWatching;
@@ -344,11 +332,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final usesPhoneHubs = PlatformDetector.isMobile(context);
-    if (_usesPhoneHubs != usesPhoneHubs) {
-      _usesPhoneHubs = usesPhoneHubs;
-      _updateHubKeys();
-    }
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     _reduceMotion = reduceMotion;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -853,6 +836,54 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     );
   }
 
+  List<MediaLibrary> _visibleHomeLibraries(
+    LibrariesProvider libraries,
+    HiddenLibrariesProvider hidden,
+    MultiServerProvider servers,
+  ) {
+    if (!hidden.isInitialized) return const [];
+    final hiddenKeys = hidden.hiddenLibraryKeys;
+    final online = servers.onlineServerIds.toSet();
+    return libraries.libraries
+        .where(
+          (library) =>
+              !library.hidden &&
+              !hiddenKeys.contains(library.globalKey) &&
+              online.contains(library.serverId) &&
+              (_selectedHomeServerId == null || library.serverId == _selectedHomeServerId),
+        )
+        .toList();
+  }
+
+  String _libraryLabel(MediaLibrary library, Set<String> serverIds) {
+    if (serverIds.length < 2) return library.title;
+    return '${library.title} · ${library.serverName ?? _serverTitle(library.serverId!)}';
+  }
+
+  Widget _buildLibraryLinks() => Consumer3<LibrariesProvider, HiddenLibrariesProvider, MultiServerProvider>(
+    builder: (context, libraries, hidden, servers, _) {
+      final visible = _visibleHomeLibraries(libraries, hidden, servers);
+      if (visible.isEmpty) return const SizedBox.shrink();
+      final serverIds = visible.map((library) => library.serverId!).toSet();
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          spacing: 8,
+          children: [
+            for (final library in visible)
+              FocusableTabChip(
+                key: ValueKey('home-library-${library.globalKey}'),
+                label: _libraryLabel(library, serverIds),
+                isSelected: false,
+                onSelect: () => MainScreenFocusScope.of(context, listen: false)?.selectLibrary?.call(library.globalKey),
+              ),
+          ],
+        ),
+      );
+    },
+  );
+
   List<AppMenuEntry<String>> _userMenuItems(
     BuildContext context, {
     required Profile? activeProfile,
@@ -863,6 +894,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final switchable = profiles.where((p) => p.id != activeProfile?.id).toList();
     final servers = context.read<MultiServerProvider>();
 
+    final libraries = PlatformDetector.isTV()
+        ? _visibleHomeLibraries(context.read<LibrariesProvider>(), context.read<HiddenLibrariesProvider>(), servers)
+        : const <MediaLibrary>[];
+    final libraryServers = libraries.map((library) => library.serverId!).toSet();
     return [
       AppMenuItem<String>(
         value: 'source:',
@@ -879,6 +914,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             selected: _selectedHomeServerId == id,
           ),
       const AppMenuDivider(),
+      if (libraries.isNotEmpty) ...[
+        AppMenuHeader<String>(label: t.libraries.title),
+        for (final library in libraries)
+          AppMenuItem<String>(value: 'library:${library.globalKey}', label: _libraryLabel(library, libraryServers)),
+        const AppMenuDivider(),
+      ],
       for (final p in switchable)
         AppMenuItem<String>(
           value: 'profile:${p.id}',
@@ -899,6 +940,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   Future<void> _handleUserMenuAction(BuildContext context, String value) async {
     if (_switchingProfile) return;
+    if (value.startsWith('library:')) {
+      MainScreenFocusScope.of(context, listen: false)?.selectLibrary?.call(value.substring('library:'.length));
+      return;
+    }
     if (value.startsWith('source:')) {
       setState(() {
         final id = value.substring('source:'.length);
@@ -1199,6 +1244,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
     final bottomPadding = MediaQuery.paddingOf(context).bottom + 100;
     final continueWatchingHub = _onDeck.isEmpty ? null : _continueWatchingHub;
+    final showServerName = svc.read(SettingsService.showServerNameOnHubs) || _hubsSpanMultipleServers();
     return Theme(
       data: _cinemaTheme.copyWith(scaffoldBackgroundColor: HomeThemeScope.colorOf(context)),
       child: Material(
@@ -1221,6 +1267,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     );
                   },
                 ),
+                SliverToBoxAdapter(child: _buildLibraryLinks()),
                 if (isInitialLoading)
                   SliverToBoxAdapter(
                     child: SizedBox(
@@ -1265,7 +1312,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         showRatingBadge: true,
                         key: i < _orderedHubKeys.length ? _orderedHubKeys[i] : null,
                         hub: _hubs[i],
-                        cardWidthOverride: _usesPhoneHubs
+                        cardWidthOverride: PlatformDetector.isMobile(context)
                             ? 105
                             : MediaQuery.sizeOf(context).width < 600 &&
                                   _hubs[i].items.every((item) => item.isMovie || item.isShow)
@@ -1273,11 +1320,16 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                             : null,
                         focusMemory: _hubFocusMemory,
                         icon: hubIconFor(_hubs[i]),
-                        showServerName: false,
-                        showRatingSources: _hubs[i].type == 'movie',
-                        onBrowseAll: () =>
-                            MainScreenFocusScope.of(context, listen: false)?.selectTab?.call(NavigationTabId.libraries),
-                        episodePosterModeOverride: _hubs[i].type == 'show' ? EpisodePosterMode.seriesPoster : null,
+                        showServerName: showServerName,
+                        showRatingSources:
+                            _hubs[i].type == 'movie' ||
+                            (_hubs[i].items.isNotEmpty && _hubs[i].items.every((item) => item.isMovie)),
+                        episodePosterModeOverride:
+                            _hubs[i].type == 'show' ||
+                                (_hubs[i].items.isNotEmpty &&
+                                    _hubs[i].items.every((item) => item.isShow || item.isSeason || item.isEpisode))
+                            ? EpisodePosterMode.seriesPoster
+                            : null,
                         onRefresh: _discover.updateItem,
                         // Hub index is i + 1 if continue watching exists, otherwise i
                         onVerticalNavigation: (isUp) => _handleVerticalNavigation(_onDeck.isNotEmpty ? i + 1 : i, isUp),
