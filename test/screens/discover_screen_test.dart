@@ -545,45 +545,112 @@ void main() {
     });
   }
 
-  testWidgets('a short hero carousel changes only on swipes and dot taps without trimming Continue Watching', (
-    tester,
-  ) async {
+  testWidgets('ten home banners rotate, wrap both ways and pause away from Home', (tester) async {
     final items = List.generate(12, (i) => testMediaItem(id: 'banner-$i', title: 'Banner $i', serverId: 'server_1'));
     await _pumpDiscoverShell(
       tester,
       isTv: false,
-      size: const Size(390, 844),
+      size: const Size(320, 844),
       clients: [_FakeMediaServerClient(hubs: const [], continueWatching: items)],
     );
-    await tester.pump(const Duration(milliseconds: 200));
-    final pages = tester.widget<PageView>(find.byType(PageView));
-    expect(pages.childrenDelegate.estimatedChildCount, 4);
-    final provider = tester.element(find.byType(DiscoverScreen)).read<DiscoverProvider>();
-    expect(provider.onDeck.length, 12, reason: 'only the banner is shortened');
+    final pages = find.byType(PageView);
     Finder dot(int index) => find.byKey(ValueKey('home-hero-dot-$index'));
     bool selected(int index) => tester.widget<Semantics>(dot(index)).properties.selected == true;
+    Future<void> finish() async {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pump();
+    }
+
+    Future<void> tick() async {
+      await tester.pump(const Duration(seconds: 8));
+      await finish();
+    }
+
+    await finish();
     expect(selected(0), isTrue);
-    await tester.drag(find.byType(PageView), const Offset(-300, 0));
-    await tester.pump(const Duration(milliseconds: 600));
+    expect(dot(9), findsOneWidget);
+    expect(dot(10), findsNothing);
+    expect(tester.getRect(dot(9)).right, lessThanOrEqualTo(320));
+    expect(tester.element(pages).read<DiscoverProvider>().onDeck, hasLength(12));
+
+    await tester.drag(pages, const Offset(300, 0));
+    await finish();
+    expect(selected(9), isTrue, reason: 'right swipe from the first reaches the last');
+    await tester.drag(pages, const Offset(-300, 0));
+    await finish();
+    expect(selected(0), isTrue, reason: 'left swipe from the last returns to the first');
+    final held = await tester.startGesture(tester.getCenter(pages));
+    await tick();
+    expect(selected(0), isTrue, reason: 'a finger resting on the artwork pauses the clock');
+    await held.cancel();
+    await finish();
+    await tick();
     expect(selected(1), isTrue);
-    expect(selected(0), isFalse);
-    await tester.tap(dot(3));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 700));
-    expect(selected(3), isTrue);
-    await tester.pump(const Duration(seconds: 8));
-    await tester.pump(const Duration(milliseconds: 600));
-    expect(selected(3), isTrue, reason: 'elapsed time must not change the selected banner');
-    final state = tester.state(find.byType(DiscoverScreen)) as TabVisibilityAware;
-    state.onTabHidden();
-    state.onTabShown();
+    await tester.tap(dot(9));
+    await finish();
+    expect(selected(9), isTrue);
+    await tick();
+    expect(selected(0), isTrue, reason: 'the timer crosses the same seam as a swipe');
+
+    final tab = tester.state(find.byType(DiscoverScreen)) as TabVisibilityAware;
+    tab.onTabHidden();
+    await tick();
+    expect(selected(0), isTrue);
+    tab.onTabShown();
+    await tick();
+    expect(selected(1), isTrue);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tick();
+    expect(selected(1), isTrue);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await tester.pump(const Duration(seconds: 16));
-    expect(selected(3), isTrue, reason: 're-entry and app resume must not restart automatic rotation');
+    await tick();
+    expect(selected(2), isTrue);
+
+    tester.widget<Semantics>(dot(2)).properties.customSemanticsActions!.values.single();
+    await finish();
+    await tick();
+    expect(selected(2), isTrue);
+    tester.widget<Semantics>(dot(2)).properties.customSemanticsActions!.values.single();
+    await finish();
+    await tick();
+    expect(selected(3), isTrue);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  for (final single in [false, true]) {
+    testWidgets('home carousel stays still for ${single ? 'one banner' : 'reduced motion'}', (tester) async {
+      final items = List.generate(
+        single ? 1 : 3,
+        (i) => testMediaItem(id: 'banner-$i', title: 'Banner $i', serverId: 'server_1'),
+      );
+      await _pumpDiscoverShell(
+        tester,
+        isTv: false,
+        size: const Size(390, 844),
+        clients: [_FakeMediaServerClient(hubs: const [], continueWatching: items)],
+        wrap: (child) => Builder(
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: !single),
+            child: child,
+          ),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 18));
+      await tester.pump(const Duration(milliseconds: 700));
+      Semantics dot(int index) => tester.widget<Semantics>(find.byKey(ValueKey('home-hero-dot-$index')));
+      expect(dot(0).properties.selected, isTrue);
+      expect(dot(0).properties.customSemanticsActions, isNull);
+      if (!single) {
+        await tester.tap(find.byKey(const ValueKey('home-hero-dot-2')));
+        await tester.pump();
+        expect(dot(2).properties.selected, isTrue);
+      }
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
 
   testWidgets('home options forwards the actual button bounds to its menu', (tester) async {
     Rect? anchor;
@@ -619,7 +686,7 @@ void main() {
 
   testWidgets('recommendation banners and page survive re-entry; only manual refresh rerolls', (tester) async {
     final items = List.generate(
-      18,
+      24,
       (i) => testMediaItem(id: 'recommendation-$i', title: 'Recommendation $i', serverId: 'server_1'),
     );
     final client = _FakeMediaServerClient(
@@ -629,7 +696,7 @@ void main() {
     await _pumpDiscoverShell(tester, isTv: false, size: const Size(390, 844), clients: [client]);
     await tester.pump(const Duration(milliseconds: 200));
     List<String> labels() =>
-        List.generate(4, (i) => tester.widget<Semantics>(find.byKey(ValueKey('home-hero-dot-$i'))).properties.label!);
+        List.generate(10, (i) => tester.widget<Semantics>(find.byKey(ValueKey('home-hero-dot-$i'))).properties.label!);
     final first = labels();
     final provider = tester.element(find.byType(DiscoverScreen)).read<DiscoverProvider>();
     expect(provider.onDeck, isEmpty, reason: 'recommendations also supply banners when Continue Watching is empty');
@@ -1238,6 +1305,11 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.select);
     await tester.pump();
     expect(FocusManager.instance.primaryFocus?.debugLabel, otherDot);
+    final tvItem = tester.widget<TvSpotlightBackground>(find.byType(TvSpotlightBackground)).item;
+    final focusedDot = FocusManager.instance.primaryFocus;
+    await tester.pump(const Duration(seconds: 17));
+    expect(tester.widget<TvSpotlightBackground>(find.byType(TvSpotlightBackground)).item?.globalKey, tvItem?.globalKey);
+    expect(FocusManager.instance.primaryFocus, same(focusedDot));
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pump();
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'tv_browse_rail');
@@ -1726,8 +1798,8 @@ void main() {
     final indicators = find.byKey(const ValueKey('home-hero-dot-0'));
     expect(
       find.byWidgetPredicate((w) => w is Semantics && w.properties.customSemanticsActions?.isNotEmpty == true),
-      findsNothing,
-      reason: 'manual banners expose no automatic-rotation pause action',
+      findsOneWidget,
+      reason: 'the selected banner exposes a pause action without adding a visible control',
     );
     expect(indicators, findsOneWidget, reason: 'hero indicators render in pointer mode');
     expect(find.byIcon(Symbols.pause_rounded), findsNothing, reason: 'the prototype has no visible pause toggle');

@@ -38,7 +38,7 @@ void main() {
       random: Random(3),
       previousKeys: first.map((item) => item.globalKey).toList(),
     );
-    expect(next.length, 4);
+    expect(next.length, 10);
     expect(next.any((item) => first.any((old) => old.globalKey == item.globalKey)), isFalse);
     expect(pool.first.id, 'movie-0', reason: 'sampling must not reorder the source rail');
   });
@@ -52,7 +52,8 @@ void main() {
     expect(current.every((item) => item.viewOffsetMs == 100), isTrue);
     selection.reroll();
     final next = selection.update(pool);
-    expect(next.any((item) => first.any((old) => old.id == item.id)), isFalse);
+    final oldIds = first.map((item) => item.id).toSet();
+    expect(next.where((item) => oldIds.contains(item.id)), hasLength(2));
     final otherSource = List.generate(8, (i) => testMediaItem(id: 'other-$i', serverId: 'other'));
     expect(selection.update(otherSource).every((item) => item.serverId == 'other'), isTrue);
   });
@@ -63,7 +64,7 @@ void main() {
     expect(selection.update([]), isEmpty);
     final first = selection.update(pool.take(2));
     expect(selection.update(pool).take(2), orderedEquals(first));
-    expect(selection.update(pool).length, 4);
+    expect(selection.update(pool).map((item) => item.id), unorderedEquals(pool.map((item) => item.id)));
     final pair = selectHomeHeroItems(pool.take(2), random: Random(6));
     final next = selectHomeHeroItems(
       pool.take(2),

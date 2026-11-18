@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter/services.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import '../widgets/server_activities_button.dart';
@@ -163,7 +164,22 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   String? get _errorMessage => _discover.errorMessage == null ? null : t.errors.unableToLoad(context: t.discover.title);
 
   bool _switchingProfile = false;
-  final PageController _heroController = PageController();
+  static const _heroInterval = Duration(seconds: 8);
+  late final PageController _heroController = PageController(
+    initialPage: 1,
+    keepPage: false,
+    onAttach: (_) => _restoreHeroPageAfterLayout(),
+    onDetach: (_) {
+      _heroPointers.clear();
+      _cancelHeroRotation();
+    },
+  );
+  Timer? _heroTimer;
+  bool _hadLoopingHero = false;
+  final _heroPointers = <int>{};
+  bool _heroRotationPaused = false;
+  bool _heroAppActive = true;
+  bool _heroRouteVisible = true;
   final ScrollController _scrollController = ScrollController();
   final ValueNotifier<int> _heroIndex = ValueNotifier<int>(0);
 
@@ -173,7 +189,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   final TvSpotlightController _spotlight = TvSpotlightController();
   final _tvHeroPlayFocus = FocusNode(debugLabel: 'home_tv_play');
   final _tvHeroDetailsFocus = FocusNode(debugLabel: 'home_tv_details');
-  final _tvHeroDotFocus = List.generate(4, (i) => FocusNode(debugLabel: 'home_tv_dot_$i'));
+  final _tvHeroDotFocus = <FocusNode>[];
   bool _isTabVisible = true;
 
   bool _initialLoadComplete = false;
@@ -333,8 +349,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    _heroRouteVisible = ModalRoute.isCurrentOf(context) ?? true;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
     _reduceMotion = reduceMotion;
+    _syncHeroRotation();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (PlatformDetector.isTV()) {
@@ -343,6 +361,98 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         _syncHomeTheme(_heroItems.isEmpty ? null : _heroItems[_heroIndex.value.clamp(0, _heroItems.length - 1)]);
       }
     });
+  }
+
+  int _heroPageFor(int index) => _heroItems.length > 1 ? index + 1 : 0;
+  int _heroIndexFor(int page) => _heroItems.length > 1 ? (page - 1) % _heroItems.length : 0;
+
+  void _restoreHeroPageAfterLayout() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_heroController.hasClients || _heroItems.isEmpty) return;
+      final page = _heroPageFor(_heroIndex.value.clamp(0, _heroItems.length - 1));
+      if (_heroController.page != page.toDouble()) _heroController.jumpToPage(page);
+      _syncHeroRotation();
+    });
+  }
+
+  void _resetHeroPage() {
+    _cancelHeroRotation();
+    if (_heroController.hasClients && _heroItems.isNotEmpty) {
+      _heroController.jumpToPage(_heroPageFor(0));
+    }
+    _restoreHeroPageAfterLayout();
+  }
+
+  void _cancelHeroRotation() {
+    _heroTimer?.cancel();
+    _heroTimer = null;
+  }
+
+  void _syncHeroRotation() {
+    if (!_isTabVisible ||
+        !_heroRouteVisible ||
+        !_heroAppActive ||
+        _reduceMotion ||
+        _heroRotationPaused ||
+        _heroPointers.isNotEmpty ||
+        PlatformDetector.isTV() ||
+        !_heroController.hasClients ||
+        _heroItems.length < 2 ||
+        _heroController.position.isScrollingNotifier.value) {
+      _cancelHeroRotation();
+      return;
+    }
+    _heroTimer ??= Timer(_heroInterval, () {
+      _heroTimer = null;
+      if (_heroController.hasClients && _heroItems.length > 1) {
+        _goToHero((_heroIndex.value + 1) % _heroItems.length);
+      }
+    });
+  }
+
+  void _goToHero(int index) {
+    if (!_heroController.hasClients || _heroItems.length < 2) return;
+    _cancelHeroRotation();
+    final last = _heroItems.length - 1;
+    int page = _heroPageFor(index);
+    // Each end has one copy of the opposite banner. Crossing it animates
+    // one page, then the idle scroll view returns to the matching real page.
+    if (last > 1 && _heroIndex.value == 0 && index == last) page = 0;
+    if (_heroIndex.value == last && index == 0) page = last + 2;
+    if (_reduceMotion || _heroIndex.value == index) {
+      _heroController.jumpToPage(page);
+      _syncHeroRotation();
+    } else {
+      _heroController.animateToPage(page, duration: tokens(context).slow, curve: Curves.easeInOut);
+    }
+  }
+
+  void _releaseHeroPointer(PointerEvent event) {
+    _heroPointers.remove(event.pointer);
+    _syncHeroRotation();
+  }
+
+  bool _onHeroScroll(ScrollNotification event) {
+    if (event.depth != 0 || event.metrics.axis != Axis.horizontal) return false;
+    if (event is ScrollStartNotification) {
+      if (event.dragDetails != null) _heroHasNavigated = true;
+      _cancelHeroRotation();
+    } else if (event is ScrollEndNotification) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted ||
+            !_heroController.hasClients ||
+            _heroItems.length < 2 ||
+            _heroController.position.isScrollingNotifier.value) {
+          return;
+        }
+        final page = _heroController.page!.round();
+        if (page == 0 || page == _heroItems.length + 1) {
+          _heroController.jumpToPage(_heroPageFor(_heroIndexFor(page)));
+        }
+        _syncHeroRotation();
+      });
+    }
+    return false;
   }
 
   void _scrollToTop() {
@@ -507,6 +617,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _heroAppActive =
+        WidgetsBinding.instance.lifecycleState == null ||
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
     _heroFocusNode = FocusNode(debugLabel: 'hero_section');
     _discover = context.read<DiscoverProvider>();
     _seenLoadGeneration = _discover.loadGeneration;
@@ -576,9 +689,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       _syncHomeTheme(_heroItems.isEmpty ? null : _heroItems[_heroIndex.value.clamp(0, _heroItems.length - 1)]);
     }
 
-    if (resetHero && _heroController.hasClients && _heroItems.isNotEmpty) {
-      _heroController.jumpToPage(0);
-    }
+    final looping = _heroItems.length > 1;
+    if (resetHero || _hadLoopingHero != looping) _restoreHeroPageAfterLayout();
+    _hadLoopingHero = looping;
+    _syncHeroRotation();
     // Focus hero when fresh content lands, but only if no modal route is on top
     if (isNewLoad &&
         !_heroHasNavigated &&
@@ -620,14 +734,16 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       onUp: _focusTopActions,
       onLeft: () {
         if (_heroIndex.value > 0) {
-          _heroController.previousPage(duration: tokens(context).slow, curve: Curves.easeInOut);
+          _heroHasNavigated = true;
+          _goToHero(_heroIndex.value - 1);
         } else {
           _navigateToSidebar();
         }
       },
       onRight: () {
-        if (_heroIndex.value < _heroItems.length - 1) {
-          _heroController.nextPage(duration: tokens(context).slow, curve: Curves.easeInOut);
+        if (_heroItems.length > 1) {
+          _heroHasNavigated = true;
+          _goToHero((_heroIndex.value + 1) % _heroItems.length);
         }
       },
       onSelect: () {
@@ -641,6 +757,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   @override
   void dispose() {
+    _cancelHeroRotation();
     _discover.removeListener(_onDiscoverChanged);
     WidgetsBinding.instance.removeObserver(this);
     _spotlight.dispose();
@@ -661,6 +778,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _heroAppActive = state == AppLifecycleState.resumed;
+    if (!_heroAppActive) _heroPointers.clear();
+    _syncHeroRotation();
     if (state == AppLifecycleState.resumed) {
       // Stale hubs refetch on every resume — cheap timestamp check, and a
       // desktop window-focus gain after hours away should refresh too (#1646).
@@ -676,12 +796,15 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   @override
   void onTabHidden() {
     _isTabVisible = false;
+    _heroPointers.clear();
+    _cancelHeroRotation();
     _pendingTvBrowseRailFocus = false;
   }
 
   @override
   void onTabShown() {
     _isTabVisible = true;
+    _syncHeroRotation();
     // Artwork that decoded while hidden was not applied to the theme.
     if (!PlatformDetector.isTV()) {
       _syncHomeTheme(_heroItems.isEmpty ? null : _heroItems[_heroIndex.value.clamp(0, _heroItems.length - 1)]);
@@ -710,7 +833,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         _syncSourceLists();
         _heroIndex.value = 0;
       });
-      if (_heroController.hasClients && _heroItems.isNotEmpty) _heroController.jumpToPage(0);
+      _resetHeroPage();
     }
     switch (outcome) {
       case DiscoverRefreshOutcome.failed:
@@ -933,7 +1056,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         _heroIndex.value = 0;
         _updateHubKeys();
       });
-      if (_heroController.hasClients && _heroItems.isNotEmpty) _heroController.jumpToPage(0);
+      _resetHeroPage();
       _syncHomeTheme(_heroItems.firstOrNull);
       return;
     }
@@ -1481,7 +1604,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   }
 
   Widget _buildTvHeroActions(BuildContext context, MediaItem item) {
-    final candidates = _heroItems.take(4).toList();
+    final candidates = _heroItems.toList();
+    while (_tvHeroDotFocus.length < candidates.length) {
+      _tvHeroDotFocus.add(FocusNode(debugLabel: 'home_tv_dot_${_tvHeroDotFocus.length}'));
+    }
     if (candidates.isNotEmpty && !candidates.any((candidate) => candidate.globalKey == item.globalKey)) {
       candidates[0] = item;
     }
@@ -1698,27 +1824,29 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              NotificationListener<ScrollStartNotification>(
-                onNotification: (notification) {
-                  if (notification.dragDetails != null) _heroHasNavigated = true;
-                  return false;
-                },
-                child: PageView.builder(
-                  controller: _heroController,
-                  itemCount: _heroItems.length,
-                  onPageChanged: (index) {
-                    if (index >= 0 && index < _heroItems.length) {
-                      if (index != _heroIndex.value) _heroHasNavigated = true;
+              NotificationListener<ScrollNotification>(
+                onNotification: _onHeroScroll,
+                child: Listener(
+                  onPointerDown: (event) {
+                    _heroPointers.add(event.pointer);
+                    _cancelHeroRotation();
+                  },
+                  onPointerUp: _releaseHeroPointer,
+                  onPointerCancel: _releaseHeroPointer,
+                  child: PageView.builder(
+                    controller: _heroController,
+                    itemCount: _heroItems.length > 1 ? _heroItems.length + 2 : _heroItems.length,
+                    onPageChanged: (page) {
+                      if (_heroItems.isEmpty) return;
+                      final index = _heroIndexFor(page);
                       _heroIndex.value = index;
                       _syncHomeTheme(_heroItems[index]);
-                    }
-                  },
-                  itemBuilder: (context, index) {
-                    return _buildHeroItem(_heroItems[index], heroHeight);
-                  },
+                    },
+                    itemBuilder: (context, page) => _buildHeroItem(_heroItems[_heroIndexFor(page)], heroHeight),
+                  ),
                 ),
               ),
-              // Fixed page indicators switch the carousel only on user input.
+              // Indicators always refer to the real banners, including at the wraparound pages.
               // Hidden on TV only (issue #600: pointer-only control unreachable
               // via d-pad) — never gated on transient input mode, which back-key
               // events, BT keyboards, and gamepads can flip on phones/desktop.
@@ -1758,19 +1886,23 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                                 button: true,
                                 selected: isActive,
                                 label: _heroItems[index].displayTitle,
+                                customSemanticsActions: isActive && !_reduceMotion && _heroItems.length > 1
+                                    ? {
+                                        CustomSemanticsAction(
+                                          label: _heroRotationPaused
+                                              ? t.accessibility.autoScrollPlay
+                                              : t.accessibility.autoScrollPause,
+                                        ): () {
+                                          setState(() => _heroRotationPaused = !_heroRotationPaused);
+                                          _syncHeroRotation();
+                                        },
+                                      }
+                                    : null,
                                 child: GestureDetector(
                                   behavior: HitTestBehavior.opaque,
                                   onTap: () {
                                     _heroHasNavigated = true;
-                                    if (_reduceMotion) {
-                                      _heroController.jumpToPage(index);
-                                    } else {
-                                      _heroController.animateToPage(
-                                        index,
-                                        duration: tokens(context).slow,
-                                        curve: Curves.easeInOut,
-                                      );
-                                    }
+                                    _goToHero(index);
                                   },
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 2),

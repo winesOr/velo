@@ -3,6 +3,10 @@ import 'dart:math';
 import '../media/media_item.dart';
 import '../media/media_kind.dart';
 
+// TODO(1): Confirm the default carousel size after device testing.
+const _configuredHomeHeroLimit = int.fromEnvironment('HOME_HERO_LIMIT', defaultValue: 10);
+const homeHeroItemLimit = _configuredHomeHeroLimit > 0 ? _configuredHomeHeroLimit : 10;
+
 String _identity(MediaItem item) => item.seriesGlobalKey ?? item.globalKey;
 
 Map<String, MediaItem> _candidates(Iterable<MediaItem> items) {
@@ -28,7 +32,7 @@ List<MediaItem> selectHomeHeroItems(Iterable<MediaItem> items, {Random? random, 
   final previous = previousKeys.toSet();
   final fresh = pool.where((item) => !previous.contains(_identity(item)));
   final recent = pool.where((item) => previous.contains(_identity(item)));
-  final result = fresh.followedBy(recent).take(4).toList()..shuffle(rng);
+  final result = fresh.followedBy(recent).take(homeHeroItemLimit).toList()..shuffle(rng);
   if (result.length > 1 &&
       result.length == previousKeys.length &&
       Iterable<int>.generate(result.length).every((i) => _identity(result[i]) == previousKeys[i])) {
@@ -61,12 +65,15 @@ class HomeHeroSelection {
       _needsResample = _items.isEmpty;
     } else {
       final kept = <MediaItem>[for (final item in _items) ?pool[_identity(item)]];
-      final keptKeys = kept.map(_identity).toSet();
-      final extra = selectHomeHeroItems(
-        pool.values.where((item) => !keptKeys.contains(_identity(item))),
-        random: _random,
-      );
-      _items = List.unmodifiable([...kept, ...extra.take(4 - kept.length)]);
+      if (kept.length < homeHeroItemLimit) {
+        final keptKeys = kept.map(_identity).toSet();
+        final extra = selectHomeHeroItems(
+          pool.values.where((item) => !keptKeys.contains(_identity(item))),
+          random: _random,
+        );
+        kept.addAll(extra.take(homeHeroItemLimit - kept.length));
+      }
+      _items = List.unmodifiable(kept);
     }
     return _items;
   }
