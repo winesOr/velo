@@ -27,7 +27,7 @@ Future<void> showRatingSourceDialog(BuildContext context, List<MediaRatingSource
   );
 }
 
-/// Shared by homepage ratings and future detail-page entry points.
+/// Source details shared by the home and media detail pages.
 class RatingSourceDialog extends StatefulWidget {
   const RatingSourceDialog({super.key, required this.ratings});
 
@@ -69,6 +69,17 @@ class _RatingSourceDialogState extends State<RatingSourceDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // The scoped route can capture white or black ink chosen for artwork.
+    // Its glass panel uses the app appearance, so all its ink must use that
+    // same theme. This lookup does not change which navigator owns the route.
+    final appTheme = Theme.of(Navigator.of(context, rootNavigator: true).context);
+    return Theme(
+      data: appTheme,
+      child: Builder(builder: _buildDialog),
+    );
+  }
+
+  Widget _buildDialog(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     void close() {
       if (ModalRoute.of(context)?.isCurrent ?? false) Navigator.of(context).pop();

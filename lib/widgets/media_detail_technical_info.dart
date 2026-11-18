@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../focus/focusable_wrapper.dart';
 import '../i18n/strings.g.dart';
 import '../media/media_file_info.dart';
+import '../theme/mono_presentation.dart';
 import '../utils/codec_utils.dart';
 import '../utils/resolution_label.dart';
 import 'app_icon.dart';
@@ -266,11 +267,9 @@ class MediaDetailTechnicalInfoState extends State<MediaDetailTechnicalInfo> {
 
   Widget _fileCard(BuildContext context, MediaFileVersion version, MediaStreamDetails? video) {
     final theme = Theme.of(context);
-    final caption = theme.textTheme.bodySmall?.copyWith(
-      fontSize: 10,
-      height: 1.8,
-      color: theme.colorScheme.onSurfaceVariant,
-    );
+    final surface = theme.colorScheme.surfaceContainerLow;
+    final ink = MonoPresentation.artworkTextColors(surface);
+    final caption = theme.textTheme.bodySmall?.copyWith(fontSize: 10, height: 1.8, color: ink.caption);
     final summary = [
       ?version.durationFormatted ?? version.parts.firstOrNull?.durationFormatted,
       ?version.totalFileSizeFormatted,
@@ -285,16 +284,13 @@ class MediaDetailTechnicalInfoState extends State<MediaDetailTechnicalInfo> {
         key: const ValueKey('detail_file_info'),
         width: double.infinity,
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: theme.brightness == Brightness.dark ? const Color(0x15000000) : const Color(0x50FFFFFF),
-          borderRadius: BorderRadius.circular(16),
-        ),
+        decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16)),
         child: Column(
           children: [
             Text(
               widget.title,
               textAlign: TextAlign.center,
-              style: caption?.copyWith(fontSize: 11, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface),
+              style: caption?.copyWith(fontSize: 11, fontWeight: FontWeight.w500, color: ink.foreground),
             ),
             const SizedBox(height: 7),
             for (final part in version.parts)
@@ -309,52 +305,36 @@ class MediaDetailTechnicalInfoState extends State<MediaDetailTechnicalInfo> {
     );
   }
 
-  Widget _card(
-    BuildContext context,
-    String title,
-    IconData icon,
-    Map<String, String?> rows, {
-    bool fullWidth = false,
-    double? width,
-  }) {
+  Widget _card(BuildContext context, String title, IconData icon, Map<String, String?> rows) {
     final theme = Theme.of(context);
-    final text = theme.textTheme.bodySmall?.copyWith(
-      fontSize: fullWidth ? 10 : 11,
-      height: 1.9,
-      color: theme.colorScheme.onSurfaceVariant,
-    );
+    final surface = theme.colorScheme.surfaceContainerLow;
+    final ink = MonoPresentation.artworkTextColors(surface);
+    final text = theme.textTheme.bodySmall?.copyWith(fontSize: 11, height: 1.9, color: ink.caption);
     return Container(
-      width: fullWidth ? double.infinity : (width ?? _cardWidth),
+      width: _cardWidth,
       margin: EdgeInsets.zero,
-      padding: EdgeInsets.all(fullWidth ? 16 : 15),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: theme.brightness == Brightness.dark ? const Color(0x16000000) : const Color(0x50FFFFFF),
+        color: surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.brightness == Brightness.dark ? const Color(0x09FFFFFF) : const Color(0x38FFFFFF),
-        ),
+        border: Border.all(color: ink.foreground.withValues(alpha: .20)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              AppIcon(icon, size: 17),
+              AppIcon(icon, size: 17, color: ink.foreground),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   title,
-                  style: text?.copyWith(
-                    fontSize: fullWidth ? 11 : 13,
-                    fontWeight: FontWeight.w500,
-                    height: 1.5,
-                    color: theme.colorScheme.onSurface,
-                  ),
+                  style: text?.copyWith(fontSize: 13, fontWeight: FontWeight.w500, height: 1.5, color: ink.foreground),
                 ),
               ),
             ],
           ),
-          SizedBox(height: fullWidth ? 7 : 10),
+          const SizedBox(height: 10),
           for (final entry in rows.entries)
             if (entry.value?.isNotEmpty == true) Text('${entry.key}: ${entry.value}', style: text),
           if (rows.values.every((value) => value?.isNotEmpty != true))

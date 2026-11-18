@@ -712,7 +712,12 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
     final homeType = Theme.of(context).extension<HomeTypography>();
     final compactHome = homeType != null && !widget.isInContinueWatching && !PlatformDetector.isTV();
     final homeTitle = widget.showMediaKindSubtitle
-        ? const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, height: 1.4)
+        ? TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            height: 1.4,
+          )
         : homeType?.cardTitle.copyWith(fontSize: compactHome ? 12 : 13) ??
               const TextStyle(
                 fontWeight: FontWeight.w600,

@@ -522,6 +522,10 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
     final leadingPadding = _leadingPaddingFor(isTv);
     final homePhone = !isTv && !widget.inset && Theme.of(context).extension<HomeTypography>() != null;
     final canBrowseAll = widget.detailRelated || widget.hub.more || (homePhone && widget.isInContinueWatching);
+    final browseAllColor = widget.detailRelated
+        ? Theme.of(context).colorScheme.onSurfaceVariant
+        : Theme.of(context).extension<HomeTypography>()?.caption.color ??
+              Theme.of(context).colorScheme.onSurface.withValues(alpha: .6);
     // Phone headers follow the prototype: 18/w600 title, no leading glyph, and
     // a quiet "All >" link on the far edge. TV keeps the icon-led shelf header.
     final titleStyle =
@@ -605,22 +609,8 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
                           const SizedBox(width: 4),
                           const AppIcon(Symbols.chevron_right_rounded, fill: 1, size: 26),
                         ] else ...[
-                          Text(
-                            t.libraries.all,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color:
-                                  Theme.of(context).extension<HomeTypography>()?.caption.color ??
-                                  Theme.of(context).colorScheme.onSurface.withValues(alpha: .6),
-                            ),
-                          ),
-                          AppIcon(
-                            Symbols.chevron_right_rounded,
-                            size: 13,
-                            color:
-                                Theme.of(context).extension<HomeTypography>()?.caption.color ??
-                                Theme.of(context).colorScheme.onSurface.withValues(alpha: .6),
-                          ),
+                          Text(t.libraries.all, style: TextStyle(fontSize: 11, color: browseAllColor)),
+                          AppIcon(Symbols.chevron_right_rounded, size: 13, color: browseAllColor),
                         ],
                     ],
                   ),

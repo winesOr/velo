@@ -63,8 +63,20 @@ abstract final class MonoPresentation {
     Color surface, {
     Brightness brightness = Brightness.dark,
   }) {
-    // Artwork retains white primary ink; secondary text follows appearance.
-    return (foreground: Colors.white, caption: VeloPalette.caption(brightness));
+    final luminance = surface.computeLuminance();
+    final whiteContrast = 1.05 / (luminance + .05);
+    final blackContrast = (luminance + .05) / .05;
+    final lightInk = whiteContrast >= 4.5 && (blackContrast < 4.5 || brightness == Brightness.dark);
+    final foreground = lightInk ? Colors.white : Colors.black;
+    final muted = VeloPalette.caption(lightInk ? Brightness.dark : Brightness.light);
+    // Keep secondary text muted as far as the actual artwork permits.
+    for (var step = 0; step < 8; step++) {
+      final caption = Color.lerp(muted, foreground, step / 8)!;
+      final ink = caption.computeLuminance();
+      final contrast = ink >= luminance ? (ink + .05) / (luminance + .05) : (luminance + .05) / (ink + .05);
+      if (contrast >= 4.5) return (foreground: foreground, caption: caption);
+    }
+    return (foreground: foreground, caption: foreground);
   }
 
   /// Blend artwork into its page color with a long, gently eased ramp.

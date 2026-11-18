@@ -65,6 +65,7 @@ import '../utils/rating_display_policy.dart';
 import '../widgets/fitted_metadata_line.dart';
 import '../i18n/strings.g.dart';
 import '../theme/mono_tokens.dart';
+import '../theme/home_typography.dart';
 import '../theme/mono_presentation.dart';
 import '../navigation/home_theme.dart';
 import '../widgets/media_detail_technical_info.dart';
@@ -359,8 +360,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   final HomeThemeController _detailTheme = HomeThemeController(
     resolve: (image) async {
       final sampled = await AmbientPaletteExtractor.extractFromImageProvider(image);
-      // The detail surface carries white copy below the entire poster, so it
-      // uses the full artwork palette mixed with the V1 neutral backing.
+      // Carry the artwork palette into the neutral backing below the poster.
       return Color.lerp(AmbientPaletteExtractor.defaultFallback, sampled, .76)!;
     },
   );
@@ -2847,6 +2847,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
         final theme = Theme.of(context);
         final colors = MonoPresentation.artworkTextColors(surface);
         final foreground = colors.foreground;
+        final chipSurface = Color.alphaBlend(foreground.withValues(alpha: .08), surface);
         return _DetailControlsTheme(
           theme: theme,
           child: Theme(
@@ -2854,11 +2855,24 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
               colorScheme: theme.colorScheme.copyWith(
                 onSurface: foreground,
                 onSurfaceVariant: colors.caption,
-                onSecondaryContainer: Colors.white,
-                secondaryContainer: Colors.white.withValues(alpha: .08),
+                onSecondaryContainer: MonoPresentation.artworkTextColors(chipSurface).foreground,
+                secondaryContainer: chipSurface,
                 surface: surface,
                 surfaceContainerLow: Color.alphaBlend(Colors.white.withValues(alpha: .045), surface),
               ),
+              extensions: [
+                for (final extension in theme.extensions.values)
+                  switch (extension) {
+                    MonoTokens() => extension.copyWith(text: foreground, textMuted: colors.caption),
+                    HomeTypography() => extension.copyWith(
+                      heroTitle: extension.heroTitle.copyWith(color: foreground),
+                      sectionTitle: extension.sectionTitle.copyWith(color: foreground),
+                      cardTitle: extension.cardTitle.copyWith(color: foreground),
+                      caption: extension.caption.copyWith(color: colors.caption),
+                    ),
+                    _ => extension,
+                  },
+              ],
               scaffoldBackgroundColor: surface,
               iconTheme: theme.iconTheme.copyWith(color: foreground),
               textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: foreground)),
@@ -3022,9 +3036,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                                   maxLines: MonoPresentation.isTablet(context) ? 3 : (compact ? 2 : (isMobile ? 3 : 4)),
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     fontSize: MonoPresentation.isTablet(context) ? 14 : (compact ? 12 : 13),
-                                    color: _isPortraitPhone(context)
-                                        ? theme.colorScheme.onSurface.withValues(alpha: .76)
-                                        : null,
+                                    color: _isPortraitPhone(context) ? theme.colorScheme.onSurfaceVariant : null,
                                     height: 1.8,
                                   ),
                                   focusNode: _overviewFocusNode,
@@ -3126,16 +3138,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                                         child: Chip(
                                           label: Text(genre),
                                           labelStyle: TextStyle(
-                                            color: theme.colorScheme.onSurface,
+                                            color: theme.colorScheme.onSecondaryContainer,
                                             fontSize: 11,
                                             height: 1.5,
                                           ),
-                                          color: WidgetStatePropertyAll(
-                                            Color.alphaBlend(
-                                              theme.colorScheme.onSurface.withValues(alpha: .08),
-                                              theme.colorScheme.surface,
-                                            ),
-                                          ),
+                                          color: WidgetStatePropertyAll(theme.colorScheme.secondaryContainer),
                                           side: BorderSide(color: theme.colorScheme.onSurface.withValues(alpha: .22)),
                                           labelPadding: EdgeInsets.zero,
                                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),

@@ -1948,6 +1948,11 @@ void main() {
   group('phone layout', () {
     const artworkUrl = 'https://detail-artwork.fixture/dune.jpg';
     const captureFolder = String.fromEnvironment('DETAIL_VISUAL_FIXTURE_DIR');
+    const artworkContrastCases = [
+      ('dark', Color(0xff48345c), false),
+      ('midtone', Color(0xffa79190), false),
+      ('light', Color(0xfff5debe), true),
+    ];
     late Directory artworkDirectory;
     late PathProviderPlatform previousPathProvider;
 
@@ -1966,6 +1971,22 @@ void main() {
         key: 'plex_optimized_${sha1.convert(utf8.encode(artworkUrl))}',
         fileExtension: 'png',
       );
+      for (final (tone, artwork, _) in artworkContrastCases) {
+        final url = 'https://detail-artwork.fixture/contrast-$tone.png';
+        final recorder = ui.PictureRecorder();
+        Canvas(recorder).drawColor(artwork, BlendMode.src);
+        final picture = recorder.endRecording();
+        final image = await picture.toImage(16, 16);
+        final png = await image.toByteData(format: ui.ImageByteFormat.png);
+        image.dispose();
+        picture.dispose();
+        await PlexImageCacheManager.instance.putFile(
+          url,
+          png!.buffer.asUint8List(),
+          key: 'plex_optimized_${sha1.convert(utf8.encode(url))}',
+          fileExtension: 'png',
+        );
+      }
       for (final kind in ['series', 'movie']) {
         final url = 'https://detail-artwork.fixture/$kind.png';
         final source = File(captureFolder.isEmpty ? 'test/fixtures/artwork/dune.png' : '$captureFolder/$kind-art.png');
@@ -2496,10 +2517,10 @@ void main() {
       final detailState = tester.state(find.byType(MediaDetailScreen));
       final foreground = find.byKey(const ValueKey('tv_detail_content_scroll'));
       final before = tester.getRect(foreground);
-      final position = tester
+      ScrollPosition currentPosition() => tester
           .state<ScrollableState>(find.descendant(of: foreground, matching: find.byType(Scrollable)).first)
           .position;
-      final oldExtent = position.maxScrollExtent;
+      final oldExtent = currentPosition().maxScrollExtent;
       final itemReads = client.onDeckReads;
       // Playback return refreshes the item in the existing detail state.
       client.show = movie.copyWith(roles: const []);
@@ -2518,7 +2539,7 @@ void main() {
       final after = tester.getRect(foreground);
       expect(find.byType(CastMemberStrip), findsNothing);
       expect(after, before);
-      expect(position.maxScrollExtent, lessThan(oldExtent));
+      expect(currentPosition().maxScrollExtent, lessThan(oldExtent));
       expect(
         after.bottom,
         greaterThan(720 * .9),
@@ -3012,10 +3033,12 @@ void main() {
       int episodeCount = 1,
       List<MediaVersion>? mediaVersions,
       MediaFileInfo? fileInfo,
+      String? artworkUrl,
     }) {
       final season = buildSeason(show, 1);
       return _FakeMediaServerClient(
         show: show,
+        artworkUrl: artworkUrl,
         childrenByParent: {
           show.id: [season],
           season.id: [
@@ -3247,6 +3270,113 @@ void main() {
         expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 221)}'), findsNothing);
         expect(tester.takeException(), isNull);
       });
+    }
+
+    for (final (tone, artwork, dark) in artworkContrastCases) {
+      testWidgets(
+        'detail episode, group, cast and related text meets contrast on $tone artwork in ${dark ? 'dark' : 'light'} appearance',
+        (tester) async {
+          final url = 'https://detail-artwork.fixture/contrast-$tone.png';
+          final show = buildShow().copyWith(
+            thumbPath: url,
+            artPath: url,
+            roles: const [MediaRole(tag: 'First Actor', role: 'Lead')],
+            genres: const ['Fantasy'],
+          );
+          final related = testMediaItem(
+            id: 'related',
+            kind: MediaKind.movie,
+            title: 'Related film',
+            serverId: 'server_1',
+          ).copyWith(year: 1999);
+          final client = singleSeasonClient(show, episodeCount: 12, artworkUrl: url)
+            ..pendingRelated = Future.value([
+              MediaHub(id: 'related', title: 'Related', type: 'movie', items: [related]),
+            ]);
+          await pumpPhoneDetail(
+            tester,
+            client,
+            show,
+            viewport: const Size(390, 844),
+            theme: monoTheme(dark: dark),
+          );
+          final hero = find.byKey(const ValueKey('detail_hero'));
+          for (var attempt = 0; attempt < 50; attempt++) {
+            await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 15)));
+            await tester.pump(const Duration(milliseconds: 100));
+            if (HomeThemeScope.read(tester.element(hero))?.color != AmbientPaletteExtractor.defaultFallback) break;
+          }
+          await tester.pump(const Duration(milliseconds: 700));
+          final surface = HomeThemeScope.colorOf(tester.element(hero));
+          final sampled = Color.lerp(AmbientPaletteExtractor.defaultFallback, artwork, .76)!;
+          expect(
+            surface.computeLuminance(),
+            closeTo(sampled.computeLuminance(), .01),
+            reason: 'the actual page must use the decoded $tone poster',
+          );
+          void checkInk(Finder label, {Color? background}) {
+            final paragraph = tester.renderObject<RenderParagraph>(
+              find.descendant(of: label, matching: find.byType(RichText)).first,
+            );
+            final ink = paragraph.text.style!.color!;
+            final base = background ?? surface;
+            final a = Color.alphaBlend(ink, base).computeLuminance() + .05;
+            final b = base.computeLuminance() + .05;
+            expect(
+              a > b ? a / b : b / a,
+              greaterThanOrEqualTo(4.5),
+              reason: '${paragraph.text.toPlainText()} uses $ink on $base',
+            );
+          }
+
+          for (final key in ['detail_plain_metadata', 'detail_secondary_metadata']) {
+            final metadata = find.byKey(ValueKey(key));
+            if (metadata.evaluate().isNotEmpty) checkInk(metadata);
+          }
+          for (final card in [
+            'detail_season_picker',
+            'detail_episode_season_1_episode_1',
+            'detail_episode_season_1_episode_2',
+          ]) {
+            final labels = find.descendant(of: find.byKey(ValueKey(card)), matching: find.byType(Text));
+            expect(labels, findsWidgets);
+            for (final text in labels.evaluate()) {
+              final label = find.byElementPredicate((e) => identical(e, text));
+              if (RegExp(r'^\d+$').hasMatch((text.widget as Text).data ?? '')) {
+                final badge = tester.widget<DecoratedBox>(
+                  find.ancestor(of: label, matching: find.byType(DecoratedBox)).first,
+                );
+                final scrim = (badge.decoration as BoxDecoration).color!;
+                checkInk(label, background: Color.alphaBlend(scrim, Colors.white));
+              } else {
+                checkInk(label);
+              }
+            }
+          }
+          for (final group in ['1–10', '11–12']) {
+            final label = find.text(group);
+            final chip = tester.widget<Container>(find.ancestor(of: label, matching: find.byType(Container)).first);
+            checkInk(label, background: (chip.decoration as BoxDecoration).color!);
+          }
+          final genre = find.widgetWithText(Chip, 'Fantasy');
+          checkInk(
+            find.descendant(of: genre, matching: find.text('Fantasy')),
+            background: tester.widget<Chip>(genre).color!.resolve({}),
+          );
+          for (final label in [
+            'First Actor',
+            'Lead',
+            t.explore.detail.relatedMedia,
+            t.libraries.all,
+            'Related film',
+            '1999 · ${t.common.mediaKind.movie}',
+          ]) {
+            expect(find.text(label), findsOneWidget);
+            checkInk(find.text(label));
+          }
+          expect(tester.takeException(), isNull);
+        },
+      );
     }
 
     testWidgets('actual detail fixture phone-show-cast keeps the prototype section rhythm', (tester) async {

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:plezy/focus/focusable_button.dart';
 import 'package:plezy/focus/key_event_utils.dart';
 import 'package:plezy/widgets/rating_source_dialog.dart';
+import 'package:plezy/widgets/app_dialog.dart';
+import 'package:plezy/widgets/app_glass_surface.dart';
+import 'package:plezy/theme/mono_theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/media/media_item.dart';
@@ -70,6 +74,82 @@ void main() {
       expect(find.text('8.2'), findsNothing);
       if (count == 0) expect(tester.getSize(find.byType(MediaRatingsStrip)).height, 0);
       expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final dark in [false, true]) {
+    testWidgets('rating dialog uses its own readable colors over artwork with a ${dark ? 'dark' : 'light'} app', (
+      tester,
+    ) async {
+      final base = monoTheme(dark: dark);
+      final pageInk = dark ? Colors.black : Colors.white;
+      final art = dark ? Colors.white : const Color(0xff564572);
+      final session = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(
+        TranslationProvider(
+          child: MaterialApp(
+            theme: base,
+            home: Theme(
+              data: base.copyWith(
+                colorScheme: base.colorScheme.copyWith(
+                  surface: art,
+                  onSurface: pageInk,
+                  onSurfaceVariant: pageInk,
+                  primary: pageInk,
+                ),
+                textTheme: base.textTheme.apply(bodyColor: pageInk, displayColor: pageInk),
+              ),
+              // Even a nested profile navigator rooted in artwork owns its dialog.
+              child: Navigator(
+                key: session,
+                onGenerateRoute: (_) => MaterialPageRoute<void>(
+                  builder: (_) => Scaffold(
+                    body: MediaRatingsStrip(item: _item(const [MediaRatingSource(source: 'audience', value: 8.1)])),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('8.1'));
+      await tester.pumpAndSettle();
+      final dialog = find.byType(RatingSourceDialog);
+      expect(session.currentState!.canPop(), isTrue);
+      final glass = find.descendant(of: dialog, matching: find.byType(AppGlassSurface));
+      final panel = tester.widget<Material>(find.descendant(of: glass, matching: find.byType(Material)).first);
+      final bg = Color.alphaBlend(panel.color!, art);
+      double contrast(Color ink, Color background) {
+        final a = Color.alphaBlend(ink, background).computeLuminance();
+        final b = background.computeLuminance();
+        return a > b ? (a + .05) / (b + .05) : (b + .05) / (a + .05);
+      }
+
+      final description = t.ratingDetails.serverExplanation(
+        source: t.ratingDetails.sourceUnspecified,
+        scale: t.ratingDetails.tenPointScale,
+      );
+      for (final label in [
+        t.ratingDetails.title,
+        t.ratingDetails.explanation,
+        t.common.ratingSource.audience,
+        '8.1/10',
+        description,
+        t.common.close,
+      ]) {
+        final text = find.descendant(of: dialog, matching: find.text(label));
+        final ink = tester.renderObject<RenderParagraph>(text).text.style!.color!;
+        expect(contrast(ink, bg), greaterThanOrEqualTo(4.5), reason: label);
+      }
+      final close = tester.widget<IconButton>(
+        find.descendant(of: find.byType(AppDialogCloseButton), matching: find.byType(IconButton)),
+      );
+      final buttonBg = Color.alphaBlend(close.style!.backgroundColor!.resolve({})!, bg);
+      expect(contrast(close.style!.foregroundColor!.resolve({})!, buttonBg), greaterThanOrEqualTo(3));
+      await tester.tap(find.byType(AppDialogCloseButton));
+      await tester.pumpAndSettle();
+      expect(session.currentState!.canPop(), isFalse);
+      expect(dialog, findsNothing);
     });
   }
 

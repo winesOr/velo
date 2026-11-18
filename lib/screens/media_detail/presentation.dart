@@ -326,7 +326,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontSize: 12,
                 height: 1.6,
-                color: portraitPhone ? Theme.of(context).colorScheme.onSurface.withValues(alpha: .78) : null,
+                color: portraitPhone ? Theme.of(context).colorScheme.onSurfaceVariant : null,
               ),
             ),
           ],
@@ -542,7 +542,6 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
     final cardWidth = tv ? 210.0 : 202.0;
     const thumbHeight = 112.0;
     final selected = _playbackTargetItem(_metadata)?.globalKey;
-    final theme = Theme.of(context);
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     return DetailEpisodeRail(
       key: _detailEpisodesKey,
@@ -556,11 +555,12 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
       canLoadMore: _episodeListHasMore && !_episodeListLoadingMore && !_episodeListPageError,
       onLoadMore: () => unawaited(_loadMoreEpisodeList()),
       onRequestIndex: _ensureDetailEpisodeIndex,
-      groupsBuilder: (context, group, scrollToGroup) => _buildDetailEpisodeGroups(group, scrollToGroup),
+      groupsBuilder: _buildDetailEpisodeGroups,
       itemBuilder: (context, index) {
         if (index == _episodes.length) return _buildEpisodeListTail();
         final episode = _fresh(_episodes[index]);
         final active = selected == episode.globalKey;
+        final theme = Theme.of(context);
         final episodeNumber = effectiveEpisodeIndex(episode);
         final status = active ? t.detailPlayback.pendingPlayback : t.libraries.filterCategories.unwatched;
         final local = widget.isOffline && episode.thumbPath != null
@@ -644,7 +644,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
                               child: DecoratedBox(
                                 key: ValueKey('detail_episode_number_${episode.id}'),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: .52),
+                                  color: Colors.black.withValues(alpha: .56),
                                   borderRadius: BorderRadius.circular(5),
                                 ),
                                 child: Padding(
@@ -695,58 +695,61 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
     );
   }
 
-  Widget _buildDetailEpisodeGroups(int group, ValueChanged<int> scrollToGroup) => Focus(
-    focusNode: _episodeGroupsFocus,
-    canRequestFocus: false,
-    child: Align(
-      alignment: Alignment.centerLeft,
-      child: TabChipStrip(
-        children: [
-          for (var index = 0; index < (_detailEpisodeCount + 9) ~/ 10; index++)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Semantics(
-                selected: index == group,
-                child: FocusableWrapper(
-                  disableScale: true,
-                  onSelect: () => scrollToGroup(index),
-                  onNavigateUp: PlatformDetector.isTV() ? _focusVisibleDetailEpisode : null,
-                  onNavigateDown: PlatformDetector.isTV()
-                      ? () {
-                          if (_metadata.roles?.isNotEmpty == true) {
-                            _castStripKey.currentState?.requestFocus();
-                          } else {
-                            _focusSectionBelowCast();
+  Widget _buildDetailEpisodeGroups(BuildContext context, int group, ValueChanged<int> scrollToGroup) {
+    final scheme = Theme.of(context).colorScheme;
+    final activeSurface = Color.alphaBlend(scheme.onSurface.withValues(alpha: .125), scheme.surface);
+    final inactiveSurface = Color.alphaBlend(scheme.onSurface.withValues(alpha: .035), scheme.surface);
+    final activeInk = MonoPresentation.artworkTextColors(activeSurface).foreground;
+    final inactiveInk = MonoPresentation.artworkTextColors(inactiveSurface).foreground;
+    return Focus(
+      focusNode: _episodeGroupsFocus,
+      canRequestFocus: false,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: TabChipStrip(
+          children: [
+            for (var index = 0; index < (_detailEpisodeCount + 9) ~/ 10; index++)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Semantics(
+                  selected: index == group,
+                  child: FocusableWrapper(
+                    disableScale: true,
+                    onSelect: () => scrollToGroup(index),
+                    onNavigateUp: PlatformDetector.isTV() ? _focusVisibleDetailEpisode : null,
+                    onNavigateDown: PlatformDetector.isTV()
+                        ? () {
+                            if (_metadata.roles?.isNotEmpty == true) {
+                              _castStripKey.currentState?.requestFocus();
+                            } else {
+                              _focusSectionBelowCast();
+                            }
                           }
-                        }
-                      : null,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => scrollToGroup(index),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: index == group ? .125 : .035),
-                        border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: index == group ? .375 : .125),
+                        : null,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => scrollToGroup(index),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: index == group ? activeSurface : inactiveSurface,
+                          border: Border.all(color: scheme.onSurface.withValues(alpha: index == group ? .375 : .125)),
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        episodeGroupLabel(index, _detailEpisodeCount),
-                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 11, height: 1.5),
+                        child: Text(
+                          episodeGroupLabel(index, _detailEpisodeCount),
+                          style: TextStyle(color: index == group ? activeInk : inactiveInk, fontSize: 11, height: 1.5),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _DetailEpisodeFrame extends StatelessWidget {

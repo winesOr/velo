@@ -27,17 +27,48 @@ void main() {
     ],
   );
 
-  Future<void> pump(WidgetTester tester, MediaDetailTechnicalInfo child, {double scale = 1}) => tester.pumpWidget(
-    TranslationProvider(
-      child: MaterialApp(
-        theme: monoTheme(dark: true),
-        home: MediaQuery(
-          data: MediaQueryData(textScaler: TextScaler.linear(scale)),
-          child: Scaffold(body: SingleChildScrollView(child: child)),
+  Future<void> pump(WidgetTester tester, MediaDetailTechnicalInfo child, {double scale = 1, ThemeData? theme}) =>
+      tester.pumpWidget(
+        TranslationProvider(
+          child: MaterialApp(
+            theme: theme ?? monoTheme(dark: true),
+            home: MediaQuery(
+              data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+              child: Scaffold(body: SingleChildScrollView(child: child)),
+            ),
+          ),
         ),
-      ),
-    ),
-  );
+      );
+
+  testWidgets('stream and file text contrast with their painted surfaces in both appearances', (tester) async {
+    for (final dark in [false, true]) {
+      for (final surface in [const Color(0xff3f495c), const Color(0xff86817a), const Color(0xffeee9df)]) {
+        final base = monoTheme(dark: dark);
+        final theme = base.copyWith(colorScheme: base.colorScheme.copyWith(surfaceContainerLow: surface));
+        await pump(
+          tester,
+          MediaDetailTechnicalInfo(targetKey: 'movie', title: 'Movie', load: () async => info('/film.mkv')),
+          theme: theme,
+        );
+        await tester.pumpAndSettle();
+        for (final finder in [
+          find.text(t.fileInfo.video),
+          find.textContaining('3840 × 2160'),
+          find.text('Movie'),
+          find.text('/film.mkv'),
+        ]) {
+          final box = tester.widget<Container>(find.ancestor(of: finder, matching: find.byType(Container)).first);
+          final painted = (box.decoration! as BoxDecoration).color!;
+          expect(painted, surface);
+          final text = tester.widget<Text>(finder).style!.color!;
+          final a = Color.alphaBlend(text, painted).computeLuminance();
+          final b = painted.computeLuminance();
+          final contrast = a > b ? (a + .05) / (b + .05) : (b + .05) / (a + .05);
+          expect(contrast, greaterThanOrEqualTo(4.5));
+        }
+      }
+    }
+  });
 
   testWidgets('target change clears old file and discards its late response', (tester) async {
     final first = Completer<MediaFileInfo?>();

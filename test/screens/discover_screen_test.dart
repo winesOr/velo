@@ -53,6 +53,7 @@ import 'package:plezy/services/settings_service.dart';
 import 'package:plezy/services/storage_service.dart';
 import 'package:plezy/theme/mono_theme.dart';
 import 'package:plezy/theme/home_typography.dart';
+import 'package:plezy/theme/mono_presentation.dart';
 import 'package:plezy/theme/velo_brand.dart';
 import 'package:plezy/utils/layout_constants.dart';
 import 'package:plezy/utils/platform_detector.dart';
@@ -243,7 +244,10 @@ void main() {
         closeTo(heroBottom.roundToDouble(), .000001),
         reason: 'no fractional-pixel seam below the hero',
       );
-      expect(homeTheme.extension<HomeTypography>()!.caption.color, VeloPalette.caption(homeTheme.brightness));
+      expect(
+        homeTheme.extension<HomeTypography>()!.caption.color,
+        MonoPresentation.artworkTextColors(controller.color).caption,
+      );
       expect(tester.takeException(), isNull);
       if (const bool.fromEnvironment('UPDATE_HOME_SCREENSHOTS')) {
         Future<void> capture(String suffix) async {
@@ -1746,7 +1750,7 @@ void main() {
     });
   }
 
-  testWidgets('home keeps white text while retaining the outer light appearance', (tester) async {
+  testWidgets('home toolbar uses its surface ink while retaining the outer light appearance', (tester) async {
     final item = testMediaItem(
       id: 'light-home',
       title: 'Light home movie',
@@ -1765,7 +1769,10 @@ void main() {
     );
     final toolbarContext = tester.element(find.byTooltip(t.discover.homeOptions));
     expect(Theme.of(toolbarContext).brightness, Brightness.light);
-    expect(Theme.of(toolbarContext).colorScheme.onSurface, Colors.white);
+    expect(
+      Theme.of(toolbarContext).colorScheme.onSurface,
+      MonoPresentation.artworkTextColors(HomeThemeScope.colorOf(toolbarContext)).foreground,
+    );
     final heroContext = tester.element(find.byType(FusionHomeHero).first);
     expect(Theme.of(heroContext).brightness, Brightness.light);
     expect(Theme.of(heroContext).extension<HomeTypography>(), isNotNull);

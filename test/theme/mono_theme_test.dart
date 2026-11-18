@@ -5,7 +5,6 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:plezy/theme/home_typography.dart';
 import 'package:plezy/theme/mono_presentation.dart';
 import 'package:plezy/theme/mono_theme.dart';
-import 'package:plezy/theme/velo_brand.dart';
 import 'package:plezy/widgets/app_icon.dart';
 
 /// `monoTheme` builds a full `ColorScheme`, an applied+copyWith'd Typography
@@ -81,17 +80,18 @@ void main() {
     expect(light.colorScheme.onSurface, isNot(dark.colorScheme.onSurface));
   });
 
-  test('home primary text stays white and captions follow appearance across artwork palettes', () {
+  test('home artwork typography inherits the ink for its actual surface', () {
     for (final dark in [false, true]) {
       for (final surface in const [Color(0xff550b08), Color(0xffe4ca98)]) {
         final home = HomeTypography.apply(monoTheme(dark: dark), tv: false, artworkSurface: surface);
         final typography = home.extension<HomeTypography>()!;
         expect(home.brightness, dark ? Brightness.dark : Brightness.light);
-        expect(typography.heroTitle.color, Colors.white);
-        expect(typography.sectionTitle.color, Colors.white);
-        expect(typography.caption.color, VeloPalette.caption(home.brightness));
-        expect(typography.cardTitle.color, Colors.white);
-        expect(home.textTheme.bodyMedium!.color, Colors.white);
+        final ink = MonoPresentation.artworkTextColors(surface);
+        expect(typography.heroTitle.color, ink.foreground);
+        expect(typography.sectionTitle.color, ink.foreground);
+        expect(typography.caption.color, ink.caption);
+        expect(typography.cardTitle.color, ink.foreground);
+        expect(home.textTheme.bodyMedium!.color, ink.foreground);
       }
     }
   });
@@ -102,13 +102,21 @@ void main() {
     expect(MonoPresentation.artworkSurface(sampled, Brightness.dark), sampled);
   });
 
-  test('artwork foreground stays white and caption uses the appearance token', () {
+  test('primary and secondary artwork ink meet 4.5:1 across sampled colors and the midtone threshold', () {
+    final surfaces = [
+      const Color(0xff550b08),
+      const Color(0xff142540),
+      const Color(0xffe4ca98),
+      for (var grey = 0; grey <= 255; grey++) Color.fromARGB(255, grey, grey, grey),
+    ];
     for (final brightness in Brightness.values) {
-      for (final surface in const [Color(0xff550b08), Color(0xff142540), Color(0xffe4ca98)]) {
-        expect(MonoPresentation.artworkTextColors(surface, brightness: brightness), (
-          foreground: Colors.white,
-          caption: VeloPalette.caption(brightness),
-        ));
+      for (final surface in surfaces) {
+        final colors = MonoPresentation.artworkTextColors(surface, brightness: brightness);
+        for (final ink in [colors.foreground, colors.caption]) {
+          final a = ink.computeLuminance() + .05;
+          final b = surface.computeLuminance() + .05;
+          expect(a > b ? a / b : b / a, greaterThanOrEqualTo(4.5), reason: '$ink on $surface');
+        }
       }
     }
   });
