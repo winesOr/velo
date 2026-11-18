@@ -640,6 +640,193 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('home prepares the adjacent artwork and logos before the first swipe', (tester) async {
+    final items = List.generate(
+      4,
+      (i) => testMediaItem(
+        id: 'prepared-banner-$i',
+        title: 'Prepared banner $i',
+        serverId: 'server_1',
+        artPath: 'https://home-visual.fixture/interstellar-backdrop.jpg',
+        clearLogoPath: 'https://home-visual.fixture/title-ok.png',
+      ),
+    );
+    await _pumpDiscoverShell(
+      tester,
+      isTv: false,
+      size: const Size(390, 844),
+      clients: [_FakeMediaServerClient(hubs: const [], continueWatching: items)],
+    );
+    await tester.pump();
+    for (final index in [3, 0, 1]) {
+      final title = tester.widget<Semantics>(find.byKey(ValueKey('home-hero-dot-$index'))).properties.label;
+      final hero = find.byWidgetPredicate(
+        (w) => w is FusionHomeHero && w.item.displayTitle == title,
+        skipOffstage: false,
+      );
+      expect(hero, findsOneWidget, reason: 'both swipe destinations are prepared while idle');
+      final decoded = find.descendant(
+        of: hero,
+        matching: find.byWidgetPredicate((w) => w is RawImage && w.image != null, skipOffstage: false),
+        skipOffstage: false,
+      );
+      for (var attempt = 0; attempt < 45 && decoded.evaluate().length < 2; attempt++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 25)));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(decoded, findsNWidgets(2), reason: 'artwork and title logo decode before dragging');
+    }
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('home swipes through the loop boundary without clamping or a page jump', (tester) async {
+    final items = List.generate(10, (i) => testMediaItem(id: 'continuous-$i', serverId: 'server_1'));
+    await _pumpDiscoverShell(
+      tester,
+      isTv: false,
+      size: const Size(320, 844),
+      clients: [_FakeMediaServerClient(hubs: const [], continueWatching: items)],
+    );
+    await tester.pump();
+    final pages = find.byType(PageView);
+    final controller = tester.widget<PageView>(pages).controller!;
+    final initialPage = controller.page!;
+    final positions = <double>[];
+    void record() => positions.add(controller.page!);
+    controller.addListener(record);
+    final drag = await tester.startGesture(tester.getCenter(pages));
+    await drag.moveBy(const Offset(30, 0));
+    await tester.pump(const Duration(milliseconds: 16));
+    for (var i = 0; i < 40; i++) {
+      await drag.moveBy(const Offset(16, 0));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    expect(controller.page, lessThan(initialPage - 2), reason: 'the first/last seam has no physical stop');
+    await drag.up();
+    for (var i = 0; i < 50; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    expect(controller.page, closeTo(initialPage - 2, .001));
+    expect(tester.widget<Semantics>(find.byKey(const ValueKey('home-hero-dot-8'))).properties.selected, isTrue);
+    for (var i = 1; i < positions.length; i++) {
+      expect((positions[i] - positions[i - 1]).abs(), lessThan(.25), reason: 'no idle teleport at the seam');
+    }
+    controller.removeListener(record);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('home auto-slide has intermediate frames and can be taken over by a finger', (tester) async {
+    final items = List.generate(
+      4,
+      (i) => testMediaItem(
+        id: 'animated-$i',
+        serverId: 'server_1',
+        artPath: 'https://home-visual.fixture/${['dune', 'interstellar', 'spirited', 'blade'][i]}.jpg',
+        clearLogoPath: 'https://home-visual.fixture/title-ok.png',
+      ),
+    );
+    final boundary = GlobalKey();
+    await _pumpDiscoverShell(
+      tester,
+      isTv: false,
+      size: const Size(390, 844),
+      clients: [_FakeMediaServerClient(hubs: const [], continueWatching: items)],
+      wrap: (child) => RepaintBoundary(key: boundary, child: child),
+    );
+    for (var i = 0; i < 10; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 25)));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    final pages = find.byType(PageView);
+    final controller = tester.widget<PageView>(pages).controller!;
+    final start = controller.page!;
+    await captureTablet(tester, find.byKey(boundary), 'phone-carousel-before');
+    await tester.pump(const Duration(seconds: 8));
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(controller.page, inExclusiveRange(start, start + 1));
+    await captureTablet(tester, find.byKey(boundary), 'phone-carousel-moving');
+    final drag = await tester.startGesture(tester.getCenter(pages));
+    final held = controller.page!;
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(controller.page, held, reason: 'touch immediately stops automatic motion');
+    await drag.moveBy(const Offset(35, 0));
+    await tester.pump(const Duration(milliseconds: 16));
+    await drag.moveBy(const Offset(80, 0));
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(controller.page, lessThan(held));
+    await drag.up();
+    final released = controller.page!;
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(controller.page, isNot(closeTo(controller.page!.roundToDouble(), .001)));
+    expect((controller.page! - released).abs(), lessThan(.2), reason: 'release settles with animation');
+    await tester.pump(const Duration(milliseconds: 900));
+    expect(controller.page, closeTo(controller.page!.roundToDouble(), .001));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('tapping the selected dot during a transition animates back instead of snapping', (tester) async {
+    await _pumpDiscoverShell(
+      tester,
+      isTv: false,
+      size: const Size(390, 844),
+      clients: [
+        _FakeMediaServerClient(
+          hubs: const [],
+          continueWatching: List.generate(4, (i) => testMediaItem(id: 'retarget-$i', serverId: 'server_1')),
+        ),
+      ],
+    );
+    final controller = tester.widget<PageView>(find.byType(PageView)).controller!;
+    final start = controller.page!;
+    await tester.pump(const Duration(seconds: 8));
+    await tester.pump(const Duration(milliseconds: 120));
+    final turning = controller.page!;
+    expect(turning, inExclusiveRange(start, start + .5));
+    await tester.tap(find.byKey(const ValueKey('home-hero-dot-0')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 60));
+    expect(controller.page, inExclusiveRange(start, turning));
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(controller.page, start);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('accessible navigation pauses automatic rotation while manual switches still animate', (tester) async {
+    await _pumpDiscoverShell(
+      tester,
+      isTv: false,
+      size: const Size(390, 844),
+      clients: [
+        _FakeMediaServerClient(
+          hubs: const [],
+          continueWatching: List.generate(4, (i) => testMediaItem(id: 'accessible-$i', serverId: 'server_1')),
+        ),
+      ],
+      wrap: (child) => Builder(
+        builder: (context) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(accessibleNavigation: true, disableAnimations: false),
+          child: child,
+        ),
+      ),
+    );
+    final controller = tester.widget<PageView>(find.byType(PageView)).controller!;
+    final start = controller.page!;
+    await tester.pump(const Duration(seconds: 18));
+    expect(controller.page, start);
+    await tester.tap(find.byKey(const ValueKey('home-hero-dot-1')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(controller.page, inExclusiveRange(start, start + 1));
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(controller.page, start + 1);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   for (final single in [false, true]) {
     testWidgets('home carousel stays still for ${single ? 'one banner' : 'reduced motion'}', (tester) async {
       final items = List.generate(
@@ -2407,6 +2594,12 @@ Future<void> _pumpDiscoverShell(
 
   if (prepareHomeBeforeMount) await discoverProvider.ensureLoaded();
   final screen = DiscoverScreen(heroRandom: heroRandom ?? _KeepHeroOrder());
+  addTearDown(() async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    // Image sampling may still be waiting for the asynchronous decoder when
+    // a preloaded page is disposed. Drain its bounded timeout as well.
+    await tester.pump(const Duration(seconds: 6));
+  });
   await tester.pumpWidget(
     TranslationProvider(
       child: MultiProvider(

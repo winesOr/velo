@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart' show DragStartBehavior;
 import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter/services.dart';
 import 'package:plezy/widgets/app_icon.dart';
@@ -165,8 +166,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   bool _switchingProfile = false;
   static const _heroInterval = Duration(seconds: 8);
+  // Start well inside the repeating sequence so either swipe direction keeps
+  // its scroll position. Sentinel pages required an idle jump and had a hard
+  // stop when another drag crossed the seam before that jump ran.
+  static const _heroLoopAnchor = 10000;
   late final PageController _heroController = PageController(
-    initialPage: 1,
+    initialPage: _heroPageFor(0),
     keepPage: false,
     onAttach: (_) => _restoreHeroPageAfterLayout(),
     onDetach: (_) {
@@ -186,6 +191,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   /// Last decoded hero artwork per item, kept for items not yet selected.
   final Map<String, ImageProvider> _heroReadyImages = {};
   bool _reduceMotion = false;
+  bool _heroAccessibleNavigation = false;
   final TvSpotlightController _spotlight = TvSpotlightController();
   final _tvHeroPlayFocus = FocusNode(debugLabel: 'home_tv_play');
   final _tvHeroDetailsFocus = FocusNode(debugLabel: 'home_tv_details');
@@ -321,6 +327,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   void _syncHomeTheme(MediaItem? item) {
     final controller = HomeThemeScope.read(context);
     if (controller == null) return;
+    // Sampling and animating the page theme can rebuild the whole home. Let
+    // the horizontal transition finish before starting that work.
+    if (!PlatformDetector.isTV() &&
+        (_heroPointers.isNotEmpty ||
+            (_heroController.hasClients && _heroController.position.isScrollingNotifier.value))) {
+      return;
+    }
     final paths =
         item?.heroArtCandidates(containerAspectRatio: MediaQuery.sizeOf(context).aspectRatio) ?? const <String>[];
     if (item == null || paths.isEmpty) {
@@ -328,9 +341,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       return;
     }
     controller.prepare(item.globalKey);
-    // PageView builds the incoming page as soon as the swipe starts, so its
-    // artwork usually decodes before onPageChanged selects it. Reuse that
-    // image; the backdrop reports each image only once.
+    // The neighboring pages predecode their artwork while idle. Reuse the
+    // decoded image once the selected page settles.
     final ready = _heroReadyImages[item.globalKey];
     if (ready != null && _isTabVisible) unawaited(controller.select(item.globalKey, _paletteImage(ready)));
   }
@@ -341,7 +353,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     _heroReadyImages[item.globalKey] = image;
     final selected = _heroItems.isEmpty ? null : _heroItems[_heroIndex.value.clamp(0, _heroItems.length - 1)];
     if (selected?.globalKey != item.globalKey || !_isTabVisible) return;
-    unawaited(HomeThemeScope.read(context)?.select(item.globalKey, _paletteImage(image)));
+    _syncHomeTheme(item);
   }
 
   void _syncSpotlightTheme() => _syncHomeTheme(_spotlight.resolve(_tvBrowseHubs));
@@ -350,8 +362,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _heroRouteVisible = ModalRoute.isCurrentOf(context) ?? true;
-    final reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
-    _reduceMotion = reduceMotion;
+    _reduceMotion = MediaQuery.disableAnimationsOf(context);
+    _heroAccessibleNavigation = MediaQuery.accessibleNavigationOf(context);
     _syncHeroRotation();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -363,8 +375,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     });
   }
 
-  int _heroPageFor(int index) => _heroItems.length > 1 ? index + 1 : 0;
-  int _heroIndexFor(int page) => _heroItems.length > 1 ? (page - 1) % _heroItems.length : 0;
+  int _heroPageFor(int index) =>
+      _heroItems.length > 1 ? _heroLoopAnchor - _heroLoopAnchor % _heroItems.length + index : 0;
+  int _heroIndexFor(int page) => _heroItems.length > 1 ? page % _heroItems.length : 0;
 
   void _restoreHeroPageAfterLayout() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -393,6 +406,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         !_heroRouteVisible ||
         !_heroAppActive ||
         _reduceMotion ||
+        _heroAccessibleNavigation ||
         _heroRotationPaused ||
         _heroPointers.isNotEmpty ||
         PlatformDetector.isTV() ||
@@ -414,13 +428,16 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     if (!_heroController.hasClients || _heroItems.length < 2) return;
     _cancelHeroRotation();
     final last = _heroItems.length - 1;
-    int page = _heroPageFor(index);
-    // Each end has one copy of the opposite banner. Crossing it animates
-    // one page, then the idle scroll view returns to the matching real page.
-    if (last > 1 && _heroIndex.value == 0 && index == last) page = 0;
-    if (_heroIndex.value == last && index == 0) page = last + 2;
-    if (_reduceMotion || _heroIndex.value == index) {
+    final currentPage = _heroController.page!.round();
+    final currentIndex = _heroIndexFor(currentPage);
+    int offset = index - currentIndex;
+    if (last > 1 && currentIndex == 0 && index == last) offset = -1;
+    if (currentIndex == last && index == 0) offset = 1;
+    final page = currentPage + offset;
+    if (_reduceMotion) {
       _heroController.jumpToPage(page);
+      _syncHeroRotation();
+    } else if (_heroController.page == page.toDouble()) {
       _syncHeroRotation();
     } else {
       _heroController.animateToPage(page, duration: duration ?? tokens(context).slow, curve: Curves.easeInOut);
@@ -429,6 +446,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   void _releaseHeroPointer(PointerEvent event) {
     _heroPointers.remove(event.pointer);
+    if (_heroItems.isNotEmpty) _syncHomeTheme(_heroItems[_heroIndex.value]);
     _syncHeroRotation();
   }
 
@@ -445,10 +463,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             _heroController.position.isScrollingNotifier.value) {
           return;
         }
-        final page = _heroController.page!.round();
-        if (page == 0 || page == _heroItems.length + 1) {
-          _heroController.jumpToPage(_heroPageFor(_heroIndexFor(page)));
-        }
+        _syncHomeTheme(_heroItems[_heroIndex.value]);
         _syncHeroRotation();
       });
     }
@@ -1832,12 +1847,16 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   onPointerCancel: _releaseHeroPointer,
                   child: PageView.builder(
                     controller: _heroController,
-                    itemCount: _heroItems.length > 1 ? _heroItems.length + 2 : _heroItems.length,
+                    itemCount: _heroItems.length > 1 ? null : _heroItems.length,
+                    // Decode artwork and logos on both sides before dragging.
+                    // The viewport retains only the current and nearby pages.
+                    allowImplicitScrolling: _heroItems.length > 1,
+                    dragStartBehavior: DragStartBehavior.down,
                     onPageChanged: (page) {
                       if (_heroItems.isEmpty) return;
                       final index = _heroIndexFor(page);
                       _heroIndex.value = index;
-                      _syncHomeTheme(_heroItems[index]);
+                      HomeThemeScope.read(context)?.prepare(_heroItems[index].globalKey);
                     },
                     itemBuilder: (context, page) => _buildHeroItem(_heroItems[_heroIndexFor(page)], heroHeight),
                   ),
@@ -1883,7 +1902,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                                 button: true,
                                 selected: isActive,
                                 label: _heroItems[index].displayTitle,
-                                customSemanticsActions: isActive && !_reduceMotion && _heroItems.length > 1
+                                customSemanticsActions:
+                                    isActive && !_reduceMotion && !_heroAccessibleNavigation && _heroItems.length > 1
                                     ? {
                                         CustomSemanticsAction(
                                           label: _heroRotationPaused
