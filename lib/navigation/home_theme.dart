@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../utils/ambient_palette_extractor.dart';
 import '../theme/mono_presentation.dart';
+import '../theme/mono_tokens.dart';
 
 typedef HomePaletteResolver = Future<Color> Function(ImageProvider image);
 
@@ -12,6 +15,8 @@ class HomeThemeController extends ChangeNotifier {
     : _resolve = resolve ?? ((image) => AmbientPaletteExtractor.extractFromImageProvider(image, matchLowerEdge: true));
 
   final HomePaletteResolver _resolve;
+  final _palettes = <ImageProvider, Color>{};
+  final _pendingPalettes = <ImageProvider, Future<Color>>{};
   String? _mediaKey;
   ImageProvider? _image;
   Color _color = AmbientPaletteExtractor.defaultFallback;
@@ -20,6 +25,32 @@ class HomeThemeController extends ChangeNotifier {
 
   String? get mediaKey => _mediaKey;
   Color get color => _color;
+
+  /// Resolve neighboring artwork while its page is idle. Selecting it later
+  /// can start the page-color animation without another decode or sample.
+  Future<void> precachePalette(ImageProvider image) async {
+    await _paletteFor(image);
+  }
+
+  Future<Color> _paletteFor(ImageProvider image) {
+    final cached = _palettes[image];
+    if (cached != null) return Future.value(cached);
+    return _pendingPalettes.putIfAbsent(image, () async {
+      Color color;
+      try {
+        color = await _resolve(image);
+      } catch (_) {
+        color = AmbientPaletteExtractor.defaultFallback;
+      }
+      if (!_disposed) {
+        // Bound the small palette cache to the same scale as the extractor.
+        if (_palettes.length >= 128) _palettes.remove(_palettes.keys.first);
+        _palettes[image] = color;
+      }
+      unawaited(_pendingPalettes.remove(image));
+      return color;
+    });
+  }
 
   /// Retires the old picture's pending extraction before the new one decodes.
   void prepare(String mediaKey) {
@@ -39,12 +70,7 @@ class HomeThemeController extends ChangeNotifier {
     if (image == null) _color = AmbientPaletteExtractor.defaultFallback;
     notifyListeners();
     if (image == null) return;
-    Color color;
-    try {
-      color = await _resolve(image);
-    } catch (_) {
-      color = AmbientPaletteExtractor.defaultFallback;
-    }
+    final color = _palettes[image] ?? await _paletteFor(image);
     if (_disposed || generation != _generation) return;
     _color = color;
     notifyListeners();
@@ -54,6 +80,8 @@ class HomeThemeController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _generation++;
+    _palettes.clear();
+    _pendingPalettes.clear();
     super.dispose();
   }
 }
@@ -89,7 +117,9 @@ class HomeThemeScope extends StatelessWidget {
           : fallbackColor ?? Theme.of(context).scaffoldBackgroundColor;
       return TweenAnimationBuilder<Color?>(
         tween: ColorTween(begin: target, end: target),
-        duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : MonoPresentation.artworkDuration,
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : Theme.of(context).extension<MonoTokens>()?.slow ?? kThemeAnimationDuration,
         curve: Curves.easeOutCubic,
         child: child,
         builder: (context, color, child) =>

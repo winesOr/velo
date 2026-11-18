@@ -546,6 +546,63 @@ void main() {
     });
   }
 
+  testWidgets('home color starts changing before an active finger finishes its swipe', (tester) async {
+    final controller = HomeThemeController(resolve: (_) async => Colors.blue);
+    addTearDown(controller.dispose);
+    await _pumpDiscoverShell(
+      tester,
+      isTv: false,
+      size: const Size(390, 844),
+      clients: [
+        _FakeMediaServerClient(
+          hubs: const [],
+          continueWatching: [
+            testMediaItem(id: 'from', title: 'From', serverId: 'server_1'),
+            testMediaItem(
+              id: 'next',
+              title: 'Next',
+              serverId: 'server_1',
+              artPath: 'https://home-theme-timing.fixture/next.jpg',
+            ),
+          ],
+        ),
+      ],
+      wrap: (child) => HomeThemeScope(controller: controller, child: child),
+    );
+    final fromDot = find.byWidgetPredicate(
+      (w) => w is Semantics && w.key.toString().contains('home-hero-dot-') && w.properties.label == 'From',
+    );
+    await tester.tap(fromDot);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+    const provider = AssetImage('predecoded-next-artwork');
+    final nextBackdrop = tester.widget<CyclingMediaBackdrop>(
+      find
+          .descendant(
+            of: find.byWidgetPredicate((w) => w is FusionHomeHero && w.item.id == 'next', skipOffstage: false),
+            matching: find.byType(CyclingMediaBackdrop, skipOffstage: false),
+            skipOffstage: false,
+          )
+          .first,
+    );
+    nextBackdrop.onImageReady!(provider);
+    await tester.pump();
+    expect(controller.mediaKey, isNot('server_1:next'), reason: 'prewarming does not select the neighboring page');
+    final drag = await tester.startGesture(tester.getCenter(find.byType(PageView)));
+    await drag.moveBy(const Offset(-230, 0));
+    await tester.pump();
+    expect(controller.mediaKey, 'server_1:next');
+    expect(controller.color, Colors.blue, reason: 'selection no longer waits for ScrollEnd');
+    await tester.pump(const Duration(milliseconds: 150));
+    final context = tester.element(find.byType(DiscoverScreen));
+    final during = HomeThemeScope.colorOf(context);
+    expect(during, isNot(AmbientPaletteExtractor.defaultFallback));
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(HomeThemeScope.colorOf(context), Colors.blue, reason: 'color finishes while the finger is still held');
+    await drag.up();
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('ten home banners rotate, wrap both ways and pause away from Home', (tester) async {
     final items = List.generate(12, (i) => testMediaItem(id: 'banner-$i', title: 'Banner $i', serverId: 'server_1'));
     await _pumpDiscoverShell(

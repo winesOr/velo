@@ -331,13 +331,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   void _syncHomeTheme(MediaItem? item) {
     final controller = HomeThemeScope.read(context);
     if (controller == null) return;
-    // Sampling and animating the page theme can rebuild the whole home. Let
-    // the horizontal transition finish before starting that work.
-    if (!PlatformDetector.isTV() &&
-        (_heroPointers.isNotEmpty ||
-            (_heroController.hasClients && _heroController.position.isScrollingNotifier.value))) {
-      return;
-    }
     final paths =
         item?.heroArtCandidates(containerAspectRatio: MediaQuery.sizeOf(context).aspectRatio) ?? const <String>[];
     if (item == null || paths.isEmpty) {
@@ -345,8 +338,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       return;
     }
     controller.prepare(item.globalKey);
-    // The neighboring pages predecode their artwork while idle. Reuse the
-    // decoded image once the selected page settles.
+    // Neighboring pages prepare both the decoded image and its palette, so
+    // the color can follow selection while the swipe is still moving.
     final ready = _heroReadyImages[item.globalKey];
     if (ready != null && _isTabVisible) unawaited(controller.select(item.globalKey, _paletteImage(ready)));
   }
@@ -355,6 +348,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   void _onHeroImageReady(MediaItem item, ImageProvider image) {
     _heroReadyImages[item.globalKey] = image;
+    unawaited(HomeThemeScope.read(context)?.precachePalette(_paletteImage(image)));
     final selected = _heroItems.isEmpty ? null : _heroItems[_heroIndex.value.clamp(0, _heroItems.length - 1)];
     if (selected?.globalKey != item.globalKey || !_isTabVisible) return;
     _syncHomeTheme(item);
@@ -1883,7 +1877,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       if (_heroItems.isEmpty) return;
                       final index = _heroIndexFor(page);
                       _heroIndex.value = index;
-                      HomeThemeScope.read(context)?.prepare(_heroItems[index].globalKey);
+                      _syncHomeTheme(_heroItems[index]);
                     },
                     itemBuilder: (context, page) => _buildHeroItem(_heroItems[_heroIndexFor(page)], heroHeight),
                   ),

@@ -7,6 +7,30 @@ import 'package:plezy/utils/ambient_palette_extractor.dart';
 import 'package:plezy/theme/mono_presentation.dart';
 
 void main() {
+  test('preparing adjacent palettes never changes selection and is reused without another request', () async {
+    final pending = Completer<Color>();
+    var calls = 0;
+    final controller = HomeThemeController(
+      resolve: (_) {
+        calls++;
+        return pending.future;
+      },
+    );
+    addTearDown(controller.dispose);
+    final warm = controller.precachePalette(const AssetImage('next'));
+    expect(controller.mediaKey, isNull);
+    final selected = controller.select('next', const AssetImage('next'));
+    expect(calls, 1);
+    pending.complete(Colors.blue);
+    await Future.wait([warm, selected]);
+    expect(controller.color, Colors.blue);
+    await controller.select('other', null);
+    final reused = controller.select('next', const AssetImage('next'));
+    expect(controller.color, Colors.blue, reason: 'a decoded palette is applied synchronously');
+    await reused;
+    expect(calls, 1);
+  });
+
   testWidgets('missing artwork preserves the selected light page appearance', (tester) async {
     final controller = HomeThemeController();
     addTearDown(controller.dispose);
