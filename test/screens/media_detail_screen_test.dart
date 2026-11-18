@@ -3974,6 +3974,34 @@ void main() {
       );
     });
 
+    testWidgets('phone genre chips use artwork contrast and the scrolled toolbar clears the status bar', (
+      tester,
+    ) async {
+      tester.view.padding = const FakeViewPadding(top: 40);
+      addTearDown(tester.view.resetPadding);
+      final show = buildShow().copyWith(genres: ['Animation', 'Sci-Fi & Fantasy']);
+      await pumpPhoneDetail(
+        tester,
+        _FakeMediaServerClient(show: show, childrenByParent: const {}),
+        show,
+        viewport: const Size(390, 740),
+        theme: monoTheme(dark: false).copyWith(platform: TargetPlatform.android),
+      );
+      final genre = find.widgetWithText(Chip, 'Sci-Fi & Fantasy');
+      await tester.ensureVisible(genre);
+      await tester.pumpAndSettle();
+      final material = tester.widget<Chip>(genre);
+      final ink = material.labelStyle!.color!.computeLuminance();
+      final fill = material.color!.resolve({})!.computeLuminance();
+      final ratio = ink > fill ? (ink + .05) / (fill + .05) : (fill + .05) / (ink + .05);
+      expect(ratio, greaterThanOrEqualTo(4.5));
+      final back = find.byTooltip(t.common.back);
+      final more = find.byTooltip(t.explore.detail.moreActions);
+      expect(tester.getTopLeft(back).dy, greaterThanOrEqualTo(40));
+      expect(tester.getCenter(back).dy, closeTo(tester.getCenter(more).dy, 1));
+      expect(back.hitTestable(), findsOneWidget);
+    });
+
     testWidgets('independent scores survive narrow hero metadata fitting', (tester) async {
       // External scores occupy their own region. Metadata can shed fields
       // when the viewport shrinks without hiding a valid score.
@@ -4019,6 +4047,11 @@ void main() {
         expect(firstLine.style?.fontSize, 12);
         expect(secondLine.style?.fontSize, 12);
         expect(find.byKey(const ValueKey('detail_personal_rating_target')), findsNothing);
+        final strip = tester.widget<MediaRatingsStrip>(find.byType(MediaRatingsStrip));
+        if (width <= 420) {
+          expect(strip.showSourceLabels, isFalse);
+          expect(find.text(t.common.ratingSource.simkl), findsNothing);
+        }
         for (final score in ['9.2', '7.4', '6.4']) {
           expect(find.text(score), findsOneWidget);
         }

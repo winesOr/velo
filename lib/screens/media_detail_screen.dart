@@ -3098,7 +3098,18 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                                         onNavigateDown: isTv ? _focusBelowGenres : null,
                                         child: Chip(
                                           label: Text(genre),
-                                          labelStyle: const TextStyle(fontSize: 11, height: 1.5),
+                                          labelStyle: TextStyle(
+                                            color: theme.colorScheme.onSurface,
+                                            fontSize: 11,
+                                            height: 1.5,
+                                          ),
+                                          color: WidgetStatePropertyAll(
+                                            Color.alphaBlend(
+                                              theme.colorScheme.onSurface.withValues(alpha: .08),
+                                              theme.colorScheme.surface,
+                                            ),
+                                          ),
+                                          side: BorderSide(color: theme.colorScheme.onSurface.withValues(alpha: .22)),
                                           labelPadding: EdgeInsets.zero,
                                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
@@ -3163,25 +3174,27 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                       ),
                     ),
                     child: SizedBox(
-                      height: MediaQuery.paddingOf(context).top + 58,
-                      child: RasterizedGradient(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            HomeThemeScope.colorOf(context).withValues(alpha: 0.8),
-                            HomeThemeScope.colorOf(context).withValues(alpha: 0.5),
-                            HomeThemeScope.colorOf(context).withValues(alpha: 0),
-                          ],
-                          stops: const [0.0, 0.3, 1.0],
-                        ),
-                      ),
+                      height: MediaQuery.paddingOf(context).top + _heroChromeHeight,
+                      child: isMobile
+                          ? ColoredBox(color: theme.colorScheme.surface)
+                          : RasterizedGradient(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  HomeThemeScope.colorOf(context).withValues(alpha: 0.8),
+                                  HomeThemeScope.colorOf(context).withValues(alpha: 0.5),
+                                  HomeThemeScope.colorOf(context).withValues(alpha: 0),
+                                ],
+                                stops: const [0.0, 0.3, 1.0],
+                              ),
+                            ),
                     ),
                   ),
                 ),
                 Positioned(
                   top: MediaQuery.paddingOf(context).top + 5,
-                  right: 12,
+                  right: 12 + MediaQuery.paddingOf(context).right,
                   child: Builder(
                     builder: (actionContext) => FocusableWrapper(
                       focusNode: _moreActionsFocusNode,
@@ -3199,10 +3212,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                     ),
                   ),
                 ),
-                // Back button (always visible)
+                // Both touch toolbar actions clear the status bar and landscape cutout.
                 Positioned(
-                  top: 0,
-                  left: 0,
+                  top: isMobile ? MediaQuery.paddingOf(context).top + 5 : 0,
+                  left: isMobile ? 12 + MediaQuery.paddingOf(context).left : 0,
                   child: DesktopAppBarHelper.buildAdjustedLeading(
                     FocusableWrapper(
                       focusNode: _backButtonFocusNode,

@@ -372,11 +372,12 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
               ),
             MediaRatingsStrip(
               item: metadata,
+              showSourceLabels: !centered,
               alignment: centered ? WrapAlignment.center : WrapAlignment.start,
               firstFocusNode: _detailRatingSourceFocusNode,
               onNavigateUp: tv ? _tvDetailInfoFocusNode.requestFocus : _backButtonFocusNode.requestFocus,
               onNavigateDown: tv ? _focusTvDetailActionRow : _playButtonFocusNode.requestFocus,
-              padding: const EdgeInsets.only(bottom: 18),
+              padding: centered ? const EdgeInsets.only(top: 12, bottom: 16) : const EdgeInsets.only(bottom: 18),
             ),
           ],
         ),

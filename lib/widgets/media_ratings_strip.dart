@@ -17,7 +17,7 @@ import 'settings_builder.dart';
 import 'rating_source_dialog.dart';
 
 /// A compact external-score region, independent of metadata's fitting budget.
-/// Empty data collapses entirely; adding sources keeps the existing slot geometry.
+/// Empty data collapses entirely; only rows with actual scores take up space.
 class MediaRatingsStrip extends StatefulWidget {
   const MediaRatingsStrip({
     super.key,
@@ -25,6 +25,7 @@ class MediaRatingsStrip extends StatefulWidget {
     this.fallbackItem,
     this.foregroundColor,
     this.alignment = WrapAlignment.center,
+    this.showSourceLabels = true,
     this.maxRatings = RatingDisplayPolicy.detailLimit,
     this.padding = EdgeInsets.zero,
     this.firstFocusNode,
@@ -36,6 +37,7 @@ class MediaRatingsStrip extends StatefulWidget {
   final MediaItem? fallbackItem;
   final Color? foregroundColor;
   final WrapAlignment alignment;
+  final bool showSourceLabels;
   final int maxRatings;
   final EdgeInsetsGeometry padding;
   final FocusNode? firstFocusNode;
@@ -44,11 +46,6 @@ class MediaRatingsStrip extends StatefulWidget {
 
   static int columnsFor(double width, TextScaler scaler, int slots) =>
       math.max(1, math.min(slots, (width / (88 * scaler.scale(1))).floor()));
-
-  static double heightFor(double width, TextScaler scaler, {int slots = RatingDisplayPolicy.detailLimit}) {
-    final columns = columnsFor(width, scaler, slots);
-    return (slots / columns).ceil() * 48 * scaler.scale(1);
-  }
 
   @override
   State<MediaRatingsStrip> createState() => _MediaRatingsStripState();
@@ -104,7 +101,7 @@ class _MediaRatingsStripState extends State<MediaRatingsStrip> {
             final cellWidth = width / columns;
             final cellHeight = 48 * scaler.scale(1);
             return SizedBox(
-              height: MediaRatingsStrip.heightFor(width, scaler, slots: widget.maxRatings),
+              width: width,
               child: Wrap(
                 alignment: widget.alignment,
                 children: [
@@ -149,7 +146,11 @@ class _MediaRatingsStripState extends State<MediaRatingsStrip> {
                                       : Alignment.center,
                                   child: FittedBox(
                                     fit: BoxFit.scaleDown,
-                                    child: _RatingScore(rating: ratings[index], foreground: foreground),
+                                    child: _RatingScore(
+                                      rating: ratings[index],
+                                      foreground: foreground,
+                                      showSourceLabel: widget.showSourceLabels,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -169,10 +170,11 @@ class _MediaRatingsStripState extends State<MediaRatingsStrip> {
 }
 
 class _RatingScore extends StatelessWidget {
-  const _RatingScore({required this.rating, required this.foreground});
+  const _RatingScore({required this.rating, required this.foreground, required this.showSourceLabel});
 
   final MediaRatingSource rating;
   final Color foreground;
+  final bool showSourceLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -197,6 +199,7 @@ class _RatingScore extends StatelessWidget {
         ),
       ],
     );
+    if (!showSourceLabel) return score;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

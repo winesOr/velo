@@ -86,11 +86,12 @@ void main() {
     expect(find.text('9.5'), findsNothing);
   });
 
-  testWidgets('filling additional sources does not change the reserved region height', (tester) async {
+  testWidgets('the strip only occupies the rows required by its visible sources', (tester) async {
     await _pump(tester, MediaRatingsStrip(item: _item([_scores.first])));
     final height = tester.getSize(find.byType(MediaRatingsStrip)).height;
+    expect(height, 48);
     await _pump(tester, MediaRatingsStrip(item: _item(_scores)));
-    expect(tester.getSize(find.byType(MediaRatingsStrip)).height, height);
+    expect(tester.getSize(find.byType(MediaRatingsStrip)).height, height * 2);
   });
 
   testWidgets('320px at 200% text stays readable in bright and dark themes', (tester) async {
