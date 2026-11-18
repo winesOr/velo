@@ -53,6 +53,7 @@ import '../../test_helpers/library_tab_scaffold.dart';
 import '../../test_helpers/media_items.dart';
 import '../../test_helpers/multi_server_fixtures.dart';
 import '../../test_helpers/prefs.dart';
+import '../../test_helpers/tablet_screenshots.dart';
 
 const _libraryA = MediaLibrary(
   id: 'movies',
@@ -328,6 +329,90 @@ void main() {
     // In place: no re-selection churn.
     expect(selected.length, selectionsBefore);
   });
+  for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+    testWidgets('${platform.name} opening and closing the keyboard bounds every filter animation frame', (
+      tester,
+    ) async {
+      final harness = await _Harness.create(
+        _GatedPreferences({}),
+        clients: [_WallClient()],
+        libraryOrder: const [_libraryA],
+      );
+      addTearDown(harness.dispose);
+      addTearDown(tester.view.resetViewInsets);
+      await harness.pump(tester, platform: platform, size: const Size(390, 844));
+      for (final bottom in [588.0, 0.0]) {
+        tester.view.viewInsets = FakeViewPadding(bottom: bottom);
+        for (var frame = 0; frame < 16; frame++) {
+          await tester.pump(const Duration(milliseconds: 16));
+          expect(tester.takeException(), isNull, reason: 'keyboard=$bottom frame=$frame');
+          expect(tester.getSize(find.byKey(const PageStorageKey('all_sources_merged_wall'))).height, greaterThan(0));
+        }
+      }
+    });
+
+    testWidgets('${platform.name} landscape search with the keyboard keeps its input and results within the viewport', (
+      tester,
+    ) async {
+      final harness = await _Harness.create(
+        _GatedPreferences({}),
+        clients: [_WallClient()],
+        libraryOrder: const [_libraryA],
+      );
+      addTearDown(harness.dispose);
+      await harness.pump(tester, platform: platform, size: const Size(640, 360), keyboard: 200);
+      expect(find.byKey(const ValueKey('wall-search-input')).hitTestable(), findsOneWidget);
+      final results = find.byKey(const PageStorageKey('all_sources_merged_wall'));
+      expect(tester.getSize(results).height, greaterThan(0));
+      expect(tester.getBottomLeft(results).dy, lessThanOrEqualTo(160));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('${platform.name} real search shell pins compact filters and expands on reverse drag', (tester) async {
+      await loadTabletFonts(loadDefaultFont: true);
+      final harness = await _Harness.create(
+        _GatedPreferences({}),
+        clients: [_WallClient()],
+        libraryOrder: const [_libraryA],
+      );
+      addTearDown(harness.dispose);
+      await harness.pump(tester, platform: platform, size: const Size(390, 844));
+      final wall = find.byKey(const PageStorageKey('all_sources_merged_wall'));
+      final controller = tester.widget<CustomScrollView>(wall).controller!;
+      final search = find.byKey(const ValueKey('wall-search-input'));
+      final searchPosition = tester.getTopLeft(search);
+      expect(find.byKey(const ValueKey('wall-types')).hitTestable(), findsOneWidget);
+      await captureTablet(
+        tester,
+        find.byKey(const ValueKey('real-library-screen')),
+        '${platform.name}-search-expanded',
+      );
+      await tester.drag(wall, const Offset(0, -550));
+      await tester.pumpAndSettle();
+      final compact = find.byKey(const ValueKey('wall-compact-filters'));
+      expect(compact.hitTestable(), findsOneWidget);
+      expect(find.byKey(const ValueKey('wall-types')), findsNothing);
+      await captureTablet(tester, find.byKey(const ValueKey('real-library-screen')), '${platform.name}-search-pinned');
+      final compactPosition = tester.getTopLeft(compact);
+      expect(tester.getTopLeft(search), searchPosition);
+      await tester.drag(wall, const Offset(0, -180));
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(compact), compactPosition);
+      await tester.drag(wall, const Offset(0, 80));
+      await tester.pumpAndSettle();
+      expect(controller.offset, greaterThan(200));
+      expect(find.byKey(const ValueKey('wall-types')).hitTestable(), findsOneWidget);
+      expect(find.byKey(const ValueKey('wall-genres-expand')).hitTestable(), findsOneWidget);
+      await captureTablet(
+        tester,
+        find.byKey(const ValueKey('real-library-screen')),
+        '${platform.name}-search-restored',
+      );
+      expect(tester.getTopLeft(search), searchPosition);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('TV replaces saved library sections with a search header and one wall', (tester) async {
     TvDetectionService.debugSetAppleTVOverride(true);
     final client = _HubClient();
@@ -606,6 +691,7 @@ final class _Harness {
     ValueListenable<bool>? enabled,
     TargetPlatform platform = TargetPlatform.macOS,
     Size size = const Size(1280, 720),
+    double keyboard = 0,
   }) async {
     final downloads = NoSyncRulesDownloadProvider();
     addTearDown(downloads.dispose);
@@ -631,15 +717,24 @@ final class _Harness {
         child: InputModeTracker(
           child: MaterialApp(
             theme: monoTheme(dark: true).copyWith(platform: platform),
-            home: OverlaySheetHost(
-              child: FocusScope(
-                child: enabled == null
-                    ? LibrariesScreen(onLibrarySelected: onLibrarySelected)
-                    : ValueListenableBuilder<bool>(
-                        valueListenable: enabled,
-                        child: LibrariesScreen(onLibrarySelected: onLibrarySelected),
-                        builder: (_, value, child) => TickerMode(enabled: value, child: child!),
-                      ),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                viewInsets: keyboard > 0 ? EdgeInsets.only(bottom: keyboard) : MediaQuery.viewInsetsOf(context),
+              ),
+              child: child!,
+            ),
+            home: RepaintBoundary(
+              key: const ValueKey('real-library-screen'),
+              child: OverlaySheetHost(
+                child: FocusScope(
+                  child: enabled == null
+                      ? LibrariesScreen(onLibrarySelected: onLibrarySelected)
+                      : ValueListenableBuilder<bool>(
+                          valueListenable: enabled,
+                          child: LibrariesScreen(onLibrarySelected: onLibrarySelected),
+                          builder: (_, value, child) => TickerMode(enabled: value, child: child!),
+                        ),
+                ),
               ),
             ),
           ),
@@ -777,6 +872,30 @@ MediaHub _recommendationHub(String id) => MediaHub(
       ),
   ],
 );
+
+class _WallClient extends _HubClient {
+  @override
+  Future<LibraryPage<MediaItem>> fetchLibraryPagedContent(
+    String libraryId, {
+    required LibraryQuery query,
+    MediaKind? libraryKind,
+    AbortController? abort,
+    bool includeFacetMetadata = false,
+  }) async => LibraryPage(
+    items: [
+      for (var i = 0; i < 80; i++)
+        testMediaItem(
+          id: 'wall-$i',
+          serverId: serverId.value,
+          kind: MediaKind.movie,
+          title: 'Movie $i',
+          year: 2026,
+          genres: ['Drama'],
+        ),
+    ],
+    totalCount: 80,
+  );
+}
 
 class _HubClient extends _PagedClient {
   _HubClient() : super('server');

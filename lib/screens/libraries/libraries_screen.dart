@@ -1235,17 +1235,15 @@ class _LibrariesScreenState extends State<LibrariesScreen>
               ),
       );
     } else if (_filterWall || _selectedLibraryGlobalKey == allLibrarySourcesKey) {
-      body = buildSimpleScroll(
-        body: GroupedLibraryBrowse(
-          key: _groupedBrowseKey,
-          searchInHeader: PlatformDetector.isTV(),
-          searchController: PlatformDetector.isTV() ? _wallSearch : null,
-          searchFocusNode: PlatformDetector.isTV() ? _wallSearchFocus : null,
-          libraries: _filterWall && _wallServerId != null
-              ? visibleLibraries.where((library) => library.serverId == _wallServerId).toList()
-              : visibleLibraries,
-          onBack: () => _actionBarKey.currentState?.requestFocusOnFirst(),
-        ),
+      body = GroupedLibraryBrowse(
+        key: _groupedBrowseKey,
+        searchInHeader: PlatformDetector.isTV(),
+        searchController: PlatformDetector.isTV() ? _wallSearch : null,
+        searchFocusNode: PlatformDetector.isTV() ? _wallSearchFocus : null,
+        libraries: _filterWall && _wallServerId != null
+            ? visibleLibraries.where((library) => library.serverId == _wallServerId).toList()
+            : visibleLibraries,
+        onBack: () => _actionBarKey.currentState?.requestFocusOnFirst(),
       );
     } else if (selectedLibrary != null) {
       Widget buildTab(int index) {

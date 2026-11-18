@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 
 import '../../widgets/app_dialog.dart';
 import '../../theme/mono_presentation.dart';
@@ -18,6 +20,7 @@ import '../../media/library_query.dart';
 import '../../media/media_person.dart';
 import '../../utils/media_server_http_client.dart';
 import '../../theme/velo_brand.dart';
+import '../../theme/mono_tokens.dart';
 import '../../widgets/person_search_row.dart';
 import 'library_wall.dart';
 import '../../media/media_library.dart';
@@ -83,6 +86,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
   final _year = TextEditingController();
   late final _searchFocus = widget.searchFocusNode ?? FocusNode(debugLabel: 'all_sources_search');
   final _scroll = ScrollController();
+  final _wallFiltersExpanded = ValueNotifier(true);
   final _contentFocus = FocusScopeNode(debugLabel: 'all_sources_content');
   final _filterFocus = FocusScopeNode(debugLabel: 'all_sources_filters');
   final Map<String, FocusNode> _nodes = {};
@@ -256,6 +260,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
 
   void _queryChanged({bool debounce = false}) {
     _cancelWallFocus();
+    _wallFiltersExpanded.value = true;
     _debounce?.cancel();
     // Invalidate now, not after the typing delay: an old page must not commit.
     _controller.reset(widget.libraries, _selection, load: !debounce);
@@ -652,6 +657,12 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
   }
 
   void _onScroll() {
+    if (_touchWall && !PlatformDetector.isTV() && _scroll.hasClients) {
+      final direction = _scroll.position.userScrollDirection;
+      if (direction != ScrollDirection.idle) {
+        _wallFiltersExpanded.value = _scroll.offset <= 0 || direction == ScrollDirection.forward;
+      }
+    }
     if (_touchWall && _scroll.hasClients && _scroll.position.extentAfter < 400) unawaited(_loadNextWallPages());
   }
 
@@ -775,6 +786,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
 
   void _localFacetChanged() {
     _cancelWallFocus();
+    _wallFiltersExpanded.value = true;
     _expandedWallFacet = null;
     _controller.updateLocalSelection(_selection);
     if (_scroll.hasClients) _scroll.jumpTo(0);
@@ -811,6 +823,43 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
         onSubmitted: (_) => _queryChanged(),
         onBack: widget.onBack,
       ),
+    ),
+  );
+
+  Widget _compactWallFilters() => Padding(
+    key: const ValueKey('wall-compact-filters'),
+    padding: const EdgeInsets.fromLTRB(17, 0, 17, 8),
+    child: Row(
+      children: [
+        for (final (key, label, value) in [
+          ('wall-genres', t.libraries.filterCategories.genre, _genre),
+          ('wall-countries', t.explore.detail.country, _country),
+          ('wall-years', t.libraries.filterCategories.year, _year.text.isEmpty ? null : _year.text),
+        ])
+          Expanded(
+            child: TextButton(
+              key: ValueKey('$key-summary'),
+              onPressed: () {
+                setState(() => _expandedWallFacet = key);
+                _wallFiltersExpanded.value = true;
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      value == null ? label : '$label · $value',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                    ),
+                  ),
+                  const AppIcon(Symbols.expand_more_rounded, size: 18),
+                ],
+              ),
+            ),
+          ),
+      ],
     ),
   );
 
@@ -895,18 +944,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
         key: const PageStorageKey('all_sources_merged_wall'),
         controller: _scroll,
         slivers: [
-          if (PlatformDetector.isTV())
-            SliverToBoxAdapter(child: _wallControls())
-          else ...[
-            SliverFloatingHeader(
-              key: const ValueKey('wall-filter-header'),
-              animationStyle: MediaQuery.disableAnimationsOf(context) ? AnimationStyle.noAnimation : null,
-              child: Material(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                child: _wallControls(includeSearch: false),
-              ),
-            ),
-          ],
+          if (PlatformDetector.isTV()) SliverToBoxAdapter(child: _wallControls()),
           if (_people.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(
@@ -985,14 +1023,51 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
           const SliverToBoxAdapter(child: SizedBox(height: 48)),
         ],
       );
-      if (PlatformDetector.isTV() || widget.searchInHeader) return wall;
-      // Keep the search outside the floating viewport so the returning filter
-      // rows cannot paint underneath it or cover its input hit target.
-      return Column(
-        children: [
-          Material(color: Theme.of(context).scaffoldBackgroundColor, child: _wallSearch()),
-          Expanded(child: wall),
-        ],
+      if (PlatformDetector.isTV()) return wall;
+      // The header owns a fixed area above the result viewport. Listening to
+      // that viewport's direction also works in the real LibrariesScreen,
+      // rather than relying on a floating sliver inside nested scroll views.
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final searchHeight = widget.searchInHeader ? 0.0 : math.min(60.0, constraints.maxHeight);
+          final remainingHeight = math.max(0.0, constraints.maxHeight - searchHeight);
+          return Column(
+            children: [
+              if (!widget.searchInHeader)
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: searchHeight),
+                  child: Material(color: Theme.of(context).scaffoldBackgroundColor, child: _wallSearch()),
+                ),
+              ValueListenableBuilder<bool>(
+                valueListenable: _wallFiltersExpanded,
+                builder: (context, expanded, _) {
+                  if (remainingHeight < kMinInteractiveDimension * 2) return const SizedBox.shrink();
+                  final showExpanded = expanded && MediaQuery.viewInsetsOf(context).bottom == 0;
+                  return Material(
+                    key: const ValueKey('wall-filter-header'),
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: remainingHeight / 2),
+                      child: AnimatedSize(
+                        alignment: Alignment.topCenter,
+                        duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : tokens(context).normal,
+                        curve: Curves.easeOutCubic,
+                        child: showExpanded
+                            ? SingleChildScrollView(
+                                key: const ValueKey('wall-expanded-filters'),
+                                primary: false,
+                                child: _wallControls(includeSearch: false),
+                              )
+                            : _compactWallFilters(),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              Expanded(child: wall),
+            ],
+          );
+        },
       );
     },
   );
@@ -1163,6 +1238,7 @@ class GroupedLibraryBrowseState extends State<GroupedLibraryBrowse> {
     _year.dispose();
     if (widget.searchFocusNode == null) _searchFocus.dispose();
     _scroll.dispose();
+    _wallFiltersExpanded.dispose();
     _contentFocus.dispose();
     _filterFocus.dispose();
     for (final row in _wallRows.values) {

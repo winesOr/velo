@@ -562,6 +562,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(controller.offset, greaterThan(400));
     expect(toggle.hitTestable(), findsNothing);
+    final compact = find.byKey(const ValueKey('wall-compact-filters'));
+    expect(compact.hitTestable(), findsOneWidget);
+    final compactPosition = tester.getTopLeft(compact);
+    await tester.drag(wall, const Offset(0, -160));
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(compact), compactPosition, reason: 'the compact filter bar stays pinned');
     expect(search.hitTestable(), findsOneWidget);
     expect(tester.getTopLeft(search), searchPosition);
     await captureTablet(tester, find.byKey(const ValueKey('tablet-library')), 'phone-search-facets-collapsed');
@@ -569,6 +575,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(controller.offset, greaterThan(200), reason: 'revealing filters does not require returning to the top');
     expect(toggle.hitTestable(), findsOneWidget);
+    expect(compact, findsNothing);
     expect(
       tester.getTopLeft(find.byKey(const ValueKey('wall-types'))).dy,
       greaterThanOrEqualTo(tester.getBottomLeft(search).dy),
