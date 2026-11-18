@@ -102,6 +102,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
     Future<void> Function(String profileId, List<MediaItem>)? syncSystemShelf,
     Future<void> Function(String profileId, List<MediaServerClient> clients)? syncServerSources,
     this._homeSnapshotStore = const HomeSnapshotStore(),
+    this._homeSnapshotAuthorization,
   }) : _now = now ?? DateTime.now,
        _isRefreshBlocked = isRefreshBlocked ?? _neverBlocked,
        _isConnectingServers = isConnectingServers ?? _neverBlocked,
@@ -147,17 +148,62 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   final HiddenLibrariesProvider _hiddenLibraries;
   final LibrariesProvider _libraries;
   final HomeSnapshotStore _homeSnapshotStore;
+  final HomeSnapshotAuthorization? Function()? _homeSnapshotAuthorization;
   final bool Function() _isConnectingServers;
   bool _snapshotRestoreAttempted = false;
   bool _restoredHomeSnapshot = false;
+  Map<String, ({String backend, String scope})> _restoredSnapshotOwners = {};
+  final Set<String> _snapshotOwnerRefreshIds = {};
   bool get restoredHomeSnapshot => _restoredHomeSnapshot;
   Set<String> _visibleOnlineIds = const {};
 
   void _onVisibleServersChanged() {
+    if (_restoredHomeSnapshot && _homeSnapshotAuthorization != null) {
+      final authorization = _homeSnapshotAuthorization();
+      if (authorization != null && authorization.isCurrent()) {
+        final currentOwners = {
+          for (final owner in authorization.owners) owner.serverId: (backend: owner.backend.name, scope: owner.scope),
+        };
+        final invalidated = {
+          for (final entry in _restoredSnapshotOwners.entries)
+            if (entry.value != currentOwners[entry.key]) entry.key,
+        };
+        if (invalidated.isNotEmpty) {
+          ++_contentRevision;
+          _snapshotOwnerRefreshIds.addAll(invalidated);
+          _loadedOnDeckServerIds = Set.of(_loadedOnDeckServerIds)..removeAll(invalidated);
+          _loadedHubServerIds = Set.of(_loadedHubServerIds)..removeAll(invalidated);
+        }
+        bool allowed(String? serverId) {
+          final current = currentOwners[serverId];
+          final restored = _restoredSnapshotOwners[serverId];
+          return current != null && (restored == null || current == restored);
+        }
+
+        final onDeck = _onDeck.where((item) => allowed(item.serverId)).toList();
+        final hubs = _hubs.where((hub) => allowed(hub.serverId)).toList();
+        // Once the old owner's rows are removed, later fresh rows belong to
+        // the current authorization. A second user/backend change must still
+        // retire those rows rather than trusting a matching public server ID.
+        _restoredSnapshotOwners = currentOwners;
+        if (onDeck.length != _onDeck.length || hubs.length != _hubs.length) {
+          _applyOnDeck(onDeck);
+          _replaceHubs(hubs);
+          safeNotifyListeners();
+        }
+      }
+    }
     final online = _multiServer.onlineServerIds.toSet();
-    if (setEquals(online, _visibleOnlineIds)) return;
+    final ownerReady = online.any((id) => _snapshotOwnerRefreshIds.contains(id) && _snapshotOwnerMatchesClient(id));
+    if (setEquals(online, _visibleOnlineIds) && !ownerReady) return;
     _visibleOnlineIds = online;
     unawaited(syncToOnlineServers(online));
+  }
+
+  bool _snapshotOwnerMatchesClient(String serverId) {
+    final owner = _restoredSnapshotOwners[serverId];
+    final client = _multiServer.getClientForServer(ServerId(serverId));
+    return owner != null && client?.backend.name == owner.backend && client?.cacheServerId == owner.scope;
   }
 
   Map<String, MediaServerClient> _homeClients() => {
@@ -166,28 +212,44 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
 
   Future<void> _restoreHomeSnapshot() async {
     if (_snapshotRestoreAttempted || profileId == null || isDisposed || isProfileBinding()) return;
+    final authorization = _homeSnapshotAuthorization?.call();
+    if (_homeSnapshotAuthorization != null && authorization == null) return;
     final clients = _homeClients();
-    if (clients.isEmpty) return;
-    _snapshotRestoreAttempted = true;
+    if (authorization == null && clients.isEmpty) return;
     await _hiddenLibraries.ensureInitialized();
     final settings = await SettingsService.getInstance();
     if (isDisposed || isProfileBinding()) return;
     final hidden = Set<String>.of(_hiddenLibraries.hiddenLibraryKeys);
     final revision = _commitRevision;
-    final scope = HomeSnapshotScope.capture(
-      profileId: profileId!,
-      clients: clients,
-      hiddenLibraryKeys: hidden,
-      useGlobalHubs: settings.read(SettingsService.useGlobalHubs),
-    );
+    final scope = authorization == null
+        ? HomeSnapshotScope.capture(
+            profileId: profileId!,
+            clients: clients,
+            hiddenLibraryKeys: hidden,
+            useGlobalHubs: settings.read(SettingsService.useGlobalHubs),
+          )
+        : HomeSnapshotScope.forOwners(
+            profileId: profileId!,
+            owners: authorization.owners,
+            hiddenLibraryKeys: hidden,
+            useGlobalHubs: settings.read(SettingsService.useGlobalHubs),
+          );
     bool current() =>
         !isDisposed &&
         !isProfileBinding() &&
         _commitRevision == revision &&
-        scope.isCurrent(_homeClients()) &&
+        (authorization?.isCurrent() ?? scope.isCurrent(_homeClients())) &&
         setEquals(hidden, _hiddenLibraries.hiddenLibraryKeys);
     final snapshot = await _homeSnapshotStore.read(scope, isCurrent: current);
-    if (snapshot == null || !current() || hasDisplayableContent) return;
+    if (!current()) return;
+    _snapshotRestoreAttempted = true;
+    if (snapshot == null || hasDisplayableContent) return;
+    _restoredSnapshotOwners = authorization == null
+        ? {
+            for (final entry in clients.entries)
+              entry.key: (backend: entry.value.backend.name, scope: entry.value.cacheServerId),
+          }
+        : {for (final owner in authorization.owners) owner.serverId: (backend: owner.backend.name, scope: owner.scope)};
     _applyOnDeck(snapshot.onDeck);
     final hubs = _filterDiscoverHubs(snapshot.hubs);
     sortMediaHubsByLibraryOrder(hubs, _libraries.libraries);
@@ -202,6 +264,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
 
   Future<void> _persistCurrentHomeSnapshot(HomeSnapshotScope scope, {required bool Function() isCurrent}) async {
     if (!isCurrent()) return;
+    _snapshotOwnerRefreshIds.removeWhere((id) => _fullyLoadedServerIds.contains(id) && _snapshotOwnerMatchesClient(id));
     final revision = _commitRevision;
     // Persist under the request's original authorization scope. Recapturing
     // here could attribute an old response to a newly authenticated client.
@@ -424,16 +487,19 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   /// Once a full pass has loaded, only the genuinely new servers are fetched
   /// and merged in; already-loaded servers are not refetched.
   Future<void> syncToOnlineServers(Set<String> onlineServerIds) {
-    if (isDisposed || onlineServerIds.isEmpty || isProfileBinding()) return Future<void>.value();
-    if (_loadCoordinator.isBusy) return _loadCoordinator.requestDelta(onlineServerIds);
+    final authorizedServerIds = onlineServerIds
+        .where((id) => !_snapshotOwnerRefreshIds.contains(id) || _snapshotOwnerMatchesClient(id))
+        .toSet();
+    if (isDisposed || authorizedServerIds.isEmpty || isProfileBinding()) return Future<void>.value();
+    if (_loadCoordinator.isBusy) return _loadCoordinator.requestDelta(authorizedServerIds);
     if (_onDeckState == DiscoverLoadState.loaded &&
         _hubsState == DiscoverLoadState.loaded &&
-        _fullyLoadedServerIds.containsAll(onlineServerIds)) {
+        _fullyLoadedServerIds.containsAll(authorizedServerIds)) {
       return Future<void>.value();
     }
     // Nothing (or a failed pass) to merge into yet — run the full load.
     if (_onDeckState != DiscoverLoadState.loaded || _hubsState != DiscoverLoadState.loaded) return load();
-    return _loadCoordinator.requestDelta(onlineServerIds.difference(_fullyLoadedServerIds));
+    return _loadCoordinator.requestDelta(authorizedServerIds.difference(_fullyLoadedServerIds));
   }
 
   /// Full load of Continue Watching + hubs. Concurrent calls coalesce into

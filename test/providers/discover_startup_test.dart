@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/database/app_database.dart';
 import 'package:plezy/media/media_hub.dart';
 import 'package:plezy/media/media_item.dart';
+import 'package:plezy/media/ids.dart';
+import 'package:plezy/media/media_backend.dart';
 import 'package:plezy/providers/discover_provider.dart';
 import 'package:plezy/providers/hidden_libraries_provider.dart';
 import 'package:plezy/providers/libraries_provider.dart';
@@ -156,6 +158,206 @@ void main() {
     expect(provider.loadGeneration, generation, reason: 'refresh must not steal initial focus a second time');
   });
 
+  test('local authorization restores before any server connects and revalidates after connection', () async {
+    await cacheHome();
+    provider.dispose();
+    manager.removeServer(ServerId('server'));
+    var connecting = true;
+    final owners = [
+      HomeSnapshotOwner(
+        serverId: 'server',
+        backend: MediaBackend.plex,
+        scope: client.scopedServerId,
+        serverName: 'Saved server',
+      ),
+    ];
+    provider = DiscoverProvider(
+      multiServer,
+      hidden,
+      libraries,
+      profileId: 'profile-a',
+      isProfileBinding: () => binding,
+      isConnectingServers: () => connecting,
+      homeSnapshotAuthorization: () => HomeSnapshotAuthorization(owners: owners, isCurrent: () => !binding),
+      watchStateStore: watchStateStore,
+      syncSystemShelf: (_, _) async {},
+      syncServerSources: (_, _) async {},
+    );
+    await provider.ensureLoaded();
+    expect(provider.onDeck.single.id, 'cached');
+    expect(provider.restoredHomeSnapshot, isTrue);
+    expect(client.onDeckCalls, 0);
+    expect(client.hubCalls, 0);
+    expect(watchStateStore.observed, isEmpty, reason: 'disk snapshots never become authoritative watch observations');
+    connecting = false;
+    client.onDeck = [testMediaItem(id: 'fresh-after-probe', serverId: 'server')];
+    manager.debugRegisterClientForTesting(client);
+    final pending = provider.ensureLoaded();
+    client.onDeckGate!.complete();
+    client.hubsGate!.complete();
+    await pending;
+    expect(provider.onDeck.single.id, 'fresh-after-probe');
+    expect(client.onDeckCalls, 1);
+    expect(client.hubCalls, 1);
+  });
+
+  test('failed background refresh preserves the restored display page', () async {
+    await cacheHome();
+    client.failure = StateError('offline');
+    client.onDeckGate!.complete();
+    client.hubsGate!.complete();
+    await provider.ensureLoaded();
+    expect(provider.onDeck.single.id, 'cached');
+    expect(provider.hubs.single.id, 'cached-hub');
+    expect(provider.hasDisplayableContent, isTrue);
+    expect(watchStateStore.observed, isEmpty);
+  });
+
+  test('revoked local bindings remove cached content when server state changes', () async {
+    await cacheHome();
+    provider.dispose();
+    manager.removeServer(ServerId('server'));
+    var permitted = true;
+    provider = DiscoverProvider(
+      multiServer,
+      hidden,
+      libraries,
+      profileId: 'profile-a',
+      isProfileBinding: () => binding,
+      isConnectingServers: () => true,
+      homeSnapshotAuthorization: () => HomeSnapshotAuthorization(
+        owners: [
+          if (permitted)
+            HomeSnapshotOwner(
+              serverId: 'server',
+              backend: MediaBackend.plex,
+              scope: client.scopedServerId,
+              serverName: 'Saved server',
+            ),
+        ],
+        isCurrent: () => true,
+      ),
+      syncSystemShelf: (_, _) async {},
+      syncServerSources: (_, _) async {},
+    );
+    await provider.ensureLoaded();
+    expect(provider.hasDisplayableContent, isTrue);
+    permitted = false;
+    manager.debugEmitStatusForTesting();
+    await Future<void>.delayed(Duration.zero);
+    expect(provider.onDeck, isEmpty);
+    expect(provider.hubs, isEmpty);
+  });
+
+  for (final change in ['private user scope', 'backend']) {
+    test('same-server $change changes retire the previous cached owner', () async {
+      provider.dispose();
+      manager.removeServer(ServerId('server'));
+      final mediaClient = _MediaBrowserHomeStartupClient('server');
+      final scope = HomeSnapshotScope.capture(
+        profileId: 'profile-a',
+        clients: {'server': mediaClient},
+        hiddenLibraryKeys: {},
+        useGlobalHubs: SettingsService.instanceOrNull!.read(SettingsService.useGlobalHubs),
+      );
+      final oldItem = testMediaItem(
+        id: 'user-a-item',
+        serverId: 'server',
+        backend: MediaBackend.emby,
+        viewOffsetMs: 1234,
+      );
+      await const HomeSnapshotStore().write(
+        scope,
+        HomeSnapshot(
+          onDeck: [oldItem],
+          hubs: [
+            MediaHub(id: 'user-a-hub', title: 'A', type: 'movie', serverId: 'server', items: [oldItem]),
+          ],
+        ),
+        authoritativeServerIds: {'server'},
+        isCurrent: () => true,
+      );
+      mediaClient.onDeck = [oldItem];
+      mediaClient.hubs = [
+        MediaHub(id: 'user-a-hub', title: 'A', type: 'movie', serverId: 'server', items: [oldItem]),
+      ];
+      manager.debugRegisterClientForTesting(mediaClient);
+      manager.debugEmitStatusForTesting();
+      var currentScope = mediaClient.scopedServerId;
+      var currentBackend = MediaBackend.emby;
+      provider = DiscoverProvider(
+        multiServer,
+        hidden,
+        libraries,
+        profileId: 'profile-a',
+        isProfileBinding: () => binding,
+        isConnectingServers: () => true,
+        homeSnapshotAuthorization: () => HomeSnapshotAuthorization(
+          owners: [
+            HomeSnapshotOwner(
+              serverId: 'server',
+              backend: currentBackend,
+              scope: currentScope,
+              serverName: 'Same machine',
+            ),
+          ],
+          isCurrent: () => true,
+        ),
+        syncSystemShelf: (_, _) async {},
+        syncServerSources: (_, _) async {},
+      );
+      await provider.ensureLoaded();
+      expect(provider.onDeck.single.viewOffsetMs, 1234);
+      expect(provider.hubs.single.id, 'user-a-hub');
+      manager.debugEmitStatusForTesting();
+      await Future<void>.delayed(Duration.zero);
+      expect(provider.hasDisplayableContent, isTrue, reason: 'the unchanged private owner keeps its cached rows');
+      if (change == 'private user scope') {
+        currentScope = 'server/user-b';
+      } else {
+        currentBackend = MediaBackend.jellyfin;
+      }
+      manager.debugEmitStatusForTesting();
+      await Future<void>.delayed(Duration.zero);
+      expect(provider.onDeck, isEmpty, reason: 'the old user progress must not survive a public server-ID match');
+      expect(provider.hubs, isEmpty);
+      expect(multiServer.onlineServerIds, ['server'], reason: 'the public server stays online through the user change');
+      expect(mediaClient.onDeckCalls, 1, reason: 'scope invalidation must not request the old user again');
+      // A public server ID may stay online through reauthentication. Its new
+      // private owner must still get fresh rows without another tab entry.
+      final newClient =
+          _MediaBrowserHomeStartupClient(
+              'server',
+              userId: change == 'private user scope' ? 'user-b' : 'user-a',
+              protocol: currentBackend,
+            )
+            ..onDeck = [testMediaItem(id: 'new-owner-item', backend: currentBackend, serverId: 'server')]
+            ..onDeckStarted = Completer<void>()
+            ..hubsStarted = Completer<void>();
+      newClient.hubs = [
+        MediaHub(id: 'new-owner-hub', title: 'B', type: 'movie', serverId: 'server', items: newClient.onDeck),
+      ];
+      final refreshed = Completer<void>();
+      provider.addListener(() {
+        if (!refreshed.isCompleted &&
+            provider.onDeck.any((item) => item.id == 'new-owner-item') &&
+            provider.hubs.any((hub) => hub.id == 'new-owner-hub')) {
+          refreshed.complete();
+        }
+      });
+      manager.debugRegisterClientForTesting(newClient);
+      manager.debugEmitStatusForTesting();
+      await refreshed.future.timeout(const Duration(seconds: 3));
+      expect(newClient.onDeckCalls, 1);
+      expect(newClient.hubCalls, 1);
+      expect(provider.onDeck.single.id, 'new-owner-item');
+      manager.debugEmitStatusForTesting();
+      await Future<void>.delayed(Duration.zero);
+      expect(provider.onDeck.single.id, 'new-owner-item', reason: 'new rows are no longer attributed to the old owner');
+      expect(newClient.onDeckCalls, 1);
+    });
+  }
+
   test('binding does not hydrate cached content or fetch; rotated authorization drops late data', () async {
     await cacheHome();
     binding = true;
@@ -292,6 +494,18 @@ class _DeltaAggregationService extends DataAggregationService {
     await mergeGate?.future;
     return super.mergeContinueWatching(existing, fresh, limit: limit);
   }
+}
+
+class _MediaBrowserHomeStartupClient extends HomeStartupClient {
+  _MediaBrowserHomeStartupClient(super.id, {this.userId = 'user-a', this.protocol = MediaBackend.emby});
+  final String userId;
+  final MediaBackend protocol;
+
+  @override
+  MediaBackend get backend => protocol;
+
+  @override
+  String get scopedServerId => '$serverId/$userId';
 }
 
 class _RecordingHomeSnapshotStore extends HomeSnapshotStore {

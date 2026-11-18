@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
@@ -28,6 +29,7 @@ import '../database/app_database.dart';
 import '../screens/main_screen.dart';
 import '../screens/video_player_screen.dart';
 import '../services/api_cache.dart';
+import '../services/home_snapshot_store.dart';
 import '../services/agent_control_service.dart';
 import '../services/catalog/catalog_library_matcher.dart';
 import '../services/music/music_playback_service.dart';
@@ -238,8 +240,9 @@ class _ProfileSessionScreenState extends State<ProfileSessionScreen> {
               ChangeNotifierProvider(
                 create: (context) {
                   final activeProfile = context.read<ActiveProfileProvider>();
+                  final multiServer = context.read<MultiServerProvider>();
                   return DiscoverProvider(
-                    context.read<MultiServerProvider>(),
+                    multiServer,
                     context.read<HiddenLibrariesProvider>(),
                     context.read<LibrariesProvider>(),
                     // Created above in this same subtree, so its lifetime
@@ -248,6 +251,36 @@ class _ProfileSessionScreenState extends State<ProfileSessionScreen> {
                     watchStateStore: context.read<WatchStateStore>(),
                     isProfileBinding: () => activeProfile.isBinding && !activeProfile.isStartupIdentityReady,
                     isConnectingServers: () => activeProfile.isBinding,
+                    homeSnapshotAuthorization: () {
+                      final profile = activeProfile.active;
+                      if (profile == null || profile.id != activeId || !activeProfile.isStartupIdentityReady) {
+                        return null;
+                      }
+                      final generation = activeProfile.committedIdentityGeneration;
+                      final mutation = activeProfile.identityMutationGeneration;
+                      final connections = activeProfile.connectionsById;
+                      final bindings = activeProfile.connectionsByProfile;
+                      final excluded = {...multiServer.authErrorServerIds, ...multiServer.accessDeniedServerIds};
+                      return HomeSnapshotAuthorization(
+                        owners: HomeSnapshotOwner.fromBindings(
+                          profile: profile,
+                          connections: connections,
+                          bindings: bindings[profile.id] ?? const [],
+                          excludedServerIds: excluded,
+                        ),
+                        isCurrent: () =>
+                            activeProfile.activeId == activeId &&
+                            activeProfile.isStartupIdentityReady &&
+                            activeProfile.committedIdentityGeneration == generation &&
+                            activeProfile.identityMutationGeneration == mutation &&
+                            identical(activeProfile.connectionsById, connections) &&
+                            identical(activeProfile.connectionsByProfile, bindings) &&
+                            setEquals(excluded, {
+                              ...multiServer.authErrorServerIds,
+                              ...multiServer.accessDeniedServerIds,
+                            }),
+                      );
+                    },
                     // Defers push-triggered hub refetches while the player is
                     // up — same playback-quiet policy as the resume gate.
                     isRefreshBlocked: () => VideoPlayerScreenState.activeGlobalKey != null,

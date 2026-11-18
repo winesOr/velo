@@ -124,6 +124,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       _heroSelections.putIfAbsent(_selectedHomeServerId, () => HomeHeroSelection(random: widget.heroRandom));
   List<MediaHub> _sourceHubs = const [];
   void _syncSourceLists() {
+    if (_discoverChangePending && _heroIsMoving) return;
     if (_sourceSnapshotId == _selectedHomeServerId &&
         identical(_sourceItemsInput, _discover.onDeck) &&
         identical(_sourceHubsInput, _discover.hubs) &&
@@ -180,13 +181,16 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     },
   );
   Timer? _heroTimer;
-  bool _hadLoopingHero = false;
+  int _heroPageItemCount = 0;
+  bool _discoverChangePending = false;
   final _heroPointers = <int>{};
   bool _heroRotationPaused = false;
   bool _heroAppActive = true;
   bool _heroRouteVisible = true;
   final ScrollController _scrollController = ScrollController();
   final ValueNotifier<int> _heroIndex = ValueNotifier<int>(0);
+  bool get _heroIsMoving =>
+      _heroPointers.isNotEmpty || (_heroController.hasClients && _heroController.position.isScrollingNotifier.value);
 
   /// Last decoded hero artwork per item, kept for items not yet selected.
   final Map<String, ImageProvider> _heroReadyImages = {};
@@ -446,6 +450,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   void _releaseHeroPointer(PointerEvent event) {
     _heroPointers.remove(event.pointer);
+    _flushDiscoverChange();
     if (_heroItems.isNotEmpty) _syncHomeTheme(_heroItems[_heroIndex.value]);
     _syncHeroRotation();
   }
@@ -463,7 +468,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             _heroController.position.isScrollingNotifier.value) {
           return;
         }
-        _syncHomeTheme(_heroItems[_heroIndex.value]);
+        _flushDiscoverChange();
+        if (_heroItems.isNotEmpty) _syncHomeTheme(_heroItems[_heroIndex.value]);
         _syncHeroRotation();
       });
     }
@@ -671,6 +677,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   void _onDiscoverChanged() {
     if (!mounted) return;
+    // A background cache revalidation must not remap the repeating sequence
+    // or cancel the drag that is currently using its old item count.
+    if (_heroIsMoving) {
+      _discoverChangePending = true;
+      return;
+    }
     final generation = _discover.loadGeneration;
     final isNewLoad = generation != _seenLoadGeneration;
     _seenLoadGeneration = generation;
@@ -704,9 +716,17 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       _syncHomeTheme(_heroItems.isEmpty ? null : _heroItems[_heroIndex.value.clamp(0, _heroItems.length - 1)]);
     }
 
-    final looping = _heroItems.length > 1;
-    if (resetHero || _hadLoopingHero != looping) _restoreHeroPageAfterLayout();
-    _hadLoopingHero = looping;
+    final count = _heroItems.length;
+    if (resetHero || _heroPageItemCount != count) {
+      _heroPageItemCount = count;
+      if (_heroController.hasClients && count > 0) {
+        // Rebase before the next paint: a newly filled cache pool changes
+        // modulo arithmetic, but must keep the selected artwork on screen.
+        _heroController.jumpToPage(_heroPageFor(_heroIndex.value.clamp(0, count - 1)));
+      } else {
+        _restoreHeroPageAfterLayout();
+      }
+    }
     _syncHeroRotation();
     // Focus hero when fresh content lands, but only if no modal route is on top
     if (isNewLoad &&
@@ -734,6 +754,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         });
       }
     }
+  }
+
+  void _flushDiscoverChange() {
+    if (!_discoverChangePending || _heroIsMoving) return;
+    _discoverChangePending = false;
+    _onDiscoverChanged();
   }
 
   /// Handle key events for the hero section.
@@ -819,6 +845,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   @override
   void onTabShown() {
     _isTabVisible = true;
+    _flushDiscoverChange();
     _syncHeroRotation();
     // Artwork that decoded while hidden was not applied to the theme.
     if (!PlatformDetector.isTV()) {

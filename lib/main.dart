@@ -20,6 +20,7 @@ import 'connection/connection_bootstrap.dart';
 import 'connection/connection_registry.dart';
 import 'navigation/profile_navigation_scope.dart';
 import 'navigation/profile_session_screen.dart';
+import 'navigation/navigation_tabs.dart';
 import 'profiles/active_profile_binder.dart';
 import 'profiles/active_profile_provider.dart';
 import 'profiles/profile.dart';
@@ -1262,12 +1263,14 @@ Future<bool> awaitStartupBindSettle(Future<bool> settle, {required bool hasNetwo
 }
 
 /// Wait for authorization without a content deadline, then for the first
-/// usable connection or the bounded, still-loading home shell.
+/// usable connection. Home can own its content wait so its local snapshot is
+/// read before a connection probe completes; identity/PIN readiness is shared.
 @visibleForTesting
 Future<bool> awaitStartupContentReady({
   required ActiveProfileProvider profile,
   required MultiServerProvider servers,
   required bool hasNetwork,
+  bool deferConnectionWaitToHome = false,
   Duration connectionBudget = const Duration(seconds: 2),
 }) async {
   final profileId = profile.activeId;
@@ -1280,6 +1283,7 @@ Future<bool> awaitStartupContentReady({
     return false;
   }
   if (!profile.isBinding) return profile.lastBindingSucceeded;
+  if (deferConnectionWaitToHome) return true;
   if (servers.onlineServerIds.isNotEmpty) return true;
 
   final completer = Completer<bool>();
@@ -2299,6 +2303,7 @@ class _SetupScreenState extends State<SetupScreen> with MountedSetStateMixin {
         profile: activeProfile,
         servers: context.read<MultiServerProvider>(),
         hasNetwork: hasNetwork,
+        deferConnectionWaitToHome: settings.read(SettingsService.startupSection) == NavigationTabId.discover,
       );
       if (!mounted) return;
     }

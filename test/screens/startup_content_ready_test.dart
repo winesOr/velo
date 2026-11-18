@@ -55,6 +55,54 @@ class _Servers extends ChangeNotifier implements MultiServerProvider {
 }
 
 void main() {
+  test('Home mounts after identity readiness so its disk snapshot does not wait for a connection probe', () {
+    fakeAsync((clock) {
+      final profile = _Identity();
+      final servers = _Servers();
+      bool? result;
+      unawaited(
+        awaitStartupContentReady(
+          profile: profile,
+          servers: servers,
+          hasNetwork: true,
+          deferConnectionWaitToHome: true,
+        ).then((value) => result = value),
+      );
+      clock.elapse(const Duration(seconds: 5));
+      expect(result, isNull, reason: 'local cache does not bypass identity or PIN verification');
+      profile.authorize();
+      clock.flushMicrotasks();
+      expect(result, isTrue);
+      expect(profile.isBinding, isTrue);
+      expect(servers.onlineServerIds, isEmpty);
+      expect(clock.nonPeriodicTimerCount, 0, reason: 'the home gate owns any content deadline');
+      profile.dispose();
+      servers.dispose();
+    });
+  });
+
+  test('Home still rejects a changed identity before handing off cached content', () {
+    fakeAsync((clock) {
+      final profile = _Identity();
+      final servers = _Servers();
+      bool? result;
+      unawaited(
+        awaitStartupContentReady(
+          profile: profile,
+          servers: servers,
+          hasNetwork: true,
+          deferConnectionWaitToHome: true,
+        ).then((value) => result = value),
+      );
+      profile.authorize();
+      profile.switchProfile();
+      clock.flushMicrotasks();
+      expect(result, isFalse);
+      profile.dispose();
+      servers.dispose();
+    });
+  });
+
   test('the content budget starts after authorization and releases a still-loading shell', () {
     fakeAsync((clock) {
       final profile = _Identity();

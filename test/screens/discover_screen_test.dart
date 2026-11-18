@@ -933,6 +933,54 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('background cache updates fill the banner pool after a drag without changing the visible selection', (
+    tester,
+  ) async {
+    final items = List.generate(8, (i) => testMediaItem(id: 'warm-$i', title: 'Warm $i', serverId: 'server_1'));
+    final client = _FakeMediaServerClient(continueWatching: items.take(3).toList(), hubs: const []);
+    await _pumpDiscoverShell(tester, isTv: false, size: const Size(390, 844), clients: [client]);
+    final pages = find.byType(PageView);
+    final provider = tester.element(find.byType(DiscoverScreen)).read<DiscoverProvider>();
+    final drag = await tester.startGesture(tester.getCenter(pages));
+    await drag.moveBy(const Offset(-90, 0));
+    await tester.pump(const Duration(milliseconds: 16));
+    final controller = tester.widget<PageView>(pages).controller!;
+    final held = controller.page!;
+    client.continueWatching = items;
+    await provider.refreshContinueWatching();
+    expect(provider.onDeck, hasLength(8));
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(
+      find.byKey(const ValueKey('home-hero-dot-3')),
+      findsNothing,
+      reason: 'new data does not remap a page sequence underneath an active finger',
+    );
+    expect(controller.page, held);
+    await drag.moveBy(const Offset(-90, 0));
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(controller.page, greaterThan(held), reason: 'the original drag remains attached');
+    await drag.up();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('home-hero-dot-7')), findsOneWidget);
+    final selected = tester
+        .widgetList<Semantics>(
+          find.byWidgetPredicate(
+            (w) => w is Semantics && w.key.toString().contains('home-hero-dot-') && w.properties.selected == true,
+          ),
+        )
+        .single;
+    final visible = tester.widgetList<FusionHomeHero>(find.byType(FusionHomeHero)).single;
+    expect(
+      visible.item.displayTitle,
+      selected.properties.label,
+      reason: 'rebasing a longer pool preserves the selected artwork and indicator',
+    );
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   for (final navigated in [false, true]) {
     testWidgets(
       'cold-start recommendations ${navigated ? 'preserve an active swipe' : 'supply the final random pool'}',
