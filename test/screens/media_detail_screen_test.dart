@@ -18,6 +18,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:plezy/database/app_database.dart';
 import 'package:plezy/focus/focusable_action_bar.dart';
+import 'package:plezy/focus/input_mode_tracker.dart';
 import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/media/library_query.dart';
 import 'package:plezy/media/library_change_event.dart';
@@ -1316,8 +1317,10 @@ void main() {
           value: provider,
           child: MaterialApp(
             theme: monoTheme(dark: true),
-            home: withProfileNavigationScope(
-              child: SizedBox(width: 1280, height: 720, child: MediaDetailScreen(metadata: show)),
+            home: InputModeTracker(
+              child: withProfileNavigationScope(
+                child: SizedBox(width: 1280, height: 720, child: MediaDetailScreen(metadata: show)),
+              ),
             ),
           ),
         ),
@@ -1341,13 +1344,22 @@ void main() {
     expect(find.text('1–2'), findsOneWidget);
     expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 1)}'), findsOneWidget);
 
+    Border? outline(MediaItem item) {
+      final box = tester.widget<DecoratedBox>(find.byKey(ValueKey('detail_episode_outline_${item.id}')));
+      return (box.decoration as BoxDecoration).border as Border?;
+    }
+
     // Browsing focuses a card; Enter explicitly selects the pending target.
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 1)}'), findsOneWidget);
+    expect(outline(episode)!.top.width, 2, reason: 'the pending episode retains the selection frame');
+    expect(outline(episode2)!.top.width, 3, reason: 'the remote focus is visible on the second thumbnail');
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('${t.common.play} ${t.common.episodeNumber(number: 2)}'), findsOneWidget);
+    expect(outline(episode), isNull);
+    expect(outline(episode2)!.top.width, 3);
     expect(tester.widget<Text>(find.byKey(const ValueKey('detail_natural_title'))).data, show.title);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pumpAndSettle();
@@ -3297,20 +3309,24 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(card);
         await tester.pump();
-        // The visible outline proves the tap changed the actual selected
-        // episode before scrolling back to the separately laid-out hero.
-        expect(
-          find.descendant(
-            of: card,
-            matching: find.byWidgetPredicate(
-              (widget) =>
-                  widget is Container &&
-                  widget.decoration is BoxDecoration &&
-                  (widget.decoration as BoxDecoration).border != null,
-            ),
+        final outline = find.byKey(ValueKey('detail_episode_outline_season_1_episode_$number'));
+        final frame = tester.widget<DecoratedBox>(outline).decoration as BoxDecoration;
+        final stroke = (frame.border! as Border).top.width;
+        final bounds = tester.getRect(outline);
+        final image = tester.getRect(find.byKey(ValueKey('detail_episode_thumb_season_1_episode_$number')));
+        expect(image.left - bounds.left, greaterThan(stroke));
+        expect(image.top - bounds.top, greaterThan(stroke));
+        expect(bounds.right - image.right, greaterThan(stroke));
+        expect(bounds.bottom - image.bottom, greaterThan(stroke));
+        final viewport = tester.getRect(find.byKey(const ValueKey('detail_episode_rail_scroll')));
+        expect(bounds.intersect(viewport), bounds, reason: 'the whole selection frame must be visible');
+        for (final other in tester.widgetList<DecoratedBox>(
+          find.byWidgetPredicate(
+            (widget) => widget is DecoratedBox && widget.key.toString().contains('detail_episode_outline_'),
           ),
-          findsOneWidget,
-        );
+        )) {
+          if (other.key != tester.widget(outline).key) expect((other.decoration as BoxDecoration).border, isNull);
+        }
         final primaryPlay = find.byKey(const ValueKey('detail_primary_play'));
         await tester.scrollUntilVisible(primaryPlay, -250, scrollable: pageScroll, maxScrolls: 20);
         await tester.pump();

@@ -574,6 +574,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
             onListRefresh: widget.isOffline ? null : _refreshCurrentEpisodes,
             child: FocusableWrapper(
               key: ValueKey('detail_episode_${episode.id}'),
+              delegateFocusBorder: true,
               enableLongPress: true,
               focusNode: _episodeListFocusNode(
                 episode: episode,
@@ -622,13 +623,10 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
+                    _DetailEpisodeFrame(
+                      episodeId: episode.id,
                       height: thumbHeight,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: active ? Border.all(color: theme.colorScheme.onSurface, width: 2) : null,
-                      ),
-                      clipBehavior: Clip.antiAlias,
+                      selected: active,
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
@@ -749,4 +747,43 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
       ),
     ),
   );
+}
+
+class _DetailEpisodeFrame extends StatelessWidget {
+  const _DetailEpisodeFrame({
+    required this.episodeId,
+    required this.height,
+    required this.selected,
+    required this.child,
+  });
+
+  final String episodeId;
+  final double height;
+  final bool selected;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final focused = CardFocusScope.maybeOf(context) ?? false;
+    return SizedBox(
+      height: height,
+      child: DecoratedBox(
+        key: ValueKey('detail_episode_outline_$episodeId'),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          border: selected || focused
+              ? Border.all(color: Theme.of(context).colorScheme.onSurface, width: focused ? 3 : 2)
+              : null,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(5),
+          child: ClipRRect(
+            key: ValueKey('detail_episode_thumb_$episodeId'),
+            borderRadius: BorderRadius.circular(10),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
 }

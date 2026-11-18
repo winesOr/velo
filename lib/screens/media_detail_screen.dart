@@ -45,6 +45,7 @@ import '../focus/hub_vertical_navigation.dart';
 import '../focus/locked_hub_controller.dart';
 import '../focus/key_event_utils.dart';
 import '../focus/input_mode_tracker.dart';
+import '../focus/card_focus_scope.dart';
 import '../widgets/cast_member_strip.dart';
 import '../media/library_query.dart';
 import '../media/library_change_event.dart';
