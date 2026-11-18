@@ -538,102 +538,174 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  for (final tv in [false, true]) {
-    testWidgets('home lists real libraries including empty custom libraries on ${tv ? 'TV' : 'phone'}', (tester) async {
-      final settings = await SettingsService.getInstance();
-      await settings.write(SettingsService.showHeroSection, false);
-      MediaLibrary library(String id, String name, String server, {bool hidden = false}) => MediaLibrary(
-        id: id,
-        title: name,
-        serverId: server,
-        serverName: server,
-        backend: MediaBackend.plex,
-        hidden: hidden,
+  for (final resume in [true, false]) {
+    testWidgets('Emby phone carousel leads directly to the ${resume ? 'resume' : 'library'} shelf', (tester) async {
+      LocaleSettings.setLocaleSync(AppLocale.zh);
+      const library = MediaLibrary(id: 'shows', title: '动漫', backend: MediaBackend.emby, serverId: 'server_1');
+      const host = 'https://home-visual.fixture/';
+      final episode = testMediaItem(
+        backend: MediaBackend.emby,
+        serverId: 'server_1',
+        id: 'episode',
+        kind: MediaKind.episode,
+        title: '第 9 集',
+        grandparentTitle: '后会友期',
+        parentIndex: 1,
+        index: 9,
+        thumbPath: '${host}unavailable-still.jpg',
+        grandparentBackdropPaths: ['${host}unavailable-backdrop.jpg', '${host}interstellar-backdrop.jpg'],
+        durationMs: 4121000,
+        viewOffsetMs: 1254000,
       );
-      final variety = library('1', '综艺', 'server_1');
-      final second = library('1', '综艺', 'other');
-      final empty = library('2', '空库', 'server_1');
-      final unnamed = library('5', '  ', 'server_1');
-      final hidden = library('3', '隐藏库', 'server_1', hidden: true);
-      final userHidden = library('4', '自定义隐藏', 'server_1');
-      final clients = [
-        _FakeMediaServerClient(
-          libraries: [variety, empty, hidden, userHidden, unnamed],
-          hubs: [
-            MediaHub(
-              id: 'library.1.recent',
-              title: '综艺最近添加',
-              serverId: 'server_1',
-              type: 'mixed',
-              items: [testMediaItem(id: 'show', kind: MediaKind.show, serverId: 'server_1')],
-            ),
-            MediaHub(id: 'empty-shelf', title: '空栏目', type: 'movie', serverId: 'server_1', items: []),
-          ],
-        ),
-        _FakeMediaServerClient(id: 'other', name: 'Other source', libraries: [second], hubs: const []),
-      ];
-      String? opened;
+      final movie = testMediaItem(
+        backend: MediaBackend.emby,
+        serverId: 'server_1',
+        id: 'movie',
+        title: '剧场版',
+        thumbPath: '${host}spirited.jpg',
+        artPath: '${host}dune.jpg',
+      );
+      final controller = HomeThemeController(resolve: (_) async => const Color(0xff47716b));
+      addTearDown(controller.dispose);
+      final boundary = GlobalKey();
       await _pumpDiscoverShell(
         tester,
-        isTv: tv,
-        size: tv ? const Size(1280, 720) : const Size(390, 844),
-        clients: clients,
+        isTv: false,
+        size: const Size(390, 844),
         dark: false,
-        wrap: tv
-            ? (screen) => MainScreenFocusScope(
-                focusSidebar: () {},
-                selectLibrary: (key) => opened = key,
-                sideNavigationWidth: 0,
-                hasTopNavigation: true,
-                child: screen,
-              )
-            : null,
-        onSelectLibrary: (key) => opened = key,
+        fixtureFont: true,
+        wrap: (child) => HomeThemeScope(
+          controller: controller,
+          child: RepaintBoundary(key: boundary, child: child),
+        ),
+        clients: [
+          _FakeMediaServerClient(
+            protocol: MediaBackend.emby,
+            libraries: [library],
+            continueWatching: resume ? [episode] : [],
+            hubs: [
+              MediaHub(id: 'library.shows.latest', type: 'movie', title: '动漫 中最近添加', items: [movie]),
+            ],
+          ),
+        ],
       );
       final context = tester.element(find.byType(DiscoverScreen));
-      final catalog = context.read<LibrariesProvider>()
+      final libraries = context.read<LibrariesProvider>()
         ..initialize(context.read<MultiServerProvider>().aggregationService);
-      await context.read<HiddenLibrariesProvider>().hideLibrary(userHidden.globalKey);
-      await catalog.loadLibraries();
+      await libraries.loadLibraries();
       await tester.pump();
-      if (tv) {
-        await tester.tap(find.byTooltip(t.libraries.allSources));
-        await tester.pump(const Duration(milliseconds: 300));
-      } else {
-        expect(find.text('综艺最近添加'), findsOneWidget);
-        expect(find.text('空栏目'), findsNothing);
-        final label = tester.widget<Text>(find.text('综艺 · server_1'));
-        final appColors = Theme.of(context).colorScheme;
-        final foreground = label.style!.color!.computeLuminance();
-        final background = appColors.surfaceContainerHighest.computeLuminance();
-        expect((background + .05) / (foreground + .05), greaterThanOrEqualTo(4.5));
+      expect(find.text('动漫'), findsNothing);
+      final firstShelf = find.byType(HubSection).first;
+      expect(tester.widget<HubSection>(firstShelf).isInContinueWatching, resume);
+      expect(tester.getTopLeft(firstShelf).dy, closeTo(tester.getBottomLeft(find.byType(FusionHomeHero).first).dy, 1));
+      if (resume) {
+        // Use the scrolled phone viewport where the user sees the carousel tail and both home shelves.
+        await tester.drag(find.byType(CustomScrollView).first, const Offset(0, -250));
+        final card = find.byWidgetPredicate((w) => w is MediaCard && w.item == episode);
+        final artwork = find.descendant(
+          of: card,
+          matching: find.byWidgetPredicate((w) => w is RawImage && w.image != null),
+        );
+        for (var attempt = 0; attempt < 45 && artwork.evaluate().isEmpty; attempt++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 25)));
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(artwork, findsOneWidget, reason: 'the second series backdrop must decode after both stale URLs fail');
+        await tester.pump(const Duration(milliseconds: 700));
+        const capture = String.fromEnvironment('HOME_FEED_CAPTURE');
+        if (capture.isNotEmpty) {
+          final render = boundary.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+          await tester.runAsync(() async {
+            final image = await render.toImage();
+            final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+            await File(capture).writeAsBytes(bytes!.buffer.asUint8List());
+            image.dispose();
+          });
+        }
       }
-      expect(find.text('${t.libraries.fallbackTitle} · server_1'), findsOneWidget);
-      expect(find.text('综艺 · server_1'), findsOneWidget);
-      expect(find.text('综艺 · other'), findsOneWidget);
-      expect(find.text('空库 · server_1'), findsOneWidget);
-      expect(find.textContaining('隐藏'), findsNothing);
-      final target = find.text('空库 · server_1');
-      await tester.ensureVisible(target);
-      await tester.tap(target);
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(opened, empty.globalKey);
-      await tester.tap(find.byTooltip(t.libraries.allSources));
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Other source').last);
-      await tester.pump(const Duration(milliseconds: 300));
-      if (tv) {
-        await tester.tap(find.byTooltip(t.libraries.allSources));
-        await tester.pump(const Duration(milliseconds: 300));
-      }
-      expect(find.text('综艺'), findsOneWidget);
-      expect(find.textContaining('空库'), findsNothing);
-      await tester.tap(find.text('综艺'));
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(opened, second.globalKey);
-      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(const SizedBox.shrink());
     });
   }
+
+  testWidgets('TV source menu opens every visible library including empty custom libraries', (tester) async {
+    final settings = await SettingsService.getInstance();
+    await settings.write(SettingsService.showHeroSection, false);
+    MediaLibrary library(String id, String name, String server, {bool hidden = false}) => MediaLibrary(
+      id: id,
+      title: name,
+      serverId: server,
+      serverName: server,
+      backend: MediaBackend.plex,
+      hidden: hidden,
+    );
+    final variety = library('1', '综艺', 'server_1');
+    final second = library('1', '综艺', 'other');
+    final empty = library('2', '空库', 'server_1');
+    final unnamed = library('5', '  ', 'server_1');
+    final hidden = library('3', '隐藏库', 'server_1', hidden: true);
+    final userHidden = library('4', '自定义隐藏', 'server_1');
+    final clients = [
+      _FakeMediaServerClient(
+        libraries: [variety, empty, hidden, userHidden, unnamed],
+        hubs: [
+          MediaHub(
+            id: 'library.1.recent',
+            title: '综艺最近添加',
+            serverId: 'server_1',
+            type: 'mixed',
+            items: [testMediaItem(id: 'show', kind: MediaKind.show, serverId: 'server_1')],
+          ),
+          MediaHub(id: 'empty-shelf', title: '空栏目', type: 'movie', serverId: 'server_1', items: []),
+        ],
+      ),
+      _FakeMediaServerClient(id: 'other', name: 'Other source', libraries: [second], hubs: const []),
+    ];
+    String? opened;
+    await _pumpDiscoverShell(
+      tester,
+      isTv: true,
+      size: const Size(1280, 720),
+      clients: clients,
+      dark: false,
+      wrap: (screen) => MainScreenFocusScope(
+        focusSidebar: () {},
+        selectLibrary: (key) => opened = key,
+        sideNavigationWidth: 0,
+        hasTopNavigation: true,
+        child: screen,
+      ),
+    );
+    final context = tester.element(find.byType(DiscoverScreen));
+    final catalog = context.read<LibrariesProvider>()
+      ..initialize(context.read<MultiServerProvider>().aggregationService);
+    await context.read<HiddenLibrariesProvider>().hideLibrary(userHidden.globalKey);
+    await catalog.loadLibraries();
+    await tester.pump();
+    await tester.tap(find.byTooltip(t.libraries.allSources));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('${t.libraries.fallbackTitle} · server_1'), findsOneWidget);
+    expect(find.text('综艺 · server_1'), findsOneWidget);
+    expect(find.text('综艺 · other'), findsOneWidget);
+    expect(find.text('空库 · server_1'), findsOneWidget);
+    expect(find.textContaining('隐藏'), findsNothing);
+    final target = find.text('空库 · server_1');
+    await tester.ensureVisible(target);
+    await tester.tap(target);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(opened, empty.globalKey);
+    await tester.tap(find.byTooltip(t.libraries.allSources));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Other source').last);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byTooltip(t.libraries.allSources));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('综艺'), findsOneWidget);
+    expect(find.textContaining('空库'), findsNothing);
+    await tester.tap(find.text('综艺'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(opened, second.globalKey);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets('home source selector uses actual protocol logos and filters the loaded hero', (tester) async {
     final settings = await SettingsService.getInstance();
@@ -1949,7 +2021,6 @@ Future<void> _pumpDiscoverShell(
   math.Random? heroRandom,
   bool prepareHomeBeforeMount = false,
   void Function([Rect? anchorRect])? openNavigation,
-  ValueChanged<String>? onSelectLibrary,
 }) async {
   TvDetectionService.debugSetAppleTVOverride(isTv);
   await SettingsService.getInstance();
@@ -2030,7 +2101,6 @@ Future<void> _pumpDiscoverShell(
                 : monoTheme(dark: dark),
             home: MainScreenFocusScope(
               focusSidebar: () {},
-              selectLibrary: onSelectLibrary,
               sideNavigationWidth: SideNavigationRailState.expandedWidth,
               reservedSideNavigationWidth: SideNavigationRailState.tvCollapsedWidth,
               foregroundLeft: 0,

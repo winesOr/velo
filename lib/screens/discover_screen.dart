@@ -24,7 +24,6 @@ import '../utils/home_hero_selection.dart';
 import '../media/media_library.dart';
 import '../providers/libraries_provider.dart';
 import '../providers/hidden_libraries_provider.dart';
-import '../widgets/focusable_tab_chip.dart';
 import '../utils/media_image_helper.dart';
 import '../widgets/cycling_media_backdrop.dart';
 import '../widgets/vidhub_ambient_backdrop.dart';
@@ -866,30 +865,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     return '$label · ${library.serverName ?? _serverTitle(library.serverId!)}';
   }
 
-  Widget _buildLibraryLinks() => Consumer3<LibrariesProvider, HiddenLibrariesProvider, MultiServerProvider>(
-    builder: (context, libraries, hidden, servers, _) {
-      final visible = _visibleHomeLibraries(libraries, hidden, servers);
-      if (visible.isEmpty) return const SizedBox.shrink();
-      final serverIds = visible.map((library) => library.serverId!).toSet();
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          spacing: 8,
-          children: [
-            for (final library in visible)
-              FocusableTabChip(
-                key: ValueKey('home-library-${library.globalKey}'),
-                label: _libraryLabel(library, serverIds),
-                isSelected: false,
-                onSelect: () => MainScreenFocusScope.of(context, listen: false)?.selectLibrary?.call(library.globalKey),
-              ),
-          ],
-        ),
-      );
-    },
-  );
-
   List<AppMenuEntry<String>> _userMenuItems(
     BuildContext context, {
     required Profile? activeProfile,
@@ -1272,11 +1247,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       child: SizedBox(height: kToolbarHeight + MediaQuery.paddingOf(context).top + 16),
                     );
                   },
-                ),
-                // The chips paint their own surfaces, so their labels use the app's
-                // surface colors independently of the artwork behind this page.
-                SliverToBoxAdapter(
-                  child: Theme(data: Theme.of(context), child: _buildLibraryLinks()),
                 ),
                 if (isInitialLoading)
                   SliverToBoxAdapter(

@@ -1188,14 +1188,6 @@ Widget _buildPosterImage(
       null => MediaImageHelper.cardImageType(item, episodePosterMode, mixedHubContext: mixedHubContext),
     };
     final defaultPosterUrl = item.posterThumb(mode: episodePosterMode, mixedHubContext: mixedHubContext);
-    final defaultFallbackUrl = useResumeArtwork
-        ? [
-            ...item.heroBackdropPaths,
-            item.thumbPath,
-            item.grandparentThumbPath,
-            item.parentThumbPath,
-          ].whereType<String>().where((path) => path.isNotEmpty && path != defaultPosterUrl).firstOrNull
-        : item.posterThumbFallback(mode: episodePosterMode, mixedHubContext: mixedHubContext);
     final targetPx = knownWidth != null && knownWidth.isFinite && knownWidth > 0
         ? MediaImageHelper.artworkTargetPx(context, knownWidth, imageType: imageType)
         : null;
@@ -1204,51 +1196,48 @@ Widget _buildPosterImage(
         : imageType == ImageType.thumb
         ? catalogItem?.backdropFor(targetPx)
         : catalogItem?.posterFor(targetPx);
-    final primaryPosterUrl = catalogArtworkUrl ?? defaultPosterUrl;
-    final posterFallbackUrl = catalogArtworkUrl != null && catalogArtworkUrl != defaultPosterUrl
-        ? defaultPosterUrl ?? defaultFallbackUrl
-        : defaultFallbackUrl;
-    final useRememberedFallback = posterFallbackUrl != null && _hasFailedPosterUrl(primaryPosterUrl);
-    final posterUrl = useRememberedFallback ? posterFallbackUrl : primaryPosterUrl;
+    final fallback = item.posterThumbFallback(mode: episodePosterMode, mixedHubContext: mixedHubContext);
+    // Continue Watching can receive stale episode thumbnails and several series
+    // backdrops. Try the same wide artwork available to the carousel, then posters.
+    final candidates = <String?>{
+      catalogArtworkUrl ?? defaultPosterUrl,
+      if (useResumeArtwork) ...[
+        defaultPosterUrl,
+        ...item.heroArtCandidates(containerAspectRatio: 16 / 9),
+        item.thumbPath,
+        item.grandparentThumbPath,
+        item.parentThumbPath,
+      ] else if (imageType != ImageType.thumb)
+        catalogArtworkUrl != null && catalogArtworkUrl != defaultPosterUrl ? defaultPosterUrl ?? fallback : fallback,
+    }.whereType<String>().where((path) => path.isNotEmpty).toList(growable: false);
 
-    OptimizedMediaImage buildImage(
-      String? path, {
-      String? localFilePath,
-      Widget Function(BuildContext, String, dynamic)? errorWidget,
-    }) => OptimizedMediaImage(
-      client: mediaClient,
-      imagePath: path,
-      width: knownWidth ?? double.infinity,
-      height: knownHeight ?? double.infinity,
-      fit: BoxFit.cover,
-      placeholder: _buildPosterLoadingPlaceholder,
-      fallbackIcon: fallbackIcon,
-      errorWidget: errorWidget,
-      imageType: imageType,
-      localFilePath: localFilePath,
-      artworkDim: artworkDim,
-    );
-
-    // Remember the dead primary URL so later builds go straight to the fallback.
-    Widget Function(BuildContext, String, dynamic)? retryWithFallback() {
-      if (posterFallbackUrl == null || useRememberedFallback) return null;
-      return (_, _, error) {
-        // Only an attempted-and-failed load proves the primary artwork is dead.
-        // An unresolvable URL just means there is no client right now (offline,
-        // profile switch, reconnect); memoizing it would pin this item to
-        // fallback artwork for the process lifetime.
-        if (error is! UnresolvedImageUrl) _rememberFailedPosterUrl(primaryPosterUrl);
-        return buildImage(posterFallbackUrl);
-      };
+    OptimizedMediaImage buildImage(int index, {String? localFilePath}) {
+      while (index + 1 < candidates.length && _hasFailedPosterUrl(candidates[index])) {
+        index++;
+      }
+      final path = candidates.elementAtOrNull(index);
+      return OptimizedMediaImage(
+        client: mediaClient,
+        imagePath: path,
+        width: knownWidth ?? double.infinity,
+        height: knownHeight ?? double.infinity,
+        fit: BoxFit.cover,
+        placeholder: _buildPosterLoadingPlaceholder,
+        fallbackIcon: fallbackIcon,
+        errorWidget: index + 1 < candidates.length
+            ? (_, _, error) {
+                // Going offline leaves valid URLs temporarily unresolvable.
+                if (error is! UnresolvedImageUrl) _rememberFailedPosterUrl(path);
+                return buildImage(index + 1);
+              }
+            : null,
+        imageType: imageType,
+        localFilePath: localFilePath,
+        artworkDim: artworkDim,
+      );
     }
 
-    // A resume thumbnail may be missing even when the series backdrop is available.
-    final image = buildImage(
-      posterUrl,
-      localFilePath: localPosterPath,
-      errorWidget: useResumeArtwork || imageType != ImageType.thumb ? retryWithFallback() : null,
-    );
-
+    final image = buildImage(0, localFilePath: localPosterPath);
     if (shouldBlur) {
       return ClipRect(
         child: ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: 12, sigmaY: 12), child: image),
