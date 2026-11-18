@@ -142,6 +142,52 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  for (final count in [2, 24]) {
+    testWidgets('360dp version menu lays out $count options at their actual height', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(360, 800);
+      addTearDown(tester.view.reset);
+      final suffix = List.filled(8, 'HDR10.2160p.HEVC.REMUX.MultiAudio').join('.');
+      final options = [
+        for (var i = 0; i < count; i++)
+          AppSelectOption(value: '$i', label: 'Emby · 4K HEVC', subtitle: 'Version $i · $suffix'),
+      ];
+      String? selected;
+      await _pumpField(
+        tester,
+        Align(
+          alignment: Alignment.bottomLeft,
+          child: AppSelectField<String>(
+            label: 'Select playback version',
+            selectedLabel: '4K',
+            value: '0',
+            optionMaxLines: 2,
+            options: options,
+            onChanged: (id) => selected = id,
+          ),
+        ),
+      );
+      await tester.tap(find.byType(AppSelectField<String>));
+      await tester.pumpAndSettle();
+      final subtitle = find.text(options.last.subtitle!);
+      final viewport = find.ancestor(of: subtitle, matching: find.byType(Scrollable)).first;
+      final position = tester.state<ScrollableState>(viewport).position;
+      if (count == 2) {
+        expect(position.maxScrollExtent, 0);
+      } else {
+        expect(position.maxScrollExtent, greaterThan(0));
+        await tester.ensureVisible(subtitle);
+        await tester.pumpAndSettle();
+      }
+      expect(tester.getBottomRight(subtitle).dy, lessThanOrEqualTo(tester.getBottomRight(viewport).dy + .01));
+      expect(subtitle.hitTestable(), findsOneWidget);
+      await tester.tap(subtitle);
+      await tester.pumpAndSettle();
+      expect(selected, options.last.value);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('version menu bounds long server labels and the field stays legible over artwork', (tester) async {
     tester.view.physicalSize = const Size(320, 720);
     tester.view.devicePixelRatio = 1;

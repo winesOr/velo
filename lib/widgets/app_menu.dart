@@ -733,7 +733,7 @@ class _AppMenuHeaderTile<T> extends StatelessWidget {
   }
 }
 
-class _AppMenuPopup<T> extends StatefulWidget {
+class _AppMenuPopup<T> extends StatelessWidget {
   final List<AppMenuEntry<T>> entries;
   final String title;
   final Offset? position;
@@ -753,20 +753,7 @@ class _AppMenuPopup<T> extends StatefulWidget {
   });
 
   @override
-  State<_AppMenuPopup<T>> createState() => _AppMenuPopupState<T>();
-}
-
-class _AppMenuPopupState<T> extends State<_AppMenuPopup<T>> {
-  @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.sizeOf(context);
-    const edgePadding = 16.0;
-    final menuWidth = math.min(286.0, math.max(0.0, screenSize.width - edgePadding * 2));
-    final estimatedHeight = 60 + _estimateMenuHeight(widget.entries);
-    final availableHeight = math.max(0.0, screenSize.height - edgePadding * 2);
-    final menuHeight = estimatedHeight.clamp(0.0, availableHeight).toDouble();
-    final (:left, :top) = _resolvePosition(screenSize, menuWidth.toDouble(), menuHeight, edgePadding);
-
     return FocusScope(
       autofocus: false,
       child: Focus(
@@ -794,16 +781,15 @@ class _AppMenuPopupState<T> extends State<_AppMenuPopup<T>> {
                     ),
                   ),
                 ),
-              Positioned(
-                left: left,
-                top: top,
-                child: _AppMenuSurface<T>(
-                  width: menuWidth.toDouble(),
-                  maxHeight: menuHeight,
-                  entries: widget.entries,
-                  title: widget.title,
-                  focusFirstItem: widget.focusFirstItem,
-                  selectionDelay: widget.selectionDelay,
+              Positioned.fill(
+                child: CustomSingleChildLayout(
+                  delegate: _AppMenuLayout(anchorRect, anchorAlignment, position, MediaQuery.paddingOf(context)),
+                  child: _AppMenuSurface<T>(
+                    entries: entries,
+                    title: title,
+                    focusFirstItem: focusFirstItem,
+                    selectionDelay: selectionDelay,
+                  ),
                 ),
               ),
             ],
@@ -812,60 +798,67 @@ class _AppMenuPopupState<T> extends State<_AppMenuPopup<T>> {
       ),
     );
   }
+}
 
-  ({double left, double top}) _resolvePosition(
-    Size screenSize,
-    double menuWidth,
-    double menuHeight,
-    double edgePadding,
-  ) {
-    final anchorRect = widget.anchorRect;
-    if (anchorRect != null) {
-      final leftCandidate = switch (widget.anchorAlignment) {
-        AppMenuAnchorAlignment.start => anchorRect.left,
-        AppMenuAnchorAlignment.end => anchorRect.right - menuWidth,
-        AppMenuAnchorAlignment.center => anchorRect.center.dx - menuWidth / 2,
-      };
-      final maxLeft = screenSize.width - menuWidth - edgePadding;
-      final left = leftCandidate.clamp(edgePadding, maxLeft < edgePadding ? edgePadding : maxLeft).toDouble();
+// Measure wrapped labels, subtitles and custom entries at the final menu width
+// before positioning the popup. Only the viewport limits its scroll height.
+class _AppMenuLayout extends SingleChildLayoutDelegate {
+  const _AppMenuLayout(this.anchor, this.alignment, this.position, this.padding);
 
-      const gap = 9.0;
-      final below = anchorRect.bottom + gap;
-      final fitsBelow = below + menuHeight <= screenSize.height - edgePadding;
-      if (!fitsBelow) {
-        return (left: (screenSize.width - menuWidth) / 2, top: (screenSize.height - menuHeight) / 2);
-      }
-      final topCandidate = below;
-      final maxTop = screenSize.height - menuHeight - edgePadding;
-      final top = topCandidate.clamp(edgePadding, maxTop < edgePadding ? edgePadding : maxTop).toDouble();
-      return (left: left, top: top);
-    }
+  final Rect? anchor;
+  final AppMenuAnchorAlignment alignment;
+  final Offset? position;
+  final EdgeInsets padding;
 
-    final position = widget.position ?? Offset(screenSize.width / 2, screenSize.height / 2);
-    final maxLeft = screenSize.width - menuWidth - edgePadding;
-    final left = (position.dx - menuWidth / 2)
-        .clamp(edgePadding, maxLeft < edgePadding ? edgePadding : maxLeft)
-        .toDouble();
-    final maxTop = screenSize.height - menuHeight - edgePadding;
-    final top = (position.dy - menuHeight / 2)
-        .clamp(edgePadding, maxTop < edgePadding ? edgePadding : maxTop)
-        .toDouble();
-    return (left: left, top: top);
+  Rect _viewport(Size size) => (padding + const EdgeInsets.all(16)).deflateRect(Offset.zero & size);
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    final viewport = _viewport(constraints.biggest);
+    final width = viewport.width.clamp(0.0, 286.0).toDouble();
+    return BoxConstraints(minWidth: width, maxWidth: width, maxHeight: math.max(0, viewport.height));
   }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final viewport = _viewport(size);
+    final center = viewport.center - childSize.center(Offset.zero);
+    final trigger = anchor;
+    final Offset candidate;
+    if (trigger != null) {
+      final below = trigger.bottom + 9;
+      if (below + childSize.height > viewport.bottom) return center;
+      final left = switch (alignment) {
+        AppMenuAnchorAlignment.start => trigger.left,
+        AppMenuAnchorAlignment.end => trigger.right - childSize.width,
+        AppMenuAnchorAlignment.center => trigger.center.dx - childSize.width / 2,
+      };
+      candidate = Offset(left, below);
+    } else {
+      candidate = (position ?? viewport.center) - childSize.center(Offset.zero);
+    }
+    return Offset(
+      candidate.dx.clamp(viewport.left, math.max(viewport.left, viewport.right - childSize.width)).toDouble(),
+      candidate.dy.clamp(viewport.top, math.max(viewport.top, viewport.bottom - childSize.height)).toDouble(),
+    );
+  }
+
+  @override
+  bool shouldRelayout(_AppMenuLayout oldDelegate) =>
+      anchor != oldDelegate.anchor ||
+      alignment != oldDelegate.alignment ||
+      position != oldDelegate.position ||
+      padding != oldDelegate.padding;
 }
 
 class _AppMenuSurface<T> extends StatelessWidget {
   final String title;
-  final double width;
-  final double maxHeight;
   final List<AppMenuEntry<T>> entries;
   final bool focusFirstItem;
   final Duration selectionDelay;
 
   const _AppMenuSurface({
     required this.title,
-    required this.width,
-    required this.maxHeight,
     required this.entries,
     required this.focusFirstItem,
     required this.selectionDelay,
@@ -875,54 +868,34 @@ class _AppMenuSurface<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppGlassSurface(
       radius: OverlayTokens.compactRadius,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minWidth: width, maxWidth: width, maxHeight: maxHeight),
-        child: PrimaryScrollController.none(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 12, 6),
-                  child: Row(
-                    children: [
-                      Expanded(child: Text(title, style: Theme.of(context).textTheme.titleMedium)),
-                      const SizedBox(width: 8),
-                      AppDialogCloseButton(onPressed: () => Navigator.pop(context)),
-                    ],
-                  ),
+      child: PrimaryScrollController.none(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 12, 6),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(title, style: Theme.of(context).textTheme.titleMedium)),
+                    const SizedBox(width: 8),
+                    AppDialogCloseButton(onPressed: () => Navigator.pop(context)),
+                  ],
                 ),
-                AppMenuList<T>(
-                  entries: entries,
-                  focusFirstItem: focusFirstItem,
-                  selectionDelay: selectionDelay,
-                  onSelected: (value) => Navigator.pop(context, value),
-                ),
-              ],
-            ),
+              ),
+              AppMenuList<T>(
+                entries: entries,
+                focusFirstItem: focusFirstItem,
+                selectionDelay: selectionDelay,
+                onSelected: (value) => Navigator.pop(context, value),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
-}
-
-double _estimateMenuHeight<T>(List<AppMenuEntry<T>> entries) {
-  var height = 10.0;
-  for (final entry in entries) {
-    switch (entry) {
-      case AppMenuItem<T>():
-        height += math.max(48, entry.minHeight ?? 48) + 2;
-      case AppMenuDivider<T>():
-        height += 9;
-      case AppMenuHeader<T>():
-        height += 32;
-      default:
-        break;
-    }
-  }
-  return height;
 }
 
 Color _destructiveMenuForeground(BuildContext context) {
