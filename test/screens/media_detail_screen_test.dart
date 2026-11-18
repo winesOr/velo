@@ -3152,6 +3152,10 @@ void main() {
       await tester.tap(first);
       await tester.pumpAndSettle();
       expect(find.descendant(of: first, matching: find.textContaining(t.libraries.watched)), findsOneWidget);
+      final watchedAction = find.byWidgetPredicate(
+        (w) => w is DetailActionIcon && w.glyph == DetailActionGlyph.watched,
+      );
+      expect(tester.widget<DetailActionIcon>(watchedAction).selected, isTrue);
       final second = find.byKey(ValueKey('detail_episode_${partial.id}'));
       expect(
         find.descendant(
@@ -3165,6 +3169,16 @@ void main() {
         find.descendant(of: third, matching: find.textContaining(t.libraries.filterCategories.unwatched)),
         findsOneWidget,
       );
+      await tester.tap(second);
+      await tester.pumpAndSettle();
+      expect(tester.widget<DetailActionIcon>(watchedAction).selected, isFalse);
+      await emit(tester, () => WatchStateNotifier().notifyWatched(item: partial, isNowWatched: true));
+      expect(tester.widget<DetailActionIcon>(watchedAction).selected, isTrue);
+      await tester.ensureVisible(watchedAction);
+      await tester.tap(find.ancestor(of: watchedAction, matching: find.byType(IconButton)).first);
+      await tester.pumpAndSettle();
+      expect(client.unwatchedItems, [partial.id]);
+      expect(tester.widget<DetailActionIcon>(watchedAction).selected, isFalse);
       await tester.tap(find.text(t.common.viewAll));
       await tester.pumpAndSettle();
       expect(
@@ -5632,6 +5646,10 @@ class _FakeMediaServerClient implements MediaServerClient {
   int sourceReads = 0;
   final childrenPageCalls = <({String parentId, int? start, int? size})>[];
   final thumbnailPaths = <String?>[];
+  final unwatchedItems = <String>[];
+
+  @override
+  Future<void> markUnwatched(MediaItem item) async => unwatchedItems.add(item.id);
 
   /// On-deck episode returned by the next [fetchItemWithOnDeck]; mutate between
   /// loads to model the series being finished.

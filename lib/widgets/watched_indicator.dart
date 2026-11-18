@@ -103,11 +103,11 @@ class WatchedIndicator extends StatelessWidget {
             right: size.checkInset,
             child: Container(
               padding: EdgeInsets.all(size.checkPadding),
-              decoration: const BoxDecoration(color: Color(0xA8FFFFFF), shape: BoxShape.circle),
+              decoration: const BoxDecoration(color: Color(0xD1FFFFFF), shape: BoxShape.circle),
               child: AppIcon(
                 Symbols.check_rounded,
                 weight: 650,
-                color: const Color(0xFF202124),
+                color: const Color(0xFF555B63),
                 size: size.checkIconSize,
               ),
             ),

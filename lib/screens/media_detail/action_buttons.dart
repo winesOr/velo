@@ -351,11 +351,12 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
           )
         : null;
 
+    final watchedItem = target ?? _fresh(metadata);
     final watchedAction = FocusableAction(
       debugLabel: 'detail_watched',
-      onPressed: () => unawaited(_handleWatchedTogglePressed(metadata)),
+      onPressed: () => unawaited(_handleWatchedTogglePressed(watchedItem)),
       builder: (context, state) =>
-          _buildWatchedToggleButton(metadata, actionButtonStyle, tvScale, showFocus: state.showFocus),
+          _buildWatchedToggleButton(watchedItem, actionButtonStyle, tvScale, showFocus: state.showFocus),
     );
 
     // Watchlist toggle for the connected catalog sources (Trakt, MAL).
@@ -646,7 +647,9 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
   }
 
   Future<void> _handleWatchedTogglePressed(MediaItem metadata, {bool? watched}) async {
-    if (!_canUseDetail || _watchedTarget == metadata.globalKey) return;
+    if (!_canUseDetail || _watchedRequest != null) return;
+    metadata = _fresh(metadata);
+    final detailKey = _metadata.globalKey;
     final request = Object();
     final target = metadata.globalKey;
     final isWatched = metadata.isWatched;
@@ -660,7 +663,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     setStateIfMounted(() {});
     try {
       final outcome = await WatchActions.setWatched(context, metadata, watched: next, offline: widget.isOffline);
-      if (!_canUseDetail || _metadata.globalKey != target) {
+      if (!_canUseDetail || _metadata.globalKey != detailKey) {
         toast.dismiss();
         return;
       }
@@ -677,14 +680,14 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
           toast.dismiss();
       }
     } catch (error) {
-      if (_canUseDetail && _metadata.globalKey == target) {
+      if (_canUseDetail && _metadata.globalKey == detailKey) {
         toast.update(
           t.messages.errorLoading(error: localizedErrorReason(error)),
           type: AppToastType.error,
           actionLabel: t.common.retry,
           onAction: () {
-            if (_canUseDetail && _metadata.globalKey == target) {
-              unawaited(_handleWatchedTogglePressed(_metadata, watched: next));
+            if (_canUseDetail && _metadata.globalKey == detailKey) {
+              unawaited(_handleWatchedTogglePressed(metadata, watched: next));
             }
           },
         );

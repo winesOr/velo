@@ -510,7 +510,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   // known ancestors, even before any children have loaded.
   @override
   Set<String>? get watchedIds {
-    final keys = <String>{_metadata.id};
+    final keys = <String>{_metadata.id, ?_playbackTargetItem(_metadata)?.id};
     for (final season in _seasons) {
       keys.add(season.id);
     }
@@ -528,7 +528,12 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     final serverId = serverBoundServerId;
     if (serverId == null) return null;
 
-    final keys = <String>{toServerBoundGlobalKey(_metadata.id, serverId: ServerId(serverId))};
+    final playbackTarget = _playbackTargetItem(_metadata);
+    final keys = <String>{
+      toServerBoundGlobalKey(_metadata.id, serverId: ServerId(serverId)),
+      if (playbackTarget != null)
+        toServerBoundGlobalKey(playbackTarget.id, serverId: ServerId(playbackTarget.serverId ?? serverId)),
+    };
     for (final season in _seasons) {
       keys.add(toServerBoundGlobalKey(season.id, serverId: ServerId(season.serverId ?? serverId)));
     }

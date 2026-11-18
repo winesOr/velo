@@ -76,7 +76,7 @@ void main() {
             final cy = size.checkInset * 3 + radius;
             int redAt(double x, double y) => pixels.getUint8((y.floor() * image.width + x.floor()) * 4);
             final disc = redAt(cx, cy - radius * .72);
-            expect(disc, background == Colors.black ? inInclusiveRange(150, 185) : 255);
+            expect(disc, background == Colors.black ? inInclusiveRange(200, 218) : 255);
             int darkPixels = 0;
             for (var dy = -radius ~/ 2; dy <= radius ~/ 2; dy++) {
               for (var dx = -radius ~/ 2; dx <= radius ~/ 2; dx++) {
