@@ -10,6 +10,7 @@ import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/navigation/fusion_navigation.dart';
 import 'package:plezy/navigation/home_theme.dart';
 import 'package:plezy/navigation/navigation_tabs.dart';
+import 'package:plezy/widgets/app_icon.dart';
 import 'package:plezy/widgets/fusion_home_hero.dart';
 import 'package:plezy/widgets/hero_metadata_badges.dart';
 import 'package:plezy/media/media_version.dart';
@@ -111,6 +112,37 @@ void main() {
       },
     );
   }
+
+  testWidgets('selected navigation uses filled icon without a selection pill', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: previewFontTheme(monoTheme(dark: false)),
+        home: Scaffold(
+          bottomNavigationBar: FusionNavigation(
+            tabs: NavigationTab.getVisibleTabs(isOffline: false),
+            selectedTab: NavigationTabId.libraries,
+            onSelected: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    final icons = tester.widgetList<AppIcon>(
+      find.descendant(of: find.byType(FusionNavigation), matching: find.byType(AppIcon)),
+    );
+    expect(icons.where((icon) => icon.fill == 1), hasLength(1));
+    expect(icons.where((icon) => icon.fill == 0), hasLength(greaterThan(1)));
+
+    final destinations = tester.widgetList<Container>(
+      find.descendant(of: find.byType(FusionNavigation), matching: find.byType(Container)),
+    );
+    final destinationDecorations = destinations
+        .map((container) => container.decoration)
+        .whereType<BoxDecoration>()
+        .where((decoration) => decoration.borderRadius == BorderRadius.circular(26));
+    expect(destinationDecorations, isNotEmpty);
+    expect(destinationDecorations.every((decoration) => decoration.color == Colors.transparent), isTrue);
+  });
 
   test('four primary destinations do not remove legacy online destinations', () {
     final visible = NavigationTab.getVisibleTabs(isOffline: false, hasLiveTv: true, hasExplore: true);

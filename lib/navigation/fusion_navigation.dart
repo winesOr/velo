@@ -1,8 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-
 import '../focus/focusable_button.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/app_toast.dart';
@@ -132,17 +130,7 @@ class FusionNavigation extends StatelessWidget {
                   ? const BoxConstraints(minHeight: 35, minWidth: 54, maxWidth: 136)
                   : const BoxConstraints(minHeight: 48),
               padding: EdgeInsets.symmetric(horizontal: isTv ? 12 : 2),
-              decoration: BoxDecoration(
-                color: selected ? VeloBrand.selection(brightness) : Colors.transparent,
-                borderRadius: BorderRadius.circular(isTv ? 20 : 26),
-              ),
-              // The selection stroke must not enlarge the 48px touch target.
-              foregroundDecoration: selected
-                  ? BoxDecoration(
-                      borderRadius: BorderRadius.circular(isTv ? 20 : 26),
-                      border: Border.all(color: dark ? const Color(0x1cffffff) : const Color(0x20242d3b), width: 1),
-                    )
-                  : null,
+              decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(isTv ? 20 : 26)),
               child: isTv
                   ? FittedBox(
                       fit: BoxFit.scaleDown,
@@ -167,26 +155,13 @@ class FusionNavigation extends StatelessWidget {
     );
   }
 
-  Widget _icon(NavigationTab tab, Color color) {
-    final paths = switch (tab.id) {
-      NavigationTabId.discover => '<path d="m3 10 9-7 9 7v10H14v-7h-4v7H3Z"/>',
-      NavigationTabId.libraries =>
-        '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
-      NavigationTabId.together =>
-        '<circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 4v3"/>',
-      NavigationTabId.settings =>
-        '<path d="M3 7h18M3 17h18"/><circle cx="9" cy="7" r="3"/><circle cx="16" cy="17" r="3"/>',
-      _ => null,
-    };
-    if (paths == null) return AppIcon(tab.icon, size: 22, color: color, fill: 0);
-    return SvgPicture.string(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">$paths</svg>',
-      width: isTv ? 17 : 22,
-      height: isTv ? 17 : 22,
-      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-      excludeFromSemantics: true,
-    );
-  }
+  Widget _icon(NavigationTab tab, Color color) => AppIcon(
+    tab.icon,
+    size: isTv ? 17 : 22,
+    color: color,
+    fill: selectedTab == tab.id ? 1 : 0,
+    weight: selectedTab == tab.id ? 500 : 400,
+  );
 
   Widget _label(NavigationTab tab, Color color) => Text(
     tab.getLabel(),
