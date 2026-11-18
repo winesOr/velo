@@ -17,7 +17,7 @@ import 'unwatched_count_badge.dart';
 enum WatchedIndicatorSize {
   standard(
     checkInset: 4,
-    checkPadding: 4,
+    checkPadding: 3,
     checkIconSize: 16,
     badgeSize: 24,
     badgeFontSize: 12,
@@ -26,8 +26,8 @@ enum WatchedIndicatorSize {
   ),
   compact(
     checkInset: 3,
-    checkPadding: 2,
-    checkIconSize: 12,
+    checkPadding: 1.5,
+    checkIconSize: 13,
     badgeSize: 20,
     badgeFontSize: 10,
     barRadius: 6,
@@ -103,12 +103,13 @@ class WatchedIndicator extends StatelessWidget {
             right: size.checkInset,
             child: Container(
               padding: EdgeInsets.all(size.checkPadding),
-              decoration: BoxDecoration(
-                color: tokens(context).text,
-                shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 4)],
+              decoration: const BoxDecoration(color: Color(0xA8FFFFFF), shape: BoxShape.circle),
+              child: AppIcon(
+                Symbols.check_rounded,
+                weight: 650,
+                color: const Color(0xFF202124),
+                size: size.checkIconSize,
               ),
-              child: AppIcon(Symbols.check_rounded, fill: 1, color: tokens(context).bg, size: size.checkIconSize),
             ),
           ),
         // Unwatched count for shows/seasons
