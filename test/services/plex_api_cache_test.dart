@@ -55,6 +55,36 @@ void main() {
   };
 
   group('singleton', () {
+    test('startup cleanup preserves only display snapshots while account cleanup removes them', () async {
+      final owner = ServerId('srv/~plex-profile/owner');
+      final endpoints = ['velo/home-snapshot/v1/old', 'velo/home-snapshot/v2/current', 'velo/library-page/v1/current'];
+      for (final endpoint in endpoints) {
+        await cache.put(owner, endpoint, {'title': 'Display metadata'});
+      }
+      await cache.put(owner, '/library/metadata/42', {'token': 'sensitive-api-response'});
+      await cache.put(owner, 'velo/home-snapshot/v3/unknown', {'token': 'not-a-known-display-format'});
+      await cache.put(owner, 'velo/library-page/v2/unknown', {'token': 'not-a-known-display-format'});
+      await cache.put(owner, '/offline-item', {'title': 'Downloaded'});
+      await cache.pin(owner, '/offline-item');
+      await ApiCache.clearRegisteredVolatile(preserveDisplaySnapshots: true);
+      for (final endpoint in endpoints) {
+        expect(await cache.get(owner, endpoint), isNotNull);
+      }
+      expect(await cache.get(owner, '/library/metadata/42'), isNull);
+      expect(await cache.get(owner, 'velo/home-snapshot/v3/unknown'), isNull);
+      expect(await cache.get(owner, 'velo/library-page/v2/unknown'), isNull);
+      expect(await cache.get(owner, '/offline-item'), isNotNull);
+      await ApiCache.clearRegisteredVolatile();
+      for (final endpoint in endpoints) {
+        expect(
+          await cache.get(owner, endpoint),
+          isNull,
+          reason: 'default account/logout cleanup still clears snapshots',
+        );
+      }
+      expect(await cache.get(owner, '/offline-item'), isNotNull);
+    });
+
     test('initialize routes reads and writes to the new database', () async {
       await cache.put(ServerId('srv'), '/old', {'value': 1});
 

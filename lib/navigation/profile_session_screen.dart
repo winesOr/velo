@@ -456,7 +456,7 @@ class _ProfileSessionNavigatorState extends State<_ProfileSessionNavigator> {
                 (prefs != null && profile.requiresSelectionOnOpen(prefs)));
         return HomeStartupGate(
           enabled:
-              !widget.isOfflineMode &&
+              (!widget.isOfflineMode || profile.isStartupIdentityReady) &&
               !needsProfilePrompt &&
               (prefs?.read(SettingsService.startupSection) ?? NavigationTabId.discover) == NavigationTabId.discover,
           child: MainScreen(isOfflineMode: widget.isOfflineMode, initialPromptHandled: widget.initialPromptHandled),

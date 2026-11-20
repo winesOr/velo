@@ -60,6 +60,7 @@ import '../services/multi_server_manager.dart';
 import '../services/offline_watch_sync_service.dart';
 import '../services/settings_service.dart';
 import '../providers/offline_mode_provider.dart';
+import '../providers/discover_provider.dart';
 import '../services/companion_remote/companion_remote_host_controller.dart';
 import '../services/companion_remote/companion_remote_receiver.dart';
 import '../services/fullscreen_state_manager.dart';
@@ -422,6 +423,8 @@ class _MainScreenState extends State<MainScreen>
   bool _autoSwitchedToDownloads = false;
 
   OfflineModeProvider? _offlineModeProvider;
+  DiscoverProvider? _discoverProvider;
+  bool _hasCachedHomeContent = false;
   MultiServerProvider? _multiServerProvider;
   CatalogSourcesProvider? _catalogSourcesProvider;
   ValueListenable<bool>? _showExploreTabListenable;
@@ -492,6 +495,7 @@ class _MainScreenState extends State<MainScreen>
   // we only invalidate on id change and the libraries sidebar keeps
   // stale entries until the user switches profiles.
   bool _wasBindingPrev = false;
+  bool _initialBindingPending = false;
   bool _hadProfiles = false;
 
   /// Subscription to MultiServerManager status changes. Held for the
@@ -532,6 +536,9 @@ class _MainScreenState extends State<MainScreen>
     super.initState();
     _isOffline = widget.isOfflineMode;
     _offlineUntilConnected = widget.isOfflineMode;
+    _discoverProvider = context.read<DiscoverProvider?>();
+    _hasCachedHomeContent = _discoverProvider?.hasDisplayableContent ?? false;
+    _discoverProvider?.addListener(_handleCachedHomeChanged);
 
     WidgetsBinding.instance.addObserver(this);
     _contentFocusScope.addListener(_syncSidebarFocusWithContent);
@@ -593,6 +600,8 @@ class _MainScreenState extends State<MainScreen>
       final activeProfile = context.read<ActiveProfileProvider>();
       _activeProfileForListener = activeProfile;
       _lastSeenProfileId = activeProfile.activeId;
+      _wasBindingPrev = activeProfile.isBinding;
+      _initialBindingPending = activeProfile.isBinding;
       // Prime the late-profiles edge alongside _lastSeenProfileId so the
       // "!_hadProfiles && hasProfilesNow" check in _onActiveProfileChanged
       // fires only on a genuine empty -> non-empty transition, not on the
@@ -785,6 +794,8 @@ class _MainScreenState extends State<MainScreen>
     if (activeProfile == null) return;
     final id = activeProfile.activeId;
     final isBindingNow = activeProfile.isBinding;
+    final initialBindingSettled = _initialBindingPending && !isBindingNow;
+    if (initialBindingSettled) _initialBindingPending = false;
     final action = profileInvalidationAction(
       previousProfileId: _lastSeenProfileId,
       currentProfileId: id,
@@ -808,8 +819,11 @@ class _MainScreenState extends State<MainScreen>
     // (true → false transition). Fires after borrow / connection-removal
     // flows trigger ActiveProfileBinder.rebindIfActive, so the libraries
     // sidebar reflects the new server set without an app restart.
+    // The initial bind is still the same authorized startup identity. Its
+    // content is already being prepared by Discover/online-entry; treating
+    // this as a later account mutation clears the disk snapshot every boot.
     if (action == ProfileInvalidationAction.invalidateNow) {
-      unawaited(_invalidateAllScreens());
+      unawaited(_invalidateAllScreens(preserveDisplaySnapshots: initialBindingSettled));
     }
   }
 
@@ -1142,6 +1156,7 @@ class _MainScreenState extends State<MainScreen>
       windowManager.setPreventClose(false);
     }
     _offlineModeProvider?.removeListener(_handleOfflineStatusChanged);
+    _discoverProvider?.removeListener(_handleCachedHomeChanged);
     _multiServerProvider?.removeListener(_handleLiveTvChanged);
     _catalogSourcesProvider?.removeListener(_handleCatalogSourcesChanged);
     _showExploreTabListenable?.removeListener(_handleCatalogSourcesChanged);
@@ -1349,12 +1364,18 @@ class _MainScreenState extends State<MainScreen>
     return _defaultTabForMode(isOffline);
   }
 
-  NavigationTabId _defaultTabForMode(bool isOffline) => NavigationTab.resolveDefaultTab(
-    isOffline: isOffline,
-    hasLiveTv: _hasLiveTv,
-    hasExplore: _lastHasExplore,
-    preferredStartup: SettingsService.instanceOrNull?.read(SettingsService.startupSection),
-  );
+  NavigationTabId _defaultTabForMode(bool isOffline) {
+    final preferred = SettingsService.instanceOrNull?.read(SettingsService.startupSection);
+    if (isOffline && _hasCachedHomeContent && (preferred == null || preferred == NavigationTabId.discover)) {
+      return NavigationTabId.discover;
+    }
+    return NavigationTab.resolveDefaultTab(
+      isOffline: isOffline,
+      hasLiveTv: _hasLiveTv,
+      hasExplore: _lastHasExplore,
+      preferredStartup: preferred,
+    );
+  }
 
   void _triggerReconnect() {
     if (_isReconnecting) return;
@@ -1522,6 +1543,23 @@ class _MainScreenState extends State<MainScreen>
         await _primeOnlineServices(mp.serverManager);
       }());
     }
+  }
+
+  void _handleCachedHomeChanged() {
+    final available = _discoverProvider?.hasDisplayableContent ?? false;
+    if (available == _hasCachedHomeContent || !mounted) return;
+    setState(() {
+      _hasCachedHomeContent = available;
+      if (_isOffline && available && _autoSwitchedToDownloads) {
+        _currentTab = NavigationTabId.discover;
+        _autoSwitchedToDownloads = false;
+      } else {
+        _currentTab = _normalizeTabForMode(_currentTab, _isOffline);
+      }
+      _mountedTabs.add(_currentTab);
+      _screens = _buildScreens(_isOffline);
+    });
+    _updateTvosMenuPassthrough();
   }
 
   void _focusSidebar() {
@@ -1848,7 +1886,7 @@ class _MainScreenState extends State<MainScreen>
   /// The [ActiveProfileBinder] has already pushed fresh per-server tokens
   /// into [MultiServerManager], so this just clears UI caches and refreshes
   /// the visible screens.
-  Future<void> _invalidateAllScreens() async {
+  Future<void> _invalidateAllScreens({bool preserveDisplaySnapshots = false}) async {
     appLogger.d('Invalidating screen data after profile switch');
 
     final multiServerProvider = context.read<MultiServerProvider>();
@@ -1859,7 +1897,7 @@ class _MainScreenState extends State<MainScreen>
     // Drop volatile API cache rows before screens kick off their refetch.
     // Pinned rows back offline downloads and must survive profile switches.
     try {
-      await ApiCache.clearRegisteredVolatile();
+      await ApiCache.clearRegisteredVolatile(preserveDisplaySnapshots: preserveDisplaySnapshots);
     } catch (e, st) {
       appLogger.w('Failed to clear ApiCache on profile switch', error: e, stackTrace: st);
     }
@@ -2048,6 +2086,15 @@ class _MainScreenState extends State<MainScreen>
   bool get _hasLiveTv => _lastHasLiveTv;
 
   List<NavigationTab> _getVisibleTabs(bool isOffline) {
+    if (isOffline && _hasCachedHomeContent) {
+      // Reachability remains offline for playback/sync. Only Home's already
+      // authorized display rows are usable without a connected client.
+      return NavigationTab.getVisibleTabs(
+        isOffline: false,
+        hasLiveTv: _hasLiveTv,
+        hasExplore: _lastHasExplore,
+      ).where((tab) => tab.id == NavigationTabId.discover || !tab.onlineOnly).toList();
+    }
     return NavigationTab.getVisibleTabs(isOffline: isOffline, hasLiveTv: _hasLiveTv, hasExplore: _lastHasExplore);
   }
 
@@ -2413,7 +2460,7 @@ class _MainScreenState extends State<MainScreen>
         mainAxisSize: .min,
         children: [
           // Reconnect bar when offline
-          if (_isOffline)
+          if (_isOffline && !(_hasCachedHomeContent && _currentTab == NavigationTabId.discover))
             Material(
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               child: PressFeedbackInkWell(

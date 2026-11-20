@@ -91,16 +91,18 @@ abstract class ApiCache {
     return picked;
   }
 
-  /// Clears volatile rows for every distinct registered database.
+  /// Clears volatile rows for every distinct registered database. Initial
+  /// binding may retain display-only snapshots; identity changes and logout
+  /// use the default complete volatile cleanup.
   ///
   /// Production backend caches share one [AppDatabase], while focused tests
   /// may register only one backend. This operation is therefore independent
   /// of backend initialization order and is a no-op before registration.
-  static Future<void> clearRegisteredVolatile() async {
+  static Future<void> clearRegisteredVolatile({bool preserveDisplaySnapshots = false}) async {
     final cleared = <AppDatabase>{};
     for (final cache in _byBackend.values) {
       if (cleared.add(cache.database)) {
-        await cache.clearVolatile();
+        await cache.clearVolatile(preserveDisplaySnapshots: preserveDisplaySnapshots);
       }
     }
   }
@@ -191,8 +193,16 @@ abstract class ApiCache {
   }
 
   /// Clear volatile cached rows while preserving pinned offline metadata.
-  Future<void> clearVolatile() async {
-    await (_db.delete(_db.apiCache)..where((t) => t.pinned.equals(false))).go();
+  /// Only known credential-free display formats may survive startup cleanup.
+  Future<void> clearVolatile({bool preserveDisplaySnapshots = false}) async {
+    await (_db.delete(_db.apiCache)..where((t) {
+          final displaySnapshot =
+              t.cacheKey.like('%:velo/home-snapshot/v1/%') |
+              t.cacheKey.like('%:velo/home-snapshot/v2/%') |
+              t.cacheKey.like('%:velo/library-page/v1/%');
+          return t.pinned.equals(false) & (preserveDisplaySnapshots ? displaySnapshot.not() : const Constant(true));
+        }))
+        .go();
   }
 
   /// Pull pinned rows for [serverId] and extract the first capture group of

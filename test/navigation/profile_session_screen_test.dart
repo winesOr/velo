@@ -1,21 +1,42 @@
+import 'dart:async';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/connection/connection_registry.dart';
+import 'package:plezy/connection/connection.dart';
+import 'package:plezy/focus/input_mode_tracker.dart';
+import 'package:plezy/i18n/strings.g.dart';
+import 'package:plezy/media/media_hub.dart';
+import 'package:plezy/media/ids.dart';
 import 'package:plezy/database/app_database.dart';
 import 'package:plezy/models/plex/plex_home_user.dart';
 import 'package:plezy/navigation/profile_navigation_scope.dart';
 import 'package:plezy/navigation/profile_session_screen.dart';
 import 'package:plezy/profiles/active_profile_provider.dart';
+import 'package:plezy/profiles/active_profile_binder.dart';
 import 'package:plezy/profiles/plex_home_service.dart';
 import 'package:plezy/profiles/profile.dart';
 import 'package:plezy/profiles/profile_connection_registry.dart';
 import 'package:plezy/profiles/profile_registry.dart';
+import 'package:plezy/profiles/profile_connection.dart';
+import 'package:plezy/providers/account_preferences_controller.dart';
 import 'package:plezy/providers/companion_remote_provider.dart';
 import 'package:plezy/providers/discover_provider.dart';
 import 'package:plezy/providers/hidden_libraries_provider.dart';
 import 'package:plezy/providers/multi_server_provider.dart';
 import 'package:plezy/providers/trackers_provider.dart';
+import 'package:plezy/providers/offline_mode_provider.dart';
+import 'package:plezy/screens/main_screen.dart';
+import 'package:plezy/screens/discover_screen.dart';
+import 'package:plezy/services/home_snapshot_store.dart';
+import 'package:plezy/services/credential_vault.dart';
+import 'package:plezy/services/plex_api_cache.dart';
+import 'package:plezy/services/plex_auth_service.dart';
+import 'package:plezy/services/settings_service.dart';
+import 'package:plezy/theme/mono_theme.dart';
+import 'package:plezy/utils/platform_detector.dart';
+import 'package:plezy/widgets/home_startup_gate.dart';
 import 'package:plezy/services/multi_server_manager.dart';
 import 'package:plezy/services/offline_watch_sync_service.dart';
 import 'package:plezy/services/storage_service.dart';
@@ -25,13 +46,202 @@ import 'package:provider/provider.dart';
 import '../test_helpers/io_fakes.dart';
 import '../test_helpers/multi_server_fixtures.dart';
 import '../test_helpers/prefs.dart';
+import '../test_helpers/home_startup_fixtures.dart';
+import '../test_helpers/media_items.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {
     resetSharedPreferencesForTest();
+    CredentialVault.resetKeyForTesting();
     SystemShelfService().debugReset();
+  });
+
+  for (final startupOffline in [false, true]) {
+    testWidgets(
+      'a real ${startupOffline ? 'explicit offline' : 'normal'} startup keeps cached Home visible before connection',
+      (tester) async {
+        SettingsService.resetForTesting();
+        final settings = await SettingsService.getInstance();
+        await settings.write(SettingsService.autoCheckUpdatesOnStartup, false);
+        await settings.write(SettingsService.requireProfileSelectionOnOpen, false);
+        PlatformDetector.debugSetIsDesktopOSOverride(false);
+        addTearDown(() => PlatformDetector.debugSetIsDesktopOSOverride(null));
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = const Size(390, 844);
+        addTearDown(tester.view.reset);
+        final graph = await _SessionGraph.create();
+        PlexApiCache.initialize(graph.db);
+        final owner = Profile.local(id: 'local-owner', displayName: 'Owner', createdAt: DateTime(2026));
+        await graph.profileRegistry.upsert(owner);
+        await graph.connectionRegistry.upsert(
+          PlexAccountConnection(
+            id: 'saved-connection',
+            accountToken: 'test-owner-token',
+            clientIdentifier: 'device',
+            accountLabel: 'Owner',
+            createdAt: DateTime(2026),
+            servers: [
+              PlexServer(
+                name: 'Saved server',
+                clientIdentifier: 'server',
+                accessToken: 'test-token',
+                connections: [
+                  PlexConnection(
+                    protocol: 'https',
+                    address: 'saved.invalid',
+                    port: 443,
+                    uri: 'https://saved.invalid',
+                    local: false,
+                    relay: false,
+                    ipv6: false,
+                  ),
+                ],
+                owned: true,
+              ),
+            ],
+          ),
+        );
+        await graph.profileConnectionRegistry.upsert(
+          ProfileConnection(profileId: owner.id, connectionId: 'saved-connection', userIdentifier: 'owner'),
+        );
+        await graph.storage.setActiveProfileId(owner.id);
+        await graph.activeProfile.initialize();
+        graph.activeProfile.markBindingStarted();
+        graph.activeProfile.markStartupIdentityReady(profileId: owner.id);
+        graph.multiServer.setVisibleServerIds({'server'});
+        graph.multiServer.setExpectedVisibleServerIds({'server'});
+        final offline = OfflineModeProvider(graph.serverManager, multiServerProvider: graph.multiServer);
+        final preferences = _ReadyAccountPreferences();
+        final binder = _NoopStartupBinder();
+        final client = HomeStartupClient('server', profileId: owner.id);
+        final scope = HomeSnapshotScope.capture(
+          profileId: owner.id,
+          clients: {'server': client},
+          hiddenLibraryKeys: {},
+          useGlobalHubs: settings.read(SettingsService.useGlobalHubs),
+        );
+        await const HomeSnapshotStore().write(
+          scope,
+          HomeSnapshot(
+            onDeck: const [],
+            hubs: [
+              MediaHub(
+                id: 'saved-home',
+                title: 'Saved shelf',
+                type: 'movie',
+                serverId: 'server',
+                items: [testMediaItem(id: 'cached-title', title: 'Cached title', serverId: 'server')],
+              ),
+            ],
+          ),
+          authoritativeServerIds: {'server'},
+          isCurrent: () => true,
+        );
+        addTearDown(() async {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump(const Duration(seconds: 16));
+          offline.dispose();
+          preferences.dispose();
+          await graph.dispose();
+        });
+        await graph.pump(
+          tester,
+          httpClientFactory: () => FakeHttpClient(200, const []),
+          wrap: (child) => MultiProvider(
+            providers: [
+              ChangeNotifierProvider<OfflineModeProvider>.value(value: offline),
+              ChangeNotifierProvider<AccountPreferencesController>.value(value: preferences),
+              Provider<ActiveProfileBinder>.value(value: binder),
+            ],
+            child: child,
+          ),
+          isOfflineMode: startupOffline,
+          profileShellBuilder: null,
+        );
+        for (var i = 0; i < 8; i++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+          await tester.pump(const Duration(milliseconds: 40));
+        }
+        expect(offline.isOffline, isTrue);
+        expect(graph.multiServer.onlineServerIds, isEmpty, reason: 'cached content does not fabricate a connection');
+        final discover = tester.element(find.byType(MainScreen)).read<DiscoverProvider>();
+        expect(discover.restoredHomeSnapshot, isTrue);
+        expect(find.byType(DiscoverScreen).hitTestable(), findsOneWidget);
+        expect(find.text('Cached title').hitTestable(), findsWidgets);
+        expect(find.text(t.common.reconnect).hitTestable(), findsNothing);
+        final cachedRows = (await graph.db.select(graph.db.apiCache).get()).length;
+        expect(cachedRows, greaterThan(0));
+        await PlexApiCache.instance.put(ServerId(client.scopedServerId), '/runtime-api-response', {
+          'token': 'old-runtime-token',
+        });
+        graph.activeProfile.markBindingFinished(success: true);
+        for (var i = 0; i < 8; i++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+          await tester.pump(const Duration(milliseconds: 40));
+        }
+        expect(find.byType(DiscoverScreen).hitTestable(), findsOneWidget);
+        expect(
+          (await graph.db.select(graph.db.apiCache).get()).length,
+          cachedRows,
+          reason: 'the initial binding is not an account mutation and must not erase the disk snapshot',
+        );
+        expect(
+          await PlexApiCache.instance.get(ServerId(client.scopedServerId), '/runtime-api-response'),
+          isNull,
+          reason: 'retaining display snapshots must still clean runtime API responses',
+        );
+        expect(binder.starts, 1, reason: 'background binding starts automatically without a connect tap');
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets('the real startup gate never exposes a cached Home before identity authorization', (tester) async {
+    SettingsService.resetForTesting();
+    await SettingsService.getInstance();
+    PlatformDetector.debugSetIsDesktopOSOverride(false);
+    addTearDown(() => PlatformDetector.debugSetIsDesktopOSOverride(null));
+    final graph = await _SessionGraph.create();
+    PlexApiCache.initialize(graph.db);
+    final owner = Profile.local(
+      id: 'locked-owner',
+      displayName: 'Locked',
+      pinHash: 'verified-by-authorizer',
+      createdAt: DateTime(2026),
+    );
+    await graph.profileRegistry.upsert(owner);
+    await graph.storage.setActiveProfileId(owner.id);
+    await graph.activeProfile.initialize();
+    graph.activeProfile.markBindingStarted();
+    final client = HomeStartupClient('server', profileId: owner.id);
+    await const HomeSnapshotStore().write(
+      HomeSnapshotScope.capture(
+        profileId: owner.id,
+        clients: {'server': client},
+        hiddenLibraryKeys: {},
+        useGlobalHubs: true,
+      ),
+      HomeSnapshot(
+        onDeck: [testMediaItem(id: 'private', title: 'Private cached title', serverId: 'server')],
+        hubs: const [],
+      ),
+      authoritativeServerIds: {'server'},
+      isCurrent: () => true,
+    );
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await graph.dispose();
+    });
+    await graph.pump(tester, httpClientFactory: () => FakeHttpClient(200, const []), profileShellBuilder: null);
+    await tester.pump(const Duration(seconds: 4));
+    expect(graph.activeProfile.isStartupIdentityReady, isFalse);
+    expect(find.byType(MainScreen), findsNothing);
+    expect(find.text('Private cached title'), findsNothing);
+    expect(tester.element(find.byType(HomeStartupGate)).read<DiscoverProvider>().restoredHomeSnapshot, isFalse);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('profile switch disposes the profile navigator, routes, and providers', (tester) async {
@@ -240,6 +450,7 @@ class _SessionGraph {
 
   static Future<_SessionGraph> create() async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
+    PlexApiCache.initialize(db);
     final profileRegistry = ProfileRegistry(db);
     final connectionRegistry = ConnectionRegistry(db);
     final profileConnectionRegistry = ProfileConnectionRegistry(db);
@@ -275,8 +486,10 @@ class _SessionGraph {
   Future<void> pump(
     WidgetTester tester, {
     required FakeHttpClient Function() httpClientFactory,
-    required WidgetBuilder profileShellBuilder,
+    required WidgetBuilder? profileShellBuilder,
     GlobalKey<NavigatorState>? navigatorKey,
+    Widget Function(Widget)? wrap,
+    bool isOfflineMode = false,
   }) => tester.pumpWidget(
     MultiProvider(
       providers: [
@@ -289,12 +502,18 @@ class _SessionGraph {
         ChangeNotifierProvider<MultiServerProvider>.value(value: multiServer),
         ChangeNotifierProvider<OfflineWatchSyncService>.value(value: offlineWatch),
       ],
-      child: MaterialApp(
-        navigatorKey: navigatorKey,
-        home: ProfileSessionScreen.forTesting(
-          initialPromptHandled: true,
-          httpClientFactory: httpClientFactory,
-          profileShellBuilder: profileShellBuilder,
+      child: InputModeTracker(
+        child: MaterialApp(
+          theme: monoTheme(dark: true).copyWith(platform: TargetPlatform.android),
+          navigatorKey: navigatorKey,
+          home: (wrap ?? (child) => child)(
+            ProfileSessionScreen.forTesting(
+              initialPromptHandled: true,
+              isOfflineMode: isOfflineMode,
+              httpClientFactory: httpClientFactory,
+              profileShellBuilder: profileShellBuilder,
+            ),
+          ),
         ),
       ),
     ),
@@ -309,6 +528,21 @@ class _SessionGraph {
     offlineWatch.dispose();
     await db.close();
   }
+}
+
+class _ReadyAccountPreferences extends ChangeNotifier implements AccountPreferencesController {
+  @override
+  Future<void> ensureActiveLoaded() async {}
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _NoopStartupBinder implements ActiveProfileBinder {
+  int starts = 0;
+  @override
+  void start({bool allowInitialPinPrompt = true}) => starts++;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _ProfileProbeShell extends StatefulWidget {
