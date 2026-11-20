@@ -176,8 +176,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     keepPage: false,
     onAttach: (_) => _restoreHeroPageAfterLayout(),
     onDetach: (_) {
-      _heroPointers.clear();
       _cancelHeroRotation();
+      // A theme/physics update can replace just the ScrollPosition while a
+      // finger is down. Preserve that gesture through the immediate reattach.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_heroController.hasClients) _heroPointers.clear();
+      });
     },
   );
   Timer? _heroTimer;
@@ -331,6 +335,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   void _syncHomeTheme(MediaItem? item) {
     final controller = HomeThemeScope.read(context);
     if (controller == null) return;
+    if (!PlatformDetector.isTV() && _heroIsMoving) {
+      _previewHeroTheme();
+      return;
+    }
     final paths =
         item?.heroArtCandidates(containerAspectRatio: MediaQuery.sizeOf(context).aspectRatio) ?? const <String>[];
     if (item == null || paths.isEmpty) {
@@ -346,9 +354,35 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   static ImageProvider _paletteImage(ImageProvider image) => AmbientPaletteExtractor.samplingProvider(image);
 
+  void _previewHeroTheme() {
+    if (!_heroController.hasClients || _heroItems.isEmpty) return;
+    final controller = HomeThemeScope.read(context);
+    if (controller == null) return;
+    final page = _heroController.page!;
+    final from = _heroItems[_heroIndexFor(page.floor())];
+    final to = _heroItems[_heroIndexFor(page.ceil())];
+    final fromImage = _heroReadyImages[from.globalKey];
+    final toImage = _heroReadyImages[to.globalKey];
+    final aspect = MediaQuery.sizeOf(context).aspectRatio;
+    if ((fromImage == null && from.heroArtCandidates(containerAspectRatio: aspect).isNotEmpty) ||
+        (toImage == null && to.heroArtCandidates(containerAspectRatio: aspect).isNotEmpty)) {
+      return;
+    }
+    controller.blendPreparedPalettes(
+      from: fromImage == null ? null : _paletteImage(fromImage),
+      to: toImage == null ? null : _paletteImage(toImage),
+      progress: page - page.floor(),
+      fallback: HomeThemeScope.fallbackColorOf(context),
+    );
+  }
+
   void _onHeroImageReady(MediaItem item, ImageProvider image) {
     _heroReadyImages[item.globalKey] = image;
-    unawaited(HomeThemeScope.read(context)?.precachePalette(_paletteImage(image)));
+    unawaited(
+      HomeThemeScope.read(context)?.precachePalette(_paletteImage(image)).then((_) {
+        if (mounted && _heroIsMoving) _previewHeroTheme();
+      }),
+    );
     final selected = _heroItems.isEmpty ? null : _heroItems[_heroIndex.value.clamp(0, _heroItems.length - 1)];
     if (selected?.globalKey != item.globalKey || !_isTabVisible) return;
     _syncHomeTheme(item);
@@ -380,6 +414,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   void _restoreHeroPageAfterLayout() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_heroController.hasClients || _heroItems.isEmpty) return;
+      if (_heroIsMoving) return;
       final page = _heroPageFor(_heroIndex.value.clamp(0, _heroItems.length - 1));
       if (_heroController.page != page.toDouble()) _heroController.jumpToPage(page);
       _syncHeroRotation();
@@ -434,6 +469,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final page = currentPage + offset;
     if (_reduceMotion) {
       _heroController.jumpToPage(page);
+      _heroIndex.value = index;
+      _syncHomeTheme(_heroItems[index]);
       _syncHeroRotation();
     } else if (_heroController.page == page.toDouble()) {
       _syncHeroRotation();
@@ -454,6 +491,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     if (event is ScrollStartNotification) {
       if (event.dragDetails != null) _heroHasNavigated = true;
       _cancelHeroRotation();
+    } else if (event is ScrollUpdateNotification) {
+      _previewHeroTheme();
     } else if (event is ScrollEndNotification) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted ||
@@ -462,6 +501,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             _heroController.position.isScrollingNotifier.value) {
           return;
         }
+        final page = _heroController.page!.round();
+        _heroIndex.value = _heroIndexFor(page);
         _flushDiscoverChange();
         if (_heroItems.isNotEmpty) _syncHomeTheme(_heroItems[_heroIndex.value]);
         _syncHeroRotation();
@@ -1868,17 +1909,20 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   onPointerCancel: _releaseHeroPointer,
                   child: PageView.builder(
                     controller: _heroController,
+                    // Scrollable must not observe the changing artwork Theme.
+                    // MaterialScrollBehavior reads it for physics and replaces
+                    // its ScrollPosition during an otherwise continuous drag.
+                    scrollBehavior: const ScrollBehavior().copyWith(
+                      platform: Theme.of(context).platform,
+                      dragDevices: ScrollConfiguration.of(context).dragDevices,
+                      scrollbars: false,
+                      overscroll: false,
+                    ),
                     itemCount: _heroItems.length > 1 ? null : _heroItems.length,
                     // Decode artwork and logos on both sides before dragging.
                     // The viewport retains only the current and nearby pages.
                     allowImplicitScrolling: _heroItems.length > 1,
                     dragStartBehavior: DragStartBehavior.down,
-                    onPageChanged: (page) {
-                      if (_heroItems.isEmpty) return;
-                      final index = _heroIndexFor(page);
-                      _heroIndex.value = index;
-                      _syncHomeTheme(_heroItems[index]);
-                    },
                     itemBuilder: (context, page) => _buildHeroItem(_heroItems[_heroIndexFor(page)], heroHeight),
                   ),
                 ),

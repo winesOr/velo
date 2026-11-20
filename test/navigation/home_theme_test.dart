@@ -7,6 +7,82 @@ import 'package:plezy/utils/ambient_palette_extractor.dart';
 import 'package:plezy/theme/mono_presentation.dart';
 
 void main() {
+  test('drag preview follows position in both directions and commits only when selected', () async {
+    final controller = HomeThemeController(
+      resolve: (image) async => image == const AssetImage('from') ? Colors.red : Colors.blue,
+    );
+    addTearDown(controller.dispose);
+    await controller.precachePalette(const AssetImage('from'));
+    await controller.precachePalette(const AssetImage('to'));
+    await controller.select('from', const AssetImage('from'));
+    void preview(double progress) => controller.blendPreparedPalettes(
+      from: const AssetImage('from'),
+      to: const AssetImage('to'),
+      progress: progress,
+      fallback: Colors.black,
+    );
+    preview(.6);
+    expect(controller.color, Color.lerp(Colors.red, Colors.blue, .6));
+    expect(controller.mediaKey, 'from');
+    expect(controller.isFollowingArtwork, isTrue);
+    preview(.35);
+    expect(controller.color, Color.lerp(Colors.red, Colors.blue, .35));
+    expect(controller.mediaKey, 'from');
+    preview(1);
+    await controller.select('to', const AssetImage('to'));
+    expect(controller.color, Colors.blue);
+    expect(controller.mediaKey, 'to');
+    expect(controller.isFollowingArtwork, isFalse);
+  });
+
+  test('ending on an unavailable image retires the mixed preview and keeps the committed color', () async {
+    final controller = HomeThemeController(
+      resolve: (image) async => image == const AssetImage('from') ? Colors.red : Colors.blue,
+    );
+    addTearDown(controller.dispose);
+    await controller.select('from', const AssetImage('from'));
+    await controller.precachePalette(const AssetImage('to'));
+    controller.blendPreparedPalettes(
+      from: const AssetImage('from'),
+      to: const AssetImage('to'),
+      progress: .6,
+      fallback: Colors.black,
+    );
+    controller.prepare('missing-image');
+    expect(controller.mediaKey, 'missing-image');
+    expect(controller.color, Colors.red);
+    expect(controller.isFollowingArtwork, isFalse);
+  });
+
+  testWidgets('holding a drag preview does not run an independent color animation', (tester) async {
+    final controller = HomeThemeController(resolve: (_) async => Colors.blue);
+    addTearDown(controller.dispose);
+    await controller.precachePalette(const AssetImage('to'));
+    late Color rendered;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeThemeScope(
+          controller: controller,
+          child: Builder(
+            builder: (context) {
+              rendered = HomeThemeScope.colorOf(context);
+              return const SizedBox();
+            },
+          ),
+        ),
+      ),
+    );
+    controller.blendPreparedPalettes(from: null, to: const AssetImage('to'), progress: .6, fallback: Colors.red);
+    await tester.pump();
+    expect(rendered, Color.lerp(Colors.red, Colors.blue, .6));
+    final held = rendered;
+    await tester.pump(const Duration(seconds: 1));
+    expect(rendered, held);
+    controller.blendPreparedPalettes(from: null, to: const AssetImage('to'), progress: .35, fallback: Colors.red);
+    await tester.pump();
+    expect(rendered, Color.lerp(Colors.red, Colors.blue, .35));
+  });
+
   test('preparing adjacent palettes never changes selection and is reused without another request', () async {
     final pending = Completer<Color>();
     var calls = 0;

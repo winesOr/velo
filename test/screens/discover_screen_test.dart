@@ -546,7 +546,7 @@ void main() {
     });
   }
 
-  testWidgets('home color starts changing before an active finger finishes its swipe', (tester) async {
+  testWidgets('home drag blends with the finger and waits until settling to commit its page', (tester) async {
     final controller = HomeThemeController(resolve: (_) async => Colors.blue);
     addTearDown(controller.dispose);
     await _pumpDiscoverShell(
@@ -588,18 +588,40 @@ void main() {
     nextBackdrop.onImageReady!(provider);
     await tester.pump();
     expect(controller.mediaKey, isNot('server_1:next'), reason: 'prewarming does not select the neighboring page');
+    final context = tester.element(find.byType(DiscoverScreen));
+    final fallback = HomeThemeScope.fallbackColorOf(context);
+    final pages = tester.widget<PageView>(find.byType(PageView)).controller!;
+    final position = pages.position;
     final drag = await tester.startGesture(tester.getCenter(find.byType(PageView)));
     await drag.moveBy(const Offset(-230, 0));
     await tester.pump();
-    expect(controller.mediaKey, 'server_1:next');
-    expect(controller.color, Colors.blue, reason: 'selection no longer waits for ScrollEnd');
-    await tester.pump(const Duration(milliseconds: 150));
-    final context = tester.element(find.byType(DiscoverScreen));
+    expect(
+      identical(pages.position, position),
+      isTrue,
+      reason: 'theme updates must not replace the active scroll position',
+    );
+    expect(controller.mediaKey, 'server_1:from');
+    expect(tester.widget<Semantics>(fromDot).properties.selected, isTrue);
+    final expected = Color.lerp(fallback, Colors.blue, pages.page! - pages.page!.floor())!;
     final during = HomeThemeScope.colorOf(context);
-    expect(during, isNot(AmbientPaletteExtractor.defaultFallback));
-    await tester.pump(const Duration(milliseconds: 150));
-    expect(HomeThemeScope.colorOf(context), Colors.blue, reason: 'color finishes while the finger is still held');
+    expect(during, expected);
+    expect(during, isNot(Colors.blue));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(HomeThemeScope.colorOf(context), during, reason: 'holding still cannot finish the color transition');
+    await drag.moveBy(const Offset(70, 0));
+    await tester.pump();
+    expect(HomeThemeScope.colorOf(context), Color.lerp(fallback, Colors.blue, pages.page! - pages.page!.floor()));
+    expect(controller.mediaKey, 'server_1:from', reason: 'reversing across halfway does not select either page');
+    await drag.moveBy(const Offset(-140, 0));
+    await tester.pump();
     await drag.up();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump();
+    expect(controller.mediaKey, 'server_1:next');
+    expect(controller.color, Colors.blue);
+    expect(tester.widget<Semantics>(fromDot).properties.selected, isFalse);
+    expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -1068,7 +1090,9 @@ void main() {
         final initial = labels();
         if (navigated) {
           await tester.drag(find.byType(PageView), const Offset(-300, 0));
+          await tester.pump();
           await tester.pump(const Duration(milliseconds: 600));
+          await tester.pump();
         }
         client._hubGate.complete([MediaHub(id: 'recent', title: 'Recent', items: recommendations, type: 'movie')]);
         await tester.pump();

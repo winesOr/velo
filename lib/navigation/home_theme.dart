@@ -20,11 +20,33 @@ class HomeThemeController extends ChangeNotifier {
   String? _mediaKey;
   ImageProvider? _image;
   Color _color = AmbientPaletteExtractor.defaultFallback;
+  Color? _previewColor;
+  bool _followingArtwork = false;
   int _generation = 0;
   bool _disposed = false;
 
   String? get mediaKey => _mediaKey;
-  Color get color => _color;
+  Color get color => _previewColor ?? _color;
+  bool get isFollowingArtwork => _followingArtwork;
+
+  /// The page position owns this preview: holding or reversing a drag holds
+  /// or reverses its color as well. It never commits a new media selection.
+  void blendPreparedPalettes({
+    required ImageProvider? from,
+    required ImageProvider? to,
+    required double progress,
+    required Color fallback,
+  }) {
+    final start = from == null ? fallback : _palettes[from];
+    final end = to == null ? fallback : _palettes[to];
+    if (_disposed || start == null || end == null) return;
+    final preview = Color.lerp(start, end, progress.clamp(0.0, 1.0))!;
+    if (_followingArtwork && _previewColor == preview) return;
+    ++_generation;
+    _followingArtwork = true;
+    _previewColor = preview;
+    notifyListeners();
+  }
 
   /// Resolve neighboring artwork while its page is idle. Selecting it later
   /// can start the page-color animation without another decode or sample.
@@ -54,20 +76,29 @@ class HomeThemeController extends ChangeNotifier {
 
   /// Retires the old picture's pending extraction before the new one decodes.
   void prepare(String mediaKey) {
-    if (_mediaKey == mediaKey) return;
+    if (_mediaKey == mediaKey && !_followingArtwork) return;
+    final wasFollowing = _followingArtwork;
+    _followingArtwork = false;
+    _previewColor = null;
     _mediaKey = mediaKey;
     _image = null;
     _generation++;
+    // A final page whose artwork is still missing must leave drag preview
+    // mode too. Keep the last committed color until its image is ready.
+    if (wasFollowing) notifyListeners();
   }
 
   Future<void> select(String? mediaKey, ImageProvider? image) async {
-    if (_mediaKey == mediaKey && _image == image) return;
+    if (_mediaKey == mediaKey && _image == image && !_followingArtwork) return;
+    final displayed = this.color;
+    _followingArtwork = false;
+    _previewColor = null;
     _mediaKey = mediaKey;
     _image = image;
     final generation = ++_generation;
     // A pending picture must not briefly repaint the settled picture's page
     // with the fallback. Keep the last color until a new result is available.
-    if (image == null) _color = AmbientPaletteExtractor.defaultFallback;
+    _color = image == null ? AmbientPaletteExtractor.defaultFallback : _palettes[image] ?? displayed;
     notifyListeners();
     if (image == null) return;
     final color = _palettes[image] ?? await _paletteFor(image);
@@ -106,6 +137,10 @@ class HomeThemeScope extends StatelessWidget {
   static Color colorOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<_HomeThemeData>()?.color ?? Theme.of(context).scaffoldBackgroundColor;
 
+  static Color fallbackColorOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_HomeThemeData>()?.fallback ??
+      Theme.of(context).scaffoldBackgroundColor;
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: controller,
@@ -117,23 +152,29 @@ class HomeThemeScope extends StatelessWidget {
           : fallbackColor ?? Theme.of(context).scaffoldBackgroundColor;
       return TweenAnimationBuilder<Color?>(
         tween: ColorTween(begin: target, end: target),
-        duration: MediaQuery.disableAnimationsOf(context)
+        duration: controller.isFollowingArtwork || MediaQuery.disableAnimationsOf(context)
             ? Duration.zero
             : Theme.of(context).extension<MonoTokens>()?.slow ?? kThemeAnimationDuration,
         curve: Curves.easeOutCubic,
         child: child,
-        builder: (context, color, child) =>
-            _HomeThemeData(controller: controller, color: color ?? target, child: child!),
+        builder: (context, color, child) => _HomeThemeData(
+          controller: controller,
+          color: color ?? target,
+          fallback: fallbackColor ?? Theme.of(context).scaffoldBackgroundColor,
+          child: child!,
+        ),
       );
     },
   );
 }
 
 class _HomeThemeData extends InheritedWidget {
-  const _HomeThemeData({required this.controller, required this.color, required super.child});
+  const _HomeThemeData({required this.controller, required this.color, required this.fallback, required super.child});
   final HomeThemeController controller;
   final Color color;
+  final Color fallback;
 
   @override
-  bool updateShouldNotify(_HomeThemeData oldWidget) => color != oldWidget.color || controller != oldWidget.controller;
+  bool updateShouldNotify(_HomeThemeData oldWidget) =>
+      color != oldWidget.color || fallback != oldWidget.fallback || controller != oldWidget.controller;
 }
