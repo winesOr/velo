@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>格式徽标改版稿</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="badges.css?v=6">
+<style>
+:root{--bg:#0e1013;--card:#ffffff05;--edge:#ffffff12;--text:#f3f3ef;--dim:#9298a3;--soft:#d2d6dd;--accent:#b4aaff;--accent-bg:#36324e}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0e1013;--card:#ffffff05;--edge:#ffffff12;--text:#f3f3ef;--dim:#9298a3;--soft:#d2d6dd;--accent:#b4aaff;--accent-bg:#36324e}}
+:root[data-theme="dark"]{--bg:#0e1013}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,BlinkMacSystemFont,'PingFang SC','Noto Sans SC',sans-serif}
+main{max-width:1440px;margin:0 auto;padding:36px 36px 80px}
+header.top{max-width:820px;padding:8px 0 28px}
+.eyebrow{font-size:10px;letter-spacing:2px;color:var(--accent)}
+h1{font-size:34px;font-weight:550;letter-spacing:-1.2px;margin:10px 0 10px}
+header.top p{margin:0;color:var(--dim);font-size:13px;line-height:1.9}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.links a{font-size:12px;color:var(--soft);padding:7px 12px;border-radius:18px;background:#ffffff08;border:1px solid var(--edge);text-decoration:none}
+section.cmp{margin-top:26px;padding:22px;border:1px solid var(--edge);border-radius:22px;background:var(--card)}
+section.cmp>h2{font-size:17px;font-weight:600;margin:0 0 4px}
+section.cmp>p.lead{margin:0 0 18px;color:var(--dim);font-size:12px}
+.body{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+.pair{display:flex;flex-wrap:wrap;gap:18px}
+figure{margin:0;display:flex;flex-direction:column;gap:8px}
+figcaption{font-size:12px;font-weight:600;color:var(--soft);display:flex;align-items:center;gap:8px}
+figcaption.new{color:var(--accent)}
+figcaption a{margin-left:auto;font-weight:400;color:var(--dim);font-size:11px;text-decoration:none}
+.frame{position:relative;overflow:hidden;border-radius:22px;background:#16191d;border:1px solid var(--edge)}
+.frame iframe{border:0;transform-origin:top left;pointer-events:none;display:block}
+.phone{width:258px;height:558px}.phone iframe{width:390px;height:844px;transform:scale(.6615)}
+.tvf{width:530px;height:302px;border-radius:12px}.tvf iframe{width:1060px;height:604px;transform:scale(.5)}
+.land{width:540px;height:250px;border-radius:14px}.land iframe{width:844px;height:390px;transform:scale(.64)}
+.notes{flex:1 1 300px;min-width:260px;max-width:460px}
+.notes ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:9px;font-size:12.5px;line-height:1.65;color:var(--soft)}
+.notes b{color:var(--text);font-weight:600}
+.notes h3{font-size:12px;font-weight:600;color:var(--dim);margin:0 0 10px;letter-spacing:.5px}
+.spec{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px 14px;align-items:center;font-size:12px;color:var(--dim)}
+.spec .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;color:var(--text)}
+.spec .on-art{padding:10px;border-radius:10px;background:#5b4636}
+.light{padding:10px;border-radius:10px;background:#fdfcf9;color:#242424!important}
+.skip-gal{display:flex;flex-direction:column;gap:14px;flex:1 1 560px;min-width:0}
+.skip-stage{position:relative;border-radius:14px;overflow:hidden;background:#111 url(assets/interstellar-backdrop.jpg) center/cover;padding:18px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;min-height:96px}
+.skip-stage::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#0009,#0004)}
+.skip-stage>*{position:relative}
+.skip-stage .tag{position:absolute;left:14px;top:10px;font-size:11px;color:#fffb}
+.skip-stage{padding-top:34px}
+.sk-old{display:inline-flex;align-items:center;gap:8px;padding:12px 16px;border-radius:8px;background:rgba(255,255,255,.9);color:#000;font-size:16px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.3);position:relative;overflow:hidden;white-space:nowrap}
+.sk-old svg{width:20px;height:20px}
+.sk-old .fill{position:absolute;left:0;top:0;bottom:0;background:rgba(96,96,245,.2)}
+.sk-old span{position:relative}
+.sk{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 12px 0 16px;border-radius:20px;background:rgba(24,24,26,.56);color:#fff;border:.5px solid rgba(255,255,255,.26);font-size:14px;font-weight:600;box-shadow:0 6px 22px rgba(0,0,0,.28);-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4);position:relative;overflow:hidden;white-space:nowrap;letter-spacing:.02em}
+.sk .ico{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.16);position:relative}
+.sk .ico svg{width:13px;height:13px}
+.sk .sweep{position:absolute;left:0;top:0;bottom:0;background:rgba(255,255,255,.14)}
+.sk>span{position:relative}
+.sk .sub{font-weight:400;opacity:.72;font-size:12.5px}
+.sk .ring{width:22px;height:22px;position:relative;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.sk .ring svg{position:absolute;inset:0;width:22px;height:22px;transform:rotate(-90deg)}
+.sk.ghost{background:rgba(24,24,26,.38)}
+.sk.focus{background:#fff;color:#111;box-shadow:0 0 0 3px #b4aaff,0 10px 30px rgba(0,0,0,.45);transform:scale(1.04)}
+.sk.focus .ico{background:rgba(0,0,0,.1)}
+.type-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;flex:1 1 560px;min-width:0}
+.type-card{border-radius:14px;padding:16px;background:linear-gradient(180deg,#3b2a1f,#24180f);font-family:'Noto Sans SC',-apple-system,sans-serif;color:#f6f3ee;min-width:0;overflow:hidden}
+.type-card .tag{font:500 11px/1.4 -apple-system,sans-serif;color:#fff9;margin-bottom:10px;display:block}
+.type-card .spec-line{font:400 11px/1.5 ui-monospace,Menlo,monospace;color:#fffa;margin-top:8px;display:block}
+@media(max-width:700px){.type-grid{grid-template-columns:1fr}}
+@media(max-width:700px){main{padding:20px 16px 60px}.notes{min-width:0}.spec{grid-template-columns:84px minmax(0,1fr)}h1{font-size:28px}section.cmp{padding:16px}.tvf{width:318px;height:181px}.tvf iframe{transform:scale(.3)}.land{width:321px;height:148px}.land iframe{transform:scale(.38)}.phone{width:156px;height:338px}.phone iframe{transform:scale(.4)}}
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <span class="eyebrow">VELO · 第五稿</span>
+    <h1>格式徽标、评分、播放器与字体改版</h1>
+    <p>直接在「Velo · 完整视觉原型」上改：左边是还原当前实机（3.0.14）的徽标，右边是改后方案。每个页面右下角都能切换“改前 / 改后”，点开可以完整操作。</p>
+    <div class="links"><a href="detail.html?media=dune">详情 · 沙丘（可切换）↗</a><a href="detail.html?media=blade">详情 · 银翼杀手 2049 ↗</a><a href="library.html">海报墙 ↗</a><a href="player.html">播放器 ↗</a><a href="favorites.html">收藏页 ↗</a><a href="detail.html?media=dune&amp;tvonly">TV 详情 ↗</a><a href="index.html">原型总览 ↗</a></div>
+  </header>
+
+  <section class="cmp" aria-labelledby="s-spec">
+    <h2 id="s-spec">徽标规范</h2>
+    <p class="lead">只有“格式”做成徽标；编码、声道、大小等退回普通文字。纯字标，不用通用 Material 图标。</p>
+    <div class="body">
+      <div class="spec" style="flex:1 1 320px;min-width:0">
+        <span>改前（实机）</span>
+        <div class="row"><div class="fmt-old"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 8.6l1.1 2.3 2.3 1.1-2.3 1.1L12 15.4l-1.1-2.3L8.6 12l2.3-1.1z"/></svg>Dolby Vision</div><div class="fmt-old"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><circle cx="9" cy="9" r="3.2"/><path d="M3 20c.6-3.2 3-5 6-5s5.4 1.8 6 5M16.5 5.5a5 5 0 010 7M19.3 3a9 9 0 010 12"/></svg>Dolby Atmos</div><div class="fmt-old compact art"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 8.6l1.1 2.3 2.3 1.1-2.3 1.1L12 15.4l-1.1-2.3L8.6 12l2.3-1.1z"/></svg>DV</div></div>
+        <span>M 20px · 详情 / 信息</span>
+        <div class="row"><div class="fmt fmt-m res">4K</div><div class="fmt fmt-m"><b>Dolby</b><i>Vision</i></div><div class="fmt fmt-m">HDR10+</div><div class="fmt fmt-m"><b>Dolby</b><i>Atmos</i></div><div class="fmt fmt-m"><b>Dolby</b><i>Audio</i></div><div class="fmt fmt-m">DTS:X</div><div class="fmt fmt-m">HLG</div></div>
+        <span>S 16px · 播放器手机</span>
+        <div class="row"><div class="fmt fmt-s"><b>Dolby</b><i>Vision</i></div><div class="fmt fmt-s"><b>Dolby</b><i>Atmos</i></div><div class="fmt fmt-s">HDR10</div></div>
+        <span>海报角标 20px</span>
+        <div class="row on-art"><div class="fmt art seg" style="height:20px;border-radius:6px;font-size:9.5px"><em style="font-style:normal">DV</em><em style="font-style:normal">Atmos</em></div><div class="fmt art seg" style="height:20px;border-radius:6px;font-size:9.5px"><em style="font-style:normal">HDR10</em></div><span style="display:inline-flex;align-items:center;height:20px;padding:0 6px;border-radius:6px;background:#000c;color:#fff;font-size:11px;font-weight:700;margin-left:auto">8.3分</span></div>
+        <span>浅色主题</span>
+        <div class="row light"><div class="fmt fmt-m res">4K</div><div class="fmt fmt-m"><b>Dolby</b><i>Vision</i></div><div class="fmt fmt-m"><b>Dolby</b><i>Atmos</i></div></div>
+      </div>
+      <div class="notes">
+        <h3>规则</h3>
+        <ol>
+          <li><b>杜比双字重：</b>DOLBY 粗 + VISION/ATMOS 细，大写字距；HDR 系列和 DTS:X 单字重。</li>
+          <li><b>分辨率用浅底</b>作一行的起点，格式只描边，颜色跟随所在文字色，深浅主题与海报取色背景都成立。</li>
+          <li><b>固定顺序：</b>分辨率 → 动态范围 → 空间音频；DV + HDR10+ 双层时两枚都显示。</li>
+          <li><b>不复刻杜比商标图形</b>，纯字标避免授权问题。</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="cmp" aria-labelledby="s-lib">
+    <h2 id="s-lib">海报卡</h2>
+    <p class="lead">搜索页三列海报墙：沙丘（DV + Atmos）、星际穿越（HDR10）、千与千寻（普通 AC3）、银翼杀手（DV + HDR10+ + Atmos）。</p>
+    <div class="body">
+      <div class="pair">
+        <figure><figcaption>改前（实机）<a href="library.html?fmt=old">打开 ↗</a></figcaption><div class="frame phone"><iframe src="library.html?preview&amp;fmt=old" title="海报墙改前" loading="lazy" tabindex="-1"></iframe></div></figure>
+        <figure><figcaption class="new">改后<a href="library.html">打开 ↗</a></figcaption><div class="frame phone"><iframe src="library.html?preview" title="海报墙改后" loading="lazy" tabindex="-1"></iframe></div></figure>
+      </div>
+      <div class="notes">
+        <h3>改动</h3>
+        <ol>
+          <li><b>位置仍在左上</b>（试过放左下和评分并排，手机三列海报只有约 110px 宽，两者会撞），但样式改成和右下评分同一套：20px 高、6px 圆角、同一块 #000c 底，去掉图标和描边。</li>
+          <li><b>视频 + 音频合成一枚分段徽标</b>（DV │ ATMOS），实机只显示第一个格式，丢掉了 Atmos。</li>
+          <li><b>只上高级格式：</b>DV / HDR10 / HDR10+ / HLG / Atmos / DTS:X。普通杜比音频（AC3 / EAC3）几乎每部片都有，不再上海报（千与千寻）。</li>
+          <li><b>有目录标签时不再隐藏格式</b>（实机要 <code>badgeLabels.isEmpty</code> 才显示）。</li>
+          <li>有目录标签（新上线 / 即将上映）时，格式排在标签下方，右上仍留给已看 / 未看集数。</li>
+          <li>评分角标顺带统一：固定 20px 高、文字垂直居中。</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="cmp" aria-labelledby="s-detail">
+    <h2 id="s-detail">详情页 · 海报信息组</h2>
+    <p class="lead">沙丘：第二部（4K HEVC · Dolby Vision P8 · TrueHD Atmos）。左边按 Velo 现有代码：评分在播放按钮上方、带竖分隔线；右边按你给的参考截图把评分移到收藏 / 已看下方并缩小。注意对比封面过渡的起点。</p>
+    <div class="body">
+      <div class="pair">
+        <figure><figcaption>改前（实机）<a href="detail.html?media=dune&amp;fmt=old">打开 ↗</a></figcaption><div class="frame phone"><iframe src="detail.html?media=dune&amp;preview&amp;fmt=old" title="详情改前" loading="lazy" tabindex="-1"></iframe></div></figure>
+        <figure><figcaption class="new">改后<a href="detail.html?media=dune">打开 ↗</a></figcaption><div class="frame phone"><iframe src="detail.html?media=dune&amp;preview" title="详情改后" loading="lazy" tabindex="-1"></iframe></div></figure>
+      </div>
+      <div class="notes">
+        <h3>改动</h3>
+        <ol>
+          <li><b>徽标单独成“规格行”</b>，放在年份类型行下面：4K → DOLBY VISION → DOLBY ATMOS，居中。实机把徽标接在“时长 · 4K HEVC”文字后面，窄屏一换行就孤零零掉到下一行。</li>
+          <li><b>技术细节退成一行小字：</b>时长 · HEVC · DV P8 · TrueHD 7.1，透明度 72%，不抢标题。</li>
+          <li>播放版本入口的“4K · 原始画质”改为“4K · Dolby Vision”，和规格行说的是同一件事。</li>
+          <li><b>徽标统一描边</b>：1.5px、4px 圆角；4K 用浅底，杜比用双字重。</li><li><b>信息整体下移：</b>封面区 603 → 640（按 390 宽），标题到评分整组下移约 37px，封面露出更多。</li>
+          <li><b>评分缩小：</b>数字 16 → 13px，图标 16–18 → 13–14px，间距 18 → 14；只是辅助信息，不和播放按钮抢。</li>
+          <li><b>封面过渡往下移：</b>实机（<code>media_detail_screen.dart</code>，手机电影）从封面 35% 高处开始盖色、70% 处全盖；改后深色外观 50% 开始、84% 全盖（整体下移约 15%），标题以上保持原图，全盖压到播放按钮后面，文字加一层柔和黑色投影。浅色外观的文字是深色，压在原图上看不清，所以只下移一点：40% 开始、76% 全盖。竖版剧集海报同理：55% → 66% 开始。</li>
+          <li><b>评分按参考截图：</b>放在收藏 / 已看下面，品牌图标 + 分数一行居中，去掉竖分隔线和来源小字；点击仍打开评分来源说明。</li>
+          <li>切换版本 / 音轨后规格行随所选源刷新（实机已有 <code>_playbackStatusRevision</code>，沿用）。</li>
+          <li>TV 左对齐，用同一组件，随信息区一起缩放。</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="cmp" aria-labelledby="s-info">
+    <h2 id="s-info">详情页 · 音视频信息</h2>
+    <p class="lead">同一页往下滚到“音视频字幕信息”；演示数据两边都改成与片源一致（实机这里取自真实媒体流）。</p>
+    <div class="body">
+      <div class="pair">
+        <figure><figcaption>改前（实机）</figcaption><div class="frame phone"><iframe src="detail.html?media=dune&amp;preview&amp;fmt=old&amp;scroll=info" title="音视频信息改前" loading="lazy" tabindex="-1"></iframe></div></figure>
+        <figure><figcaption class="new">改后</figcaption><div class="frame phone"><iframe src="detail.html?media=dune&amp;preview&amp;scroll=info" title="音视频信息改后" loading="lazy" tabindex="-1"></iframe></div></figure>
+      </div>
+      <div class="notes">
+        <h3>改动</h3>
+        <ol>
+          <li>“视频”“音频”卡片标题右侧各挂一枚 S 号徽标，横滑时一眼知道哪张卡是杜比视界 / 全景声。</li>
+          <li><b>文件信息弹层</b>（实机 file_info_bottom_sheet）同理：摘要胶囊按 视频 / 音频 / 文件 分三行，徽标领头，容器、大小、时长不再一律做成胶囊。原型里没有这个弹层，实现时按本规范做。</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="cmp" aria-labelledby="s-tv">
+    <h2 id="s-tv">TV 详情</h2>
+    <p class="lead">原型原来的 TV 详情（左侧整块实色、封面挤在右边）不是实机。这里按实机 <code>TvSpotlightBackground</code> 重画：全屏封面、信息在左下。</p>
+    <div class="body">
+      <div class="pair" style="flex-direction:column">
+        <figure><figcaption>改前（实机遮罩）<a href="detail.html?media=dune&amp;tvonly&amp;fmt=old">打开 ↗</a></figcaption><div class="frame tvf"><iframe src="detail.html?media=dune&amp;tvonly&amp;fmt=old" title="TV 详情改前" loading="lazy" tabindex="-1"></iframe></div></figure>
+        <figure><figcaption class="new">改后<a href="detail.html?media=dune&amp;tvonly">打开 ↗</a></figcaption><div class="frame tvf"><iframe src="detail.html?media=dune&amp;tvonly" title="TV 详情改后" loading="lazy" tabindex="-1"></iframe></div></figure>
+      </div>
+      <div class="notes">
+        <h3>改动</h3>
+        <ol>
+          <li><b>实机现在：</b>整屏横向遮罩（左边 86% 底色，到 56% 宽处还有 32%）+ 顶部 45% 黑色，左上角的封面人物、片名 Logo 都被盖暗。</li>
+          <li><b>改后：</b>只在左下角信息区做一块径向遮罩（从左下角 95% 渐隐到 70% 处为 0），加底部 26% 过渡接下面的内容；左上和右侧保持原图，顶部只留 16% 很淡的压暗给返回 / 更多按钮。</li>
+          <li>文字加一层柔和投影，亮封面上也能读；规格行、评分与手机一致，用 TV 尺寸。</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="cmp" aria-labelledby="s-nav">
+    <h2 id="s-nav">底部导航：搜索 → 收藏</h2>
+    <p class="lead">第二个入口由“搜索”改为“收藏”（爱心图标）；搜索移到首页右上角的放大镜，收藏页右上角也保留一个搜索入口。</p>
+    <div class="body">
+      <div class="pair">
+        <figure><figcaption>改前（实机）<a href="library.html?fmt=old">打开 ↗</a></figcaption><div class="frame phone"><iframe src="library.html?preview&amp;fmt=old" title="底部导航改前" loading="lazy" tabindex="-1"></iframe></div></figure>
+        <figure><figcaption class="new">改后 · 收藏页<a href="favorites.html">打开 ↗</a></figcaption><div class="frame phone"><iframe src="favorites.html?preview" title="收藏页" loading="lazy" tabindex="-1"></iframe></div></figure>
+      </div>
+      <div class="notes">
+        <h3>收藏页</h3>
+        <ol>
+          <li><b>内容：</b>服务器端收藏（Emby / Jellyfin 收藏、Plex Watchlist），多服务器合并去重；详情页的爱心按钮就是加入这里。</li>
+          <li><b>筛选：</b>全部 / 电影 / 剧集；默认最近收藏在前，右上角可换成片名 / 上映时间 / 评分。</li>
+          <li><b>海报：</b>与搜索页同一套三列海报和格式角标；TV 七列。</li>
+          <li><b>实现提示：</b>实机底部导航是 <code>primaryNavigationIds</code>（首页 / 媒体库 / 一起看 / 设置），要新增一个“收藏”页并替换媒体库入口；媒体库移到首页右上角菜单。具体数据接口实现时再核对。</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="cmp" aria-labelledby="s-skip">
+    <h2 id="s-skip">跳过片头 / 片尾按钮</h2>
+    <p class="lead">实机 SkipMarkerButton：90% 白底、黑字 16/600、8px 圆角，画面上像一块白色补丁。改成和播放器底栏芯片同一种磨砂胶囊。</p>
+    <div class="body">
+      <div class="skip-gal">
+        <div class="skip-stage"><span class="tag">改前（实机）</span>
+          <span class="sk-old"><span>跳过片头</span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 6l8 6-8 6ZM12 6l8 6-8 6Z"/></svg></span>
+          <span class="sk-old"><i class="fill" style="width:40%"></i><span>跳过片尾 (3)</span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 6l8 6-8 6ZM12 6l8 6-8 6Z"/></svg></span>
+          <span class="sk-old"><span>下一集</span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 6l9 6-9 6ZM16 6h2.5v12H16Z"/></svg></span>
+          <span class="sk-old"><span>撤销跳过片头</span><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 6l8 6-8 6ZM12 6l8 6-8 6Z"/></svg></span>
+        </div>
+        <div class="skip-stage"><span class="tag" style="color:#cfc8ff">改后</span>
+          <span class="sk"><span>跳过片头</span><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 6.5l7 5.5-7 5.5zM12.5 6.5l7 5.5-7 5.5z" fill="currentColor"/></svg></span></span>
+          <span class="sk"><i class="sweep" style="width:40%"></i><span>跳过片尾</span><span class="ring"><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9.5" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2"/><circle cx="11" cy="11" r="9.5" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="59.7" stroke-dashoffset="23.9" stroke-linecap="round"/></svg>3</span></span>
+          <span class="sk"><span>下一集</span><span class="sub">第 8 集</span><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6.5l8 5.5-8 5.5zM15.5 6.5h2.5v11h-2.5z" fill="currentColor"/></svg></span></span>
+          <span class="sk ghost"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7L4 12l5 5M4.5 12H14a5.5 5.5 0 010 11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 -3)"/></svg></span><span>撤销跳过</span></span>
+          <span class="sk focus"><span>跳过片头</span><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 6.5l7 5.5-7 5.5zM12.5 6.5l7 5.5-7 5.5z" fill="currentColor"/></svg></span></span>
+        </div>
+      </div>
+      <div class="notes">
+        <h3>改动</h3>
+        <ol>
+          <li><b>磨砂胶囊：</b>40px 高、全圆角、56% 深色 + 20px 模糊 + 0.5px 白描边，与倍速 / 字幕 / 弹幕芯片同一材质；文字 14/600 白色，图标收进右侧小圆底里。</li>
+          <li><b>自动跳过倒计时：</b>不再在文字后面加“(3)”，改成右侧圆环倒计时 + 胶囊内浅白色进度扫过；实机用的紫色 20% 底在白按钮上几乎看不见。</li>
+          <li><b>片尾在结尾且有下一集：</b>“下一集 · 第 8 集”，带集号，点之前就知道会去哪。</li>
+          <li><b>撤销跳过：</b>更淡的底、撤销图标在前，和主动作区分开。</li>
+          <li><b>TV / 键盘焦点：</b>反白（白底黑字）+ 紫色焦点环，放大 1.04；TV 尺寸 80px 高。位置不变：控件显示时离底 80，隐藏时 24。</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="cmp" aria-labelledby="s-type">
+    <h2 id="s-type">字体与字号</h2>
+    <p class="lead">Velo 在手机和 TV 上没有内置字体，用的是系统字体：小米 / 澎湃是 MiSans，其他 Android 多为 Noto Sans CJK（思源黑体），iOS / macOS 是苹方，只有 Linux 内置 Go Noto。粗大不是字体本身，而是字号和字重定得偏重：标题几乎都是 w600，首页大标题 45px 还收紧了 −1.5 字距。下面用思源黑体示意。</p>
+    <div class="body">
+      <div class="type-grid">
+        <div class="type-card"><span class="tag">首页轮播标题 · 改前</span><div style="font-size:45px;font-weight:600;letter-spacing:-1.5px;line-height:1.1">沙丘：第二部</div><span class="spec-line">45 / w600 / −1.5（TV 48）</span></div>
+        <div class="type-card"><span class="tag" style="color:#cfc8ff">首页轮播标题 · 改后</span><div style="font-size:36px;font-weight:500;letter-spacing:-.3px;line-height:1.15">沙丘：第二部</div><span class="spec-line">36 / w500 / −0.3（窄屏 32，TV 42）</span></div>
+        <div class="type-card"><span class="tag">详情页标题 · 改前</span><div style="font-size:32px;font-weight:600;letter-spacing:-.6px;line-height:1.15">沙丘：第二部</div><span class="spec-line">32 / w600 / −0.6（TV 36）</span></div>
+        <div class="type-card"><span class="tag" style="color:#cfc8ff">详情页标题 · 改后</span><div style="font-size:28px;font-weight:500;letter-spacing:-.2px;line-height:1.2">沙丘：第二部</div><span class="spec-line">28 / w500 / −0.2（TV 34）· 有 Logo 时用 Logo</span></div>
+        <div class="type-card"><span class="tag">区块标题 / 页面标题 · 改前</span><div style="font-size:18px;font-weight:600;letter-spacing:-.3px">继续观看</div><div style="font-size:22px;font-weight:600;letter-spacing:-.4px;margin-top:8px">搜索</div><span class="spec-line">区块 18 / w600 · 页面 22 / w600</span></div>
+        <div class="type-card"><span class="tag" style="color:#cfc8ff">区块标题 / 页面标题 · 改后</span><div style="font-size:17px;font-weight:500">继续观看</div><div style="font-size:21px;font-weight:600;letter-spacing:-.2px;margin-top:8px">搜索</div><span class="spec-line">区块 17 / w500 · 页面 21 / w600（只留页面标题最重）</span></div>
+      </div>
+      <div class="notes">
+        <h3>建议</h3>
+        <ol>
+          <li><b>先不内置字体，降字重和字号：</b>页面标题保留 w600 当唯一最重的一级，其余标题一律 w500，正文 w400。很多系统中文字体只有常规和粗体两档，w600 会直接落到 Bold，这是在手机上显得特别粗的主要原因。</li>
+          <li><b>中文不收紧字距：</b>−1.5 / −0.6 这类负字距是给拉丁字母用的，中文挤在一起更显黑；改为 −0.3 以内。</li>
+          <li><b>想要各机型一致</b>就内置思源黑体，效果见下一节“始终用思源黑体”。</li>
+          <li>改动集中在 <code>home_typography.dart</code>、<code>mono_theme.dart</code> 和详情页标题，一处改全局生效。</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="cmp" aria-labelledby="s-noto">
+    <h2 id="s-noto">始终用思源黑体</h2>
+    <p class="lead">只有这一节右边三屏是思源黑体（Noto Sans SC）：屏内所有文字，包括英文、数字和格式徽标都换成思源，并套用新的字号字重。稿里其他画面用的是你这台浏览器的系统字体。左边：当前字号字重 + 系统字体。首页原型里的楷体 Logo 换成了“无 Logo 时的文字标题”。</p>
+    <div class="body">
+      <div class="pair">
+        <figure><figcaption>首页 · 改前<a href="home.html?fmt=old">打开 ↗</a></figcaption><div class="frame phone"><iframe src="home.html?preview&amp;fmt=old" title="首页改前" loading="lazy" tabindex="-1"></iframe></div></figure>
+        <figure><figcaption class="new">首页 · 思源黑体<a href="home.html?font=noto">打开 ↗</a></figcaption><div class="frame phone"><iframe src="home.html?preview&amp;font=noto" title="首页思源黑体" loading="lazy" tabindex="-1"></iframe></div></figure>
+        <figure><figcaption class="new">详情 · 思源黑体<a href="detail.html?media=dune&amp;font=noto">打开 ↗</a></figcaption><div class="frame phone"><iframe src="detail.html?media=dune&amp;preview&amp;font=noto" title="详情思源黑体" loading="lazy" tabindex="-1"></iframe></div></figure>
+        <figure><figcaption class="new">搜索 · 思源黑体<a href="library.html?font=noto">打开 ↗</a></figcaption><div class="frame phone"><iframe src="library.html?preview&amp;font=noto" title="搜索思源黑体" loading="lazy" tabindex="-1"></iframe></div></figure>
+      </div>
+      <div class="notes">
+        <h3>如果内置思源黑体</h3>
+        <ol>
+          <li><b>效果：</b>小米、华为、三星、TV 盒子上字形和粗细完全一致；500 / 600 是真正的中粗，不会再落到 Bold，标题更“稳”不发黑。</li>
+          <li><b>代价：</b>需要随包内置字体文件，全字库可变字体单个约 10–18 MB；按简繁常用字裁剪后可压到约 5 MB，具体以打包实测为准。首次启动多一次字体加载。</li>
+          <li><b>做法：</b><code>pubspec.yaml</code> 声明字体，<code>mono_theme.dart</code> 设 <code>fontFamily</code>；数字和英文也走思源（自带拉丁字形），字幕渲染不受影响（mpv / ExoPlayer 自己选字体）。</li>
+          <li>授权 SIL OFL 1.1，可商用、可随应用分发，需要在关于页 / 第三方许可里附上许可文本。</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="cmp" aria-labelledby="s-glass">
+    <h2 id="s-glass">播放器：倍速下拉与磨砂面板</h2>
+    <p class="lead">点底栏“1.0x”不再从右侧滑出整页抽屉，改成在按钮正上方弹出的下拉框；字幕 / 音频 / 视频 / 弹幕 / 选集这些侧边面板保留位置，材质改成磨砂。打开“改后”的播放器页面可以直接点倍速试。</p>
+    <div class="body">
+      <div class="pair" style="flex-direction:column">
+        <figure><figcaption>倍速 · 改前（实机：侧边抽屉）<a href="player.html?fmt=old">打开 ↗</a></figcaption><div class="frame land"><iframe src="player.html?preview&amp;stage=p2&amp;fmt=old" title="倍速改前" loading="lazy" tabindex="-1"></iframe></div></figure>
+        <figure><figcaption class="new">倍速 · 改后（下拉框）<a href="player.html">打开 ↗</a></figcaption><div class="frame land"><iframe src="player.html?preview&amp;stage=p2" title="倍速改后" loading="lazy" tabindex="-1"></iframe></div></figure>
+        <figure><figcaption>侧边面板 · 改前</figcaption><div class="frame land"><iframe src="player.html?preview&amp;stage=p3&amp;fmt=old" title="侧边面板改前" loading="lazy" tabindex="-1"></iframe></div></figure>
+        <figure><figcaption class="new">侧边面板 · 改后（磨砂）</figcaption><div class="frame land"><iframe src="player.html?preview&amp;stage=p3" title="侧边面板改后" loading="lazy" tabindex="-1"></iframe></div></figure>
+      </div>
+      <div class="notes">
+        <h3>改动</h3>
+        <ol>
+          <li><b>倍速下拉：</b>128px 宽，锚在倍速按钮正上方 8px，从按钮处放大淡入（170ms）；2.0x … 0.5x 六档，当前项打勾 + 淡紫底，底部“更多速度…”进入完整的倍速设置。点外面或按返回关闭，焦点回到倍速按钮；TV 上方向键上下选择、确认即生效。</li>
+          <li><b>磨砂材质（下拉框与侧边面板共用）：</b>深色 56% 底 + 30–34px 模糊 + 饱和度 1.7，0.5px 白 16–18% 亮边，内侧 1px 高光；实机现在是 95% 不透明，几乎看不出磨砂。</li>
+          <li><b>背后遮罩变浅：</b>从压暗并模糊整个画面，改为 16% 黑、不模糊，画面透过面板仍可见。</li>
+          <li><b>面板内控件同步变透：</b>分段标签、选择行、输入框改用白 6–7% 底 + 12% 描边；选中态改为淡紫 20% 底 + 浅紫字，在磨砂上不再是一块实心色。</li>
+          <li>面板位置、宽度（340）、圆角（24）和打开 / 关闭动画不变；播放器内无论深浅主题都用深色磨砂。</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="cmp" aria-labelledby="s-player">
+    <h2 id="s-player">播放器顶栏</h2>
+    <p class="lead">实机按实际输出显示（DV 解码 / 杜比音频直通成立时才出现），这里演示两者都成立的情况。</p>
+    <div class="body">
+      <div class="pair" style="flex-direction:column">
+        <figure><figcaption>改前（实机）<a href="player.html?fmt=old">打开 ↗</a></figcaption><div class="frame land"><iframe src="player.html?preview&amp;fmt=old" title="播放器改前" loading="lazy" tabindex="-1"></iframe></div></figure>
+        <figure><figcaption class="new">改后<a href="player.html">打开 ↗</a></figcaption><div class="frame land"><iframe src="player.html?preview" title="播放器改后" loading="lazy" tabindex="-1"></iframe></div></figure>
+      </div>
+      <div class="notes">
+        <h3>改动</h3>
+        <ol>
+          <li><b>并到副标题同一行</b>（“2024 · 电影 · 播放列表 1/4 ｜ DOLBY VISION DOLBY ATMOS”），实机是标题下另起一行、带黑底和图标的大胶囊，顶栏被撑高，还压在画面上。</li>
+          <li>播放器内用 S 号、半透明底 + 白描边，比画面上的其他控件更轻。</li>
+          <li>TV 顶栏同样跟在副标题后面，用 L 号（34px）。</li>
+          <li>检测逻辑不变（每 2 秒读一次实际输出）；状态变化时淡入淡出，不跳动。</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

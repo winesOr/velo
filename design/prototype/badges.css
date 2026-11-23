@@ -1,0 +1,168 @@
+/* 格式徽标改版稿 — fmt=old 还原当前实机，其他为改后方案。 */
+
+/* ---------- 改前：还原当前 MediaFormatBadge ---------- */
+.fmt-old{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:7px;font-size:11px;font-weight:600;line-height:16px;white-space:nowrap;color:inherit;background:color-mix(in srgb,currentColor 8%,transparent);border:1px solid color-mix(in srgb,currentColor 22%,transparent)}
+.fmt-old svg{width:14px;height:14px;flex:none}
+.fmt-old.art{background:#000000bf;border-color:#ffffff38;color:#fff}
+.fmt-old.compact{padding:2px 4px;border-radius:4px;font-size:9px;line-height:11px}
+.fmt-old.compact svg{width:11px;height:11px}
+.poster-wrap .fmt-old-pos{position:absolute;top:5px;left:5px;right:30px;z-index:2;display:flex}
+.fmt-old-row{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;justify-content:center}
+.tv .fmt-old-row,.ttl .fmt-old-row,.tv-ttl .fmt-old-row{justify-content:flex-start}
+.ttl .fmt-old-row{margin-top:4px}
+
+/* ---------- 改后：统一格式徽标 ---------- */
+.fmt{display:inline-flex;align-items:center;gap:.36em;box-sizing:border-box;white-space:nowrap;text-transform:uppercase;line-height:1;font-weight:700;font-variant-numeric:tabular-nums;color:inherit;border:1px solid color-mix(in srgb,currentColor 42%,transparent)}
+.fmt b{font-weight:800}.fmt i{font-style:normal;font-weight:400}
+/* 分辨率：同色浅底，作为一行的起点 */
+.fmt.res{background:color-mix(in srgb,currentColor 16%,transparent);border-color:transparent;font-weight:800}
+.fmt-m{height:20px;padding:0 7px;border-radius:5px;font-size:10px;letter-spacing:.07em}
+.fmt-s{height:16px;padding:0 5px;border-radius:4px;font-size:9px;letter-spacing:.05em}
+.fmt-l{height:34px;padding:0 13px;border-radius:8px;font-size:17px;letter-spacing:.07em}
+/* 画面上：与评分角标同一块半透明黑底 */
+.fmt.art{background:#000c;color:#fff;border:0}
+.fmt.seg{gap:0;padding:0}
+.fmt.seg>*{display:inline-flex;align-items:center;height:100%;padding:0 6px}
+.fmt.seg>*+*{border-left:1px solid #ffffff38}
+
+/* 海报卡：格式在左上，与右下评分同一块底、同高同圆角；目录标签在时排在它上面 */
+.device .poster-wrap.fmt-new .rating{display:inline-flex;align-items:center;height:20px;box-sizing:border-box;padding:0 6px;bottom:6px;right:6px;font-size:11px;line-height:1;border-radius:6px}
+.poster-wrap .fmt-new-pos{position:absolute;left:6px;top:6px;right:30px;z-index:2;display:flex}
+.poster-wrap .fmt-new-pos .fmt{height:20px;border-radius:6px;font-size:9.5px;letter-spacing:.05em}
+.tv .poster-wrap .fmt-new-pos .fmt{height:22px;font-size:10.5px}
+
+/* 详情页：规格行 */
+.fmt-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;margin:8px 0 2px}
+.tv .fmt-row{justify-content:flex-start}
+.fmt-detail-line{opacity:.72;font-size:11px!important;letter-spacing:.02em}
+/* 音视频信息卡标题旁 */
+.media-info h4 .fmt{margin-left:auto}
+.media-info h4{display:flex;align-items:center;gap:6px}
+
+/* 播放器顶栏：副标题同一行 */
+.fmt-sub-row{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap}
+.fmt-sub-row .sub{margin-top:0!important}
+.fmt-sub-row .fmt-group{display:inline-flex;gap:5px;align-items:center}
+.fmt-sub-row .fmt{background:#0000004d;border-color:#ffffff5c;color:#fff}
+.tv-ttl .fmt-sub-row{gap:16px;margin-top:6px}
+.tv-ttl .fmt-sub-row span.sub-text{display:inline!important}
+.tv-ttl .fmt-sub-row .fmt-group{gap:10px}
+
+/* 页面右下角：改前 / 改后切换 */
+.fmt-switch{position:fixed;right:20px;bottom:20px;z-index:999;display:flex;gap:4px;padding:4px;border-radius:999px;background:#202020f2;border:1px solid #ffffff22;box-shadow:0 10px 30px #0006;font:500 13px/1 -apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif}
+.fmt-switch a{padding:9px 14px;border-radius:999px;color:#adada8;text-decoration:none}
+.fmt-switch a[aria-current=true]{background:#36324e;color:#b4aaff}
+.preview .fmt-switch{display:none}
+
+/* ---------- 详情页按 3.0.14 实机截图排版（改前 / 改后共用） ---------- */
+.real-detail.ratings-below .hero-ratings,.real-detail.ratings-below .detail-rating-row{display:none!important}
+.real-detail .detail-copy .detail-meta.real-line,.real-detail .fmt-old-row.real-line{font-size:13px;line-height:1.7;color:inherit;opacity:1}
+.real-detail .detail-copy .detail-meta.real-line + .detail-meta.real-line,.real-detail .fmt-old-row.real-line{opacity:.82}
+.real-sep{font-style:normal;opacity:.7;margin:0 .45em;font-weight:300}
+.real-cr{display:inline-flex;align-items:center;height:17px;padding:0 4px;border:1.5px solid currentColor;border-radius:4px;font-size:11px;font-weight:800;letter-spacing:.02em;vertical-align:1px;line-height:1}
+.real-detail .play-main.real-play{position:relative;overflow:hidden;gap:10px;min-height:52px;padding:6px 18px;background:linear-gradient(90deg,#f7f7f5 0 36%,#e4e3df 36% 100%)!important;color:#1d1d1f!important}
+.real-play-ico{display:inline-flex}.real-play-ico .icon{width:22px;height:22px}
+.real-play-text{display:flex;flex-direction:column;align-items:center;line-height:1.25}
+.real-play-text b{font-size:15px;font-weight:600;letter-spacing:.2em}
+.real-play-text small{font-size:11px;letter-spacing:.08em;opacity:.8}
+.real-ratings{display:flex;justify-content:center;flex-wrap:wrap;gap:4px 18px;margin:18px 0 4px}
+.tv .real-ratings{justify-content:flex-start}
+.real-ratings button{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 2px;background:none;border:0;color:inherit;font:inherit;font-size:16px;font-weight:400;font-variant-numeric:tabular-nums;cursor:pointer}
+.real-ratings button img,.real-ratings button svg{flex:none}
+/* 改后：格式徽标与分级框同一套描边语言（1.5px、4px 圆角、粗体） */
+html[data-fmt=new] .real-detail .fmt-row .fmt-m{height:19px;padding:0 5px;border-width:1.5px;border-color:color-mix(in srgb,currentColor 78%,transparent);border-radius:4px;font-size:10.5px;letter-spacing:.05em}
+html[data-fmt=new] .real-detail .fmt-row .fmt-m.res{border-color:transparent;background:color-mix(in srgb,currentColor 20%,transparent)}
+.real-detail .fmt-row{margin:6px 0 0}
+
+/* ---------- 跳过片头 / 片尾按钮：改后 ---------- */
+html[data-fmt=new] .device .skip,.skip-new{right:24px;bottom:80px;height:40px;padding:0 12px 0 16px!important;border-radius:20px!important;background:rgba(24,24,26,.56)!important;color:#fff!important;border:.5px solid rgba(255,255,255,.26)!important;font-size:14px!important;font-weight:600;gap:8px;box-shadow:0 6px 22px rgba(0,0,0,.28)!important;-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4);overflow:hidden;line-height:1;letter-spacing:.02em}
+.skip-new .skip-ico{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.16)}
+.skip-new .skip-ico svg{width:13px;height:13px}
+.skip-new .skip-label{position:relative;z-index:1}
+html[data-fmt=new] .tv.tvp .skip{height:80px;padding:0 24px 0 34px!important;border-radius:40px!important;font-size:30px!important;gap:16px;right:64px}
+html[data-fmt=new] .tv.tvp .skip .skip-ico{width:44px;height:44px}
+html[data-fmt=new] .tv.tvp .skip .skip-ico svg{width:24px;height:24px}
+html[data-fmt=new] .tvp .skip:focus{background:#fff!important;color:#111!important;transform:scale(1.06);outline:none!important;box-shadow:0 0 0 4px var(--velo-focus),0 10px 30px rgba(0,0,0,.45)!important}
+html[data-fmt=new] .tvp .skip:focus .skip-ico{background:rgba(0,0,0,.1)}
+
+/* ---------- 详情页封面过渡（手机电影：封面高 603/390 × 屏宽） ---------- */
+.phone.real-detail .detail-art{height:100%!important;-webkit-mask-image:none!important;mask-image:none!important}
+/* 改前 = 实机 stops [0,.35,.48,.60,.70]：从封面 35% 处就开始盖色 */
+html[data-fmt=old] .phone.real-detail .detail-fade{background:linear-gradient(180deg,rgba(0,0,0,.08),transparent 24%),linear-gradient(180deg,transparent 0 35%,color-mix(in srgb,var(--home-bg) 38%,transparent) 48%,color-mix(in srgb,var(--home-bg) 81%,transparent) 60%,var(--home-bg) 70%)!important}
+/* 改后 = [0,.50,.62,.73,.84]：标题以上保持原图，全盖压到播放按钮后面；文字按深浅外观加衬底投影保证可读 */
+html[data-fmt=new] .phone.real-detail .detail-fade{background:linear-gradient(180deg,rgba(0,0,0,.08),transparent 24%),linear-gradient(180deg,transparent 0 50%,color-mix(in srgb,var(--home-bg) 38%,transparent) 62%,color-mix(in srgb,var(--home-bg) 81%,transparent) 73%,var(--home-bg) 84%)!important}
+html[data-fmt=new][data-appearance=dark] .phone.real-detail .detail-copy :is(.detail-title,.detail-meta,.fmt-row){text-shadow:0 1px 10px rgba(0,0,0,.45),0 0 2px rgba(0,0,0,.25)}
+html[data-fmt=new][data-appearance=light] .phone.real-detail .detail-fade{background:linear-gradient(180deg,rgba(0,0,0,.08),transparent 24%),linear-gradient(180deg,transparent 0 40%,color-mix(in srgb,var(--home-bg) 50%,transparent) 50%,color-mix(in srgb,var(--home-bg) 86%,transparent) 62%,var(--home-bg) 76%)!important}
+html[data-fmt=new][data-appearance=light] .phone.real-detail .detail-copy :is(.detail-title,.detail-meta,.fmt-row){text-shadow:0 0 8px color-mix(in srgb,var(--home-bg) 70%,transparent)}
+
+/* ---------- 字号字重（改后） ---------- */
+html[data-fmt=new] .phone .home-title{font-size:36px!important;font-weight:500!important;letter-spacing:-.3px!important}
+html[data-fmt=new] .tv .home-title{font-size:42px!important;font-weight:500!important;letter-spacing:-.3px!important}
+html[data-fmt=new] .device .detail-copy .detail-title{font-size:28px!important;font-weight:500!important;letter-spacing:-.2px!important}
+html[data-fmt=new] .tv .detail-copy .detail-title{font-size:34px!important}
+html[data-fmt=new] .device .section h3{font-size:17px!important;font-weight:500!important;letter-spacing:0!important}
+html[data-fmt=new] .device .screen-heading h3{font-size:21px!important;font-weight:600!important;letter-spacing:-.2px!important}
+html[data-fmt=new] .device .poster-card b{font-weight:400!important}
+
+/* ---------- 始终用思源黑体（?font=noto） ---------- */
+html.font-noto .device,html.font-noto .device :is(h1,h2,h3,h4,p,span,b,small,strong,em,button,a,div,input,label,li,dt,dd){font-family:'Noto Sans SC','Source Han Sans SC',sans-serif!important}
+
+/* 原型首页用楷体模拟 Logo；这里统一换成“无 Logo 时的文字标题”，对照实机 45 / w600 / −1.5 */
+html[data-fmt] .device .home-title.calligraphy{font-family:inherit;transform:none!important}
+html[data-fmt=old] .phone .home-title{font-size:45px!important;font-weight:600!important;letter-spacing:-1.5px!important}
+html[data-fmt=old] .tv .home-title{font-size:48px!important;font-weight:600!important;letter-spacing:-1.5px!important}
+
+/* ---------- 第四稿 ---------- */
+/* 评分缩小（改后）：13px 数字、13–14px 图标 */
+html[data-fmt=new] .real-ratings{gap:2px 14px;margin:14px 0 2px}
+html[data-fmt=new] .real-ratings button{font-size:13px;min-height:30px;gap:5px}
+html[data-fmt=new] .real-ratings button img[src*=imdb]{height:13px!important}
+html[data-fmt=new] .real-ratings button img[src*=rt_]{height:14px!important}
+html[data-fmt=new] .real-ratings button svg{width:14px;height:14px}
+/* 详情信息整体下移（改后）：封面区 603 → 640，信息块随之下移约 37px */
+html[data-fmt=new] .phone.real-detail .detail-hero{height:640px!important}
+
+/* TV 详情：按实机改成全屏封面，信息在左下 */
+.tv.real-detail .detail-hero{height:560px!important;background:var(--home-bg)}
+.tv.real-detail .detail-art{left:0!important;right:0!important;width:auto!important;height:100%!important;-webkit-mask-image:none!important;mask-image:none!important;background-position:center 22%!important}
+.tv.real-detail .detail-copy{top:auto!important;bottom:26px!important;left:45px!important;width:460px!important}
+.tv.real-detail .detail-copy .play-main{width:240px}
+/* 改前 = 实机 TvSpotlightBackground：左侧 86% → 56% 处 32% 的横向遮罩 + 顶部 45% 黑 */
+html[data-fmt=old] .tv.real-detail .detail-fade{background:linear-gradient(180deg,rgba(0,0,0,.45),transparent 38%,color-mix(in srgb,var(--home-bg) 96%,transparent) 100%),linear-gradient(90deg,color-mix(in srgb,var(--home-bg) 86%,transparent),color-mix(in srgb,var(--home-bg) 32%,transparent) 56%,transparent)!important}
+/* 改后：只压左下角信息区，左上和右侧保持原图 */
+html[data-fmt=new] .tv.real-detail .detail-fade{background:linear-gradient(180deg,rgba(0,0,0,.16),transparent 14%),radial-gradient(120% 100% at 0% 100%,color-mix(in srgb,var(--home-bg) 95%,transparent) 0,color-mix(in srgb,var(--home-bg) 80%,transparent) 36%,transparent 70%),linear-gradient(0deg,var(--home-bg),transparent 26%)!important}
+html[data-fmt=new] .tv.real-detail .detail-copy :is(.detail-title,.detail-meta,.fmt-row,.real-ratings){text-shadow:0 1px 10px rgba(0,0,0,.4)}
+
+/* 只看 TV 画面（?tvonly） */
+body.tv-only{padding:0!important;margin:0;background:#000;overflow:hidden}
+body.tv-only>:not(.tv-section):not(script):not(.fmt-switch){display:none!important}
+body.tv-only .tv-section{margin:0!important;padding:0!important}
+body.tv-only .tv-section>h2,body.tv-only .device-caption{display:none!important}
+body.tv-only .tv{display:block!important;margin:0!important;border:0!important;border-radius:0!important}
+
+/* ---------- 播放器：磨砂面板与倍速下拉（改后） ---------- */
+/* 侧边面板：56% 深色 + 34px 模糊 + 饱和度提升，0.5px 亮边；背后遮罩变浅，画面透出来 */
+html[data-fmt=new] .device.player-device :is(.drawer,.modal-shade .modal-sheet,.cast-sheet){background:rgba(26,26,28,.56)!important;-webkit-backdrop-filter:blur(34px) saturate(1.7)!important;backdrop-filter:blur(34px) saturate(1.7)!important;border:.5px solid rgba(255,255,255,.16)!important;border-right:0!important;box-shadow:-18px 0 50px rgba(0,0,0,.32),inset 1px 0 0 rgba(255,255,255,.07)!important;color:#f3f3ef!important}
+html[data-fmt=new] .device.player-device :is(.scrim,.modal-shade,.cast-overlay){background:rgba(0,0,0,.16)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html[data-fmt=new] .device.player-device .drawer .tabs{background:rgba(255,255,255,.07)!important}
+html[data-fmt=new] .device.player-device .drawer :is(.tabs button.on,.opts button.on,.track-option[aria-selected=true],.pop button.sel,.choice-row.selected){background:rgba(180,170,255,.2)!important;color:#ddd8ff!important}
+html[data-fmt=new] .device.player-device .drawer :is(.track-field,.opts button,.choice-row,.connection-card,.track-empty){background:rgba(255,255,255,.06)!important;border-color:rgba(255,255,255,.12)!important}
+html[data-fmt=new] .device.player-device .drawer :is(small,.track-field-label,.track-status){color:rgba(243,243,239,.68)!important}
+html[data-fmt=new] .device.player-device .drawer .icon-button{background:rgba(255,255,255,.1)!important;color:#f3f3ef!important}
+
+/* 倍速下拉：从倍速按钮上方弹出 */
+.speed-dd{position:absolute;z-index:45;width:128px;box-sizing:border-box;padding:5px;border-radius:16px;background:rgba(26,26,28,.56);-webkit-backdrop-filter:blur(30px) saturate(1.7);backdrop-filter:blur(30px) saturate(1.7);border:.5px solid rgba(255,255,255,.18);box-shadow:0 14px 40px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.08);transform-origin:50% 100%;animation:speed-dd-in 170ms cubic-bezier(.2,.8,.2,1)}
+.speed-dd button{display:flex;align-items:center;gap:6px;width:100%;height:34px;padding:0 12px 0 8px;border:0;border-radius:11px;background:none;color:#f3f3ef;font:500 14px/1 inherit;font-variant-numeric:tabular-nums;cursor:pointer;text-align:left}
+.speed-dd button .ck{display:inline-flex;width:16px;justify-content:center;font-size:13px}
+.speed-dd button:hover{background:rgba(255,255,255,.08)}
+.speed-dd button:focus-visible{outline:2px solid #b4aaff;outline-offset:-2px}
+.speed-dd button.sel{background:rgba(180,170,255,.2);color:#ddd8ff;font-weight:600}
+.speed-dd .sep{height:.5px;margin:4px 8px;background:rgba(255,255,255,.14)}
+.speed-dd .more{font-size:12.5px;color:rgba(243,243,239,.72)}
+.tv .speed-dd{width:240px;padding:10px;border-radius:28px}
+.tv .speed-dd button{height:64px;font-size:28px;border-radius:20px;padding:0 24px 0 16px}
+.tv .speed-dd button .ck{width:32px;font-size:24px}
+@keyframes speed-dd-in{from{opacity:0;transform:translateY(8px) scale(.96)}}
+
+/* 只看某一个播放器画面（?stage=p2） */
+body.stage-only .stage-row:not(.keep),body.stage-only>h2,body.stage-only .tv-section,body.stage-only .track-review,body.stage-only .stage-row.keep>div:not(.keep){display:none!important}

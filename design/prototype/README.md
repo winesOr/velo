@@ -18,6 +18,8 @@ python3 -m http.server 8765 --bind 127.0.0.1
 - `player.html`: V4 layout. Top right: danmaku toggle, cast, portrait/landscape, more. Left rail: lock only (rotation is the top-right portrait/landscape button). Right rail: screenshot, PiP. No centre buttons; double-tap left / centre / right seeks back, pauses, seeks forward, and vertical swipes on the left / right half set brightness / volume. Speed, subtitle and episode chips open translucent popovers above the bottom HUD; "more" and the danmaku chip open a floating four-tab drawer (video / audio / subtitle / danmaku). Menus follow the light / dark appearance; the video HUD stays dark.
 - `player.html` §⑤ TV · 播放界面（PLAYER-05）：1920×1080 画面缩放进 TV 帧；方向键移动、Enter 确认、Esc/Backspace 逐层返回。底栏左组按实机顺序（上一集、上一章、快退10s、播放、快进10s、下一章、下一集），右组倍速、字幕、音轨、选集/播放列表、章节、弹幕、设置；无投屏（TV 是接收端）；“选集”与“队列”合并为一个入口，页内“剧集 / 电影”开关切换为“选集”（分季）或“播放列表”，手机横屏同步；跳过片头、右侧抽屉。点一下画面或 Tab 进入后用键盘操作。
 
+- `redesign.html`（2026-11-23 改版稿）：格式徽标、详情评分与封面过渡、TV 详情遮罩、底部“收藏”入口、跳过按钮、倍速下拉与磨砂面板、思源黑体字号字重的改前 / 改后对照。各页面加 `?fmt=old` 显示当前实机样式（默认为改后），`?font=noto` 固定用思源黑体，`?tvonly` 只看 TV 画面，`?stage=p2` 只看某个播放器画面；页面右下角可切换改前 / 改后。叠加逻辑在 `badges.js` / `badges.css`，收藏页为 `favorites.html`。
+
 All media, network connectivity, casting and room behavior are demonstrations. Gateway “检查格式” validates syntax only. No actual server sign-in, media download, discovery or playback occurs. VLC is disabled and marked planned. Generic secondary settings dialogs confirm layout / entry placement, not implementation completeness.
 
 ## Visual implementation

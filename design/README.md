@@ -5,6 +5,7 @@
 - [原型总览](prototype/index.html) · [首页](prototype/home.html) · [最终 UI 规范与截图](prototype/final-ui-spec.html)
 - [UI 优化方案](prototype/ui-improvements.html) · [性能优化方案](prototype/performance-improvements.html)
 - [详情](prototype/detail.html) · [媒体库](prototype/library.html) · [一起看](prototype/together.html) · [设置](prototype/settings.html) · [播放器](prototype/player.html)
+- [2026-11-23 改版稿：格式徽标、评分、播放器与字体](prototype/redesign.html) · [收藏页](prototype/favorites.html)
 - [最终 V1 脱敏 ZIP](downloads/prototype-final-v1-sanitized.zip)。脱敏包基于原冻结包重打包，仅替换敏感路径遮盖后的图片；本地原始文件未改动。
 
 ![最终 V1 首页原始预览](prototype/previews/final-v1/home.png)
