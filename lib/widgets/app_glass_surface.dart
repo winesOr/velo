@@ -19,6 +19,8 @@ class AppGlassSurface extends StatelessWidget {
     this.blurSigma = OverlayTokens.blurSigma,
     this.frosted = true,
     this.shape,
+    this.saturation,
+    this.edgeColor,
   });
 
   final Widget child;
@@ -28,6 +30,13 @@ class AppGlassSurface extends StatelessWidget {
   final double blurSigma;
   final bool frosted;
   final ShapeBorder? shape;
+
+  /// Boosts the colour of the blurred backdrop (1 = unchanged), for the
+  /// see-through player glass.
+  final double? saturation;
+
+  /// Hairline colour; defaults to the palette edge.
+  final Color? edgeColor;
 
   static bool reduceEffects(BuildContext context) =>
       DevicePerformance.isReduced || MediaQuery.highContrastOf(context) || MediaQuery.disableAnimationsOf(context);
@@ -48,7 +57,7 @@ class AppGlassSurface extends StatelessWidget {
         ? tint.withValues(alpha: surfaceOpacity ?? (dark ? OverlayTokens.darkOpacity : OverlayTokens.lightOpacity))
         : tint.withValues(alpha: 1);
     final edge = BorderSide(
-      color: reduced ? colors.onSurface.withValues(alpha: .35) : VeloPalette.edge(colors.brightness),
+      color: reduced ? colors.onSurface.withValues(alpha: .35) : (edgeColor ?? VeloPalette.edge(colors.brightness)),
     );
     final outline = switch (shape) {
       final OutlinedBorder border when border.side == BorderSide.none => border.copyWith(side: edge),
@@ -66,8 +75,10 @@ class AppGlassSurface extends StatelessWidget {
       ),
     );
     if (glass) {
+      final blur = ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma);
+      final saturation = this.saturation;
       body = BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+        filter: saturation == null ? blur : ImageFilter.compose(outer: _saturate(saturation), inner: blur),
         child: body,
       );
     }
@@ -88,4 +99,15 @@ class AppGlassSurface extends StatelessWidget {
       ),
     );
   }
+}
+
+ColorFilter _saturate(double s) {
+  const r = .2126, g = .7152, b = .0722;
+  final i = 1 - s;
+  return ColorFilter.matrix(<double>[
+    r * i + s, g * i, b * i, 0, 0, //
+    r * i, g * i + s, b * i, 0, 0, //
+    r * i, g * i, b * i + s, 0, 0, //
+    0, 0, 0, 1, 0,
+  ]);
 }

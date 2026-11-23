@@ -11,14 +11,15 @@ extension _PlexVideoControlsMobileChipMethods on _PlexVideoControlsState {
     };
   }
 
-  void _openSpeedDrawer(BuildContext context, TrackControlsState state) {
+  /// Speed chip: a compact menu anchored above the chip, not a side drawer.
+  void _openSpeedMenu(BuildContext context, TrackControlsState state, Rect anchor) {
     widget.chromeController.cancelAutoHide();
     OverlaySheetController.of(context)
         .show(
           style: OverlaySheetStyle.glass,
-          presentation: OverlaySheetPresentation.edgeDrawer,
-          constraints: BoxConstraints(maxWidth: PlayerSettingsDrawer.widthFor(context)),
-          builder: (_) => PlayerSpeedDrawer(player: widget.player, state: state),
+          anchor: anchor,
+          constraints: const BoxConstraints(maxWidth: OverlayTokens.playerMenuWidth),
+          builder: (_) => PlayerSpeedPopover(player: widget.player, state: state),
         )
         .whenComplete(_startHideTimer);
   }

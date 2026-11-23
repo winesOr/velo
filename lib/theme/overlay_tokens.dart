@@ -1,3 +1,5 @@
+import 'dart:ui' show Color;
+
 /// Shared presentation defaults for transient surfaces. These are visual
 /// tokens, independent of playback, networking and application behaviour.
 abstract final class OverlayTokens {
@@ -13,4 +15,14 @@ abstract final class OverlayTokens {
   static const double drawerWidth = 340;
   static const Duration drawerMotion = Duration(milliseconds: 240);
   static const Duration motion = Duration(milliseconds: 180);
+
+  // Player overlays (side drawers, anchored menus) are see-through frosted
+  // glass so the picture stays visible behind them; always dark.
+  static const Color playerGlassTint = Color(0xff1a1a1c);
+  static const double playerGlassOpacity = .56;
+  static const double playerGlassBlurSigma = 34;
+  static const double playerGlassSaturation = 1.7;
+  static const Color playerGlassEdge = Color(0x29ffffff);
+  static const double playerBarrierOpacity = .16;
+  static const double playerMenuWidth = 132;
 }

@@ -66,6 +66,7 @@ import '../../utils/orientation_helper.dart';
 import '../../utils/platform_detector.dart';
 import '../../utils/player_utils.dart';
 import '../../theme/mono_tokens.dart';
+import '../../theme/overlay_tokens.dart';
 import '../../utils/provider_extensions.dart';
 import '../../utils/snackbar_helper.dart';
 import '../../utils/latest_async_write.dart';
@@ -1409,7 +1410,7 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
                                                       liveEpochForPosition: widget.liveEpochForPosition,
                                                       onLiveSeek: _liveSeekAbandoningBurst(widget.onLiveSeek),
                                                       isInEdgeAdjustmentZone: _isGlobalPositionInEdgeAdjustmentZone,
-                                                      onSpeedTap: (_) => _openSpeedDrawer(context, state),
+                                                      onSpeedTap: (rect) => _openSpeedMenu(context, state, rect),
                                                       onSubtitlesTap: (_) =>
                                                           _openPlayerDrawer(context, state, PlayerDrawerTab.subtitles),
                                                       onEpisodesTap:

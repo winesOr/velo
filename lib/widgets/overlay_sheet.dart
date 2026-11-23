@@ -360,7 +360,19 @@ class OverlaySheetHost extends StatefulWidget {
   /// so the system path dedups against the key path.
   final VoidCallback? onSystemBack;
 
-  const OverlaySheetHost({super.key, required this.child, this.onOpenChanged, this.canPop, this.onSystemBack});
+  /// Player hosts show see-through frosted glass (dark tint at
+  /// [OverlayTokens.playerGlassOpacity], stronger blur) over a light barrier,
+  /// so the picture stays visible behind drawers and menus.
+  final bool playerGlass;
+
+  const OverlaySheetHost({
+    super.key,
+    required this.child,
+    this.onOpenChanged,
+    this.canPop,
+    this.onSystemBack,
+    this.playerGlass = false,
+  });
 
   @override
   State<OverlaySheetHost> createState() => _OverlaySheetHostState();
@@ -415,7 +427,7 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
 
     _barrierAnimation = Tween<double>(
       begin: 0,
-      end: 0.5,
+      end: widget.playerGlass ? OverlayTokens.playerBarrierOpacity : 0.5,
     ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
   }
 
@@ -773,14 +785,22 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
         child: PrimaryScrollController.none(child: _pageStack.isNotEmpty ? _buildPageStack() : const SizedBox.shrink()),
       ),
     );
+    final playerGlass = _usesPlayerGlass;
     return AppGlassSurface(
       radius: _anchor == null ? OverlayTokens.radius : OverlayTokens.compactRadius,
-      backgroundColor: _explicitBackgroundColor,
-      blurSigma: _blurSigma,
+      backgroundColor: playerGlass ? OverlayTokens.playerGlassTint : _explicitBackgroundColor,
+      surfaceOpacity: playerGlass ? OverlayTokens.playerGlassOpacity : null,
+      blurSigma: playerGlass ? OverlayTokens.playerGlassBlurSigma : _blurSigma,
+      saturation: playerGlass ? OverlayTokens.playerGlassSaturation : null,
+      edgeColor: playerGlass ? OverlayTokens.playerGlassEdge : null,
       frosted: _style == OverlaySheetStyle.glass,
       child: body,
     );
   }
+
+  /// Player glass applies to glass-styled sheets without an explicit tint.
+  bool get _usesPlayerGlass =>
+      widget.playerGlass && _style == OverlaySheetStyle.glass && _explicitBackgroundColor == null;
 
   Widget _wrapPlacement(BuildContext context, Widget sheet) {
     if (_anchor == null) return Align(alignment: _alignment, child: sheet);
@@ -832,20 +852,26 @@ class _OverlaySheetHostState extends State<OverlaySheetHost> with SingleTickerPr
                         ),
                       ),
                       side: BorderSide(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(
-                          alpha: AppGlassSurface.reduceEffects(context)
-                              ? 0.35
-                              : (Theme.of(context).brightness == Brightness.dark ? 0.12 : 0.10),
-                        ),
+                        color: AppGlassSurface.reduceEffects(context)
+                            ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35)
+                            : _usesPlayerGlass
+                            ? OverlayTokens.playerGlassEdge
+                            : Theme.of(context).colorScheme.onSurface.withValues(
+                                alpha: Theme.of(context).brightness == Brightness.dark ? 0.12 : 0.10,
+                              ),
                       ),
                     ),
-                    backgroundColor:
-                        _explicitBackgroundColor ??
-                        (Theme.of(context).brightness == Brightness.dark
-                            ? const Color(0xff202020)
-                            : const Color(0xfffdfcf9)),
-                    surfaceOpacity: Theme.of(context).brightness == Brightness.dark ? .96 : .97,
-                    blurSigma: _blurSigma,
+                    backgroundColor: _usesPlayerGlass
+                        ? OverlayTokens.playerGlassTint
+                        : _explicitBackgroundColor ??
+                              (Theme.of(context).brightness == Brightness.dark
+                                  ? const Color(0xff202020)
+                                  : const Color(0xfffdfcf9)),
+                    surfaceOpacity: _usesPlayerGlass
+                        ? OverlayTokens.playerGlassOpacity
+                        : (Theme.of(context).brightness == Brightness.dark ? .96 : .97),
+                    blurSigma: _usesPlayerGlass ? OverlayTokens.playerGlassBlurSigma : _blurSigma,
+                    saturation: _usesPlayerGlass ? OverlayTokens.playerGlassSaturation : null,
                     frosted: _style == OverlaySheetStyle.glass,
                     child: SizedBox(
                       key: ValueKey(_sheetSession),

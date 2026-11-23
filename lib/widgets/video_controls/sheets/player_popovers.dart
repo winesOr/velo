@@ -7,6 +7,7 @@ import '../../../media/media_item.dart';
 import '../../../mpv/mpv.dart';
 import '../../../providers/playback_state_provider.dart';
 import '../../../services/scoped_player_prefs.dart';
+import '../../../theme/overlay_tokens.dart';
 import '../../../utils/episode_titles.dart';
 import '../../../utils/formatters.dart';
 import '../../app_icon.dart';
@@ -38,10 +39,13 @@ class PlayerPopoverRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glass = GlassSheetColors.of(context);
+    // Selected row: soft brand tint that stays legible on see-through glass.
+    final accent = Theme.of(context).colorScheme.primary;
+    final ink = selected ? accent : glass.foreground;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1),
       child: Material(
-        color: selected ? glass.selected : Colors.transparent,
+        color: selected ? accent.withValues(alpha: .2) : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         clipBehavior: Clip.antiAlias,
         child: FocusableListTile(
@@ -50,21 +54,14 @@ class PlayerPopoverRow extends StatelessWidget {
           dense: true,
           visualDensity: const VisualDensity(vertical: -4),
           contentPadding: const EdgeInsets.only(left: 8, right: 14),
-          leading: SizedBox(
-            width: 18,
-            child: selected ? AppIcon(Symbols.check_rounded, size: 16, color: glass.foreground) : null,
-          ),
+          leading: SizedBox(width: 18, child: selected ? AppIcon(Symbols.check_rounded, size: 16, color: ink) : null),
           minLeadingWidth: 18,
           horizontalTitleGap: 6,
           title: Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: glass.foreground,
-              fontSize: 13,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            ),
+            style: TextStyle(color: ink, fontSize: 13, fontWeight: selected ? FontWeight.w600 : FontWeight.w400),
           ),
           trailing: detail == null ? null : Text(detail!, style: TextStyle(color: glass.muted, fontSize: 11)),
           onTap: onTap,
@@ -76,11 +73,10 @@ class PlayerPopoverRow extends StatelessWidget {
 
 /// Speed chip popover: one column, current rate checked.
 class PlayerSpeedPopover extends StatelessWidget {
-  const PlayerSpeedPopover({super.key, required this.player, required this.state, this.drawer = false});
+  const PlayerSpeedPopover({super.key, required this.player, required this.state});
 
   final Player player;
   final TrackControlsState state;
-  final bool drawer;
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +87,7 @@ class PlayerSpeedPopover extends StatelessWidget {
         final current = snapshot.data ?? 1.0;
         final nearest = playerPopoverSpeeds.reduce((a, b) => (a - current).abs() <= (b - current).abs() ? a : b);
         return SizedBox(
-          width: drawer ? double.infinity : 132,
+          width: OverlayTokens.playerMenuWidth,
           child: ListView(
             shrinkWrap: true,
             padding: const EdgeInsets.all(5),
@@ -113,36 +109,6 @@ class PlayerSpeedPopover extends StatelessWidget {
       },
     );
   }
-}
-
-/// Full-height speed drawer using the same rate actions as the chip menu.
-class PlayerSpeedDrawer extends StatelessWidget {
-  const PlayerSpeedDrawer({super.key, required this.player, required this.state});
-
-  final Player player;
-  final TrackControlsState state;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
-        child: Row(
-          children: [
-            Expanded(child: Text(t.videoSettings.playbackSpeed, style: Theme.of(context).textTheme.titleMedium)),
-            IconButton(
-              tooltip: t.common.close,
-              onPressed: () => OverlaySheetController.of(context).close(),
-              icon: const AppIcon(Symbols.close_rounded, size: 20),
-            ),
-          ],
-        ),
-      ),
-      Expanded(
-        child: PlayerSpeedPopover(player: player, state: state, drawer: true),
-      ),
-    ],
-  );
 }
 
 /// Episode chip popover: queue items as "episode N + title", current one
