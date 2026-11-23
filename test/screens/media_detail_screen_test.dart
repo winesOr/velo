@@ -483,17 +483,17 @@ void main() {
     // Year opens the line; the type label is gone.
     expect(find.text('Movie'), findsNothing);
     expect(tester.widget<Text>(find.byKey(const ValueKey('detail_plain_metadata'))).data, startsWith('2017'));
-    // Stream quality describes the file, not the title: off the hero line,
-    // on the action row's playback status instead (#2217).
     final information = find.byKey(const ValueKey('tv_detail_information_semantics'));
-    expect(find.descendant(of: information, matching: find.text('1080p')), findsNothing);
     final formatBadges = find.descendant(of: information, matching: find.byType(MediaFormatBadge));
     expect(formatBadges, findsNWidgets(2));
     expect(tester.widgetList<MediaFormatBadge>(formatBadges).map((badge) => badge.format), [
       MediaFormat.hdr,
       MediaFormat.dolbyAtmos,
     ]);
-    expect(find.descendant(of: information, matching: find.byType(MediaResolutionBadge)), findsOneWidget);
+    final resolutionBadge = find.descendant(of: information, matching: find.byType(MediaResolutionBadge));
+    expect(resolutionBadge, findsOneWidget);
+    expect(tester.widget<MediaResolutionBadge>(resolutionBadge).label.toLowerCase(), '1080p');
+    expect(tester.getBottomRight(resolutionBadge).dx, lessThanOrEqualTo(1280));
     expect(
       find.descendant(of: find.byKey(const ValueKey('detail_source_version')), matching: find.textContaining('1080p')),
       findsOneWidget,
@@ -503,7 +503,7 @@ void main() {
     expect(find.text('PG-13'), findsNothing);
     final secondary = find.byKey(const ValueKey('detail_secondary_metadata'));
     expect(tester.widget<Text>(secondary).data, contains('1h 46min'));
-    expect(tester.widget<Text>(secondary).data, contains('1080p'));
+    expect(tester.widget<Text>(secondary).data!.toLowerCase(), isNot(contains('1080p')));
     expect(tester.getBottomRight(secondary).dx, lessThanOrEqualTo(1280));
 
     // The test font's 1 em/char advance roughly doubles text width, so at this
@@ -533,9 +533,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'play_button');
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pump();
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'detail_rating_source');
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pump();
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'play_button');
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pump();
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'tv_detail_info');
@@ -3624,7 +3627,7 @@ void main() {
     for (final kind in ['series', 'movie', 'four']) {
       final series = kind == 'series';
       final four = kind == 'four';
-      testWidgets('390px Android $kind detail lays the V1 controls over the artwork', (tester) async {
+      testWidgets('390px Android $kind detail positions the title over artwork and scores below Play', (tester) async {
         final url = 'https://detail-artwork.fixture/${series ? 'series' : 'movie'}.png';
         tester.view.padding = const FakeViewPadding(top: 38);
         addTearDown(tester.view.resetPadding);
@@ -3744,11 +3747,13 @@ void main() {
         }
         final title = tester.getRect(find.byKey(const ValueKey('detail_natural_title')));
         final play = tester.getRect(find.byKey(const ValueKey('detail_primary_play')));
-        expect(title.top, closeTo(357, 3)); // 320 + 37: movie info sits lower
+        expect(title.top, closeTo(series ? 320 : 357, 3));
         expect(play.left, 24);
         expect(play.right, 366);
-        expect(play.top, closeTo(446, 12)); // ratings now sit below the actions
-        expect(find.text('8.2').hitTestable(), findsOneWidget);
+        expect(play.top, greaterThan(title.bottom));
+        final score = find.text('8.2').hitTestable();
+        expect(score, findsOneWidget);
+        expect(tester.getTopLeft(score).dy, greaterThanOrEqualTo(play.bottom));
         if (four) {
           final scores = ['8.3', '8.2', '75%', '91%'].map((s) => tester.getRect(find.text(s).hitTestable())).toList();
           expect(scores.last.center.dy, closeTo(scores.first.center.dy, 1));

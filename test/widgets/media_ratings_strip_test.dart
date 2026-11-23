@@ -198,9 +198,14 @@ void main() {
       isEmpty,
     );
     expect(find.text(t.ratingDetails.serverRating), findsNothing);
-    final strip = tester.getRect(find.byType(MediaRatingsStrip));
-    final row = rects.first.expandToInclude(rects.last);
-    expect(row.center.dx, closeTo(strip.center.dx, 2));
+    final strip = find.byType(MediaRatingsStrip);
+    final wrap = tester.widget<Wrap>(find.descendant(of: strip, matching: find.byType(Wrap)));
+    final cells = wrap.children.map((child) => tester.getRect(find.byWidget(child))).toList();
+    final row = cells.first.expandToInclude(cells.last);
+    expect(row.center.dx, closeTo(tester.getRect(strip).center.dx, 2));
+    for (var index = 1; index < cells.length; index++) {
+      expect(cells[index].left - cells[index - 1].right, closeTo(14, .1));
+    }
   });
 
   testWidgets('four compact public scores fit on a 390px phone and wrap with large text', (tester) async {
