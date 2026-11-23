@@ -1912,6 +1912,10 @@ class _AppShell extends StatelessWidget {
         return TranslationProvider(
           child: Builder(
             builder: (context) {
+              // Depend on the locale so a language switch rebuilds MaterialApp:
+              // monoTheme() picks the bundled font per locale (ja / ko use the
+              // system font).
+              TranslationProvider.of(context);
               return Listener(
                 onPointerDown: (event) {
                   if ((event.buttons & kBackMouseButton) != 0) {

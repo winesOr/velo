@@ -9,11 +9,16 @@ abstract final class ProjectLicenses {
       .loadString('LICENSE')
       .then((text) => LicenseEntryWithLineBreaks(['Velo', 'Plezy'], text));
 
+  static final Future<LicenseEntry> notoSansSc = rootBundle
+      .loadString('assets/fonts/NotoSansSC-OFL.txt')
+      .then((text) => LicenseEntryWithLineBreaks(['Noto Sans SC'], text));
+
   static void register() {
     if (_registered) return;
     _registered = true;
     LicenseRegistry.addLicense(() async* {
       yield await license;
+      yield await notoSansSc;
     });
   }
 }

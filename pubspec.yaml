@@ -161,6 +161,7 @@ flutter:
     - assets/mdblist_mark.svg
     - assets/go-noto-current-regular.ttf
     - assets/go-noto-kurrent-hangul.ttf
+    - assets/fonts/NotoSansSC-OFL.txt
     - assets/shaders/nvscaler/
     - assets/shaders/artcnn/
     - assets/shaders/anime4k/
@@ -169,6 +170,15 @@ flutter:
   # Registered as UI font families so the Linux build, whose fontconfig may
   # lack CJK fonts, can fall back to the bundled subtitle fonts (mono_theme).
   fonts:
+    # Bundled UI font (subset, SIL OFL 1.1); see mono_theme.
+    - family: Noto Sans SC
+      fonts:
+        - asset: assets/fonts/NotoSansSC-Regular.otf
+          weight: 400
+        - asset: assets/fonts/NotoSansSC-Medium.otf
+          weight: 500
+        - asset: assets/fonts/NotoSansSC-SemiBold.otf
+          weight: 600
     - family: Go Noto Current
       fonts:
         - asset: assets/go-noto-current-regular.ttf

@@ -29,7 +29,7 @@ void main() {
         ),
       ),
     );
-    expect(tester.widget<Text>(find.text('Settings')).style!.fontSize, 22);
+    expect(tester.widget<Text>(find.text('Settings')).style!.fontSize, 21);
     final icon = tester.widget<Icon>(find.byIcon(Symbols.settings_rounded));
     expect(icon.fill, 0);
     expect(icon.weight, 400);

@@ -2416,7 +2416,7 @@ void main() {
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
     final cardContext = tester.element(find.byType(HubSection));
     expect(Theme.of(cardContext).brightness, Brightness.light);
-    expect(Theme.of(cardContext).extension<HomeTypography>()!.cardTitle.fontWeight, FontWeight.w500);
+    expect(Theme.of(cardContext).extension<HomeTypography>()!.cardTitle.fontWeight, FontWeight.w400);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });

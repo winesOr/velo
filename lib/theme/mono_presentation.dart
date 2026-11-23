@@ -44,9 +44,9 @@ abstract final class MonoPresentation {
   static TextStyle pageTitle(BuildContext context, {bool secondary = false}) =>
       Theme.of(context).textTheme.titleLarge!.copyWith(
         color: Theme.of(context).colorScheme.onSurface,
-        fontSize: secondary ? 20 : (PlatformDetector.isTV() ? 24 : 22),
+        fontSize: secondary ? 20 : (PlatformDetector.isTV() ? 24 : 21),
         fontWeight: FontWeight.w600,
-        letterSpacing: -.4,
+        letterSpacing: -.2,
       );
 
   static TextStyle libraryTitle(BuildContext context) => pageTitle(context);

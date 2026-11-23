@@ -1,20 +1,40 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../i18n/strings.g.dart';
 import 'glass_slider_thumb_shape.dart';
 import '../utils/platform_detector.dart';
 import 'mono_tokens.dart';
 import 'overlay_tokens.dart';
 import 'velo_brand.dart';
 
-final Map<({bool dark, bool oled, TargetPlatform platform, bool tv}), ThemeData> _monoThemeCache = {};
+/// Bundled UI font (pubspec `fonts:`), SIL OFL 1.1.
+const String _bundledUiFont = 'Noto Sans SC';
+
+/// Japanese and Korean use Han glyph shapes that differ from Simplified
+/// Chinese, so those locales keep the system font instead of the bundled one.
+bool _usesBundledFont(AppLocale locale) => locale != AppLocale.ja && locale != AppLocale.ko;
+
+final Map<({bool dark, bool oled, TargetPlatform platform, bool tv, bool bundledFont}), ThemeData> _monoThemeCache = {};
 
 ThemeData monoTheme({required bool dark, bool oled = false}) {
   // ThemeData derives several defaults from defaultTargetPlatform.
-  final key = (dark: dark || oled, oled: oled, platform: defaultTargetPlatform, tv: PlatformDetector.isTV());
+  final key = (
+    dark: dark || oled,
+    oled: oled,
+    platform: defaultTargetPlatform,
+    tv: PlatformDetector.isTV(),
+    bundledFont: _usesBundledFont(LocaleSettings.currentLocale),
+  );
   final cached = _monoThemeCache[key];
   if (cached != null) return cached;
 
-  final theme = _buildMonoTheme(dark: key.dark, oled: key.oled, platform: key.platform, tv: key.tv);
+  final theme = _buildMonoTheme(
+    dark: key.dark,
+    oled: key.oled,
+    platform: key.platform,
+    tv: key.tv,
+    bundledFont: key.bundledFont,
+  );
   _monoThemeCache[key] = theme;
   return theme;
 }
@@ -27,29 +47,35 @@ TextTheme _textTheme(Color text, Color muted, {required bool compact}) {
   final base = Typography.englishLike2021.apply(bodyColor: text, displayColor: text);
   if (!compact) {
     return base.copyWith(
-      displayLarge: const TextStyle(fontWeight: .w700, letterSpacing: -0.5),
-      titleMedium: const TextStyle(fontWeight: .w600),
-      titleLarge: TextStyle(color: text, fontSize: 20, fontWeight: .w600),
+      displayLarge: const TextStyle(fontWeight: .w600, letterSpacing: -0.3),
+      titleMedium: const TextStyle(fontWeight: .w500),
+      titleLarge: TextStyle(color: text, fontSize: 20, fontWeight: .w500),
       bodyMedium: TextStyle(color: text),
       bodySmall: TextStyle(color: muted),
     );
   }
   return base.copyWith(
-    displayLarge: const TextStyle(fontWeight: .w700, letterSpacing: -0.5),
-    headlineSmall: TextStyle(color: text, fontSize: 22, fontWeight: .w600, height: 1.25, letterSpacing: -0.3),
-    titleLarge: TextStyle(color: text, fontSize: 18, fontWeight: .w600, height: 1.3, letterSpacing: -0.2),
-    titleMedium: TextStyle(color: text, fontSize: 15, fontWeight: .w600, height: 1.35),
-    titleSmall: TextStyle(color: text, fontSize: 14, fontWeight: .w600, height: 1.35),
+    displayLarge: const TextStyle(fontWeight: .w600, letterSpacing: -0.3),
+    headlineSmall: TextStyle(color: text, fontSize: 21, fontWeight: .w600, height: 1.25, letterSpacing: -0.3),
+    titleLarge: TextStyle(color: text, fontSize: 18, fontWeight: .w500, height: 1.3, letterSpacing: -0.2),
+    titleMedium: TextStyle(color: text, fontSize: 15, fontWeight: .w500, height: 1.35),
+    titleSmall: TextStyle(color: text, fontSize: 14, fontWeight: .w500, height: 1.35),
     bodyLarge: TextStyle(color: text, fontSize: 15, height: 1.45),
     bodyMedium: TextStyle(color: text, fontSize: 14, height: 1.45),
     bodySmall: TextStyle(color: muted, fontSize: 12, height: 1.4),
-    labelLarge: TextStyle(color: text, fontSize: 14, fontWeight: .w600),
+    labelLarge: TextStyle(color: text, fontSize: 14, fontWeight: .w500),
     labelMedium: TextStyle(color: text, fontSize: 12, fontWeight: .w500),
     labelSmall: TextStyle(color: muted, fontSize: 11, fontWeight: .w500),
   );
 }
 
-ThemeData _buildMonoTheme({required bool dark, required bool oled, required TargetPlatform platform, bool tv = false}) {
+ThemeData _buildMonoTheme({
+  required bool dark,
+  required bool oled,
+  required TargetPlatform platform,
+  bool tv = false,
+  bool bundledFont = true,
+}) {
   // Keep neutral chrome separate from the accent and media artwork.
   final ({Color bg, Color surface, Color outline, Color text, Color textMuted}) c;
   if (oled) {
@@ -106,6 +132,7 @@ ThemeData _buildMonoTheme({required bool dark, required bool oled, required Targ
     // Linux resolves UI text through fontconfig, which on a minimal desktop
     // may have no CJK font at all; the bundled subtitle fonts (pubspec
     // `fonts:`) cover it. Other platforms keep their native CJK fonts.
+    fontFamily: bundledFont ? _bundledUiFont : null,
     fontFamilyFallback: platform == TargetPlatform.linux ? const ['Go Noto Current', 'Go Noto Current Hangul'] : null,
     colorScheme: ColorScheme(
       brightness: isDark ? Brightness.dark : Brightness.light,
@@ -150,7 +177,7 @@ ThemeData _buildMonoTheme({required bool dark, required bool oled, required Targ
       scrolledUnderElevation: 0,
       centerTitle: false,
       foregroundColor: c.text,
-      titleTextStyle: TextStyle(color: c.text, fontSize: 22, fontWeight: .w600, letterSpacing: -0.4),
+      titleTextStyle: TextStyle(color: c.text, fontSize: 21, fontWeight: .w600, letterSpacing: -0.2),
     ),
     textTheme: _textTheme(c.text, c.textMuted, compact: !tv),
     cardTheme: CardThemeData(
