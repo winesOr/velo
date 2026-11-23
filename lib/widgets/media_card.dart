@@ -482,7 +482,9 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
   Widget _buildContent(BuildContext context) {
     final item = _effectiveItem(context);
     final viewMode = widget.viewModeOverride ?? SettingsService.instance.read(SettingsService.viewMode);
-    final format = item is MediaItem && viewMode == ViewMode.grid ? mediaFormatsFor(item).firstOrNull : null;
+    final formats = item is MediaItem && viewMode == ViewMode.grid && !widget.isInContinueWatching
+        ? mediaPosterFormats(item)
+        : const <MediaFormat>[];
 
     final badgeRating =
         widget.showRatingBadge &&
@@ -495,7 +497,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
     final semanticLabel = [
       _semanticLabel(item),
       if (badgeRating != null) ratingsSemanticLabel([badgeRating]),
-      if (format != null) format.label,
+      if (formats.isNotEmpty) formats.map((format) => format.label).join(', '),
     ].join(', ');
     final accessibleNavigation = MediaQuery.accessibleNavigationOf(context);
     final enableDetailLinks = widget.onTap == null;
@@ -509,7 +511,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
             context,
             item,
             localPosterPath,
-            format: format,
+            formats: formats,
             preserveDetailSemantics: preserveDetailSemantics,
           )
         : _MediaCardList(
@@ -574,7 +576,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
     BuildContext context,
     Object item,
     String? localPosterPath, {
-    required MediaFormat? format,
+    required List<MediaFormat> formats,
     required bool preserveDetailSemantics,
   }) {
     final catalogItem = _catalogItem;
@@ -587,7 +589,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
           final cardWidth = widget.width ?? (constraints.hasBoundedWidth ? constraints.maxWidth : null);
           final cardHeight = widget.height ?? (constraints.hasBoundedHeight ? constraints.maxHeight : null);
           if (cardHeight == null) {
-            return _buildStandardGridCard(context, item, localPosterPath, badgeLabels: badgeLabels, format: format);
+            return _buildStandardGridCard(context, item, localPosterPath, badgeLabels: badgeLabels, formats: formats);
           }
           return _buildFullBleedGridCard(
             context,
@@ -596,12 +598,12 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
             width: cardWidth,
             height: cardHeight,
             badgeLabels: badgeLabels,
-            format: format,
+            formats: formats,
           );
         },
       );
     } else {
-      card = _buildStandardGridCard(context, item, localPosterPath, badgeLabels: badgeLabels, format: format);
+      card = _buildStandardGridCard(context, item, localPosterPath, badgeLabels: badgeLabels, formats: formats);
     }
 
     return preserveDetailSemantics ? card : MergeSemantics(child: card);
@@ -614,7 +616,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
     required double? width,
     required double height,
     required List<String> badgeLabels,
-    required MediaFormat? format,
+    required List<MediaFormat> formats,
   }) {
     return SizedBox(
       width: width,
@@ -627,7 +629,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
           item,
           localPosterPath,
           badgeLabels: badgeLabels,
-          format: format,
+          formats: formats,
           knownWidth: width,
           knownHeight: height,
           fullBleed: true,
@@ -657,7 +659,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
     Object item,
     String? localPosterPath, {
     required List<String> badgeLabels,
-    required MediaFormat? format,
+    required List<MediaFormat> formats,
     required double? knownWidth,
     required double? knownHeight,
     required bool fullBleed,
@@ -678,12 +680,13 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
     );
     final badgeRating = item is MediaItem ? mediaCardRatingFor(item) : null;
     final overlays = <Widget>[
-      if (format != null && badgeLabels.isEmpty)
+      if (formats.isNotEmpty && badgeLabels.isEmpty)
         Positioned(
-          top: 5,
-          left: 5,
+          top: 6,
+          left: 6,
+          // Leaves the top-right corner to the watched / unwatched indicator.
           right: 30,
-          child: Align(alignment: Alignment.topLeft, child: MediaFormatBadge(format, onArtwork: true, compact: true)),
+          child: Align(alignment: Alignment.topLeft, child: MediaFormatPosterBadge(formats)),
         ),
       if (widget.showRatingBadge &&
           !widget.isInContinueWatching &&
@@ -709,7 +712,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
           showResumeDetails: widget.isInContinueWatching,
           showProgress: widget.showWatchProgress,
         ),
-      if (badgeLabels.isNotEmpty) _CatalogBadges(labels: badgeLabels),
+      if (badgeLabels.isNotEmpty) _CatalogBadges(labels: badgeLabels, formats: formats),
     ];
     return ExcludeSemantics(
       child: _CatalogFocusBorder(
@@ -727,7 +730,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
     Object item,
     String? localPosterPath, {
     required List<String> badgeLabels,
-    required MediaFormat? format,
+    required List<MediaFormat> formats,
   }) {
     // Compute actual poster dimensions from card dimensions
     final posterWidth = widget.width != null ? widget.width! - 6 : null;
@@ -756,7 +759,7 @@ class MediaCardState extends State<MediaCard> with ContextMenuTapMixin<MediaCard
       item,
       localPosterPath,
       badgeLabels: badgeLabels,
-      format: format,
+      formats: formats,
       knownWidth: _catalogItem != null ? posterWidth : (posterHeight != null ? posterWidth : null),
       knownHeight: posterHeight,
       fullBleed: false,
@@ -1541,7 +1544,10 @@ List<String> _buildCatalogBadgeLabels(CatalogItem? item, DateTime? now) {
 class _CatalogBadges extends StatelessWidget {
   final List<String> labels;
 
-  const _CatalogBadges({required this.labels});
+  /// Poster format badge, stacked under the catalog labels in the same column.
+  final List<MediaFormat> formats;
+
+  const _CatalogBadges({required this.labels, this.formats = const []});
 
   @override
   Widget build(BuildContext context) {
@@ -1571,6 +1577,7 @@ class _CatalogBadges extends StatelessWidget {
               ),
             ),
           ],
+          if (formats.isNotEmpty) ...[const SizedBox(height: 3), MediaFormatPosterBadge(formats)],
         ],
       ),
     );

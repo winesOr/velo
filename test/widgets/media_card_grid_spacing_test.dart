@@ -52,13 +52,41 @@ void main() {
       child: MediaCard(item: item, viewModeOverride: ViewMode.grid, isOffline: true),
     );
     await tester.pumpWidget(app(card(movie.copyWith(mediaVersions: [version]))));
-    expect(find.byType(MediaFormatBadge), findsOneWidget);
+    expect(find.byType(MediaFormatPosterBadge), findsOneWidget);
     expect(find.text('DV'), findsOneWidget);
     expect(find.text('HDR'), findsNothing);
     expect(tester.takeException(), isNull);
 
     await tester.pumpWidget(app(card(movie)));
-    expect(find.byType(MediaFormatBadge), findsNothing);
+    expect(find.byType(MediaFormatPosterBadge), findsNothing);
+  });
+
+  testWidgets('poster format badge sits 6 px from the top-left and is skipped in Continue Watching', (tester) async {
+    const version = MediaVersion(
+      id: 'dv',
+      parts: [
+        MediaPart(
+          id: 'part',
+          streams: [MediaStream(id: 'video', kind: MediaStreamKind.video, hdr: true, dolbyVision: true)],
+        ),
+      ],
+    );
+    final item = movie.copyWith(mediaVersions: [version]);
+    Widget card({bool continuing = false}) => SizedBox(
+      width: 96,
+      height: 158,
+      child: MediaCard(item: item, viewModeOverride: ViewMode.grid, isOffline: true, isInContinueWatching: continuing),
+    );
+    await tester.pumpWidget(app(card()));
+    final badge = tester.getTopLeft(find.byType(MediaFormatPosterBadge));
+    final poster = tester.getTopLeft(
+      find.descendant(of: find.byType(MediaCard), matching: find.byType(ClipRRect)).first,
+    );
+    expect(badge - poster, const Offset(6, 6));
+    expect(tester.getSize(find.byType(MediaFormatPosterBadge)).height, 20);
+
+    await tester.pumpWidget(app(card(continuing: true)));
+    expect(find.byType(MediaFormatPosterBadge), findsNothing);
   });
 
   testWidgets('grid cells grow the poster→title gap with the spacing setting', (tester) async {

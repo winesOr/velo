@@ -174,6 +174,35 @@ void main() {
     expect(tester.getSize(find.byType(MediaRatingsStrip)).height, height * 2);
   });
 
+  testWidgets('compact inline style centres one row of 13px scores with 14px gaps and no dividers or captions', (
+    tester,
+  ) async {
+    await _pump(tester, MediaRatingsStrip(item: _item(_scores.take(3).toList()), compact: true));
+    final texts = ['92%', '88%', '8.1'];
+    final rects = texts.map((s) => tester.getRect(find.text(s))).toList();
+    expect(rects.map((r) => r.center.dy).toSet().length, 1, reason: 'one row');
+    for (final s in texts) {
+      final style = tester.widget<Text>(find.text(s)).style!;
+      expect(style.fontSize, 13);
+      expect(style.fontWeight, FontWeight.w400);
+    }
+    expect(
+      find
+          .byType(DecoratedBox)
+          .evaluate()
+          .where(
+            (e) =>
+                (e.widget as DecoratedBox).decoration is BoxDecoration &&
+                ((e.widget as DecoratedBox).decoration as BoxDecoration).border != null,
+          ),
+      isEmpty,
+    );
+    expect(find.text(t.ratingDetails.serverRating), findsNothing);
+    final strip = tester.getRect(find.byType(MediaRatingsStrip));
+    final row = rects.first.expandToInclude(rects.last);
+    expect(row.center.dx, closeTo(strip.center.dx, 2));
+  });
+
   testWidgets('four compact public scores fit on a 390px phone and wrap with large text', (tester) async {
     final strip = MediaRatingsStrip(item: _item(_scores), showSourceLabels: false);
     for (final scale in [1.0, 2.0]) {

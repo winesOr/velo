@@ -8,6 +8,8 @@ import 'package:plezy/focus/input_mode_tracker.dart';
 import 'package:plezy/profiles/active_profile_provider.dart';
 import 'package:plezy/profiles/profile.dart';
 import 'package:plezy/services/settings_service.dart';
+import 'package:plezy/utils/media_quality_labels.dart';
+import 'package:plezy/widgets/media_format_badge.dart';
 import 'package:plezy/utils/platform_detector.dart';
 import 'package:plezy/widgets/overlay_sheet.dart';
 import '../test_helpers/prefs.dart';
@@ -101,10 +103,12 @@ void main() {
       player: player,
       hasFirstFrame: frame,
     );
-    final vision = find.text(t.fileInfo.dolbyVision);
-    final hdr = find.text(t.videoSettings.hdr);
-    final atmos = find.text(t.videoSettings.audioOutputDolbyAtmos);
-    final audio = find.text(t.videoSettings.audioOutputDolbyAudio);
+    Finder badge(MediaFormat format) =>
+        find.byWidgetPredicate((widget) => widget is MediaFormatBadge && widget.format == format);
+    final vision = badge(MediaFormat.dolbyVision);
+    final hdr = badge(MediaFormat.hdr);
+    final atmos = badge(MediaFormat.dolbyAtmos);
+    final audio = badge(MediaFormat.dolbyAudio);
     expect(vision, findsNothing);
     expect(hdr, findsNothing);
     expect(atmos, findsNothing);
@@ -128,6 +132,7 @@ void main() {
     };
     await tester.pump(const Duration(seconds: 2));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200)); // fade-out
     expect(vision, findsNothing);
     expect(hdr, findsNothing);
     expect(atmos, findsNothing);
@@ -144,6 +149,7 @@ void main() {
     frame.value = false;
     await tester.pump();
     await tester.pump(const Duration(seconds: 4));
+    await tester.pump(const Duration(milliseconds: 200));
     expect(audio, findsNothing);
     expect(hdr, findsNothing);
     expect(player.reads, reads);

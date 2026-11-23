@@ -28,6 +28,32 @@ import 'media_rating_badge.dart';
 import 'optimized_media_image.dart' show ClearLogoImage, blurArtwork;
 import 'rasterized_gradient.dart';
 
+// Detail scrim geometry (design values; fractions of the screen box).
+const double _detailScrimWidthFactor = 1.2; // radial reach, x width
+const double _detailBottomFraction = .26;
+const double _detailTopFraction = .16;
+const double _detailTopDarkening = .16;
+
+/// Stretches a radial gradient horizontally around an anchor so the circle
+/// becomes an ellipse. [factor] is the x scale relative to the circle.
+class _HorizontalStretch extends GradientTransform {
+  const _HorizontalStretch(this.factor, {required this.anchorX, required this.anchorY});
+
+  final double factor;
+  final double anchorX;
+  final double anchorY;
+
+  @override
+  Matrix4? transform(Rect bounds, {TextDirection? textDirection}) {
+    final ax = bounds.left + bounds.width * anchorX;
+    final ay = bounds.top + bounds.height * anchorY;
+    return Matrix4.identity()
+      ..translateByDouble(ax, ay, 0, 1)
+      ..scaleByDouble(factor, 1, 1, 1)
+      ..translateByDouble(-ax, -ay, 0, 1);
+  }
+}
+
 class TvSpotlightBackground extends StatelessWidget {
   final MediaItem? item;
   final MediaServerClient? client;
@@ -40,6 +66,12 @@ class TvSpotlightBackground extends StatelessWidget {
   final Widget? homeActions;
   final String? Function(String? artworkPath)? localArtworkPathResolver;
   final bool allowNetwork;
+
+  /// Detail-page scrim: darkens only the bottom-left corner, the bottom edge and
+  /// a thin top strip behind the back/more buttons, leaving the artwork's top-left
+  /// and right side untouched. The home spotlight keeps the full-width scrims
+  /// because its info block sits over the artwork and needs the contrast.
+  final bool detailScrim;
 
   /// Optional caller-owned fact appended to the existing metadata line.
   final Widget? metadataTrailing;
@@ -57,6 +89,7 @@ class TvSpotlightBackground extends StatelessWidget {
     this.homeActions,
     this.localArtworkPathResolver,
     this.allowNetwork = true,
+    this.detailScrim = false,
     this.metadataTrailing,
   });
 
@@ -105,15 +138,19 @@ class TvSpotlightBackground extends StatelessWidget {
             RepaintBoundary(
               child: cornerBackdrop ? _buildCornerBackdrop(backdropSize, backdrop) : blurArtwork(backdrop),
             ),
-            _buildHorizontalScrim(bgColor),
-            RasterizedGradient(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.black.withValues(alpha: 0.45), Colors.transparent, bgColor.withValues(alpha: 0.96)],
-                stops: const [0.0, 0.38, 1.0],
+            if (detailScrim)
+              ..._buildDetailScrims(bgColor)
+            else ...[
+              _buildHorizontalScrim(bgColor),
+              RasterizedGradient(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.black.withValues(alpha: 0.45), Colors.transparent, bgColor.withValues(alpha: 0.96)],
+                  stops: const [0.0, 0.38, 1.0],
+                ),
               ),
-            ),
+            ],
             if (media != null && showInfo)
               Positioned(
                 left: contentLeft ?? TvLayoutConstants.horizontalInset,
@@ -190,6 +227,62 @@ class TvSpotlightBackground extends StatelessWidget {
       ),
     );
   }
+
+  /// Bottom-left radial wash + bottom fade into the background + a faint top
+  /// darkening for the back/more buttons.
+  List<Widget> _buildDetailScrims(Color bgColor) => [
+    Positioned.fill(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final aspect = constraints.maxHeight <= 0 ? 1.0 : constraints.maxWidth / constraints.maxHeight;
+          return DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.bottomLeft,
+                // Radius 1 = the box height; stretched horizontally so the
+                // ellipse spans _detailScrimWidthFactor of the width.
+                radius: 1,
+                colors: [bgColor.withValues(alpha: .95), bgColor.withValues(alpha: .80), bgColor.withValues(alpha: 0)],
+                stops: const [0, .36, .70],
+                transform: _HorizontalStretch(_detailScrimWidthFactor * aspect, anchorX: 0, anchorY: 1),
+              ),
+            ),
+          );
+        },
+      ),
+    ),
+    Align(
+      alignment: Alignment.bottomCenter,
+      child: FractionallySizedBox(
+        heightFactor: _detailBottomFraction,
+        widthFactor: 1,
+        child: RasterizedGradient(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [bgColor.withValues(alpha: 0), bgColor],
+          ),
+        ),
+      ),
+    ),
+    Align(
+      alignment: Alignment.topCenter,
+      child: FractionallySizedBox(
+        heightFactor: _detailTopFraction,
+        widthFactor: 1,
+        child: RasterizedGradient(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withValues(alpha: _detailTopDarkening),
+              Colors.transparent,
+            ],
+          ),
+        ),
+      ),
+    ),
+  ];
 
   Widget _buildHorizontalScrim(Color bgColor) {
     return RasterizedGradient(

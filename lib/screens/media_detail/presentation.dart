@@ -236,6 +236,24 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
     );
   }
 
+  /// Soft shadow that keeps title and metadata legible over bright artwork in
+  /// dark appearance; light appearance already blends into a pale surface.
+  List<Shadow>? _detailTextShadows(BuildContext context) => Theme.of(context).brightness == Brightness.dark
+      ? const [Shadow(color: Color(0x66000000), blurRadius: 10, offset: Offset(0, 1))]
+      : null;
+
+  /// Resolution label ("4K", "1080P") of the selected version, mirroring the
+  /// first entry of [buildMediaVideoLabels] so it can be shown as a badge.
+  String? _detailResolutionLabel(MediaItem item, int versionIndex) {
+    final versions = item.mediaVersions;
+    if (versions == null || versions.isEmpty) return null;
+    final version = versionIndex >= 0 && versionIndex < versions.length ? versions[versionIndex] : versions.first;
+    final raw = version.videoResolution?.trim();
+    if (raw != null && raw.isNotEmpty) return resolutionDisplayLabel(raw);
+    final fallback = resolutionLabelFromDimensions(version.width, version.height);
+    return fallback == null ? null : resolutionDisplayLabel(fallback);
+  }
+
   Widget _buildNaturalDetailTitle(
     BuildContext context,
     MediaItem metadata, {
@@ -246,20 +264,22 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
     final narrow = MediaQuery.sizeOf(context).width < ScreenBreakpoints.mobile;
     final phone = PlatformDetector.isMobile(context) && !MonoPresentation.isTablet(context);
     final fontSize = tv
-        ? 36 * scale
+        ? 34 * scale
         : narrow || phone
-        ? 32.0
-        : 36.0;
+        ? 28.0
+        : 32.0;
+    final shadows = _detailTextShadows(context);
     Widget title(BuildContext context, String text) => Text(
       text,
       key: const ValueKey('detail_natural_title'),
       textAlign: centered ? TextAlign.center : TextAlign.start,
       style: Theme.of(context).textTheme.displaySmall?.copyWith(
         fontSize: fontSize,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         height: 1.15,
-        letterSpacing: -.6,
+        letterSpacing: -.2,
         color: Theme.of(context).colorScheme.onSurface,
+        shadows: shadows,
       ),
     );
     // A text title has no height budget: accessibility text must be allowed
@@ -299,7 +319,9 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
       fontSize: 12,
       height: 1.6,
       color: portraitPhone ? Theme.of(context).colorScheme.onSurfaceVariant : null,
+      shadows: _detailTextShadows(context),
     );
+    final tvScale = TvLayoutConstants.scaleOf(context);
     final textAlign = centered ? TextAlign.center : TextAlign.start;
     void openDetails() => _openTvDetailsSheet(
       context,
@@ -318,12 +340,14 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
             final versionIndex = probed?.mediaIndex ?? 0;
             final partIndex = probed?.source?.partIndex;
             final formats = mediaFormatsFor(item, versionIndex: versionIndex, partIndex: partIndex);
+            final resolution = _detailResolutionLabel(item, versionIndex);
+            // The resolution moves to a badge; the text keeps codec only.
             final quality = buildMediaVideoLabels(
               item,
               versionIndex: versionIndex,
               partIndex: partIndex,
               includeDynamicRange: false,
-            );
+            ).skip(resolution == null ? 0 : 1);
             final secondLine = [
               if (metadata.isShow && seasonCount != null) t.explore.detail.seasonCount(n: seasonCount),
               if ((target?.durationMs ?? metadata.durationMs) case final int duration) formatDurationTextual(duration),
@@ -348,23 +372,38 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
                     textAlign: textAlign,
                     style: metadataStyle,
                   ),
-                if (secondLine.isNotEmpty || formats.isNotEmpty)
+                if (secondLine.isNotEmpty)
                   Padding(
                     padding: EdgeInsets.only(top: firstLine.isNotEmpty && portraitPhone ? 4 : 0),
+                    child: Text(
+                      secondLine.join(' · '),
+                      key: const ValueKey('detail_secondary_metadata'),
+                      textAlign: textAlign,
+                      style: metadataStyle,
+                    ),
+                  ),
+                if (resolution != null || formats.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(top: 6 * (tv ? tvScale : 1)),
                     child: Wrap(
+                      key: const ValueKey('detail_format_badges'),
                       alignment: centered ? WrapAlignment.center : WrapAlignment.start,
                       spacing: 6,
                       runSpacing: 4,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        if (secondLine.isNotEmpty)
-                          Text(
-                            secondLine.join(' · '),
-                            key: const ValueKey('detail_secondary_metadata'),
-                            textAlign: textAlign,
-                            style: metadataStyle,
+                        if (resolution != null)
+                          MediaResolutionBadge(
+                            resolution,
+                            size: tv ? MediaFormatBadgeSize.large : MediaFormatBadgeSize.medium,
+                            scale: tv ? tvScale : 1,
                           ),
-                        for (final format in formats) MediaFormatBadge(format),
+                        for (final format in formats)
+                          MediaFormatBadge(
+                            format,
+                            size: tv ? MediaFormatBadgeSize.large : MediaFormatBadgeSize.medium,
+                            scale: tv ? tvScale : 1,
+                          ),
                       ],
                     ),
                   ),
@@ -394,7 +433,7 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
                   focusNode: _tvDetailInfoFocusNode,
                   onSelect: openDetails,
                   onNavigateUp: _backButtonFocusNode.requestFocus,
-                  onNavigateDown: _focusTvRatingsOrAction,
+                  onNavigateDown: _focusTvDetailActionRow,
                   disableScale: true,
                   child: GestureDetector(onTap: openDetails, child: information),
                 ),
@@ -402,28 +441,30 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
             );
           },
         ),
+        // The ratings no longer sit between the information and the actions.
+        SizedBox(height: portraitPhone ? 20 : 16),
+        KeyedSubtree(key: tv ? _tvDetailActionGroupKey : null, child: _buildActionButtons(metadata)),
         Column(
           key: tv ? _tvDetailRatingsGroupKey : null,
           children: [
             if (!PlatformDetector.isPhone(context) && _hasReceivedDetailMetadata && lacksPublicTitleRating(metadata))
               Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(top: 12),
                 child: Text(t.ratingDetails.noPublicRating, style: Theme.of(context).textTheme.bodySmall),
               ),
             MediaRatingsStrip(
               item: metadata,
+              // Phone portrait uses the compact inline scores; wider layouts keep source captions.
+              compact: portraitPhone,
               showSourceLabels: !centered,
               alignment: centered ? WrapAlignment.center : WrapAlignment.start,
               firstFocusNode: _detailRatingSourceFocusNode,
-              onNavigateUp: tv ? _tvDetailInfoFocusNode.requestFocus : _backButtonFocusNode.requestFocus,
-              onNavigateDown: tv ? _focusTvDetailActionRow : _playButtonFocusNode.requestFocus,
-              padding: centered
-                  ? EdgeInsets.only(top: 12, bottom: portraitPhone ? 24 : 16)
-                  : const EdgeInsets.only(bottom: 18),
+              onNavigateUp: tv ? _focusTvDetailActionRow : _playButtonFocusNode.requestFocus,
+              onNavigateDown: _focusBelowRatings,
+              padding: EdgeInsets.only(top: portraitPhone || !centered ? 14 : 12),
             ),
           ],
         ),
-        KeyedSubtree(key: tv ? _tvDetailActionGroupKey : null, child: _buildActionButtons(metadata)),
       ],
     );
   }

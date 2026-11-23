@@ -27,7 +27,43 @@ enum MediaFormat {
     dolbyAudio => t.videoSettings.audioOutputDolbyAudio,
     dtsX => 'DTS:X',
   };
+
+  /// Wordmark text on badges: brand names, never translated.
+  String get shortLabel => switch (this) {
+    dolbyVision => 'DV',
+    hdr => 'HDR',
+    hdr10 => 'HDR10',
+    hdr10Plus => 'HDR10+',
+    hlg => 'HLG',
+    dolbyAtmos => 'ATMOS',
+    dolbyAudio => 'DOLBY',
+    dtsX => 'DTS:X',
+  };
+
+  /// The product word after "DOLBY" for Dolby formats; null for the others.
+  String? get dolbyProduct => switch (this) {
+    dolbyVision => 'VISION',
+    dolbyAtmos => 'ATMOS',
+    dolbyAudio => 'AUDIO',
+    _ => null,
+  };
+
+  /// Formats worth a poster corner: everything except plain Dolby audio,
+  /// which nearly every file carries.
+  bool get isPremium => this != dolbyAudio;
+
+  bool get isVideo => switch (this) {
+    dolbyVision || hdr || hdr10 || hdr10Plus || hlg => true,
+    dolbyAtmos || dolbyAudio || dtsX => false,
+  };
 }
+
+/// Formats for a poster corner: the video format and a premium audio format
+/// (Atmos / DTS:X), at most two. Plain Dolby audio is left off posters.
+List<MediaFormat> mediaPosterFormats(MediaItem item) => [
+  for (final format in mediaFormatsFor(item))
+    if (format.isPremium) format,
+];
 
 List<MediaFormat> mediaFormatsFor(MediaItem item, {int versionIndex = 0, int? partIndex}) {
   if (!item.kind.isVideo) return const [];

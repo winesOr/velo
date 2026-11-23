@@ -8,6 +8,7 @@ import '../media/media_file_info.dart';
 import '../theme/mono_tokens.dart';
 import '../utils/formatters.dart';
 import '../utils/media_quality_labels.dart';
+import '../utils/resolution_label.dart';
 import '../utils/scroll_utils.dart';
 import '../utils/snackbar_helper.dart';
 import 'app_icon.dart';
@@ -79,7 +80,8 @@ class _FileInfoBottomSheetState extends State<FileInfoBottomSheet> {
   }
 }
 
-/// Item title plus the at-a-glance chips people actually came for.
+/// Item title plus a three-row summary (video / audio / file): badges on top,
+/// one line of small detail text under them.
 class _ItemHeadline extends StatelessWidget {
   final String title;
   final List<MediaFileVersion> versions;
@@ -90,40 +92,67 @@ class _ItemHeadline extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final version = versions.isEmpty ? null : versions.first;
-    final chips = version == null ? const <Widget>[] : _summaryChips(context, version);
+    final rows = version == null ? const <Widget>[] : _summaryRows(context, version);
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-          if (chips.isNotEmpty) ...[const SizedBox(height: 10), Wrap(spacing: 6, runSpacing: 6, children: chips)],
+          if (rows.isNotEmpty) ...[const SizedBox(height: 10), ...rows],
         ],
       ),
     );
   }
 
-  /// Container, resolution, dynamic range, codecs and size — the summary a
-  /// person scans before reading any table.
-  List<Widget> _summaryChips(BuildContext context, MediaFileVersion version) {
+  /// Rows without any content are skipped (an audio-only file has no video row).
+  List<Widget> _summaryRows(BuildContext context, MediaFileVersion version) {
     final video = _firstOfKind(version, MediaStreamKind.video);
     final audio = _firstOfKind(version, MediaStreamKind.audio);
     final audioFormat = fileAudioFormat(audio);
-    final fill = tokens(context).text.withValues(alpha: 0.08);
-    Widget chip(String label) => StatChip(label: label, backgroundColor: fill);
-    return [
-      if (version.container case final container?) chip(container.toUpperCase()),
-      if (version.resolutionFormatted case final resolution?) chip(resolution),
-      for (final format in fileVideoFormats(video)) MediaFormatBadge(format),
-      if (version.videoCodec case final codec?) chip(codec.toUpperCase()),
-      if (audio?.codec case final codec?) chip(codec.toUpperCase()),
-      if (audioFormat != null)
-        MediaFormatBadge(audioFormat)
-      else if (audio?.spatialFormatLabel case final spatialFormat?)
-        chip(spatialFormat),
-      if (version.totalFileSizeFormatted case final size?) chip(size),
-      if (version.durationFormatted case final duration?) chip(duration),
+    final resolution = _resolutionBadgeLabel(version);
+
+    final videoDetail = [
+      if ((video?.codec ?? version.videoCodec) case final codec?) codec.toUpperCase(),
+      if (video?.dolbyVision case final dv?)
+        if (dv.profile case final profile? when profile > 0) 'DV P$profile',
+      ?video?.bitDepthFormatted,
     ];
+    final audioDetail = [
+      if (audio?.codec case final codec?) codec.toUpperCase(),
+      if (audioFormat == null) ?audio?.spatialFormatLabel,
+      ?audio?.channelsFormatted,
+      ?(audio?.language ?? audio?.languageCode),
+    ];
+    final fileDetail = [
+      if (version.container case final container?) container.toUpperCase(),
+      ?version.totalFileSizeFormatted,
+      ?version.durationFormatted,
+    ];
+
+    final videoFormats = fileVideoFormats(video);
+    return [
+      _SummaryRow(
+        label: t.fileInfo.video,
+        badges: [
+          if (resolution != null) MediaResolutionBadge(resolution),
+          for (final format in videoFormats) MediaFormatBadge(format),
+        ],
+        detail: videoDetail,
+      ),
+      _SummaryRow(
+        label: t.fileInfo.audio,
+        badges: [if (audioFormat != null) MediaFormatBadge(audioFormat)],
+        detail: audioDetail,
+      ),
+      _SummaryRow(label: t.fileInfo.file, badges: const [], detail: fileDetail),
+    ].where((row) => row.badges.isNotEmpty || row.detail.isNotEmpty).toList(growable: false);
+  }
+
+  /// "4K" / "1080P" for the badge, from the probed size or the server label.
+  String? _resolutionBadgeLabel(MediaFileVersion version) {
+    final label = resolutionLabelFromDimensions(version.width, version.height) ?? version.videoResolutionLabel;
+    return label == null || label.trim().isEmpty ? null : resolutionDisplayLabel(label.trim());
   }
 
   MediaStreamDetails? _firstOfKind(MediaFileVersion version, MediaStreamKind kind) {
@@ -133,6 +162,56 @@ class _ItemHeadline extends StatelessWidget {
       }
     }
     return null;
+  }
+}
+
+/// Width of the small left-hand row label ("Video" / "Audio" / "File").
+const double _summaryLabelWidth = 40;
+
+class _SummaryRow extends StatelessWidget {
+  final String label;
+  final List<Widget> badges;
+  final List<String> detail;
+
+  const _SummaryRow({required this.label, required this.badges, required this.detail});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: _summaryLabelWidth,
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(color: muted, fontSize: 11),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (badges.isNotEmpty) Wrap(spacing: 6, runSpacing: 4, children: badges),
+                if (detail.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(top: badges.isEmpty ? 0 : 4),
+                    child: Text(
+                      detail.join(' · '),
+                      style: theme.textTheme.bodySmall?.copyWith(color: muted, fontSize: 12),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -149,6 +149,12 @@ const double _heroSideInset = 16;
 
 const double _tvDetailActionSize = 46;
 
+/// Phone portrait hero artwork height, in points at a 390pt-wide layout.
+/// Movies moved 603 -> 640 so the info block sits ~37pt lower and shows more
+/// cover; the title top in responsive_layout.dart moves by the same amount.
+const double _movieHeroArtHeight = 640;
+const double _seriesHeroArtHeight = 380;
+
 enum _SyncRuleAction { edit, remove, delete }
 
 class _SeasonEpisodePager {
@@ -2162,14 +2168,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     });
   }
 
-  void _focusTvRatingsOrAction() {
-    if (_detailRatingSourceFocusNode.context != null) {
-      _detailRatingSourceFocusNode.requestFocus();
-    } else {
-      _focusTvDetailActionRow();
-    }
-  }
-
   void _focusVisibleDetailEpisode() {
     if (_episodes.isEmpty) return;
     final index = _detailEpisodeRailIndex.clamp(0, _episodes.length - 1);
@@ -2202,17 +2200,24 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
   /// Focus the first available section above the primary action row.
   void _focusAboveActionRow() {
-    if (_detailRatingSourceFocusNode.context?.mounted == true) {
-      _detailRatingSourceFocusNode.requestFocus();
-    } else if (PlatformDetector.isTV()) {
+    if (PlatformDetector.isTV()) {
       _tvDetailInfoFocusNode.requestFocus();
     } else {
       _backButtonFocusNode.requestFocus();
     }
   }
 
-  /// Focus the overview, or the first available content section when there is no overview.
+  /// Focus the ratings strip that sits under the action row, else the content below it.
   void _focusBelowActionRow() {
+    if (_detailRatingSourceFocusNode.context?.mounted == true) {
+      _detailRatingSourceFocusNode.requestFocus();
+      return;
+    }
+    _focusBelowRatings();
+  }
+
+  /// Focus the overview, or the first available content section when there is no overview.
+  void _focusBelowRatings() {
     for (final node in [_versionSelectFocusNode]) {
       if (node.canRequestFocus && node.context != null) {
         node.requestFocus();
@@ -3562,8 +3567,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     final pixelRatio = MediaQuery.devicePixelRatioOf(context);
     final phone = _isPortraitPhone(context);
     final portraitSeries = phone && (metadata.isShow || metadata.isSeason || metadata.isEpisode);
-    final imageHeight = phone ? size.width * ((portraitSeries ? 380 : 603) / 390) : _heroArtHeight(size, headerHeight);
+    final imageHeight = phone
+        ? size.width * ((portraitSeries ? _seriesHeroArtHeight : _movieHeroArtHeight) / 390)
+        : _heroArtHeight(size, headerHeight);
     final artHeight = (imageHeight * pixelRatio).ceilToDouble() / pixelRatio;
+    final lightSurface = Theme.of(context).brightness == Brightness.light;
 
     return Positioned(
       top: 0,
@@ -3660,12 +3668,16 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                             ? LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
-                                stops: portraitSeries ? const [0, .55, .72, .85, 1] : const [0, .35, .48, .60, .70],
+                                stops: portraitSeries
+                                    ? const [0, .66, .79, .90, 1]
+                                    : lightSurface
+                                    ? const [0, .40, .50, .62, .76]
+                                    : const [0, .50, .62, .73, .84],
                                 colors: [
                                   surface.withValues(alpha: 0),
                                   surface.withValues(alpha: 0),
-                                  surface.withValues(alpha: .38),
-                                  surface.withValues(alpha: .81),
+                                  surface.withValues(alpha: lightSurface ? .5 : .38),
+                                  surface.withValues(alpha: lightSurface ? .86 : .81),
                                   surface,
                                 ],
                               )

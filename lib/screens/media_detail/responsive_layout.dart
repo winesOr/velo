@@ -62,7 +62,15 @@ extension _MediaDetailResponsiveLayout on _MediaDetailScreenState {
     // In portrait the title begins at the lower edge of the poster. Everything
     // after it flows naturally as sources, title length and text scale change.
     final top = phone
-        ? math.max(toolbarBottom + 12, artwork ? math.min(size.width * (320 / 390), size.height * .4) : 0.0)
+        ? math.max(
+            toolbarBottom + 12,
+            artwork
+                ? (metadata.isShow || metadata.isSeason || metadata.isEpisode
+                      ? math.min(size.width * (320 / 390), size.height * .4)
+                      // Movies start the title ~37pt lower (matches _movieHeroArtHeight).
+                      : math.min(size.width * (357 / 390), size.height * .44))
+                : 0.0,
+          )
         : toolbarBottom + (artwork ? (centered ? 120 : 64) : 24);
     return SafeArea(
       top: false,
@@ -92,6 +100,7 @@ extension _MediaDetailResponsiveLayout on _MediaDetailScreenState {
               item: metadata,
               client: _getArtworkMediaClient(context),
               showInfo: false,
+              detailScrim: true,
               localArtworkPathResolver: widget.isOffline ? (path) => _offlineArtworkCandidatePath(context, path) : null,
               allowNetwork: !widget.isOffline,
             ),

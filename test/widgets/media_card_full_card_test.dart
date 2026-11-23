@@ -151,8 +151,13 @@ void main() {
     await pumpCard();
     final badge = find.byType(MediaCardRatingBadge);
     expect(badge, findsOneWidget);
-    expect(find.descendant(of: badge, matching: find.byType(DecoratedBox)), findsNothing);
-    expect(find.descendant(of: badge, matching: find.byType(ColoredBox)), findsNothing);
+    // Same plate as the format poster badge: 20px tall, #000 at 80%, 6px radius.
+    expect(tester.getSize(badge).height, 20);
+    final plate = tester.widget<Container>(find.descendant(of: badge, matching: find.byType(Container)));
+    expect(
+      plate.decoration,
+      BoxDecoration(color: Colors.black.withValues(alpha: .8), borderRadius: BorderRadius.circular(6)),
+    );
     expect(find.text('8.1'), findsOneWidget);
     expect(find.text('9.0'), findsNothing);
     await SettingsService.instance.write(SettingsService.showRatingBadges, false);
@@ -163,7 +168,7 @@ void main() {
     expect(find.byType(MediaCardRatingBadge), findsNothing);
   });
 
-  testWidgets('poster score paints only white glyphs on a transparent layer', (tester) async {
+  testWidgets('poster score paints white glyphs on the shared black plate', (tester) async {
     const layer = Key('score-paint-layer');
     await tester.pumpWidget(
       const Directionality(
@@ -173,10 +178,7 @@ void main() {
             key: layer,
             child: Padding(
               padding: EdgeInsets.all(6),
-              child: DefaultTextStyle(
-                style: TextStyle(backgroundColor: Colors.black),
-                child: MediaCardRatingBadge(rating: MediaRatingSource(source: 'imdb', value: 8.3)),
-              ),
+              child: MediaCardRatingBadge(rating: MediaRatingSource(source: 'imdb', value: 8.3)),
             ),
           ),
         ),
@@ -193,14 +195,20 @@ void main() {
       }
     });
     expect(pixels, isNotNull);
-    var visible = 0;
+    var plate = 0;
+    var glyph = 0;
     for (var i = 0; i < pixels!.length; i += 4) {
       if (pixels[i + 3] < 16) continue;
-      visible++;
-      expect(pixels.sublist(i, i + 3), everyElement(greaterThanOrEqualTo(248)));
+      // Plate: black at ~80%; glyph: bright pixels inside it.
+      if (pixels[i] < 16) {
+        plate++;
+      } else if (pixels[i] >= 200) {
+        glyph++;
+      }
     }
-    expect(visible, greaterThan(0));
-    expect(pixels[3], 0);
+    expect(plate, greaterThan(0));
+    expect(glyph, greaterThan(0));
+    expect(pixels[3], 0, reason: 'padding around the plate stays transparent');
   });
 
   test('full bleed grid delegates use image aspect ratios', () {

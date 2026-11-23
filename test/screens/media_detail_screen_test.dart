@@ -63,6 +63,7 @@ import 'package:plezy/services/settings_service.dart';
 import 'package:plezy/theme/mono_theme.dart';
 import 'package:plezy/utils/ambient_palette_extractor.dart';
 import 'package:plezy/utils/layout_constants.dart';
+import 'package:plezy/utils/media_quality_labels.dart';
 import 'package:plezy/utils/media_server_http_client.dart';
 import 'package:plezy/utils/platform_detector.dart';
 import 'package:plezy/utils/watch_state_notifier.dart';
@@ -138,7 +139,7 @@ void main() {
     await tester.pump();
 
     final titleText = tester.widget<Text>(find.text(title));
-    final baseFontSize = 36 * TvLayoutConstants.scaleForSize(const Size(800, 480));
+    final baseFontSize = 34 * TvLayoutConstants.scaleForSize(const Size(800, 480));
     expect(titleText.style?.fontSize, baseFontSize);
     expect(titleText.maxLines, isNull);
     expect(find.byKey(const ValueKey('tv_detail_content_scroll')), findsOneWidget);
@@ -241,10 +242,7 @@ void main() {
     expect(find.byKey(const ValueKey('detail_audio_selector')), findsNothing);
     expect(find.byKey(const ValueKey('detail_subtitle_selector')), findsNothing);
 
-    // UP crosses the external scores before reaching the information block.
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
-    await tester.pump();
-    expect(FocusManager.instance.primaryFocus?.debugLabel, 'detail_rating_source');
+    // The external scores sit below the actions, so UP reaches the information block directly.
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pump();
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'tv_detail_info');
@@ -491,11 +489,11 @@ void main() {
     expect(find.descendant(of: information, matching: find.text('1080p')), findsNothing);
     final formatBadges = find.descendant(of: information, matching: find.byType(MediaFormatBadge));
     expect(formatBadges, findsNWidgets(2));
-    expect(find.descendant(of: formatBadges, matching: find.text(t.videoSettings.hdr)), findsOneWidget);
-    expect(
-      find.descendant(of: formatBadges, matching: find.text(t.videoSettings.audioOutputDolbyAtmos)),
-      findsOneWidget,
-    );
+    expect(tester.widgetList<MediaFormatBadge>(formatBadges).map((badge) => badge.format), [
+      MediaFormat.hdr,
+      MediaFormat.dolbyAtmos,
+    ]);
+    expect(find.descendant(of: information, matching: find.byType(MediaResolutionBadge)), findsOneWidget);
     expect(
       find.descendant(of: find.byKey(const ValueKey('detail_source_version')), matching: find.textContaining('1080p')),
       findsOneWidget,
@@ -2477,16 +2475,16 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pump();
       await tester.pumpAndSettle(const Duration(milliseconds: 50));
-      expect(focus('detail_rating_source').hasFocus, isTrue);
-      expectVisibleAboveRail(find.byType(MediaRatingsStrip));
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.pump();
-      await tester.pumpAndSettle(const Duration(milliseconds: 50));
       expect(focus('play_button').hasFocus, isTrue);
       final play = find
           .descendant(of: find.byType(FocusableActionBar).first, matching: find.byType(FilledButton))
           .first;
       expectVisibleAboveRail(play);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      await tester.pumpAndSettle(const Duration(milliseconds: 50));
+      expect(focus('detail_rating_source').hasFocus, isTrue);
+      expectVisibleAboveRail(find.byType(MediaRatingsStrip));
       for (final key in ['detail_source_version']) {
         await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
         await tester.pump();
@@ -3746,10 +3744,10 @@ void main() {
         }
         final title = tester.getRect(find.byKey(const ValueKey('detail_natural_title')));
         final play = tester.getRect(find.byKey(const ValueKey('detail_primary_play')));
-        expect(title.top, closeTo(320, 3));
+        expect(title.top, closeTo(357, 3)); // 320 + 37: movie info sits lower
         expect(play.left, 24);
         expect(play.right, 366);
-        expect(play.top, closeTo(490, 12));
+        expect(play.top, closeTo(446, 12)); // ratings now sit below the actions
         expect(find.text('8.2').hitTestable(), findsOneWidget);
         if (four) {
           final scores = ['8.3', '8.2', '75%', '91%'].map((s) => tester.getRect(find.text(s).hitTestable())).toList();
@@ -4543,7 +4541,8 @@ void main() {
         expect(firstLine.data, '2017');
         expect(firstLine.data, isNot(contains('PG-13')));
         expect(secondLine.data, contains('1h 46min'));
-        expect(secondLine.data, contains('1080p'));
+        expect(secondLine.data, isNot(contains('1080p')));
+        expect(find.byType(MediaResolutionBadge), findsOneWidget);
         expect(firstLine.style?.fontSize, 12);
         expect(secondLine.style?.fontSize, 12);
         expect(find.byKey(const ValueKey('detail_personal_rating_target')), findsNothing);
@@ -4614,7 +4613,7 @@ void main() {
       final paragraph = tester.renderObject<RenderParagraph>(titleFinder);
       expect(paragraph.constraints.maxWidth, lessThanOrEqualTo(560));
       final text = tester.widget<Text>(titleFinder);
-      expect(text.style!.fontSize, 36);
+      expect(text.style!.fontSize, 32);
       expect(text.maxLines, isNull);
       expect(text.overflow, isNull);
       expect(paragraph.size.height, greaterThan(36));

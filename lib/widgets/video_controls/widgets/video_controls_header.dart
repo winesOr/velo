@@ -103,7 +103,7 @@ class VideoControlsHeader extends StatelessWidget {
       children: [
         AppBarBackButton(style: BackButtonStyle.video, onPressed: onBack ?? () => Navigator.of(context).pop(true)),
         const SizedBox(width: 16),
-        Expanded(child: _withDolbyIndicator(_buildTitle(context, itemTitle))),
+        Expanded(child: _withDolbyIndicator(context, itemTitle)),
         if (!trailingOnSeparateRow) _sessionIndicator(),
         if (showClock)
           const Padding(
@@ -179,19 +179,22 @@ class VideoControlsHeader extends StatelessWidget {
                 style: TextStyle(color: Colors.white, fontSize: 24 * scale, fontWeight: FontWeight.w600),
               ),
               if (episode != null)
-                Text(
-                  [
-                        if (metadata.parentIndex != null) t.videoControls.seasonNumber(n: metadata.parentIndex!),
-                        t.videoControls.episodeNumber(n: episode),
-                      ].join(' · ') +
-                      (!looksLikeReleaseFileName(itemTitle) && itemTitle != metadata.grandparentTitle
-                          ? '  $itemTitle'
-                          : ''),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.white70, fontSize: 14 * scale),
-                ),
-              _buildDolbyIndicator(),
+                _subtitleRow(
+                  Text(
+                    [
+                          if (metadata.parentIndex != null) t.videoControls.seasonNumber(n: metadata.parentIndex!),
+                          t.videoControls.episodeNumber(n: episode),
+                        ].join(' · ') +
+                        (!looksLikeReleaseFileName(itemTitle) && itemTitle != metadata.grandparentTitle
+                            ? '  $itemTitle'
+                            : ''),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.white70, fontSize: 14 * scale),
+                  ),
+                )
+              else
+                _buildDolbyIndicator(),
             ],
           ),
         ),
@@ -255,8 +258,13 @@ class VideoControlsHeader extends StatelessWidget {
     );
   }
 
-  Widget _withDolbyIndicator(Widget title) {
-    if (player == null) return title;
+  /// Title block plus the playback-format badges: beside the subtitle when
+  /// there is one, on their own row under the title otherwise.
+  Widget _withDolbyIndicator(BuildContext context, String itemTitle) {
+    if (player == null) return _buildTitle(context, itemTitle);
+    final inline = style != VideoHeaderStyle.singleLine && _episodeLine(itemTitle) != null;
+    final title = _buildTitle(context, itemTitle, inline: inline);
+    if (inline) return title;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,18 +272,35 @@ class VideoControlsHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildDolbyIndicator() {
+  /// [subtitle] with the format badges to its right (8 px gap).
+  Widget _subtitleRow(Widget subtitle) {
+    if (player == null) return subtitle;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(child: subtitle),
+        _buildDolbyIndicator(inline: true),
+      ],
+    );
+  }
+
+  Widget _buildDolbyIndicator({bool inline = false}) {
     final playback = player;
     if (playback == null) return const SizedBox.shrink();
     return FirstFrameGuard(
       hasFirstFrame: hasFirstFrame,
-      builder: (_) => DolbyPlaybackIndicator(key: ValueKey((playback, metadata.globalKey)), player: playback),
+      builder: (_) => DolbyPlaybackIndicator(
+        key: ValueKey((playback, metadata.globalKey, inline)),
+        player: playback,
+        inline: inline,
+      ),
     );
   }
 
-  Widget _buildTitle(BuildContext context, String itemTitle) {
-    Widget fallback(BuildContext _) =>
-        style == VideoHeaderStyle.singleLine ? _buildSingleLineTitle(itemTitle) : _buildMultiLineTitle(itemTitle);
+  Widget _buildTitle(BuildContext context, String itemTitle, {bool inline = false}) {
+    Widget fallback(BuildContext _) => style == VideoHeaderStyle.singleLine
+        ? _buildSingleLineTitle(itemTitle)
+        : _buildMultiLineTitle(itemTitle, inline: inline);
     final path = playerLogoPath(metadata);
     if (path == null || path.isEmpty) return fallback(context);
     final episodeLine = _episodeLine(itemTitle);
@@ -298,7 +323,11 @@ class VideoControlsHeader extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [logo, const SizedBox(height: 4), _episodeText(episodeLine)],
+      children: [
+        logo,
+        const SizedBox(height: 4),
+        _episodeText(episodeLine, inline: inline),
+      ],
     );
   }
 
@@ -319,12 +348,15 @@ class VideoControlsHeader extends StatelessWidget {
     return '$number${!looksLikeReleaseFileName(itemTitle) && itemTitle != metadata.grandparentTitle ? '  $itemTitle' : ''}';
   }
 
-  Widget _episodeText(String line) => Text(
-    line,
-    style: TextStyle(color: Colors.white70, fontSize: mobileLayout ? 11 : 13),
-    maxLines: 1,
-    overflow: .ellipsis,
-  );
+  Widget _episodeText(String line, {bool inline = false}) {
+    final text = Text(
+      line,
+      style: TextStyle(color: Colors.white70, fontSize: mobileLayout ? 11 : 13),
+      maxLines: 1,
+      overflow: .ellipsis,
+    );
+    return inline ? _subtitleRow(text) : text;
+  }
 
   Widget _buildSeriesName(String itemTitle) => Text(
     metadata.grandparentTitle ?? itemTitle,
@@ -353,12 +385,15 @@ class VideoControlsHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildMultiLineTitle(String itemTitle) {
+  Widget _buildMultiLineTitle(String itemTitle, {bool inline = false}) {
     final line = _episodeLine(itemTitle);
     return Column(
       crossAxisAlignment: .start,
       mainAxisSize: MainAxisSize.min,
-      children: [_buildSeriesName(itemTitle), if (line != null) _episodeText(line)],
+      children: [
+        _buildSeriesName(itemTitle),
+        if (line != null) _episodeText(line, inline: inline),
+      ],
     );
   }
 }

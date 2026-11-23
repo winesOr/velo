@@ -5,21 +5,27 @@ import 'package:flutter/material.dart';
 
 import '../../../focus/focus_theme.dart';
 import '../../../mpv/mpv.dart';
+import '../../../utils/platform_detector.dart';
 import '../../../utils/media_quality_labels.dart';
 import '../../media_format_badge.dart';
 
 typedef _PlaybackFormats = ({MediaFormat? video, MediaFormat? audio});
 
 class DolbyPlaybackIndicator extends StatefulWidget {
-  const DolbyPlaybackIndicator({super.key, required this.player});
+  const DolbyPlaybackIndicator({super.key, required this.player, this.inline = false});
 
   final Player player;
+
+  /// True when sitting beside the subtitle on the same row; false when it
+  /// gets its own row under the title.
+  final bool inline;
 
   @override
   State<DolbyPlaybackIndicator> createState() => _DolbyPlaybackIndicatorState();
 }
 
 class _DolbyPlaybackIndicatorState extends State<DolbyPlaybackIndicator> {
+  static const _scrim = Color(0x4D000000);
   static const _inactive = (video: null, audio: null);
   _PlaybackFormats _status = _inactive;
   late final Timer _poll;
@@ -84,18 +90,34 @@ class _DolbyPlaybackIndicatorState extends State<DolbyPlaybackIndicator> {
 
   @override
   Widget build(BuildContext context) {
-    if (_status == _inactive) return const SizedBox.shrink();
-    final scale = FocusTheme.tvPlayerScale(context);
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 150),
+      child: _status == _inactive
+          ? const SizedBox.shrink(key: ValueKey('dolby-indicator-idle'))
+          : _buildBadges(context, FocusTheme.tvPlayerScale(context)),
+    );
+  }
+
+  Widget _buildBadges(BuildContext context, double scale) {
+    final size = PlatformDetector.isTV() ? MediaFormatBadgeSize.large : MediaFormatBadgeSize.small;
+    final formats = [?_status.video, ?_status.audio];
+    final badges = Wrap(
+      key: ValueKey(_status),
+      spacing: 6 * scale,
+      runSpacing: 4 * scale,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        for (final format in formats)
+          // Dark scrim keeps the white wordmark legible over bright video.
+          DecoratedBox(
+            decoration: BoxDecoration(color: _scrim, borderRadius: BorderRadius.circular(size.radius * scale)),
+            child: MediaFormatBadge(format, size: size, scale: scale, color: Colors.white),
+          ),
+      ],
+    );
     return Padding(
-      padding: EdgeInsets.only(top: 4 * scale),
-      child: Wrap(
-        spacing: 6 * scale,
-        runSpacing: 4 * scale,
-        children: [
-          if (_status.video case final video?) MediaFormatBadge(video, onArtwork: true, scale: scale),
-          if (_status.audio case final audio?) MediaFormatBadge(audio, onArtwork: true, scale: scale),
-        ],
-      ),
+      padding: widget.inline ? EdgeInsetsDirectional.only(start: 8 * scale) : EdgeInsets.only(top: 4 * scale),
+      child: badges,
     );
   }
 }

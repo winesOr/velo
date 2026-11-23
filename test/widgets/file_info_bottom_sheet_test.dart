@@ -38,9 +38,9 @@ void main() {
 
     expect(find.text('Example Movie'), findsOneWidget);
     expect(find.text('Overview'), findsOneWidget);
-    expect(find.text('File'), findsOneWidget);
-    expect(find.text('Video'), findsOneWidget);
-    expect(find.text('Audio'), findsOneWidget);
+    expect(find.text('File'), findsNWidgets(2)); // summary row label + section header
+    expect(find.text('Video'), findsNWidgets(2)); // summary row label + section header
+    expect(find.text('Audio'), findsNWidgets(2)); // summary row label + section header
     expect(find.text('Subtitles'), findsOneWidget);
   });
 
@@ -71,6 +71,52 @@ void main() {
       MediaFormat.hdr10Plus,
       MediaFormat.dolbyAtmos,
     ]);
+  });
+
+  testWidgets('summary lists video, audio and file rows with badges above their detail line', (tester) async {
+    const fileInfo = MediaFileInfo(
+      versions: [
+        MediaFileVersion(
+          container: 'mkv',
+          width: 3840,
+          height: 2160,
+          durationMs: 7200000,
+          parts: [
+            MediaFilePart(
+              fileSize: 1073741824,
+              streams: [
+                MediaStreamDetails(
+                  kind: MediaStreamKind.video,
+                  ordinal: 1,
+                  codec: 'hevc',
+                  bitDepth: 10,
+                  videoRange: MediaVideoRange.hdr10,
+                ),
+                MediaStreamDetails(
+                  kind: MediaStreamKind.audio,
+                  ordinal: 1,
+                  codec: 'eac3',
+                  channels: 6,
+                  language: 'English',
+                  spatialFormat: 'DolbyAtmos',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+    await _pumpSheet(tester, fileInfo: fileInfo, title: 'Movie');
+
+    expect(find.byType(MediaResolutionBadge), findsOneWidget);
+    expect(find.text('HEVC · 10 bit'), findsOneWidget);
+    expect(find.text('EAC3 · 6 ch · English'), findsOneWidget);
+    expect(find.textContaining('MKV · '), findsOneWidget);
+    // Badges sit above the detail line of the same row.
+    expect(
+      tester.getTopLeft(find.byType(MediaResolutionBadge)).dy,
+      lessThan(tester.getTopLeft(find.text('HEVC · 10 bit')).dy),
+    );
   });
 
   testWidgets('audio-only file drops the video section and keeps the copyable path', (tester) async {
@@ -104,8 +150,8 @@ void main() {
     await _pumpSheet(tester, fileInfo: fileInfo, title: 'Ready Lets Go');
 
     expect(find.text('Ready Lets Go'), findsOneWidget);
-    expect(find.text('File'), findsOneWidget);
-    expect(find.text('Audio'), findsOneWidget);
+    expect(find.text('File'), findsNWidgets(2)); // summary row label + section header
+    expect(find.text('Audio'), findsNWidgets(2)); // summary row label + section header
     expect(find.text('Lyrics'), findsOneWidget);
     expect(find.text('stereo (2 ch)'), findsOneWidget);
     expect(find.text('44.1 kHz'), findsOneWidget);

@@ -26,6 +26,7 @@ class MediaRatingsStrip extends StatefulWidget {
     this.foregroundColor,
     this.alignment = WrapAlignment.center,
     this.showSourceLabels = true,
+    this.compact = false,
     this.maxRatings = RatingDisplayPolicy.detailLimit,
     this.padding = EdgeInsets.zero,
     this.firstFocusNode,
@@ -38,6 +39,10 @@ class MediaRatingsStrip extends StatefulWidget {
   final Color? foregroundColor;
   final WrapAlignment alignment;
   final bool showSourceLabels;
+
+  /// Phone-portrait inline style: small brand icon + score, no dividers or
+  /// source captions, one centred row.
+  final bool compact;
   final int maxRatings;
   final EdgeInsetsGeometry padding;
   final FocusNode? firstFocusNode;
@@ -50,6 +55,11 @@ class MediaRatingsStrip extends StatefulWidget {
   @override
   State<MediaRatingsStrip> createState() => _MediaRatingsStripState();
 }
+
+// Compact (phone portrait) inline style metrics.
+const double _compactIconSize = 14;
+const double _compactFontSize = 13;
+const double _compactItemSpacing = 14;
 
 class _MediaRatingsStripState extends State<MediaRatingsStrip> {
   final List<FocusNode> _ownedNodes = [];
@@ -83,6 +93,59 @@ class _MediaRatingsStripState extends State<MediaRatingsStrip> {
     super.dispose();
   }
 
+  Widget _buildCompact(
+    BuildContext context,
+    List<MediaRatingSource> allRatings,
+    List<MediaRatingSource> ratings,
+    Color foreground,
+  ) {
+    return Padding(
+      padding: widget.padding,
+      child: Wrap(
+        alignment: widget.alignment,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: _compactItemSpacing,
+        runSpacing: 4,
+        children: [
+          for (var index = 0; index < ratings.length; index++)
+            Semantics(
+              button: true,
+              label: ratingsSemanticLabel([ratings[index]]),
+              hint: t.ratingDetails.viewSources,
+              onTap: () => _open(allRatings, _nodeAt(index)),
+              excludeSemantics: true,
+              child: FocusableWrapper(
+                focusNode: _nodeAt(index),
+                onSelect: () => _open(allRatings, _nodeAt(index)),
+                onNavigateUp: widget.onNavigateUp,
+                onNavigateDown: widget.onNavigateDown,
+                onNavigateLeft: index > 0 ? () => _nodeAt(index - 1).requestFocus() : null,
+                onNavigateRight: index + 1 < ratings.length ? () => _nodeAt(index + 1).requestFocus() : null,
+                disableScale: true,
+                borderRadius: 8,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _open(allRatings, _nodeAt(index)),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 32),
+                    child: _RatingScore(
+                      rating: ratings[index],
+                      foreground: foreground,
+                      showSourceLabel: false,
+                      iconSize: _compactIconSize,
+                      fontSize: _compactFontSize,
+                      fontWeight: FontWeight.w400,
+                      gap: 4,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => SettingsBuilder(
     prefs: ratingDisplayPrefs,
@@ -92,6 +155,7 @@ class _MediaRatingsStripState extends State<MediaRatingsStrip> {
       if (ratings.isEmpty) return const SizedBox.shrink();
       final foreground = widget.foregroundColor ?? Theme.of(context).colorScheme.onSurface;
       final scaler = MediaQuery.textScalerOf(context);
+      if (widget.compact) return _buildCompact(context, allRatings, ratings, foreground);
       return Padding(
         padding: widget.padding,
         child: LayoutBuilder(
@@ -174,7 +238,20 @@ class _MediaRatingsStripState extends State<MediaRatingsStrip> {
 }
 
 class _RatingScore extends StatelessWidget {
-  const _RatingScore({required this.rating, required this.foreground, required this.showSourceLabel});
+  const _RatingScore({
+    required this.rating,
+    required this.foreground,
+    required this.showSourceLabel,
+    this.iconSize = 18,
+    this.fontSize = 18,
+    this.fontWeight = FontWeight.w600,
+    this.gap = 6,
+  });
+
+  final double iconSize;
+  final double fontSize;
+  final FontWeight fontWeight;
+  final double gap;
 
   final MediaRatingSource rating;
   final Color foreground;
@@ -187,17 +264,17 @@ class _RatingScore extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (info != null)
-          SizedBox(width: 18 * info.iconAspect, height: 18, child: SvgPicture.asset(info.assetPath))
+          SizedBox(width: iconSize * info.iconAspect, height: iconSize, child: SvgPicture.asset(info.assetPath))
         else
-          AppIcon(Symbols.star_rounded, fill: 1, size: 18, color: const Color(0xfff5c544)),
-        const SizedBox(width: 6),
+          AppIcon(Symbols.star_rounded, fill: 1, size: iconSize, color: const Color(0xfff5c544)),
+        SizedBox(width: gap),
         Text(
           mediaRatingLabel(rating),
           maxLines: 1,
           style: TextStyle(
             color: foreground,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+            fontSize: fontSize,
+            fontWeight: fontWeight,
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
@@ -231,13 +308,20 @@ class MediaCardRatingBadge extends StatelessWidget {
     return Semantics(
       label: ratingsSemanticLabel([rating]),
       excludeSemantics: true,
-      child: DecoratedBox(
-        decoration: BoxDecoration(color: Colors.black.withValues(alpha: .48), borderRadius: BorderRadius.circular(7)),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-          child: Text(
-            withUnit ? t.common.ratingValue(value: value) : value,
-            style: const TextStyle(inherit: false, color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+      // Same plate as MediaFormatPosterBadge: 20px tall, #000 at 80%, 6px radius.
+      child: Container(
+        height: 20,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: BoxDecoration(color: Colors.black.withValues(alpha: .8), borderRadius: BorderRadius.circular(6)),
+        child: Text(
+          withUnit ? t.common.ratingValue(value: value) : value,
+          style: const TextStyle(
+            inherit: false,
+            color: Colors.white,
+            fontSize: 11,
+            height: 1,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
