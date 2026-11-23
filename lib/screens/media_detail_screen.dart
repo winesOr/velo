@@ -69,6 +69,7 @@ import '../theme/home_typography.dart';
 import '../theme/mono_presentation.dart';
 import '../navigation/home_theme.dart';
 import '../widgets/media_detail_technical_info.dart';
+import '../widgets/media_format_badge.dart';
 import '../widgets/cycling_media_backdrop.dart';
 import '../widgets/optimized_media_image.dart';
 import '../utils/media_image_helper.dart';

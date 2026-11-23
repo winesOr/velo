@@ -29,6 +29,7 @@ import 'package:plezy/media/media_item.dart';
 import 'package:plezy/media/media_kind.dart';
 import 'package:plezy/media/media_part.dart';
 import 'package:plezy/media/media_rating.dart';
+import 'package:plezy/widgets/media_format_badge.dart';
 import 'package:plezy/widgets/media_ratings_strip.dart';
 import 'package:plezy/widgets/cast_member_strip.dart';
 import 'package:plezy/media/media_role.dart';
@@ -406,7 +407,21 @@ void main() {
       genres: const ['Drama', 'Mystery'],
       contentRating: 'PG-13',
       durationMs: 6360000,
-      mediaVersions: const [MediaVersion(id: 'v1', videoResolution: '1080')],
+      mediaVersions: const [
+        MediaVersion(
+          id: 'v1',
+          videoResolution: '1080',
+          parts: [
+            MediaPart(
+              id: 'v1-part',
+              streams: [
+                MediaStream(id: 'video', kind: MediaStreamKind.video, hdr: true),
+                MediaStream(id: 'audio', kind: MediaStreamKind.audio, codec: 'eac3', displayTitle: 'Dolby Atmos'),
+              ],
+            ),
+          ],
+        ),
+      ],
       ratings: const [
         MediaRatingSource(source: 'rottenTomatoesCritic', value: 9.2),
         MediaRatingSource(source: 'rottenTomatoesAudience', value: 8.1),
@@ -474,6 +489,13 @@ void main() {
     // on the action row's playback status instead (#2217).
     final information = find.byKey(const ValueKey('tv_detail_information_semantics'));
     expect(find.descendant(of: information, matching: find.text('1080p')), findsNothing);
+    final formatBadges = find.descendant(of: information, matching: find.byType(MediaFormatBadge));
+    expect(formatBadges, findsNWidgets(2));
+    expect(find.descendant(of: formatBadges, matching: find.text(t.videoSettings.hdr)), findsOneWidget);
+    expect(
+      find.descendant(of: formatBadges, matching: find.text(t.videoSettings.audioOutputDolbyAtmos)),
+      findsOneWidget,
+    );
     expect(
       find.descendant(of: find.byKey(const ValueKey('detail_source_version')), matching: find.textContaining('1080p')),
       findsOneWidget,

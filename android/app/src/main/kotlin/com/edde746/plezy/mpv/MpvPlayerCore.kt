@@ -2909,6 +2909,7 @@ class MpvPlayerCore private constructor(
       "audio-params/samplerate" to readProperty("audio-params/samplerate"),
       "audio-params/hr-channels" to readProperty("audio-params/hr-channels"),
       "audio-params/format" to readProperty("audio-params/format"),
+      "audio-out-params/format" to readProperty("audio-out-params/format"),
       "current-tracks/audio/demux-samplerate" to readProperty("current-tracks/audio/demux-samplerate"),
       "current-tracks/audio/demux-channel-count" to readProperty("current-tracks/audio/demux-channel-count"),
       "audio-bitrate" to readProperty("audio-bitrate"),
@@ -2936,7 +2937,8 @@ class MpvPlayerCore private constructor(
       stats["video-params/hw-pixelformat"] = readProperty("video-params/hw-pixelformat")
       stats["video-params/colormatrix"] = readProperty("video-params/colormatrix")
       stats["video-params/primaries"] = readProperty("video-params/primaries")
-      stats["video-params/gamma"] = readProperty("video-params/gamma")
+      val gamma = readProperty("video-params/gamma")
+      stats["video-params/gamma"] = gamma
       stats["video-params/max-luma"] = readProperty("video-params/max-luma")
       stats["video-params/min-luma"] = readProperty("video-params/min-luma")
       stats["video-params/max-cll"] = readProperty("video-params/max-cll")
@@ -2947,16 +2949,32 @@ class MpvPlayerCore private constructor(
       // base layer, or gpu-next reshaping. The track's profile is the
       // bitstream's DOVI record, so a file without one reports nothing.
       val dvProfile = readProperty("current-tracks/video/dolby-vision-profile")?.toLongOrNull()
-      if (dvProfile != null) {
-        stats["dvSourceProfile"] = dvProfile
-        stats["dvRoute"] = GpuVoPolicy.dvRoute(
+      val hdrGamma = gamma == "pq" || gamma == "hlg"
+      val videoOutput = if (dvProfile != null || hdrGamma) readProperty("current-vo") else null
+      val hardwareDecoder = stats["hwdec-current"] as String?
+      val dvRoute = if (dvProfile != null) {
+        GpuVoPolicy.dvRoute(
           dvProfile = dvProfile,
           decoderOptions = readProperty("vd-lavc-o"),
           candidates = dvDecoderCandidates,
-          hwdecCurrent = stats["hwdec-current"] as String?,
-          currentVo = readProperty("current-vo")
-        )?.id
+          hwdecCurrent = hardwareDecoder,
+          currentVo = videoOutput
+        )
+      } else {
+        null
       }
+      if (dvProfile != null) {
+        stats["dvSourceProfile"] = dvProfile
+        stats["dvRoute"] = dvRoute?.id
+        stats["dolbyVisionActive"] = displayDvSupported &&
+          videoOutput == "mediacodec" &&
+          (dvRoute == GpuVoPolicy.DvRoute.DV_DECODER || dvRoute == GpuVoPolicy.DvRoute.DV_DECODER_P81)
+      }
+      stats["hdrActive"] = displayHdrSupported &&
+        hdrGamma &&
+        videoOutput == "mediacodec" &&
+        hardwareDecoder == "mediacodec" &&
+        (dvProfile == null || (dvProfile != 5L && dvRoute == GpuVoPolicy.DvRoute.BASE_LAYER))
     }
 
     return stats

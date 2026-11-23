@@ -10,6 +10,7 @@ import 'package:plezy/utils/formatters.dart';
 import '../../../media/media_item.dart';
 import '../../../media/media_backend.dart';
 import '../../../i18n/strings.g.dart';
+import '../../../mpv/mpv.dart';
 import '../../../utils/episode_titles.dart';
 import '../../../utils/provider_extensions.dart';
 import '../../optimized_media_image.dart';
@@ -19,6 +20,8 @@ import '../../../watch_together/providers/watch_together_provider.dart';
 import '../../app_bar_back_button.dart';
 import '../../system_clock.dart';
 import '../../press_feedback.dart';
+import 'dolby_playback_indicator.dart';
+import 'first_frame_guard.dart';
 
 /// Header layout style for video controls
 enum VideoHeaderStyle {
@@ -47,6 +50,8 @@ String? playerLogoPath(MediaItem metadata) {
 class VideoControlsHeader extends StatelessWidget {
   final MediaItem metadata;
   final VideoHeaderStyle style;
+  final Player? player;
+  final ValueNotifier<bool>? hasFirstFrame;
 
   /// Optional trailing widget (e.g., track/chapter controls)
   final Widget? trailing;
@@ -73,6 +78,8 @@ class VideoControlsHeader extends StatelessWidget {
     super.key,
     required this.metadata,
     this.style = VideoHeaderStyle.multiLine,
+    this.player,
+    this.hasFirstFrame,
     this.trailing,
     this.trailingOnSeparateRow = false,
     this.mobileLayout = false,
@@ -96,7 +103,7 @@ class VideoControlsHeader extends StatelessWidget {
       children: [
         AppBarBackButton(style: BackButtonStyle.video, onPressed: onBack ?? () => Navigator.of(context).pop(true)),
         const SizedBox(width: 16),
-        Expanded(child: _buildTitle(context, itemTitle)),
+        Expanded(child: _withDolbyIndicator(_buildTitle(context, itemTitle))),
         if (!trailingOnSeparateRow) _sessionIndicator(),
         if (showClock)
           const Padding(
@@ -184,6 +191,7 @@ class VideoControlsHeader extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: Colors.white70, fontSize: 14 * scale),
                 ),
+              _buildDolbyIndicator(),
             ],
           ),
         ),
@@ -244,6 +252,24 @@ class VideoControlsHeader extends StatelessWidget {
         SizedBox(width: 8 * scale),
         button(3, Symbols.more_horiz_rounded, t.videoControls.moreButton, onMore),
       ],
+    );
+  }
+
+  Widget _withDolbyIndicator(Widget title) {
+    if (player == null) return title;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [title, _buildDolbyIndicator()],
+    );
+  }
+
+  Widget _buildDolbyIndicator() {
+    final playback = player;
+    if (playback == null) return const SizedBox.shrink();
+    return FirstFrameGuard(
+      hasFirstFrame: hasFirstFrame,
+      builder: (_) => DolbyPlaybackIndicator(key: ValueKey((playback, metadata.globalKey)), player: playback),
     );
   }
 

@@ -751,6 +751,8 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
           Expanded(
             child: VideoControlsHeader(
               metadata: widget.metadata,
+              player: widget.player,
+              hasFirstFrame: widget.hasFirstFrame,
               style: Platform.isMacOS ? VideoHeaderStyle.singleLine : VideoHeaderStyle.multiLine,
               onBack: widget.onBack,
               tvFocusNodes: PlatformDetector.isTV() ? _headerFocusNodes : null,

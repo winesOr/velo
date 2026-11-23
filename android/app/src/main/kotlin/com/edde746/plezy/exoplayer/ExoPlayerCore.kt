@@ -313,6 +313,7 @@ class ExoPlayerCore(private val activity: Activity) :
   private var decoderInitName: String? = null
   private var audioDecoderInitName: String? = null
   private var lastAudioTrackConfig: AudioSink.AudioTrackConfig? = null
+  private var releasedAudioTrackConfig: AudioSink.AudioTrackConfig? = null
   private val directAudioOutputBlockedAfterFailure = mutableSetOf<String>()
   private val loggedDirectAudioRecoveryBlocks = mutableSetOf<String>()
   private var audioRecoveryAttempts: Int = 0
@@ -347,6 +348,7 @@ class ExoPlayerCore(private val activity: Activity) :
   // Read before any display-mode switch: getHdrCapabilities answers for the
   // active mode, and a downgraded mode can report none (#2302).
   @Volatile private var displayHdrSupported: Boolean = false
+  private var displayDvSupported: Boolean = false
 
   // FPS detection from frame timestamps (fallback when Format.frameRate is NO_VALUE)
   @Volatile private var detectedFrameRate: Float = -1f
@@ -651,6 +653,7 @@ class ExoPlayerCore(private val activity: Activity) :
     this.audioPassthroughEnabled = audioPassthroughEnabled
     this.dvMode = getConfiguredDvMode()
     displayHdrSupported = DoviBridge.displaySupportsHdr(activity)
+    displayDvSupported = DoviBridge.displaySupportsDolbyVision(activity)
     DoviBridge.logSupportSummary(activity)
     Log.i(
       TAG,
@@ -3051,6 +3054,7 @@ class ExoPlayerCore(private val activity: Activity) :
       audioTrackConfig: AudioSink.AudioTrackConfig
     ) {
       lastAudioTrackConfig = audioTrackConfig
+      releasedAudioTrackConfig = null
       val audioFormat = selectedAudioFormat()
       persistRuntimePlaybackDiagnostics(audioFormat, audioDecoderInitName ?: "direct")
       emitLog(
@@ -3091,6 +3095,7 @@ class ExoPlayerCore(private val activity: Activity) :
       eventTime: AnalyticsListener.EventTime,
       audioTrackConfig: AudioSink.AudioTrackConfig
     ) {
+      if (lastAudioTrackConfig == audioTrackConfig) releasedAudioTrackConfig = audioTrackConfig
       emitLog(
         "debug",
         "audio",
@@ -4302,6 +4307,7 @@ class ExoPlayerCore(private val activity: Activity) :
     val videoFormat = player.videoFormat
     val audioFormat = player.audioFormat
     val audioTrackConfig = lastAudioTrackConfig
+    val transfer = videoFormat?.colorInfo?.colorTransfer
 
     // Get decoder info from the format's codecs field and check if hardware accelerated
     val videoDecoderInfo = getVideoDecoderInfo(videoFormat)
@@ -4317,6 +4323,18 @@ class ExoPlayerCore(private val activity: Activity) :
       "videoFps" to (videoFormat?.frameRate?.takeIf { it > 0 } ?: detectedFrameRate.takeIf { it > 0 }),
       "videoBitrate" to videoFormat?.bitrate,
       "videoDecoderName" to videoDecoderName,
+      "dolbyVisionActive" to (
+        displayDvSupported &&
+          firstFrameRendered &&
+          videoFormat?.sampleMimeType == MimeTypes.VIDEO_DOLBY_VISION &&
+          DoviBridge.isDolbyVisionDecoder(decoderInitName)
+        ),
+      "hdrActive" to (
+        firstFrameRendered &&
+          displayHdrSupported &&
+          videoFormat?.sampleMimeType != MimeTypes.VIDEO_DOLBY_VISION &&
+          (transfer == C.COLOR_TRANSFER_ST2084 || transfer == C.COLOR_TRANSFER_HLG)
+        ),
       "videoDroppedFrames" to player.videoDecoderCounters?.droppedBufferCount,
       "videoRenderedFrames" to player.videoDecoderCounters?.renderedOutputBufferCount,
       "videoResumeStallRecoveries" to resumeStallRecoveryCount,
@@ -4362,7 +4380,7 @@ class ExoPlayerCore(private val activity: Activity) :
       // Color info
       "colorSpace" to videoFormat?.colorInfo?.colorSpace,
       "colorRange" to videoFormat?.colorInfo?.colorRange,
-      "colorTransfer" to videoFormat?.colorInfo?.colorTransfer,
+      "colorTransfer" to transfer,
       "hdrStaticInfo" to (videoFormat?.colorInfo?.hdrStaticInfo != null),
       // Audio metrics
       "audioCodec" to audioFormat?.codecs,
@@ -4372,6 +4390,10 @@ class ExoPlayerCore(private val activity: Activity) :
       "audioBitrate" to audioFormat?.bitrate?.takeIf { it > 0 },
       "audioDecoderName" to audioDecoderInitName,
       "audioOutputEncoding" to audioTrackConfig?.encoding,
+      "audioOutputEncodingName" to audioTrackConfig
+        ?.takeUnless { it == releasedAudioTrackConfig || audioFormat == null }
+        ?.encoding
+        ?.let(::audioEncodingName),
       "audioOutputChannels" to audioTrackConfig?.channelConfig?.let { Integer.bitCount(it) },
       "audioOutputChannelConfig" to audioTrackConfig?.channelConfig,
       "audioOutputTunneling" to audioTrackConfig?.tunneling,

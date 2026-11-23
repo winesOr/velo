@@ -1,9 +1,79 @@
+import '../i18n/strings.g.dart';
+import '../media/media_file_info.dart';
 import '../media/media_item.dart';
-import '../media/media_stream.dart';
+import '../media/media_stream.dart' show MediaStream;
 import '../media/media_version.dart';
 import 'codec_utils.dart';
 import 'resolution_label.dart';
 import 'formatters.dart';
+
+enum MediaFormat {
+  dolbyVision,
+  hdr,
+  hdr10,
+  hdr10Plus,
+  hlg,
+  dolbyAtmos,
+  dolbyAudio,
+  dtsX;
+
+  String get label => switch (this) {
+    dolbyVision => t.fileInfo.dolbyVision,
+    hdr => t.videoSettings.hdr,
+    hdr10 => 'HDR10',
+    hdr10Plus => 'HDR10+',
+    hlg => 'HLG',
+    dolbyAtmos => t.videoSettings.audioOutputDolbyAtmos,
+    dolbyAudio => t.videoSettings.audioOutputDolbyAudio,
+    dtsX => 'DTS:X',
+  };
+}
+
+List<MediaFormat> mediaFormatsFor(MediaItem item, {int versionIndex = 0, int? partIndex}) {
+  if (!item.kind.isVideo) return const [];
+  final version = _selectedVersion(item.mediaVersions, versionIndex);
+  if (version == null) return const [];
+
+  final video = _firstStreamOfKind(version, MediaStreamKind.video, partIndex: partIndex);
+  final audio = _selectedAudioStream(version, partIndex: partIndex);
+  return [
+    if (video?.dolbyVision == true) MediaFormat.dolbyVision else if (video?.hdr == true) MediaFormat.hdr,
+    if (audio != null) ?_audioFormat(audio.codec, [audio.title, audio.displayTitle]),
+  ];
+}
+
+List<MediaFormat> fileVideoFormats(MediaStreamDetails? video) {
+  if (video == null) return const [];
+  final format = switch (video.videoRange) {
+    MediaVideoRange.dolbyVision ||
+    MediaVideoRange.dolbyVisionHdr10 ||
+    MediaVideoRange.dolbyVisionHlg => MediaFormat.dolbyVision,
+    MediaVideoRange.hdr => MediaFormat.hdr,
+    MediaVideoRange.hdr10 => MediaFormat.hdr10,
+    MediaVideoRange.hdr10Plus => MediaFormat.hdr10Plus,
+    MediaVideoRange.hlg => MediaFormat.hlg,
+    MediaVideoRange.sdr || MediaVideoRange.unknown => null,
+  };
+  if (video.hasHdr10Plus != true || format == MediaFormat.hdr10Plus) return [?format];
+  return [if (format == MediaFormat.dolbyVision) MediaFormat.dolbyVision, MediaFormat.hdr10Plus];
+}
+
+MediaFormat? fileAudioFormat(MediaStreamDetails? audio) => audio == null
+    ? null
+    : _audioFormat(audio.codec, [audio.spatialFormat, audio.profile, audio.displayTitle, audio.title]);
+
+MediaFormat? _audioFormat(String? codec, List<String?> descriptors) {
+  final normalizedCodec = codec?.trim().toLowerCase();
+  final formats = [normalizedCodec, ...descriptors].whereType<String>();
+  if (_hasAtmos(formats) || normalizedCodec == 'eac3-joc') return MediaFormat.dolbyAtmos;
+  if (normalizedCodec == 'dtsx' || formats.any((value) => value.toLowerCase().contains('dts:x'))) {
+    return MediaFormat.dtsX;
+  }
+  return switch (normalizedCodec) {
+    'ac3' || 'eac3' || 'ec3' || 'truehd' => MediaFormat.dolbyAudio,
+    _ => null,
+  };
+}
 
 List<String> buildMediaQualityLabels(MediaItem item, {int versionIndex = 0}) {
   final version = _selectedVersion(item.mediaVersions, versionIndex);
@@ -29,7 +99,12 @@ List<String> buildMediaQualityLabels(MediaItem item, {int versionIndex = 0}) {
 
 /// Resolution, video codec, and dynamic range — the picture half of
 /// [buildMediaQualityLabels], for a line that names the audio track separately.
-List<String> buildMediaVideoLabels(MediaItem item, {int versionIndex = 0, int? partIndex}) {
+List<String> buildMediaVideoLabels(
+  MediaItem item, {
+  int versionIndex = 0,
+  int? partIndex,
+  bool includeDynamicRange = true,
+}) {
   final version = _selectedVersion(item.mediaVersions, versionIndex);
   if (version == null) return const [];
 
@@ -41,9 +116,9 @@ List<String> buildMediaVideoLabels(MediaItem item, {int versionIndex = 0, int? p
   final codec = (video?.codec ?? version.videoCodec)?.trim();
   if (codec != null && codec.isNotEmpty) labels.add(CodecUtils.formatVideoCodec(codec));
 
-  if (video?.dolbyVision == true) {
+  if (includeDynamicRange && video?.dolbyVision == true) {
     labels.add(_formatDolbyVision(video!));
-  } else if (video?.hdr == true) {
+  } else if (includeDynamicRange && video?.hdr == true) {
     labels.add('HDR');
   }
 
@@ -100,10 +175,11 @@ MediaStream? _firstStreamOfKind(MediaVersion version, MediaStreamKind kind, {int
   return null;
 }
 
-MediaStream? _selectedAudioStream(MediaVersion version) {
+MediaStream? _selectedAudioStream(MediaVersion version, {int? partIndex}) {
   MediaStream? first;
   MediaStream? containerDefault;
-  for (final part in version.parts) {
+  final parts = version.parts;
+  for (final part in partIndex != null && partIndex >= 0 && partIndex < parts.length ? [parts[partIndex]] : parts) {
     for (final stream in part.streams) {
       if (stream.kind != MediaStreamKind.audio) continue;
       first ??= stream;
@@ -140,9 +216,7 @@ String _formatAudioCodec(String codec) {
 }
 
 bool _isAtmos(MediaStream stream) {
-  return [
-    stream.codec,
-    stream.title,
-    stream.displayTitle,
-  ].whereType<String>().any((value) => value.toLowerCase().contains('atmos'));
+  return _hasAtmos([stream.codec, stream.title, stream.displayTitle].whereType<String>());
 }
+
+bool _hasAtmos(Iterable<String> values) => values.any((value) => value.toLowerCase().contains('atmos'));

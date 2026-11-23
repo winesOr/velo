@@ -13,6 +13,7 @@ import 'package:plezy/widgets/overlay_sheet.dart';
 import '../test_helpers/prefs.dart';
 import 'package:plezy/media/ids.dart';
 import 'package:plezy/media/media_item.dart';
+import 'package:plezy/mpv/mpv.dart';
 import 'package:plezy/services/jellyfin_mappers.dart';
 import 'package:plezy/watch_together/providers/watch_together_provider.dart';
 import 'package:plezy/widgets/video_controls/widgets/video_controls_header.dart';
@@ -84,6 +85,68 @@ void main() {
     );
     expect(tester.takeException(), isNull);
     expect(tester.getSize(find.text('Movie title')).width, greaterThan(100));
+  });
+
+  testWidgets('format badges follow playback output and stop probing without a frame', (tester) async {
+    final frame = ValueNotifier(false);
+    addTearDown(frame.dispose);
+    final player = _DolbyStatsPlayer()
+      ..stats = {'dolbyVisionActive': true, 'hdrActive': true, 'audioOutputEncodingName': 'eac3-joc'};
+    await _pumpHeader(
+      tester,
+      metadata: _mappedItem({'Id': 'movie', 'Type': 'Movie', 'Name': 'Movie'}),
+      style: VideoHeaderStyle.multiLine,
+      width: 320,
+      textScale: 1.8,
+      player: player,
+      hasFirstFrame: frame,
+    );
+    final vision = find.text(t.fileInfo.dolbyVision);
+    final hdr = find.text(t.videoSettings.hdr);
+    final atmos = find.text(t.videoSettings.audioOutputDolbyAtmos);
+    final audio = find.text(t.videoSettings.audioOutputDolbyAudio);
+    expect(vision, findsNothing);
+    expect(hdr, findsNothing);
+    expect(atmos, findsNothing);
+    expect(player.reads, 0);
+
+    frame.value = true;
+    await tester.pump();
+    await tester.pump();
+    expect(vision, findsOneWidget);
+    expect(hdr, findsNothing);
+    expect(atmos, findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    player.stats = {
+      'dvSourceProfile': 7,
+      'dvRoute': 'base-layer',
+      'colorTransfer': 6,
+      'audioMimeType': 'audio/eac3-joc',
+      'audioOutputEncodingName': 'pcm16',
+      'audio-params/format': 'spdif-eac3',
+    };
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    expect(vision, findsNothing);
+    expect(hdr, findsNothing);
+    expect(atmos, findsNothing);
+    expect(audio, findsNothing);
+
+    player.stats = {'hdrActive': true, 'audio-out-params/format': 'spdif-truehd'};
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    expect(audio, findsOneWidget);
+    expect(hdr, findsOneWidget);
+    expect(atmos, findsNothing);
+
+    final reads = player.reads;
+    frame.value = false;
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 4));
+    expect(audio, findsNothing);
+    expect(hdr, findsNothing);
+    expect(player.reads, reads);
   });
 
   testWidgets('logo fallback fits a narrow header with large text', (tester) async {
@@ -226,6 +289,8 @@ Future<void> _pumpHeader(
   List<FocusNode>? tvFocusNodes,
   bool danmakuEnabled = false,
   WatchTogetherProvider? sessionProvider,
+  Player? player,
+  ValueNotifier<bool>? hasFirstFrame,
 }) async {
   final watchTogether = sessionProvider ?? WatchTogetherProvider();
   addTearDown(watchTogether.dispose);
@@ -255,6 +320,8 @@ Future<void> _pumpHeader(
                     mobileLayout: true,
                     metadata: metadata,
                     style: style,
+                    player: player,
+                    hasFirstFrame: hasFirstFrame,
                     showClock: width > 400,
                     trailing: trailing,
                     trailingOnSeparateRow: trailingOnSeparateRow,
@@ -268,6 +335,23 @@ Future<void> _pumpHeader(
       ),
     ),
   );
+}
+
+class _DolbyStatsPlayer implements Player {
+  int reads = 0;
+  Map<String, dynamic> stats = const {};
+
+  @override
+  bool get providesNativeStats => true;
+
+  @override
+  Future<Map<String, dynamic>> getStats() async {
+    reads++;
+    return stats;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _HeaderProfile extends ChangeNotifier implements ActiveProfileProvider {

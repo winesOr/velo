@@ -5,7 +5,9 @@ import 'package:plezy/focus/focusable_wrapper.dart';
 import 'package:plezy/focus/input_mode_tracker.dart';
 import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/media/media_file_info.dart';
+import 'package:plezy/utils/media_quality_labels.dart';
 import 'package:plezy/widgets/file_info_bottom_sheet.dart';
+import 'package:plezy/widgets/media_format_badge.dart';
 
 import '../test_helpers/theme.dart';
 
@@ -40,6 +42,35 @@ void main() {
     expect(find.text('Video'), findsOneWidget);
     expect(find.text('Audio'), findsOneWidget);
     expect(find.text('Subtitles'), findsOneWidget);
+  });
+
+  testWidgets('summary marks independent video formats and spatial audio', (tester) async {
+    const fileInfo = MediaFileInfo(
+      versions: [
+        MediaFileVersion(
+          parts: [
+            MediaFilePart(
+              streams: [
+                MediaStreamDetails(
+                  kind: MediaStreamKind.video,
+                  ordinal: 1,
+                  videoRange: MediaVideoRange.dolbyVisionHdr10,
+                  hasHdr10Plus: true,
+                ),
+                MediaStreamDetails(kind: MediaStreamKind.audio, ordinal: 1, spatialFormat: 'DolbyAtmos'),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+    await _pumpSheet(tester, fileInfo: fileInfo, title: 'HDR Movie');
+    final badges = tester.widgetList<MediaFormatBadge>(find.byType(MediaFormatBadge));
+    expect(badges.map((badge) => badge.format), [
+      MediaFormat.dolbyVision,
+      MediaFormat.hdr10Plus,
+      MediaFormat.dolbyAtmos,
+    ]);
   });
 
   testWidgets('audio-only file drops the video section and keeps the copyable path', (tester) async {

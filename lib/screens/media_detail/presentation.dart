@@ -287,8 +287,6 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
         !tv &&
         (MediaQuery.sizeOf(context).width < 720 ||
             (MonoPresentation.isTablet(context) && !MonoPresentation.isLandscapeTablet(context)));
-    final target = _playbackTargetItem(metadata);
-    final probed = _playbackSources[target?.globalKey];
     final firstLine = <String>[
       if (metadata.isShow || metadata.isSeason) ...[
         if (metadata.studio?.isNotEmpty == true) metadata.studio!,
@@ -297,41 +295,12 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
       ...?metadata.genres?.take(2),
     ];
     final seasonCount = metadata.childCount ?? (_seasons.isEmpty ? null : _seasons.length);
-    final secondLine = <String>[
-      if (metadata.isShow && seasonCount != null) t.explore.detail.seasonCount(n: seasonCount),
-      if ((target?.durationMs ?? metadata.durationMs) case final int duration) formatDurationTextual(duration),
-      if (buildMediaVideoLabels(probed?.item ?? target ?? metadata, versionIndex: probed?.mediaIndex ?? 0)
-          case final quality when quality.isNotEmpty)
-        quality.join(' '),
-    ];
-    final information = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
-      children: [
-        _buildNaturalDetailTitle(
-          context,
-          metadata,
-          centered: centered,
-          tv: tv,
-          scale: TvLayoutConstants.scaleOf(context),
-        ),
-        const SizedBox(height: 7),
-        for (final (index, labels) in [firstLine, secondLine].indexed)
-          if (labels.isNotEmpty) ...[
-            if (index == 1 && firstLine.isNotEmpty && portraitPhone) const SizedBox(height: 4),
-            Text(
-              labels.join(' · '),
-              key: ValueKey(index == 0 ? 'detail_plain_metadata' : 'detail_secondary_metadata'),
-              textAlign: centered ? TextAlign.center : TextAlign.start,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: 12,
-                height: 1.6,
-                color: portraitPhone ? Theme.of(context).colorScheme.onSurfaceVariant : null,
-              ),
-            ),
-          ],
-      ],
+    final metadataStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      fontSize: 12,
+      height: 1.6,
+      color: portraitPhone ? Theme.of(context).colorScheme.onSurfaceVariant : null,
     );
+    final textAlign = centered ? TextAlign.center : TextAlign.start;
     void openDetails() => _openTvDetailsSheet(
       context,
       metadata,
@@ -340,35 +309,99 @@ extension _MediaDetailPresentation on _MediaDetailScreenState {
     return Column(
       crossAxisAlignment: centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
-        if (tv)
-          Semantics(
-            key: const ValueKey('tv_detail_information_semantics'),
-            identifier: 'tv_detail_information',
-            container: true,
-            button: true,
-            label: _tvDetailInformationSemanticLabel(
-              metadata,
-              description: _tvDetailItemDescription(
-                metadata,
-                hideSpoilers: SettingsService.instance.read(SettingsService.hideSpoilers),
+        ValueListenableBuilder<int>(
+          valueListenable: _playbackStatusRevision,
+          builder: (context, _, _) {
+            final target = _playbackTargetItem(metadata);
+            final probed = _playbackSources[target?.globalKey];
+            final item = probed?.item ?? target ?? metadata;
+            final versionIndex = probed?.mediaIndex ?? 0;
+            final partIndex = probed?.source?.partIndex;
+            final formats = mediaFormatsFor(item, versionIndex: versionIndex, partIndex: partIndex);
+            final quality = buildMediaVideoLabels(
+              item,
+              versionIndex: versionIndex,
+              partIndex: partIndex,
+              includeDynamicRange: false,
+            );
+            final secondLine = [
+              if (metadata.isShow && seasonCount != null) t.explore.detail.seasonCount(n: seasonCount),
+              if ((target?.durationMs ?? metadata.durationMs) case final int duration) formatDurationTextual(duration),
+              if (quality.isNotEmpty) quality.join(' '),
+            ];
+            final information = Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+              children: [
+                _buildNaturalDetailTitle(
+                  context,
+                  metadata,
+                  centered: centered,
+                  tv: tv,
+                  scale: TvLayoutConstants.scaleOf(context),
+                ),
+                const SizedBox(height: 7),
+                if (firstLine.isNotEmpty)
+                  Text(
+                    firstLine.join(' · '),
+                    key: const ValueKey('detail_plain_metadata'),
+                    textAlign: textAlign,
+                    style: metadataStyle,
+                  ),
+                if (secondLine.isNotEmpty || formats.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(top: firstLine.isNotEmpty && portraitPhone ? 4 : 0),
+                    child: Wrap(
+                      alignment: centered ? WrapAlignment.center : WrapAlignment.start,
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (secondLine.isNotEmpty)
+                          Text(
+                            secondLine.join(' · '),
+                            key: const ValueKey('detail_secondary_metadata'),
+                            textAlign: textAlign,
+                            style: metadataStyle,
+                          ),
+                        for (final format in formats) MediaFormatBadge(format),
+                      ],
+                    ),
+                  ),
+              ],
+            );
+            if (!tv) return information;
+            return Semantics(
+              key: const ValueKey('tv_detail_information_semantics'),
+              identifier: 'tv_detail_information',
+              container: true,
+              button: true,
+              label: [
+                _tvDetailInformationSemanticLabel(
+                  metadata,
+                  description: _tvDetailItemDescription(
+                    metadata,
+                    hideSpoilers: SettingsService.instance.read(SettingsService.hideSpoilers),
+                  ),
+                  genres: metadata.genres ?? const [],
+                ),
+                for (final format in formats) format.label,
+              ].join(', '),
+              hint: t.mediaMenu.viewDetails,
+              onTap: openDetails,
+              child: ExcludeSemantics(
+                child: FocusableWrapper(
+                  focusNode: _tvDetailInfoFocusNode,
+                  onSelect: openDetails,
+                  onNavigateUp: _backButtonFocusNode.requestFocus,
+                  onNavigateDown: _focusTvRatingsOrAction,
+                  disableScale: true,
+                  child: GestureDetector(onTap: openDetails, child: information),
+                ),
               ),
-              genres: metadata.genres ?? const [],
-            ),
-            hint: t.mediaMenu.viewDetails,
-            onTap: openDetails,
-            child: ExcludeSemantics(
-              child: FocusableWrapper(
-                focusNode: _tvDetailInfoFocusNode,
-                onSelect: openDetails,
-                onNavigateUp: _backButtonFocusNode.requestFocus,
-                onNavigateDown: _focusTvRatingsOrAction,
-                disableScale: true,
-                child: GestureDetector(onTap: openDetails, child: information),
-              ),
-            ),
-          )
-        else
-          information,
+            );
+          },
+        ),
         Column(
           key: tv ? _tvDetailRatingsGroupKey : null,
           children: [

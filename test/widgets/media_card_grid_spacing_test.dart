@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/media/media_backend.dart';
+import 'package:plezy/media/media_item.dart';
 import 'package:plezy/media/media_kind.dart';
+import 'package:plezy/media/media_part.dart';
+import 'package:plezy/media/media_stream.dart';
+import 'package:plezy/media/media_version.dart';
 import 'package:plezy/services/settings_service.dart';
 import 'package:plezy/theme/mono_theme.dart';
 import 'package:plezy/widgets/media_card.dart';
+import 'package:plezy/widgets/media_format_badge.dart';
 
 import '../test_helpers/prefs.dart';
 import '../test_helpers/media_items.dart';
@@ -30,6 +35,31 @@ void main() {
     final poster = find.descendant(of: find.byType(MediaCard), matching: find.byType(ClipRRect));
     return tester.getTopLeft(find.text('Test movie')).dy - tester.getRect(poster.first).bottom;
   }
+
+  testWidgets('grid poster marks Dolby Vision ahead of HDR and leaves SDR unmarked', (tester) async {
+    const version = MediaVersion(
+      id: 'dv',
+      parts: [
+        MediaPart(
+          id: 'part',
+          streams: [MediaStream(id: 'video', kind: MediaStreamKind.video, hdr: true, dolbyVision: true)],
+        ),
+      ],
+    );
+    Widget card(MediaItem item) => SizedBox(
+      width: 96,
+      height: 158,
+      child: MediaCard(item: item, viewModeOverride: ViewMode.grid, isOffline: true),
+    );
+    await tester.pumpWidget(app(card(movie.copyWith(mediaVersions: [version]))));
+    expect(find.byType(MediaFormatBadge), findsOneWidget);
+    expect(find.text('DV'), findsOneWidget);
+    expect(find.text('HDR'), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(app(card(movie)));
+    expect(find.byType(MediaFormatBadge), findsNothing);
+  });
 
   testWidgets('grid cells grow the poster→title gap with the spacing setting', (tester) async {
     // Grid-style card: the cell (not the caller) bounds the height, so the

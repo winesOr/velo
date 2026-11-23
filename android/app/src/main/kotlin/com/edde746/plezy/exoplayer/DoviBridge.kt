@@ -107,6 +107,8 @@ object DoviBridge {
     }
   }
 
+  fun isDolbyVisionDecoder(name: String?): Boolean = dolbyVisionDecoders.any { it.name == name }
+
   private fun deviceAdvertisesDvProfile(profile: Int, minApi: Int = 0): Boolean {
     if (Build.VERSION.SDK_INT < minApi) return false
     return dolbyVisionDecoders.any { decoder ->

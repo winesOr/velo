@@ -184,6 +184,8 @@ class _MobileVideoControlsState extends State<MobileVideoControls> {
         padding: const EdgeInsets.fromLTRB(12, 8, 8, 0),
         child: VideoControlsHeader(
           metadata: widget.metadata,
+          player: widget.player,
+          hasFirstFrame: widget.hasFirstFrame,
           mobileLayout: true,
           style: VideoHeaderStyle.multiLine,
           onCancelAutoHide: widget.onCancelAutoHide,

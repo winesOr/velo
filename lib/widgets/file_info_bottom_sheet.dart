@@ -7,10 +7,12 @@ import '../i18n/strings.g.dart';
 import '../media/media_file_info.dart';
 import '../theme/mono_tokens.dart';
 import '../utils/formatters.dart';
+import '../utils/media_quality_labels.dart';
 import '../utils/scroll_utils.dart';
 import '../utils/snackbar_helper.dart';
 import 'app_icon.dart';
 import 'bottom_sheet_page_scaffold.dart';
+import 'media_format_badge.dart';
 import 'stat_chip.dart';
 
 /// Full technical breakdown of an item's files.
@@ -88,24 +90,14 @@ class _ItemHeadline extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final version = versions.isEmpty ? null : versions.first;
-    final chips = version == null ? const <String>[] : _summaryChips(version);
+    final chips = version == null ? const <Widget>[] : _summaryChips(context, version);
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-          if (chips.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final chip in chips)
-                  StatChip(label: chip, backgroundColor: tokens(context).text.withValues(alpha: 0.08)),
-              ],
-            ),
-          ],
+          if (chips.isNotEmpty) ...[const SizedBox(height: 10), Wrap(spacing: 6, runSpacing: 6, children: chips)],
         ],
       ),
     );
@@ -113,20 +105,25 @@ class _ItemHeadline extends StatelessWidget {
 
   /// Container, resolution, dynamic range, codecs and size — the summary a
   /// person scans before reading any table.
-  List<String> _summaryChips(MediaFileVersion version) {
+  List<Widget> _summaryChips(BuildContext context, MediaFileVersion version) {
     final video = _firstOfKind(version, MediaStreamKind.video);
     final audio = _firstOfKind(version, MediaStreamKind.audio);
-    final chips = <String>[
-      if (version.container != null) version.container!.toUpperCase(),
-      if (version.resolutionFormatted != null) version.resolutionFormatted!,
-      if (video?.videoRange.label != null && video!.videoRange != MediaVideoRange.sdr) video.videoRange.label!,
-      if (version.videoCodec != null) version.videoCodec!.toUpperCase(),
-      if (audio?.codec != null) audio!.codec!.toUpperCase(),
-      if (audio?.spatialFormatLabel != null) audio!.spatialFormatLabel!,
-      if (version.totalFileSizeFormatted != null) version.totalFileSizeFormatted!,
-      if (version.durationFormatted != null) version.durationFormatted!,
+    final audioFormat = fileAudioFormat(audio);
+    final fill = tokens(context).text.withValues(alpha: 0.08);
+    Widget chip(String label) => StatChip(label: label, backgroundColor: fill);
+    return [
+      if (version.container case final container?) chip(container.toUpperCase()),
+      if (version.resolutionFormatted case final resolution?) chip(resolution),
+      for (final format in fileVideoFormats(video)) MediaFormatBadge(format),
+      if (version.videoCodec case final codec?) chip(codec.toUpperCase()),
+      if (audio?.codec case final codec?) chip(codec.toUpperCase()),
+      if (audioFormat != null)
+        MediaFormatBadge(audioFormat)
+      else if (audio?.spatialFormatLabel case final spatialFormat?)
+        chip(spatialFormat),
+      if (version.totalFileSizeFormatted case final size?) chip(size),
+      if (version.durationFormatted case final duration?) chip(duration),
     ];
-    return chips;
   }
 
   MediaStreamDetails? _firstOfKind(MediaFileVersion version, MediaStreamKind kind) {
