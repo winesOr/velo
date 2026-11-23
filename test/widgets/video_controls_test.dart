@@ -1038,7 +1038,10 @@ void main() {
         onActivate: () => activateCount++,
       );
 
-      expect(find.text('${t.videoControls.skipIntro} (3)'), findsOneWidget);
+      expect(find.text(t.videoControls.skipIntro), findsOneWidget);
+      // The countdown lives in the ring, not in the label.
+      expect(find.text('3'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       await tester.tap(find.byType(InkWell));
       await tester.pump();
