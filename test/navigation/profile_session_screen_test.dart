@@ -11,6 +11,7 @@ import 'package:plezy/media/media_hub.dart';
 import 'package:plezy/media/ids.dart';
 import 'package:plezy/database/app_database.dart';
 import 'package:plezy/models/plex/plex_home_user.dart';
+import 'package:plezy/navigation/fusion_navigation.dart';
 import 'package:plezy/navigation/profile_navigation_scope.dart';
 import 'package:plezy/navigation/profile_session_screen.dart';
 import 'package:plezy/profiles/active_profile_provider.dart';
@@ -171,17 +172,20 @@ void main() {
         expect(find.byType(DiscoverScreen).hitTestable(), findsOneWidget);
         expect(find.text('Cached title').hitTestable(), findsWidgets);
         expect(find.text(t.common.reconnect).hitTestable(), findsNothing);
+        expect(find.byType(FusionNavigation).hitTestable(), startupOffline ? findsNothing : findsOneWidget);
+        expect(find.byType(NavigationBar).hitTestable(), startupOffline ? findsOneWidget : findsNothing);
         final cachedRows = (await graph.db.select(graph.db.apiCache).get()).length;
         expect(cachedRows, greaterThan(0));
         await PlexApiCache.instance.put(ServerId(client.scopedServerId), '/runtime-api-response', {
           'token': 'old-runtime-token',
         });
-        graph.activeProfile.markBindingFinished(success: true);
+        graph.activeProfile.markBindingFinished(success: false);
         for (var i = 0; i < 8; i++) {
           await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
           await tester.pump(const Duration(milliseconds: 40));
         }
         expect(find.byType(DiscoverScreen).hitTestable(), findsOneWidget);
+        expect(find.byType(NavigationBar).hitTestable(), findsOneWidget);
         expect(
           (await graph.db.select(graph.db.apiCache).get()).length,
           cachedRows,

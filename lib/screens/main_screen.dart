@@ -795,7 +795,10 @@ class _MainScreenState extends State<MainScreen>
     final id = activeProfile.activeId;
     final isBindingNow = activeProfile.isBinding;
     final initialBindingSettled = _initialBindingPending && !isBindingNow;
-    if (initialBindingSettled) _initialBindingPending = false;
+    if (initialBindingSettled) {
+      _initialBindingPending = false;
+      _handleOfflineStatusChanged();
+    }
     final action = profileInvalidationAction(
       previousProfileId: _lastSeenProfileId,
       currentProfileId: id,
@@ -1469,7 +1472,7 @@ class _MainScreenState extends State<MainScreen>
       hasVisibleConnectedServers: hasVisibleConnectedServers,
     );
 
-    if (newOffline == _isOffline) return;
+    if (newOffline == _isOffline || (newOffline && _initialBindingPending)) return;
 
     final previousTab = _currentTab;
     final wasOffline = _isOffline;
