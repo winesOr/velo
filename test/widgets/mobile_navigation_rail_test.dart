@@ -59,7 +59,7 @@ void main() {
       ),
     );
     // The rail keeps the label for semantics, but gives it no space.
-    expect(tester.getSize(find.text(t.common.search)), Size.zero);
+    expect(tester.getSize(find.text(t.navigation.favorites)), Size.zero);
 
     await tester.pumpWidget(
       wrap(
@@ -71,7 +71,7 @@ void main() {
         ),
       ),
     );
-    expect(tester.getSize(find.text(t.common.search)).width, greaterThan(0));
+    expect(tester.getSize(find.text(t.navigation.favorites)).width, greaterThan(0));
   });
 
   testWidgets('labels give way on a viewport too short to show every destination', (tester) async {
@@ -89,7 +89,7 @@ void main() {
         ),
       ),
     );
-    expect(tester.getSize(find.text(t.common.search)), Size.zero);
+    expect(tester.getSize(find.text(t.navigation.favorites)), Size.zero);
     expect(tester.takeException(), isNull);
     // Every destination is still reachable without scrolling.
     expect(tester.getBottomLeft(find.byType(NavigationRail)).dy, lessThanOrEqualTo(240));
