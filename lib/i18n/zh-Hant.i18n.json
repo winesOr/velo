@@ -1443,7 +1443,13 @@
     "libraries": "媒體庫",
     "downloads": "下載",
     "liveTv": "直播電視",
-    "explore": "探索"
+    "explore": "探索",
+    "favorites": "收藏"
+  },
+  "favorites": {
+    "empty": "還沒有收藏",
+    "emptyHint": "在伺服器中收藏或加入待看清單的內容會顯示在這裡",
+    "loadFailed": "無法載入收藏"
   },
   "explore": {
     "title": "探索",

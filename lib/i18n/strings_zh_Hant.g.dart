@@ -73,6 +73,7 @@ class TranslationsZhHant extends TranslationsZh with BaseTranslations<AppLocale,
 	@override late final _Translations$startup$zh_Hant startup = _Translations$startup$zh_Hant._(_root);
 	@override late final _Translations$licenses$zh_Hant licenses = _Translations$licenses$zh_Hant._(_root);
 	@override late final _Translations$navigation$zh_Hant navigation = _Translations$navigation$zh_Hant._(_root);
+	@override late final _Translations$favorites$zh_Hant favorites = _Translations$favorites$zh_Hant._(_root);
 	@override late final _Translations$explore$zh_Hant explore = _Translations$explore$zh_Hant._(_root);
 	@override late final _Translations$liveTv$zh_Hant liveTv = _Translations$liveTv$zh_Hant._(_root);
 	@override late final _Translations$collections$zh_Hant collections = _Translations$collections$zh_Hant._(_root);
@@ -1587,6 +1588,19 @@ class _Translations$navigation$zh_Hant extends Translations$navigation$zh {
 	@override String get downloads => '下載';
 	@override String get liveTv => '直播電視';
 	@override String get explore => '探索';
+	@override String get favorites => '收藏';
+}
+
+// Path: favorites
+class _Translations$favorites$zh_Hant extends Translations$favorites$zh {
+	_Translations$favorites$zh_Hant._(TranslationsZhHant root) : this._root = root, super.internal(root);
+
+	final TranslationsZhHant _root; // ignore: unused_field
+
+	// Translations
+	@override String get empty => '還沒有收藏';
+	@override String get emptyHint => '在伺服器中收藏或加入待看清單的內容會顯示在這裡';
+	@override String get loadFailed => '無法載入收藏';
 }
 
 // Path: explore
@@ -4797,6 +4811,10 @@ extension on TranslationsZhHant {
 			'navigation.downloads' => '下載',
 			'navigation.liveTv' => '直播電視',
 			'navigation.explore' => '探索',
+			'navigation.favorites' => '收藏',
+			'favorites.empty' => '還沒有收藏',
+			'favorites.emptyHint' => '在伺服器中收藏或加入待看清單的內容會顯示在這裡',
+			'favorites.loadFailed' => '無法載入收藏',
 			'explore.title' => '探索',
 			'explore.selectSource' => '選擇來源',
 			'explore.rows.watchlist' => '待看清單',
@@ -4994,12 +5012,12 @@ extension on TranslationsZhHant {
 			'liveTv.joinSession' => '加入進行中的「一起看」',
 			'liveTv.watchFromStart' => ({required Object minutes}) => '從頭觀看（自 ${minutes} 分鐘前開始）',
 			'liveTv.watchLive' => '觀看直播',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.goToLive' => '跳至直播點',
 			'liveTv.record' => '錄製',
 			'liveTv.recordEpisode' => '錄製單集',
 			'liveTv.recordSeries' => '錄製整部影集',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.recordOptions' => '錄製選項',
 			'liveTv.saveTo' => '儲存至',
 			'liveTv.recordings' => '已錄製內容',
@@ -5508,12 +5526,12 @@ extension on TranslationsZhHant {
 			'performanceOverlay.fps' => 'FPS',
 			'performanceOverlay.decoderAndroidHw' => 'Android 硬體',
 			'performanceOverlay.decoderNvidiaHw' => 'NVIDIA 硬體',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.decoderQualcommHw' => 'Qualcomm 硬體',
 			'performanceOverlay.decoderMediatekHw' => 'MediaTek 硬體',
 			'performanceOverlay.decoderExynosHw' => 'Exynos 硬體',
 			'performanceOverlay.decoderSoftware' => '軟體',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.decoderHardware' => '硬體',
 			'performanceOverlay.tunnelingActive' => '已啟用',
 			'performanceOverlay.dvRpuFailed' => ({required Object converted, required Object failures}) => '${converted}（${failures} 個失敗）',

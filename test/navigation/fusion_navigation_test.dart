@@ -64,8 +64,8 @@ void main() {
   });
 
   for (final fixture in [
-    (dark: false, selected: NavigationTabId.libraries),
-    (dark: true, selected: NavigationTabId.libraries),
+    (dark: false, selected: NavigationTabId.favorites),
+    (dark: true, selected: NavigationTabId.favorites),
     (dark: false, selected: NavigationTabId.together),
     (dark: true, selected: NavigationTabId.together),
   ]) {
@@ -121,7 +121,7 @@ void main() {
         home: Scaffold(
           bottomNavigationBar: FusionNavigation(
             tabs: NavigationTab.getVisibleTabs(isOffline: false),
-            selectedTab: NavigationTabId.libraries,
+            selectedTab: NavigationTabId.favorites,
             onSelected: (_) {},
           ),
         ),
@@ -133,7 +133,7 @@ void main() {
     );
     expect(icons.where((icon) => icon.fill == 1), hasLength(1));
     expect(icons.where((icon) => icon.fill == 0), hasLength(greaterThan(1)));
-    expect(icons.where((icon) => icon.icon == Symbols.search_rounded), hasLength(1));
+    expect(icons.where((icon) => icon.icon == Symbols.favorite_rounded), hasLength(1));
     expect(icons.where((icon) => icon.icon == Symbols.settings_rounded), hasLength(1));
 
     final destinations = tester.widgetList<Container>(
@@ -197,7 +197,7 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     expect(down, 1);
     expect(find.byTooltip(t.common.options), findsNothing);
-    expect(find.text(t.common.search), findsOneWidget);
+    expect(find.text(t.navigation.favorites), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });

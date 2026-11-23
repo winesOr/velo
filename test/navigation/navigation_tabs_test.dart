@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:plezy/navigation/navigation_tabs.dart';
 
 void main() {
@@ -75,6 +76,46 @@ void main() {
     test('Explore is online-only', () {
       final offline = NavigationTab.getVisibleTabs(isOffline: true, hasExplore: true);
       expect(offline.map((tab) => tab.id), isNot(contains(NavigationTabId.explore)));
+    });
+  });
+
+  group('Favorites navigation', () {
+    test('Favorites replaces Libraries as the second primary destination', () {
+      expect(primaryNavigationIds, [
+        NavigationTabId.discover,
+        NavigationTabId.favorites,
+        NavigationTabId.together,
+        NavigationTabId.settings,
+      ]);
+      final tabs = NavigationTab.getVisibleTabs(isOffline: false);
+      final favorites = tabs.firstWhere((tab) => tab.id == NavigationTabId.favorites);
+      expect(favorites.icon, Symbols.favorite_rounded);
+      expect(
+        NavigationTab.getVisibleTabs(isOffline: true).map((tab) => tab.id),
+        isNot(contains(NavigationTabId.favorites)),
+      );
+    });
+
+    test('Libraries is reached through search, not the overflow menu', () {
+      final overflow = secondaryNavigationTabs(NavigationTab.getVisibleTabs(isOffline: false, hasLiveTv: true));
+      expect(overflow.map((tab) => tab.id), isNot(contains(NavigationTabId.libraries)));
+      expect(overflow.map((tab) => tab.id), isNot(contains(NavigationTabId.favorites)));
+    });
+
+    test('a stored Libraries startup preference still resolves', () {
+      expect(
+        NavigationTab.resolveDefaultTab(
+          isOffline: false,
+          hasLiveTv: false,
+          preferredStartup: NavigationTabId.libraries,
+        ),
+        NavigationTabId.libraries,
+      );
+    });
+
+    test('the new id is appended so stored enum names stay stable', () {
+      expect(NavigationTabId.values.last, NavigationTabId.favorites);
+      expect(NavigationTabId.values.byName('libraries'), NavigationTabId.libraries);
     });
   });
 }

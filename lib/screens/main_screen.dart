@@ -75,6 +75,7 @@ import '../focus/dpad_navigator.dart';
 import '../focus/key_event_utils.dart';
 import 'discover_screen.dart';
 import 'explore_screen.dart';
+import 'favorites_screen.dart';
 import 'libraries/library_quick_picker_sheet.dart';
 import 'libraries/libraries_screen.dart';
 import 'livetv/live_tv_screen.dart';
@@ -1320,6 +1321,7 @@ class _MainScreenState extends State<MainScreen>
 
   static const _tvContentBelowNavigation = {
     NavigationTabId.libraries,
+    NavigationTabId.favorites,
     NavigationTabId.together,
     NavigationTabId.search,
     NavigationTabId.downloads,
@@ -1337,6 +1339,7 @@ class _MainScreenState extends State<MainScreen>
         onLibraryOrderChanged: _onLibraryOrderChanged,
         onLibrarySelected: _handleLibrariesScreenSelected,
       ),
+      NavigationTabId.favorites => FavoritesScreen(key: _screenKeys[tab]),
       NavigationTabId.liveTv => LiveTvScreen(key: _screenKeys[tab]),
       NavigationTabId.search => const SizedBox.shrink(),
       NavigationTabId.downloads => DownloadsScreen(key: _screenKeys[tab]),
@@ -2135,7 +2138,12 @@ class _MainScreenState extends State<MainScreen>
     }
   }
 
-  static const _contentTabs = [NavigationTabId.discover, NavigationTabId.libraries, NavigationTabId.search];
+  static const _contentTabs = [
+    NavigationTabId.discover,
+    NavigationTabId.libraries,
+    NavigationTabId.favorites,
+    NavigationTabId.search,
+  ];
 
   Widget _buildBottomNavigationBar(BuildContext context, {required bool hideLabels}) {
     if (!_isOffline) {

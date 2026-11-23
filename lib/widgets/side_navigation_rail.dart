@@ -664,6 +664,9 @@ class SideNavigationRailState extends State<SideNavigationRail> with MountedSetS
         return _kSettings;
       case NavigationTabId.liveTv:
         return 'liveTv';
+      case NavigationTabId.favorites:
+        // No sidebar row: favorites is a bottom/top-bar destination.
+        return null;
     }
   }
 

@@ -6,12 +6,16 @@ import '../i18n/strings.g.dart';
 import '../utils/platform_detector.dart';
 
 /// Navigation tab identifiers. `search` is a legacy alias for `libraries`.
-enum NavigationTabId { discover, explore, libraries, liveTv, search, downloads, settings, together }
+///
+/// New values are appended so stored startup preferences (persisted by name)
+/// stay compatible. `libraries` is no longer a primary destination: it is
+/// reached through the home search action and remains a valid startup value.
+enum NavigationTabId { discover, explore, libraries, liveTv, search, downloads, settings, together, favorites }
 
 /// Stable IDs, not enum indices: stored startup preferences remain compatible.
 const primaryNavigationIds = [
   NavigationTabId.discover,
-  NavigationTabId.libraries,
+  NavigationTabId.favorites,
   NavigationTabId.together,
   NavigationTabId.settings,
 ];
@@ -23,10 +27,14 @@ List<NavigationTab> primaryNavigationTabs(List<NavigationTab> visibleTabs) => [
 ];
 
 /// Primary destinations and the dedicated search action already have entries
-/// in the shell; the overflow only exposes the remaining destinations.
+/// in the shell; the overflow only exposes the remaining destinations. The
+/// libraries browser is reached through search, so it is not listed either.
 List<NavigationTab> secondaryNavigationTabs(List<NavigationTab> visibleTabs) => [
   for (final tab in visibleTabs)
-    if (!primaryNavigationIds.contains(tab.id) && tab.id != NavigationTabId.search) tab,
+    if (!primaryNavigationIds.contains(tab.id) &&
+        tab.id != NavigationTabId.search &&
+        tab.id != NavigationTabId.libraries)
+      tab,
 ];
 
 /// Represents a navigation tab with its configuration
@@ -104,6 +112,7 @@ class NavigationTab {
 String _getHomeLabel() => t.common.home;
 String _getExploreLabel() => t.navigation.explore;
 String _getLibrariesLabel() => t.common.search;
+String _getFavoritesLabel() => t.navigation.favorites;
 String _getLiveTvLabel() => t.navigation.liveTv;
 String _getSearchLabel() => t.common.search;
 String _getDownloadsLabel() => t.navigation.downloads;
@@ -118,6 +127,12 @@ const allNavigationTabs = [
     onlineOnly: true,
     icon: Symbols.search_rounded,
     getLabel: _getLibrariesLabel,
+  ),
+  NavigationTab(
+    id: NavigationTabId.favorites,
+    onlineOnly: true,
+    icon: Symbols.favorite_rounded,
+    getLabel: _getFavoritesLabel,
   ),
   NavigationTab(id: NavigationTabId.liveTv, onlineOnly: true, icon: Symbols.live_tv_rounded, getLabel: _getLiveTvLabel),
   NavigationTab(

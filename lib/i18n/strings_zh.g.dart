@@ -72,6 +72,7 @@ class TranslationsZh extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final Translations$startup$zh startup = Translations$startup$zh.internal(_root);
 	@override late final Translations$licenses$zh licenses = Translations$licenses$zh.internal(_root);
 	@override late final Translations$navigation$zh navigation = Translations$navigation$zh.internal(_root);
+	@override late final Translations$favorites$zh favorites = Translations$favorites$zh.internal(_root);
 	@override late final Translations$explore$zh explore = Translations$explore$zh.internal(_root);
 	@override late final Translations$liveTv$zh liveTv = Translations$liveTv$zh.internal(_root);
 	@override late final Translations$collections$zh collections = Translations$collections$zh.internal(_root);
@@ -1628,6 +1629,19 @@ class Translations$navigation$zh extends Translations$navigation$en {
 	@override String get downloads => '下载';
 	@override String get liveTv => '直播电视';
 	@override String get explore => '探索';
+	@override String get favorites => '收藏';
+}
+
+// Path: favorites
+class Translations$favorites$zh extends Translations$favorites$en {
+	Translations$favorites$zh.internal(TranslationsZh root) : this._root = root, super.internal(root);
+
+	final TranslationsZh _root; // ignore: unused_field
+
+	// Translations
+	@override String get empty => '还没有收藏';
+	@override String get emptyHint => '在服务器中收藏或加入想看清单的内容会显示在这里';
+	@override String get loadFailed => '无法加载收藏';
 }
 
 // Path: explore
@@ -4945,6 +4959,10 @@ extension on TranslationsZh {
 			'navigation.downloads' => '下载',
 			'navigation.liveTv' => '直播电视',
 			'navigation.explore' => '探索',
+			'navigation.favorites' => '收藏',
+			'favorites.empty' => '还没有收藏',
+			'favorites.emptyHint' => '在服务器中收藏或加入想看清单的内容会显示在这里',
+			'favorites.loadFailed' => '无法加载收藏',
 			'explore.title' => '探索',
 			'explore.selectSource' => '选择来源',
 			'explore.rows.watchlist' => '想看列表',
@@ -5101,12 +5119,12 @@ extension on TranslationsZh {
 			'explore.detail.relatedTitles' => '相关作品',
 			'explore.detail.background' => '背景',
 			'explore.totalResults' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('zh'))(n, other: '${n} 条结果', ), 
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.removeFavorite' => '从收藏移除',
 			'liveTv.previousPrograms' => '更早的节目',
 			'liveTv.nextPrograms' => '更晚的节目',
 			'liveTv.title' => '直播电视',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.guide' => '节目指南',
 			'liveTv.noChannels' => '没有可用的频道',
 			'liveTv.noDvr' => '没有服务器配置 DVR',
@@ -5615,12 +5633,12 @@ extension on TranslationsZh {
 			'videoSettings.hdrToneMappingPlayer' => '播放器',
 			'videoSettings.hdrToneMappingPlayerDescription' => '在播放器中映射到显示器的峰值亮度，然后将结果告知合成器。',
 			'videoSettings.hdrToneMappingFailed' => '无法更改 HDR 色调映射——仍在使用之前的模式。',
+			_ => null,
+		} ?? switch (path) {
 			'videoSettings.audioOutput' => '音频输出',
 			'videoSettings.performanceOverlay' => '性能监控',
 			'videoSettings.audioOutputDolbyAtmos' => 'Dolby Atmos',
 			'videoSettings.audioOutputDolbyAudio' => 'Dolby Audio',
-			_ => null,
-		} ?? switch (path) {
 			'videoSettings.audioOutputSurround' => '环绕声',
 			'videoSettings.audioOutputSpatial' => '空间音频',
 			'videoSettings.audioOutputStereo' => '立体声',

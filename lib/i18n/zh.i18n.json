@@ -1485,7 +1485,13 @@
     "libraries": "媒体库",
     "downloads": "下载",
     "liveTv": "直播电视",
-    "explore": "探索"
+    "explore": "探索",
+    "favorites": "收藏"
+  },
+  "favorites": {
+    "empty": "还没有收藏",
+    "emptyHint": "在服务器中收藏或加入想看清单的内容会显示在这里",
+    "loadFailed": "无法加载收藏"
   },
   "explore": {
     "title": "探索",

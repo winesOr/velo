@@ -127,7 +127,7 @@ void main() {
 
         expect(_ids(tabs), [
           NavigationTabId.discover,
-          NavigationTabId.libraries,
+          NavigationTabId.favorites,
           NavigationTabId.together,
           NavigationTabId.settings,
         ]);

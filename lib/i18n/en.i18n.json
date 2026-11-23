@@ -1490,7 +1490,13 @@
     "libraries": "Libraries",
     "downloads": "Downloads",
     "liveTv": "Live TV",
-    "explore": "Explore"
+    "explore": "Explore",
+    "favorites": "Favorites"
+  },
+  "favorites": {
+    "empty": "No favorites yet",
+    "emptyHint": "Items you favorite on your servers or add to your watchlist appear here",
+    "loadFailed": "Couldn't load favorites"
   },
   "explore": {
     "title": "Explore",

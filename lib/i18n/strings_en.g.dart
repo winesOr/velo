@@ -74,6 +74,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$startup$en startup = Translations$startup$en.internal(_root);
 	late final Translations$licenses$en licenses = Translations$licenses$en.internal(_root);
 	late final Translations$navigation$en navigation = Translations$navigation$en.internal(_root);
+	late final Translations$favorites$en favorites = Translations$favorites$en.internal(_root);
 	late final Translations$explore$en explore = Translations$explore$en.internal(_root);
 	late final Translations$liveTv$en liveTv = Translations$liveTv$en.internal(_root);
 	late final Translations$collections$en collections = Translations$collections$en.internal(_root);
@@ -4065,6 +4066,27 @@ class Translations$navigation$en {
 
 	/// en: 'Explore'
 	String get explore => 'Explore';
+
+	/// en: 'Favorites'
+	String get favorites => 'Favorites';
+}
+
+// Path: favorites
+class Translations$favorites$en {
+	Translations$favorites$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'No favorites yet'
+	String get empty => 'No favorites yet';
+
+	/// en: 'Items you favorite on your servers or add to your watchlist appear here'
+	String get emptyHint => 'Items you favorite on your servers or add to your watchlist appear here';
+
+	/// en: 'Couldn't load favorites'
+	String get loadFailed => 'Couldn\'t load favorites';
 }
 
 // Path: explore
@@ -10008,6 +10030,10 @@ extension on Translations {
 			'navigation.downloads' => 'Downloads',
 			'navigation.liveTv' => 'Live TV',
 			'navigation.explore' => 'Explore',
+			'navigation.favorites' => 'Favorites',
+			'favorites.empty' => 'No favorites yet',
+			'favorites.emptyHint' => 'Items you favorite on your servers or add to your watchlist appear here',
+			'favorites.loadFailed' => 'Couldn\'t load favorites',
 			'explore.title' => 'Explore',
 			'explore.selectSource' => 'Select source',
 			'explore.rows.watchlist' => 'Watchlist',
@@ -10164,12 +10190,12 @@ extension on Translations {
 			'explore.detail.relatedTitles' => 'Related titles',
 			'explore.detail.background' => 'Background',
 			'explore.totalResults' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} result', other: '${n} results', ), 
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.removeFavorite' => 'Remove from favorites',
 			'liveTv.previousPrograms' => 'Earlier programs',
 			'liveTv.nextPrograms' => 'Later programs',
 			'liveTv.title' => 'Live TV',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.guide' => 'Guide',
 			'liveTv.noChannels' => 'No channels available',
 			'liveTv.noDvr' => 'No DVR configured on any server',
@@ -10678,12 +10704,12 @@ extension on Translations {
 			'videoSettings.hdrToneMappingPlayer' => 'Player',
 			'videoSettings.hdrToneMappingPlayerDescription' => 'Map to the display\'s peak brightness in the player, then tell the compositor the result.',
 			'videoSettings.hdrToneMappingFailed' => 'Couldn\'t change HDR tone mapping — the previous mode is still active.',
+			_ => null,
+		} ?? switch (path) {
 			'videoSettings.audioOutput' => 'Audio Output',
 			'videoSettings.performanceOverlay' => 'Performance Overlay',
 			'videoSettings.audioOutputDolbyAtmos' => 'Dolby Atmos',
 			'videoSettings.audioOutputDolbyAudio' => 'Dolby Audio',
-			_ => null,
-		} ?? switch (path) {
 			'videoSettings.audioOutputSurround' => 'Surround',
 			'videoSettings.audioOutputSpatial' => 'Spatial Audio',
 			'videoSettings.audioOutputStereo' => 'Stereo',

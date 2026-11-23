@@ -43,8 +43,8 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text(t.common.search));
-    expect(selected, NavigationTabId.libraries);
+    await tester.tap(find.text(t.navigation.favorites));
+    expect(selected, NavigationTabId.favorites);
   });
 
   testWidgets('labels follow the nav bar label setting', (tester) async {
@@ -99,7 +99,9 @@ void main() {
     expect(MobileNavigationRail.labelsFit(destinations: 7, hasLeading: true, height: 500), isFalse);
   });
 
-  testWidgets('long-pressing Search opens the quick picker; a tap selects the library destination', (tester) async {
+  testWidgets('Favorites is a plain destination: long-press does not open the library quick picker, a tap selects it', (
+    tester,
+  ) async {
     NavigationTabId? selected;
     var quickPicks = 0;
     await tester.pumpWidget(
@@ -114,16 +116,16 @@ void main() {
       ),
     );
 
-    final librariesTab = tabs.firstWhere((tab) => tab.id == NavigationTabId.libraries);
-    final icon = find.byWidgetPredicate((w) => w is Icon && w.icon == librariesTab.icon);
+    final favoritesTab = tabs.firstWhere((tab) => tab.id == NavigationTabId.favorites);
+    final icon = find.byWidgetPredicate((w) => w is Icon && w.icon == favoritesTab.icon);
     await tester.longPress(icon);
     await tester.pump();
-    expect(quickPicks, 1);
+    expect(quickPicks, 0);
     expect(selected, isNull);
 
     await tester.tap(icon);
-    expect(selected, NavigationTabId.libraries);
-    expect(quickPicks, 1);
+    expect(selected, NavigationTabId.favorites);
+    expect(quickPicks, 0);
   });
 
   testWidgets('offline shows a reconnect action that is inert while reconnecting', (tester) async {
