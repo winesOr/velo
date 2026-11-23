@@ -806,7 +806,7 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
   int get _audioSyncOffset => PlayerSyncOffsets.of(widget.player).audioMs;
   int get _subtitleSyncOffset => PlayerSyncOffsets.of(widget.player).subtitleMs;
   bool get _isRotationLocked => _settings.read(SettingsService.rotationLocked);
-  bool _isScreenLocked = false; // Touch lock during playback
+  bool get _isScreenLocked => widget.chromeController.screenLocked;
   bool _showLockIcon = false; // Whether to show the lock overlay icon
   Timer? _lockIconTimer;
   bool get _clickVideoTogglesPlayback => _settings.read(SettingsService.clickVideoTogglesPlayback);
@@ -1593,6 +1593,27 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
                         ),
                       ),
                     ),
+                  if (isMobile &&
+                      !_isScreenLocked &&
+                      !widget.chromeController.contentStripVisible &&
+                      widget.videoZoomScale != 1.0 &&
+                      widget.onResetVideoZoom != null)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: SafeArea(
+                        left: false,
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 16),
+                          child: VideoControlButton(
+                            icon: Symbols.restart_alt_rounded,
+                            iconSize: 20,
+                            tooltip: t.hotkeys.actions.zoomReset,
+                            overlayGlyph: true,
+                            onPressed: widget.onResetVideoZoom,
+                          ),
+                        ),
+                      ),
+                    ),
                   if (_isScreenLocked)
                     Positioned.fill(
                       child: GestureDetector(
@@ -1605,7 +1626,7 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
                       ),
                     ),
                   // Floating screen lock within reach on the left edge.
-                  if (isMobile && !PlatformDetector.isTV())
+                  if (isMobile)
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Padding(
@@ -1624,7 +1645,7 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
                               semanticLabel: t.videoControls.screenLockButton,
                               checked: _isScreenLocked,
                               overlayGlyph: true,
-                              onPressed: _isScreenLocked ? _unlockScreen : _toggleScreenLock,
+                              onPressed: _toggleScreenLock,
                             ),
                           ),
                         ),

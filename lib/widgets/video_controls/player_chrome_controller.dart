@@ -18,6 +18,7 @@ class PlayerChromeController extends ChangeNotifier implements ValueListenable<b
   bool _controlsPresented;
   bool _controlsOpaque;
   bool _contentStripVisible = false;
+  bool _screenLocked = false;
   bool _playing = false;
   bool _hasFirstFrame = true;
   Duration _hideDelay = const Duration(seconds: 3);
@@ -38,8 +39,15 @@ class PlayerChromeController extends ChangeNotifier implements ValueListenable<b
   /// Whether controls may still be visibly rendered during their fade-out.
   bool get controlsPresented => _controlsPresented;
   bool get contentStripVisible => _contentStripVisible;
+  bool get screenLocked => _screenLocked;
   bool isHeld(PlayerChromeHold hold) => _holds.contains(hold);
   bool get pendingPlayPauseFocus => _pendingPlayPauseFocus;
+
+  void setScreenLocked(bool locked) {
+    if (_screenLocked == locked) return;
+    _screenLocked = locked;
+    notifyListeners();
+  }
 
   /// [directionalNavigation] marks a D-pad / keyboard-driven viewer: the
   /// paused chrome then stays up until dismissed, because the remote has no

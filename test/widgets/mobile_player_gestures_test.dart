@@ -68,6 +68,7 @@ void main() {
     WidgetTester tester, {
     Map<Pref<Object?>, Object?> prefs = const {},
     Size size = const Size(1600, 800),
+    double initialZoomScale = 1.0,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -83,6 +84,7 @@ void main() {
     final chrome = PlayerChromeController();
     final toast = PlayerToastController();
     final db = AppDatabase.forTesting(NativeDatabase.memory());
+    var zoomScale = initialZoomScale;
     addTearDown(db.close);
     addTearDown(player.dispose);
     addTearDown(volume.dispose);
@@ -106,13 +108,17 @@ void main() {
                 child: SizedBox(
                   width: size.width,
                   height: size.height,
-                  child: PlexVideoControls(
-                    player: player,
-                    volumeController: volume,
-                    metadata: testMediaItem(id: 'gestures'),
-                    toastController: toast,
-                    canNavigateMediaItems: false,
-                    chromeController: chrome,
+                  child: StatefulBuilder(
+                    builder: (context, setState) => PlexVideoControls(
+                      player: player,
+                      volumeController: volume,
+                      metadata: testMediaItem(id: 'gestures'),
+                      toastController: toast,
+                      canNavigateMediaItems: false,
+                      chromeController: chrome,
+                      videoZoomScale: zoomScale,
+                      onResetVideoZoom: () => setState(() => zoomScale = 1.0),
+                    ),
                   ),
                 ),
               ),
@@ -149,12 +155,39 @@ void main() {
     final unlock = t.videoControls.unlockScreen;
     final lockLabel = t.videoControls.screenLockButton;
     expectToggle(tester, lock, lockLabel, false, Symbols.lock_open_rounded);
+    expect(_chrome!.screenLocked, isFalse);
     await tester.tap(find.byTooltip(lock));
     await tester.pump();
     expectToggle(tester, unlock, lockLabel, true, Symbols.lock_rounded);
+    expect(_chrome!.screenLocked, isTrue);
     await tester.tap(find.byTooltip(unlock));
     await tester.pumpAndSettle();
     expectToggle(tester, lock, lockLabel, false, Symbols.lock_open_rounded);
+    expect(_chrome!.screenLocked, isFalse);
+
+    await _finish(tester);
+  });
+
+  testWidgets('zoom reset is available with hidden controls and disappears at default scale', (tester) async {
+    PlatformDetector.debugSetIsDesktopOSOverride(false);
+    addTearDown(() => PlatformDetector.debugSetIsDesktopOSOverride(null));
+    await pumpPlayer(tester, initialZoomScale: 1.5);
+    final reset = find.byTooltip(t.hotkeys.actions.zoomReset);
+    expect(reset.hitTestable(), findsOneWidget);
+
+    await tester.tap(find.byTooltip(t.videoControls.lockScreen));
+    await tester.pump();
+    expect(reset, findsNothing);
+    await tester.tap(find.byTooltip(t.videoControls.unlockScreen));
+    await tester.pump();
+
+    _chrome!.hide();
+    await tester.pumpAndSettle();
+    expect(reset.hitTestable(), findsOneWidget);
+    await tester.tap(reset);
+    await tester.pump();
+    expect(tester.widget<PlexVideoControls>(find.byType(PlexVideoControls)).videoZoomScale, 1.0);
+    expect(reset, findsNothing);
 
     await _finish(tester);
   });

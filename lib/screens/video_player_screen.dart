@@ -1297,6 +1297,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
       initialVolume: 100,
       onUserChange: _announceVolumeCommand,
     );
+    await _initVideoFilterAndPip();
     setState(() => _isPlayerInitialized = true);
     _firstFrame.markReady();
   }
@@ -1377,6 +1378,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
   @override
   void initState() {
     super.initState();
+    bindListenable(_chromeController, _cancelMobileZoomWhenLocked);
     PlaybackCoordinator.instance.registerVideoSession(shutdown: _shutdownVideo, stopAndExit: _stopVideoAndExit);
     SleepTimerService().bindPlayback(
       owner: this,

@@ -25,7 +25,9 @@ import 'package:plezy/services/playback_initialization_types.dart';
 import 'package:plezy/services/playback_coordinator.dart';
 import 'package:plezy/services/playback_launch_observer.dart';
 import 'package:plezy/services/settings_service.dart';
+import 'package:plezy/utils/platform_detector.dart';
 import 'package:plezy/utils/video_player_navigation.dart';
+import 'package:plezy/watch_together/providers/watch_together_provider.dart';
 import 'package:plezy/widgets/video_controls/video_controls.dart';
 import 'package:provider/provider.dart';
 
@@ -36,6 +38,7 @@ import '../../test_helpers/multi_server_fixtures.dart';
 import '../../test_helpers/prefs.dart';
 import '../../test_helpers/playback_report_fakes.dart';
 import '../../test_helpers/stub_music_playback_service.dart';
+import '../../test_helpers/tablet_screenshots.dart';
 import '../../test_helpers/watch_together_fakes.dart';
 
 /// The launch receipt an automation caller polls (`playback.status`) and
@@ -87,6 +90,61 @@ void main() {
     await switching;
     expect(outcome, PlaybackSourceChangeOutcome.applied);
   }
+
+  testWidgets('screen lock blocks video pinch zoom and reset restores the default scale', (tester) async {
+    PlatformDetector.debugSetIsDesktopOSOverride(false);
+    addTearDown(() => PlatformDetector.debugSetIsDesktopOSOverride(null));
+    tester.view.physicalSize = const Size(1200, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.runAsync(() => loadTabletFonts(loadDefaultFont: true));
+    await SettingsService.instance.write(SettingsService.gesturePinchToZoom, true);
+    await withMockPlayerChannels(
+      methodChannelName: 'com.plezy/mpv_player',
+      eventChannelName: 'com.plezy/mpv_player/events',
+      testBody: () async {
+        final screen = await _pushObservedScreen(
+          tester,
+          db: db,
+          fakePlayer: _ObservedPlayer(),
+          observer: PlaybackLaunchObserver(isCurrent: () => true),
+        );
+        await screen.key.currentState!.debugMarkPlaybackStartedForTesting();
+        await tester.pumpAndSettle();
+        final controls = find.byType(PlexVideoControls);
+        final center = tester.getCenter(controls);
+
+        Future<void> pinchOut() async {
+          final left = await tester.startGesture(center - const Offset(40, 0));
+          final right = await tester.startGesture(center + const Offset(40, 0));
+          for (var step = 0; step < 5; step++) {
+            await left.moveBy(const Offset(-9, 0));
+            await right.moveBy(const Offset(9, 0));
+            await tester.pump();
+          }
+          await left.up();
+          await right.up();
+          await tester.pumpAndSettle();
+        }
+
+        await tester.tap(find.byTooltip(t.videoControls.lockScreen).hitTestable());
+        await tester.pump();
+        expect(screen.key.currentState!.chromeController.screenLocked, isTrue);
+        await pinchOut();
+        expect(tester.widget<PlexVideoControls>(controls).videoZoomScale, 1.0);
+
+        await tester.tap(find.byTooltip(t.videoControls.unlockScreen));
+        await tester.pump();
+        expect(screen.key.currentState!.chromeController.screenLocked, isFalse);
+        await pinchOut();
+        expect(tester.widget<PlexVideoControls>(controls).videoZoomScale, greaterThan(1.0));
+
+        await tester.tap(find.byTooltip(t.hotkeys.actions.zoomReset));
+        await tester.pumpAndSettle();
+        expect(tester.widget<PlexVideoControls>(controls).videoZoomScale, 1.0);
+      },
+    );
+  });
 
   testWidgets('same-item source switches keep the receipt live; Back ends it stopped', (tester) async {
     final observer = PlaybackLaunchObserver(isCurrent: () => true);
@@ -264,6 +322,7 @@ Future<({GlobalKey<VideoPlayerScreenState> key, GlobalKey<NavigatorState> naviga
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => PlaybackStateProvider()),
+        ChangeNotifierProvider(create: (_) => WatchTogetherProvider()),
         ChangeNotifierProvider<MultiServerProvider>.value(value: multi.provider),
         ChangeNotifierProvider<OfflineWatchSyncService>.value(value: offlineWatch),
         ChangeNotifierProvider<AccountPreferencesController>.value(value: accountPreferences),
@@ -302,6 +361,12 @@ class _ObservedPlayer extends FakeSyncPlayer {
   int openCalls = 0;
   final _completedController = StreamController<bool>.broadcast();
   final _errorController = StreamController<PlayerError>.broadcast();
+
+  @override
+  Future<void> setBoxFitMode(int mode) => setProperty('box-fit-mode', '$mode');
+
+  @override
+  Future<void> setVideoZoom(double scale) => setProperty('video-zoom-scale', '$scale');
 
   void emitCompleted(bool value) {
     setCompleted(value);

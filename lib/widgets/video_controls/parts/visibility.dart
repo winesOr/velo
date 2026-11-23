@@ -158,18 +158,15 @@ extension _PlexVideoControlsVisibilityMethods on _PlexVideoControlsState {
   }
 
   void _toggleScreenLock() {
-    final locking = !_isScreenLocked;
-    _setControlsState(() {
-      _isScreenLocked = locking;
-      if (locking) {
-        _showLockIcon = true;
-      }
-    });
-    if (locking) {
-      _cancelEdgeAdjustmentGesture();
-      widget.chromeController.hide(ignoreHolds: true);
-      _startLockIconHideTimer();
+    if (_isScreenLocked) {
+      _unlockScreen();
+      return;
     }
+    _setControlsState(() => _showLockIcon = true);
+    widget.chromeController.setScreenLocked(true);
+    _cancelEdgeAdjustmentGesture();
+    widget.chromeController.hide(ignoreHolds: true);
+    _startLockIconHideTimer();
   }
 
   void _startLockIconHideTimer() {
@@ -180,10 +177,8 @@ extension _PlexVideoControlsVisibilityMethods on _PlexVideoControlsState {
   }
 
   void _unlockScreen() {
-    _setControlsState(() {
-      _isScreenLocked = false;
-      _showLockIcon = false;
-    });
+    _setControlsState(() => _showLockIcon = false);
+    widget.chromeController.setScreenLocked(false);
     _lockIconTimer?.cancel();
     widget.chromeController.show();
   }

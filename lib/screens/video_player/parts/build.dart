@@ -149,7 +149,7 @@ extension _VideoPlayerBuildMethods on VideoPlayerScreenState {
 
   void _startMobileZoomGesture() {
     // Pinch-to-zoom is one of the optional touch gestures (#1810).
-    if (!SettingsService.instance.read(SettingsService.gesturePinchToZoom)) return;
+    if (_chromeController.screenLocked || !SettingsService.instance.read(SettingsService.gesturePinchToZoom)) return;
     final filterManager = _videoFilterManager;
     if (filterManager == null || _isPinchZooming) return;
 
@@ -164,6 +164,13 @@ extension _VideoPlayerBuildMethods on VideoPlayerScreenState {
     _pinchZoomActivationUpdateCount = 0;
     _pinchZoomChanged = false;
     _pinchStartZoomScale = null;
+  }
+
+  void _cancelMobileZoomWhenLocked() {
+    if (!_chromeController.screenLocked || !_isPinchZooming) return;
+    final changed = _pinchZoomChanged;
+    _clearMobileZoomGesture();
+    if (changed) _setPlayerState(() {});
   }
 
   Widget _buildVideoPlayer(BuildContext context) {
@@ -183,7 +190,7 @@ extension _VideoPlayerBuildMethods on VideoPlayerScreenState {
           if (details.pointerCount >= 2) _startMobileZoomGesture();
         },
         onScaleUpdate: (details) {
-          if (!isMobile) return;
+          if (!isMobile || _chromeController.screenLocked) return;
           if (details.pointerCount < 2) return;
           if (!_isPinchZooming) _startMobileZoomGesture();
 
